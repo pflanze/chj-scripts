@@ -24,7 +24,6 @@ abkunft von EL::Util::Sendmail
 
 use strict;
 
-use Carp;
 
 use MIME::Lite;
 use MIME::QuotedPrint;
@@ -46,26 +45,38 @@ BEGIN {
 
 MIME::Lite->send('sendmail');
 
-#use EL::Exception::Newsletter::PermanentError ();
-#use EL::Exception::Newsletter::TemporaryError ();
-#use EL::Exception::Syserror ();
+use Carp;
 
-#    use Data::Dumper;
+our $PermanentError= sub {
+    #require EL::Exception::Newsletter::PermanentError;
+    #throw EL::Exception::Newsletter::PermanentError $Mail::Sendmail::error;
+    croak @_;
+};
+our $TemporaryError= sub {
+    #require EL::Exception::Newsletter::TemporaryError;
+    croak @_;
+};
+our $Syserror= sub {
+    #require EL::Exception::Syserror;
+    croak @_;
+};
+
+#use Data::Dumper;
 
 sub sendmail {
 #    warn "sendmail: ".Dumper(\@_);
-  my $msg= &preparemail;
-  if ($msg->send) {
-    #ok
-  } else {
-    #if ($Mail::Sendmail::error=~ /\bno recipient\b/i) {
-    #  throw EL::Exception::Newsletter::PermanentError $Mail::Sendmail::error;
-    #} else {
-    #  throw EL::Exception::Newsletter::TemporaryError $Mail::Sendmail::error;
-    #}
-      #    throw EL::Exception::Newsletter::PermanentError "Some error occured sending mail";##kann keine genauere Meldung kriegen? Wenn qmail failure gibt: hat's was auf stderr gegeben? sigh.
-      croak "Some error occured sending mail";##todo
-  }
+    my $msg= &preparemail;
+    if ($msg->send) {
+	#ok
+    } else {
+#     if ($Mail::Sendmail::error=~ /\bno recipient\b/i) {
+#         $PermanentError->();
+#     } else {
+# 	$TemporaryError->();
+#     }
+	#ahh: hatte obiges schon länger auskommentiert  ? grr. "##kann keine genauere Meldung kriegen? Wenn qmail failure gibt: hat's was auf stderr gegeben? sigh."
+	$PermanentError->("Some error occured sending mail");
+    }
 }
 
 sub preparemail {
@@ -128,14 +139,13 @@ sub preparemail {
 	}
     }
     if (!$flag_Data) {
-	#throw EL::Exception::Syserror "Missing 'Data' part";
-	croak "Missing 'Data' part";
+	$Syserror->("Missing 'Data' part");
     }
     if (!$flag_Encoding) {
 	unshift @realargs, \ ("Encoding","quoted-printable");
     }
     #use Data::Dumper; warn __PACKAGE__.": realargs= ".Dumper( \@realargs);
-    my $msg= MIME::Lite->new(map { $$_} @realargs) or croak "Error creating mailer object"; #throw EL::Exception::Syserror "Error creating mailer object";
+    my $msg= MIME::Lite->new(map { $$_} @realargs) or $Syserror->("Error creating mailer object");
     if (!$flag_ContentType) {#(FRAGE vom 12.4.06: warum auf ContentType schauen für charset?. hm ja wohl: normalerweise gibt man es nicht; dann müssen wir hier; aber eigentlich müssten wir nur, wenn eben encoding wirklich passiert ist, right? todo)
 	#unshift @args, \ ("Content-Type","text/plain; charset=ISO-8859-1");
 	$msg->attr('content-type.charset' => $Charset);
@@ -147,43 +157,43 @@ sub preparemail {
 }
 
 sub prepare_mailasstring {
-  my $msg= &preparemail;
-  $msg->as_string
+    my $msg= &preparemail;
+    $msg->as_string
 }
 
 sub send_mailasstring {  # code borrowed from MIME::Lite
-  my $stringrf= \ $_[0];
-  shift;
-  my %p = @_; # parameters
+    my $stringrf= \ $_[0];
+    shift;
+    my %p = @_; # parameters
 
-  $p{Sendmail} ||= "/usr/lib/sendmail";
+    $p{Sendmail} ||= "/usr/lib/sendmail";
 
-  # Start with the command and basic args:
-  my @cmd = ($p{Sendmail}, @{$p{BaseArgs} || ['-t', '-oi', '-oem']});
+    # Start with the command and basic args:
+    my @cmd = ($p{Sendmail}, @{$p{BaseArgs} || ['-t', '-oi', '-oem']});
 
-  # See if we are forcibly setting the sender:
-  $p{SetSender} = 1 if defined($p{FromSender});
+    # See if we are forcibly setting the sender:
+    $p{SetSender} = 1 if defined($p{FromSender});
 
-  # Add the -f argument, unless we're explicitly told NOT to:
-  unless (exists $p{SetSender} and !$p{SetSender}) {
-    my $from = $p{FromSender};# || ($self->get('From'))[0]; ##hmm, don't have access to Outmail.pm object here.
-    if ($from) {
-      my ($from_addr) = map { $_->address } Mail::Address->parse($from);
-      push @cmd, "-f$from_addr"       if $from_addr;
+    # Add the -f argument, unless we're explicitly told NOT to:
+    unless (exists $p{SetSender} and !$p{SetSender}) {
+	my $from = $p{FromSender};# || ($self->get('From'))[0]; ##hmm, don't have access to Outmail.pm object here.
+	if ($from) {
+	    my ($from_addr) = map { $_->address } Mail::Address->parse($from);
+	    push @cmd, "-f$from_addr"       if $from_addr;
+	}
     }
-  }
 
-  my $pid = open SENDMAIL, "|-";
-  defined($pid) or croak "open of pipe failed: $!\n";#throw EL::Exception::Newsletter::TemporaryError "open of pipe failed: $!\n";
-  if (!$pid) {
-    exec(@cmd) or croak "can't exec $p{Sendmail}: $!\n";
-  }
-  else {
-      print SENDMAIL $$stringrf  or croak "Error writing to sendmail pipe: $!";#throw EL::Exception::Syserror "Error writing to sendmail pipe: $!";
-      #warn "Habe folgendes an @cmd geschickt:\n$$stringrf";##debug
-    close SENDMAIL or croak "Error closing sendmail pipe: $! (exit $?)";#throw EL::Exception::Syserror "Error closing sendmail pipe: $! (exit $?)";
-    return 1;
-  }
+    my $pid = open SENDMAIL, "|-";
+    defined($pid) or $TemporaryError->("open of pipe failed: $!");
+    if (!$pid) {
+	exec(@cmd) or $Syserror->("can't exec $p{Sendmail}: $!");
+    }
+    else {
+	print SENDMAIL $$stringrf  or $Syserror->("Error writing to sendmail pipe: $!");
+	#warn "Habe folgendes an @cmd geschickt:\n$$stringrf";##debug
+	close SENDMAIL or $Syserror->("Error closing sendmail pipe: $! (exit $?)");
+	return 1;
+    }
 }
 
 
