@@ -1,0 +1,109 @@
+#!/usr/bin/perl -w
+#!/usr/bin/perl -w -d:ptkdb
+
+# Mon Dez 30 01:06:18 MET 2002
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    if (@_) {
+	print STDERR @_,"\n";
+    }
+    print "$myname filenamewithoutsuffix suffix [ suffix2 ]
+   -or-
+$myname filenamewithoutsuffix_suffix
+  Makes/replaces a symlink pointing from \$filenamewithoutsuffix
+  to \"\$filenamewithoutsuffix\$suffix\".
+  If the 3rd argument is given, the symlink is switched to the
+  other target than the current.
+  If only 1 argument is given, it is checked for an underscore,
+  and then split just before that underscore. If no underscore
+  is found, a minus is searched.
+";
+exit (@_ ? 1 : 0);
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+
+use lib "/root/extlib";
+use Chj::defined_and_length;
+
+sub absolutize($$) {  ## could be much better: check for symlinks in paths in filesystem.
+    my ($base,$path)=@_;
+    $path=~ m|^/| ? $path : AddURL($base,$path)
+}
+
+if (@files==1 or @files==2) {
+  WITHOUT:
+    my ($without,$suffix)=@files;
+    #$DB::single=1;
+    local our ($without,$suffix)=@files;
+    if (!defined_and_length $suffix) {
+	my $tmp;
+	($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
+	  or ($tmp,$suffix)= $without=~ /^([^-]+)(-[^-]+)$/s
+	    or usage "exactly one underscore or minus expected, which is not the case in '$without'";
+	$without= $tmp; # perfectly clean coding
+    }
+    my $with= "$without$suffix";
+    if (-l $without) {
+	unlink $without or die "could not unlink old link '$without': $!";
+    }
+    if (! -e $with) {
+	warn "warning: symlink target '$with' does not exist.\n";
+    }
+    ## cj 8.5.04: 1. ist es gar ned race los; 2. war es bisher immer full path dabei isches sinnlos langer pfad und im relativ falle war es doch sogar FALSCH?!!  well, in dem fall hätts in meisten fällen oben einen warning gegeben immerhin  naja. NEIN nich mal ein warning heheheh  plain falsch
+    ##symlink $with,$without or die "could not create symlink '$without': $!";
+    $with=~ s|.*/||;## das isch safe, oder? ja jedenfalls besser
+    symlink $with,$without or die "could not create symlink '$without': $!";
+} elsif (@files==3) {
+    my ($without,$suffix1,$suffix2)=@files;
+    if (defined (my $curlinkvalue= readlink $without)) {
+	# calculate current target.
+	require Filepaths;
+	import Filepaths;
+	my $withoutabs=  absolutize($ENV{PWD}, $without);
+	my $withoutbaseabs= FolderOfThisFile($withoutabs);
+	my $curtargetabs=  absolutize($withoutbaseabs, $curlinkvalue);
+	# check target 1:
+	my $target1abs= "$withoutabs$suffix1";
+	my $target2abs= "$withoutabs$suffix2";
+	if ($curtargetabs eq $target1abs) {
+	    # link to target2
+	    @files= (@files[0,2]);
+	    goto WITHOUT;
+	} else {
+	    if ($curtargetabs ne $target2abs) {
+		warn "warning: current target '$curtargetabs' does not match with either given suffix; choosing first version.\n";
+	    }
+	    # link to target1
+	    @files= (@files[0,1]);
+	    goto WITHOUT;
+	}
+    } else {
+	# make link to first
+	goto WITHOUT; # I like spaghetti
+    }	
+}
+else {
+    usage;
+}
