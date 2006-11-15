@@ -61,6 +61,8 @@ if (@files==1 or @files==2) {
 	my $tmp;
 	($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
 	  or ($tmp,$suffix)= $without=~ /^([^-]+)(-[^-]+)$/s
+	    or ($tmp,$suffix)= $without=~ /^(.*\.[^_]+)(_[^_]+)$/s
+	    or ($tmp,$suffix)= $without=~ /^(.*\.[^-]+)(-[^-]+)$/s
 	    or usage "exactly one underscore or minus expected, which is not the case in '$without'";
 	$without= $tmp; # perfectly clean coding
     }
