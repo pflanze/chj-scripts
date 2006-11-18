@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+# Fre Jul  7 12:53:14 CEST 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+#ich MEINTE ich häte das schon so offt gewollt und auch scon mal gemacht?.
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname database
+
+  Options:
+  -h|--host[=]...  Host,
+  -P|--port[=]...  port of database.
+  -p|--password  Ask for admin password. (The --password=... form is insecure!!)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $user;#="root";
+my $pwd="";
+my $host="localhost";
+my $port;
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?u(?:ser(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $user=$1
+	} else {
+	    $user= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^--?p(?:assword(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $pwd=$1
+	} else {
+	    undef $pwd;
+	}
+    } elsif (/^--?h(?:host(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $host=$1
+	} else {
+	    $host= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^(?:-P)|(?:--port(?:=(.*))?)$/) {
+	if (defined $1) {
+	    $port=$1
+	} else {
+	    $port= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+my ($database)=@args;
+$database=~ /^(\w+)$/ or die "not matching kriteria: '$database'";
+$database=$1;
+##ps $host hab ich nich so nett geprüft!
+
+use DBI;
+use Chj::Util::AskPassword;
+use Chj::Util::AskYN;
+
+if (!defined $pwd) {
+    $pwd= askpassword "Please enter password for $user: ";
+}
+
+our $DB= DBI->connect("DBI:mysql:database=$database;host=$host".($port? ";port=$port":""),
+		      $user,
+		      $pwd,
+		      {RaiseError => 1}) ; ##or die ; ?
+
+#$DB->begin;#well eh unnötz
+
+our $sh= $DB->prepare("show tables");
+
+$sh->execute;
+our @tables= #$sh->fetchrow_array; tja  exhaust  oder sow as  nixda
+  do {
+      my @t;
+      while(my ($item)= $sh->fetchrow_array) { push @t, $item };
+      @t #gr!
+  };
+
+if (@tables) {
+    if (askyn "Ok to delete ".@tables." tables? ") {
+	for (@tables) {
+	    my $del= $DB->prepare("drop table $_");
+	    $del->execute # == 1 or die "unexpectedly got non-1 return val"; nein ist eh nicht 1
+	}
+	print "done.\n";
+    } else {
+	print "cancelled by user.\n";
+    }
+} else {
+    print "no tables in database.\n";
+}
+
+#use Chj::repl;;repl;
