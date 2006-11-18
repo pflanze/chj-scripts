@@ -14,6 +14,7 @@ sub usage {
     print "$myname database
 
   Options:
+  -u|--user[=]...  User (default: \$USER)
   -h|--host[=]...  Host,
   -P|--port[=]...  port of database.
   -p|--password  Ask for admin password. (The --password=... form is insecure!!)
@@ -25,7 +26,7 @@ exit @_ ? 1 : 0;
 
 my @args;
 my $DEBUG=0;
-my $user;#="root";
+my $user= $ENV{USER};
 my $pwd="";
 my $host="localhost";
 my $port;
@@ -70,6 +71,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 usage unless @args==1;
+usage "missing user" unless $user;
 
 my ($database)=@args;
 $database=~ /^(\w+)$/ or die "not matching kriteria: '$database'";
