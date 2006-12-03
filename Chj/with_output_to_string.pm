@@ -50,6 +50,7 @@ package Chj::with_output_to_string;
 
 use strict;
 use IO::Handle; # es sei denn ich will mein eignes.?
+require 5.8.0;#well maybe some other perls between v5.6.1 and 5.8.0 would already work too. (try to comment out, to get to the test case below)
 
 sub mk {
     my ($do_stdout,$do_stderr)=@_;
