@@ -84,4 +84,13 @@ sub mk {
 *Chj::with_output_to_string= \&with_output_to_string;
 
 
+# Test:
+{
+    my $str;
+    # (parens are necessary here, since prototypes are not visible
+    # during compile time here.)
+    with_stderr_to_string( \$str,sub {warn "fobla\n"});
+    $str eq "fobla\n" or die "Test failed";
+}
+
 1
