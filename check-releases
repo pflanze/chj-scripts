@@ -54,13 +54,16 @@ sub usage {
   If changed, send notification to the given mail addresses
   (using (for you) '$mailfrom' as From address).
 
-  (Christian Jaeger <$email>)
+  Options:
+  --verbose   output contents etc. if no match happens
+
+ (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
 }
 
 my @args;
-my $DEBUG=0;
+my $DEBUG=0;my $verbose=0;
 my $opt_help;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -70,7 +73,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, @ARGV[$i+1..$#ARGV];
     	last;
     } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
+	$DEBUG=1;$verbose=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -150,7 +155,7 @@ sub checkone {
 	if ($$contentref=~ /$pat/) {
 	    [ $key, $pat, $1 ]
 	} else {
-	    print STDERR "$myname: '$softwarename', url='$url': content does not match pattern '$pat':\n$$contentref\n\n";
+	    print STDERR "$myname: '$softwarename', url='$url': content does not match pattern '$pat':\n$$contentref\n\n" if $verbose;
 	    #repl;
 	    [ $key, $pat, "NO MATCH" ]
 	}
