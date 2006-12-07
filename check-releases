@@ -1,0 +1,204 @@
+#!/usr/bin/perl -w
+
+# Sam Okt  8 15:16:31 MEST 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+#use Chj::Web::Fetch 'get_remote_file';  Encode.pm is not on ethlife/woody.
+use Chj::Web::SureFetch;
+use Chj::FileStore::PIndex;
+use Chj::Sendmail;# ACH, benötigt ebenfalls Encode.pm.
+use Chj::Mailfrom 'mailfrom';
+use Chj::Hostname 'hostname';
+use Chj::username;
+use Chj::singlequote;
+use Chj::Web::FileescapeUrl qw(fileescapeurl);
+use Chj::Cwd::realpath 'xrealpath';
+use Chj::FP::Memoize;
+
+sub mkdir_p {
+    my ($dir)=@_;
+    -d $dir
+      or mkdir $dir
+	or die "could not mkdir '$dir': $!";
+}
+
+
+my $hostname= hostname;
+my $username= username;
+my $sig= "--
+This mail has been sent automagically by the $0
+script running on behalf of $username on $hostname
+";
+my $mailfrom= mailfrom;
+
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname check-releases-conf.pl  [mailaddress(es)]
+
+  Loads the given config file, which must return a hashref:
+  keys are names for the software to be checked, values are
+  arrays of first position being the url to be fetched,
+  second position is a hash: keys are names of the respecting
+  release (or position in the page), values are regexes with
+  one capture (the version number).
+
+  Checks the extracted versions against those stored in
+  the filestore under (while using your env and the given
+  config file path): ".singlequote(pindex_path_base()).".
+
+  If changed, send notification to the given mail addresses
+  (using (for you) '$mailfrom' as From address).
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_help;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	$opt_help=1;
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+my $_flag_usage=1 unless @args;
+my $configfile= shift @args;
+my $mailto= @args? join(",",@args) : undef;
+
+*pindex_path_base= memoize_thunk sub {
+    $configfile or return;
+    # sollte eine generelle path verkürzungs funktion haben.
+    # entweder url2pathname style,  oder: directory (und eben realpathed) hashen, filename lassen. und symlink eben directory auflösend.  (Wo hatte ich das? 2003 geschrieben? odernoch2002?nah)
+    # ah: Chj::Web::FileescapeUrl hab ich schon ausgelagert!
+    my $p= xrealpath $configfile;
+    $p=~ s/^\Q$ENV{HOME}\E//s;
+    my $pindex_path_base= "$ENV{HOME}/.$myname-store-".fileescapeurl($p);
+    mkdir_p $pindex_path_base unless -d $pindex_path_base;
+    $pindex_path_base
+};
+
+usage if $opt_help;
+usage if $_flag_usage;
+
+# ----  loading config
+
+#my $config= do $configfile; die if $@;  nein,    or do { die $! if $! or die $@ } gosh. oder eben doch einfach bloss:
+my $config= require $configfile;
+ref($config) eq "HASH" or usage "not a hash: $config";
+
+
+our %notify;# softwarename => array of 'usually'  [ $key, $oldversion, $version];
+sub notify{# könnte auch add_notify genannt werden
+    @_>1 or die "zuwenig argumente, ".@_;
+    my $softwarename=shift;
+    push @{$notify{$softwarename}},@_;
+}
+sub notify_software_fullstring {
+    my ($softwarename)=@_;
+    my $lis= $notify{$softwarename} or die "missing data";
+    "$softwarename:\n  "
+      .join("  ",
+	    map {
+		my ($key,$oldversion,$version)=@$_;
+		"Version of $key has changed: $oldversion --> $version\n"
+	    }
+	    @$lis);
+}
+sub notify_software_shortstring {
+    my ($softwarename)=@_;
+    my $lis= $notify{$softwarename} or die "missing data";
+    "$softwarename (".join(", ",
+			   map {
+			       $$_[0]
+			   }
+			   @$lis).")"
+}
+#use Chj::repl;repl;
+
+sub checkone {
+    my ($softwarename,$url,$patterns)=@_;
+
+    warn "checkone '$softwarename'.." if $DEBUG;
+
+    local our $contentref= surefetch $url;
+
+    my @versions= map {
+	local our $key=$_;
+	local our $pat= $$patterns{$key};
+	if ($$contentref=~ /$pat/) {
+	    [ $key, $pat, $1 ]
+	} else {
+	    print STDERR "$myname: '$softwarename', url='$url': content does not match pattern '$pat':\n$$contentref\n\n";
+	    #repl;
+	    [ $key, $pat, "NO MATCH" ]
+	}
+    } keys %$patterns;
+
+
+    my $pindex_path= pindex_path_base() . "/" . fileescapeurl($softwarename);
+    mkdir_p $pindex_path;
+
+    my $pindex= new Chj::FileStore::PIndex $pindex_path;
+    for (@versions) {
+	my ($key, $pat,$version)=@$_;
+	if ($pindex->exists($key)) {
+	    my $oldversion= $pindex->get($key);
+	    if ($version ne $oldversion) {
+		#notify $softwarename, "Version of $key has changed: $oldversion --> $version";
+		#  wie xml  skelett behalten am anfang
+		notify $softwarename, [ $key, $oldversion, $version];
+		$pindex->set($key,$version);
+	    }
+	} else {
+	    warn "$myname: no entry exists yet for '$key', creating it.\n";
+	    $pindex->add($key,$version);
+	}
+    }
+}
+
+
+
+for (keys %$config) {
+    my $val= $$config{$_};
+    checkone $_,@$val
+}
+
+if (my @keys= sort keys %notify) {
+    if ($mailto) {
+	sendmail( To=> $mailto,
+		  From=> $mailfrom,
+		  Subject=> "$myname: ".join(", ",map {
+		      notify_software_shortstring $_
+		  } @keys),
+		  Data=> join("\n",map {
+		      notify_software_fullstring $_
+		  } @keys)."\n\n$sig"
+		);
+    } else {
+	print map {
+	    notify_software_fullstring $_
+	} @keys;
+    }
+}
