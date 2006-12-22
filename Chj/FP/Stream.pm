@@ -21,9 +21,10 @@ function library
 
 package Chj::FP::Stream;
 @ISA="Exporter"; require Exporter;
-@EXPORT_OK=qw(
-	      Port2stream
-	     );
+@EXPORT_OK=(
+	    'Port2stream', # streams of chars
+	      'Port2linestream', # streams of lines
+	   );
 
 use strict;
 #use Chj::FP::lazy 'Delay';#lustig ist funktion bei perl.  wobei geht schneller direkt
@@ -31,39 +32,45 @@ use Chj::FP::Promise;
 
 # to avoid having to use local recursive functions an weak reference
 # tricks, use the thing lambda-lifted
-sub _direct_p2s { # uses getc, not method calls on the port
-    my ($port)=@_;
-    # this is all hacky, only for performance reasons inlined here.
-    bless [
-	   0, #unevaluated
-	   sub {
-	       warn "getting..";
-	       my $c= getc($port);
-	       warn "got '$c'";
-	       if (defined $c) {
-		   #OH shit gc problems?kommen to mind
-		   bless [$c, _direct_p2s($port)], "Chj::FP::Pair"
-	       } else {
-		   if ($!) {
-		       die "Port2stream($port): $!";#
+
+sub p2s {
+    my ($port,$portget,$fnname)=@_; # "coderef", msgstr
+    my $lp;
+    $lp= sub {#<--TODO!!!:fix LEAK
+	# this is all hacky, only for performance reasons inlined here.
+	bless [
+	       0, #unevaluated
+	       sub {
+		   #warn "getting..";
+		   my $c= $portget->($port);
+		   #warn "got '$c'";
+		   if (defined $c) {
+		       #OH shit gc problems?kommen to mind
+		       bless [$c, &$lp], "Chj::FP::Pair"
 		   } else {
-		       $Chj::FP::EmptyList
-		   };
+		       if (eof($port)) {
+			   $Chj::FP::EmptyList
+		       } else {
+			   die "$fnname($port): $!";#
+		       };
+		   }
 	       }
-	   }
-	  ], "Chj::FP::StreamPromise";
+	      ], "Chj::FP::StreamPromise";
+    };
+    &$lp
 }
 
-
-sub Port2stream {
-    my ($port)=@_;
-    my $maybe_getc= UNIVERSAL::can($port,"getc");
-    if ($maybe_getc) {
-	die "method version of this not yet implemented";
-    } else {
-	_direct_p2s($port)
+sub mk_P2s {
+    my ($default_getc,$getc_methodname,$fnname)=@_;
+    sub {
+	my ($port)=@_;
+	my $maybe_getc= UNIVERSAL::can($port,$getc_methodname);
+	p2s($port, $maybe_getc||$default_getc, $fnname)
     }
 }
+
+*Port2stream= mk_P2s(sub{ getc($_[0]) }, "getc", "Port2stream");
+*Port2linestream= mk_P2s(sub{ readline($_[0]) }, "readline", "Port2linestream");
 
 
 {
@@ -71,6 +78,7 @@ sub Port2stream {
     package Chj::FP::StreamPromise;
     use Carp;
     use Chj::FP::Promise -extend=>();
+    use Chj::FP::Pair;
     sub mk {
 	my ($field)=@_;
 	sub {
