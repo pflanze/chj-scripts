@@ -35,7 +35,7 @@ use WeakRef;
 sub p2s {
     my ($port,$portget,$fnname)=@_; # "coderef", msgstr
     my $lp;
-    $lp= sub {#<--TODO!!!:fix LEAK
+    $lp= sub {
 	# this is all hacky, only for performance reasons inlined here.
 	bless [
 	       0, #unevaluated
