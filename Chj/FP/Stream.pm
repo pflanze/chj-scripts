@@ -29,9 +29,8 @@ package Chj::FP::Stream;
 use strict;
 #use Chj::FP::lazy 'Delay';#lustig ist funktion bei perl.  wobei geht schneller direkt
 use Chj::FP::Promise;
-
-# to avoid having to use local recursive functions an weak reference
-# tricks, use the thing lambda-lifted
+# to avoid having to use the thing lambda-lifted, use weak references:
+use WeakRef;
 
 sub p2s {
     my ($port,$portget,$fnname)=@_; # "coderef", msgstr
@@ -57,7 +56,8 @@ sub p2s {
 	       }
 	      ], "Chj::FP::StreamPromise";
     };
-    &$lp
+    my $_lp=$lp; weaken $lp;
+    &$_lp
 }
 
 sub mk_P2s {
