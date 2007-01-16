@@ -39,6 +39,7 @@ package Chj::Collection;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(
 	      Collection Collection_add Collection_addnew Collection_subtract Collection_items
+	      Collection_merge_with Collection_merge
 	      Hashcoll_add_d Hashcoll_filter_d
 	     );
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
@@ -146,6 +147,41 @@ sub mkCollection_add {
 *Collection_add= mkCollection_add (1);
 
 *Collection_addnew= mkCollection_add (0);
+
+sub Collection_merge_with ($ ; @ ) { # not &, for old fp reasons..
+    my $merge= shift;
+    return {} unless @_;
+    my $first= shift;
+    return $first unless @_;# no copy. unlike (append foo) which still creates a copy ?.
+    my $result= {};
+    for ($first, @_) {
+	for my $item (Items $_) {
+	    my $key= "$item";
+	    if (exists $$result{$key}) {
+		#$$result{$key}= $merge->($$result{$key}, $item);  nope, could be that the key has changed now (albeit unlikely since that would be strange)
+		my $new= $merge->($$result{$key}, $item);
+		my $newkey= "$new";
+		if ($newkey eq $key) {# in the hope that this could be a bit faster.
+		    $$result{$key}= $new;
+		} else {
+		    delete $$result{$key};
+		    $$result{$newkey}= $new;
+		}
+	    } else {
+		$$result{$key}= $item; # [or also call $merge? or a single-argument $filter?]
+	    }
+	}
+    }
+    $result
+}
+
+our $current_merge= sub ($ $ ) {
+    $_[0]->merge_with ($_[1])
+};
+
+sub Collection_merge {
+    Collection_merge_with ($current_merge, @_)
+}
 
 
 sub Collection_subtract {
