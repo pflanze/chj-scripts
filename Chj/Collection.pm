@@ -21,13 +21,24 @@ yep only works on hashes for now.
 
 Does not modify it's arguments.
 
+
+ A "Collection" here is either:
+   - an array
+   - a hash which contains the item in the value position and it's
+     stringification in the key position (called "Hashcoll")
+   - an object with "items" and "itempairs" methods.
+
+ The functional routines generally always return "Hashcoll"ections, but
+ accept either kind of collections as inputs. There are also some
+ destructive routines which work on "Hashcoll" as input type.
+
 =cut
 
 
 package Chj::Collection;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(
-	      Collection Collection_add Collection_subtract Collection_items
+	      Collection Collection_add Collection_addnew Collection_subtract Collection_items
 	      Hashcoll_add_d Hashcoll_filter_d
 	     );
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
@@ -86,10 +97,10 @@ sub _subtract ($ $ ){
     Hashcoll_subtract_d { Itempairs($first) },$second;
 }
 
-sub Hashcoll_add_d ($ $ ){ # destructive
-    my ($first,$second)=@_;
+sub Hashcoll_add_d ($ $ ; $ ){ # destructive
+    my ($first,$second,$overwrite)=@_;
     for my $key (Items($second)) {
-	$$first{$key}= $key; #okay?  or undef? orwhat?... should i call $key $item ?.
+	$$first{$key}= $key if ($overwrite or not exists $$first{$key});
     }
     $first
 }
@@ -118,16 +129,24 @@ sub Collection {
 
 # generic functions:
 
-sub Collection_add {
-    return {} unless @_;
-    my $first= shift;
-    return $first unless @_;# no copy. unlike (append foo) which still creates a copy ?.
-    my $result= _copy ($first);
-    for (@_) {
-	Hashcoll_add_d ($result, $_)
+sub mkCollection_add {
+    my ($overwrite)=@_;
+    sub {
+	return {} unless @_;
+	my $first= shift;
+	return $first unless @_;# no copy. unlike (append foo) which still creates a copy ?.
+	my $result= _copy ($first);
+	for (@_) {
+	    Hashcoll_add_d ($result, $_, $overwrite)
+	}
+	$result
     }
-    $result
 }
+
+*Collection_add= mkCollection_add (1);
+
+*Collection_addnew= mkCollection_add (0);
+
 
 sub Collection_subtract {
     die "not enough arguments" unless @_>=1;
