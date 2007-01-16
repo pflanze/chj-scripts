@@ -19,7 +19,7 @@ Chj::Mailfrom
 
 package Chj::Mailfrom;
 @ISA="Exporter"; require Exporter;
-@EXPORT_OK=qw(mailfrom
+@EXPORT_OK=qw(mailfrom mailfromaddress
 	      maybe_extend_with_realname
 	      mailrealname
 	     );
@@ -68,11 +68,18 @@ sub mailfrom_from_qmail_configuration {
     username.'@'.$dom
 }
 
-sub mailfrom {
+sub mailfromaddress {
     my ($maybe_mail_path)=@_;
     $maybe_mail_path||= "$ENV{HOME}/.mailfrom";
-    my $mailfrom= $ENV{EMAIL} || $ENV{MAILFROM} || catfiletrim($maybe_mail_path) || mailfrom_from_qmail_configuration;
-    maybe_extend_with_realname $mailfrom
+    ($ENV{EMAIL}
+     || $ENV{MAILFROM}
+     || catfiletrim($maybe_mail_path)
+     || mailfrom_from_qmail_configuration)
+}
+
+sub mailfrom {
+    my ($maybe_mail_path)=@_;
+    maybe_extend_with_realname mailfromaddress ($maybe_mail_path)
 }
 
 
