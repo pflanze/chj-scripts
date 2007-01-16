@@ -1,6 +1,6 @@
-# Mon Jan 15 13:45:53 2007  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
+# Mon Jan 15 13:45:53 2007  Christian Jaeger, christian at jaeger mine nu
 # 
-# Copyright 2004 by Christian Jaeger
+# Copyright 2007 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -34,6 +34,8 @@ Does not modify it's arguments.
 
 =cut
 
+#used by:
+# - google-searcher script
 
 package Chj::Collection;
 @ISA="Exporter"; require Exporter;
