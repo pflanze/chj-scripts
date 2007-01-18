@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+# cj Wed Jul 31 16:35:48 MEST 2002
+
+use strict;
+
+sub DEBUG(){0};
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname ..
+";
+exit @_;
+}
+
+my @files;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @files, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @files, $_
+	}
+}
+usage unless @files;
+
+# read map from dfm 
+my @map;
+open IN,"<$ENV{HOME}/.dfmext" or die "Could not find or open $ENV{HOME}/.dfmext: $!\n";
+while(<IN>){
+	next if /^\s*#/;
+	my ($match,$cmd)=(split /;/)[0,2];
+	next if $match=~ m|/$|s; # folder match rule -> nothing implemented yet
+	$match=~ s/\./\\./sg;
+	$match=~ s/\*/.*/sg;
+	# quote other nonfunctional but regexsyntax chars
+	$match=~ s/([+])/\\$1/sg;
+	$match= qr/^$match$/s;
+	push @map,[$match,$cmd];
+}
+close IN or die "Error on close: $!";
+
+FILE: for my $file (@files) {
+	#my $suf= lc(/\.([^.]+)$/s);
+	my ($filename)= $file=~ m|([^/]+)$|s or do{ warn "Ignoring '$file'\n"; next};
+	for(@map){
+		if ($filename=~ /$_->[0]/){
+			warn " /$_->[0]/ MATCHED!\n" if DEBUG;
+			
+			my @exec= map { $_ eq '!0!' ? $file : $_ } split /\s+/,$_->[1];
+			my $pid=fork;
+			defined $pid or die "Could not fork: $!\n";
+			if ($pid){
+				#done
+				next FILE;
+			} else {
+				## ç session id stuff!
+				exec @exec;
+				die "Could not execute '".join("', '",@exec)."'\n";
+			}
+		} else {
+			warn " /$_->[0]/ did not match\n" if DEBUG;
+		}
+	}
+	warn "Did not find an entry in $ENV{HOME}/.dfmext matching the filename '$filename'\n";
+}
+
