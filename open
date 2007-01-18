@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# cj Wed Jul 31 16:35:48 MEST 2002
+# cj Wed Jul 31 16:35:48 MEST 2002 / Thu, 18 Jan 2007 09:17:34 +0100
 
 use strict;
 
@@ -26,7 +26,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         push @files, @ARGV[$i+1..$#ARGV];
         last;
     } elsif (/^-/) {
-        warn "Unknown option '$_'\n";
+        warn "$myname: Unknown option '$_'\n";
         usage(1)
     } else {
         push @files, $_
@@ -137,6 +137,6 @@ FILE: for my $file (@files) {
         }
     }
     my $mapfile= $map->filepath;
-    warn "could not find an entry in '$mapfile' matching the filename '$filename'\n";
+    warn "$myname: could not find an entry in '$mapfile' matching the filename '$filename'\n";
 }
 
