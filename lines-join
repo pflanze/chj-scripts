@@ -1,0 +1,167 @@
+#!/usr/bin/perl -w
+
+# Sam Jan 20 19:16:43 MET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file1 file2
+
+  Do not output lines which occur only in one of the inputs.
+
+  --sorted  assume that inputs are sorted (do not keep unmatched
+            lines in a hashtable)
+
+  See also:
+     minus
+
+  Bugs: --sorted variant schould be ok, have tested it.i thinkfully.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_sorted;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(orted)?$/) {
+	$opt_sorted=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+use IO::Handle; # for loading 'flush' *into the IO::Handle namespace* (that's enough for OO calls. but necessary!)
+
+sub xprint {
+    print @_
+      or die "printing to stdout: $!";
+}
+
+# sub key_of_line {
+#     my ($str)=@_;
+#     chomp $str;
+#     $str
+# }
+
+sub join_sorted {
+    local our ($A,$B)=@_;
+    # immer schauen welche zeile nach welcher jo eh gleiche   wenn no nid gleich abwarten  wenn overrun umgekehrt abwarten.
+    local our $curcmpline= $A->xreadline;
+    local our $curturn= $B;
+    defined $curcmpline or goto END;
+    chomp $curcmpline;
+    local our $line= $curturn->xreadline;
+    defined $line or goto END;
+    do {
+	chomp $line; #sooo ein spaghetti
+	local our $res= ($line cmp $curcmpline);
+	if (!$res) {
+	    # match.
+	    xprint $line,"\n";
+	    # begin anew:
+	    $curcmpline= $A->xreadline;
+	    #last unless defined $curcmpline; #!!!!!!!!!!!!
+	    #!!!last geht nid hier raus sondern:
+	    goto END unless defined $curcmpline;
+	    chomp $curcmpline;# !!!!!!!
+	    $curturn= $B;
+	} else {
+	    if ($res<0) {
+		# continue to read lines from $curturn
+	    } else {
+		# overrun.
+		$curturn= ($curturn eq $A ? $B : $A);
+		$curcmpline= $line;
+	    }
+	}
+	$line= $curturn->xreadline;
+    } while (defined $line);
+  END:
+    flush STDOUT or die "couldn't flush stdout: $!";
+}
+
+
+
+sub join_hashed {
+    die "unfinished, give --sorted option";
+    local our ($A,$B)=@_;
+    #local our @inputs= @_;
+    local our $t;# key-> seen in  0 = A, 1 = B.
+    my $read_check_output= sub ($ $ ) {
+	local our ($fh, $fh_is_b)=@_; # fh_is_b must not be undef
+    use Chj::repl;repl;
+	local our $line= $fh->xreadline;
+	chomp $line;
+	my $v;
+	if (defined( $v= $$t{$line})) {
+	    if ($v) {
+		if ($fh_is_b) {
+		    # double in b, ignore
+		} else {
+		    xprint $line,"\n";
+		    delete $$t{$line};
+		}
+	    } else {
+		if ($fh_is_b) {
+		    xprint $line,"\n";
+		    delete $$t{$line};
+		} # else ignore
+	    }
+	} else {
+	    $$t{$line}= $fh_is_b
+	}
+    };
+    while (1) {
+	local our $aline= $A->xreadline;
+	local our $bline= $B->xreadline;
+	if (defined $aline) {
+	    $read_check_output->($aline,0);
+	    if (defined $bline) {
+		$read_check_output->($bline,1);
+	    }
+	} else {
+	    while (defined $bline) {
+		$read_check_output->($bline,1);
+		$bline= $B->xreadline;
+	    }
+	    last;
+	}
+    }
+    # (drop hashtable on the floor.)
+    flush STDOUT or die "flushing stdout: $!";
+}
+
+
+use Chj::xopen 'xopen_read';
+
+our @inputs= map { scalar xopen_read $_ } @args;
+
+if ($opt_sorted) {
+    join_sorted @inputs
+} else {
+    join_hashed @inputs
+}
