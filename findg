@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# cj {Wed Jan 31 13:14:54 2007}
+# i keep forgetting how this is called
+
+exec ack $@
