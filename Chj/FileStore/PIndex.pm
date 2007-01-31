@@ -163,11 +163,14 @@ sub xremove {
       "$$self[Basedir]/"._escape_key($key);
 }
 
-sub iter_get {##unfertig.ç  wie auch fehlende get methode.
+sub iter_get {
     my $self=shift;
-    require Chj::FileStore::PIndex::Iterator;#tja,komisch?
-    Chj::FileStore::PIndex::Iterator->new($self,@_);
+    require Chj::FileStore::PIndex::NonsortedIterator;#tja,komisch?
+    Chj::FileStore::PIndex::NonsortedIterator->new($self,@_);
 }
+# Wed, 31 Jan 2007 15:26:03 +0100:
+*get_iter= *iter_get;
+
 
 sub get {
     my $self=shift;
