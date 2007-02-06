@@ -264,6 +264,7 @@ sub Hashcoll_of_collection ($ ) {
 }
 
 sub Collection_intersect {
+    return {} unless @_;#DO NOT FORGET edge cases [when working with nonrecursive syntax]
     my $first= shift;
     # expect all of the others to be hash collections (for fast lookup):
     my @rest= map {
