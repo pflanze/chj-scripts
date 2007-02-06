@@ -11,7 +11,41 @@ Chj::Collection
 
 =head1 SYNOPSIS
 
+ our $c1= Collection 1,2,3,2;
+ our $c2= Collection 3,4,5;
+ our $joined= Collection_add $c1,$c2;
+ our $joined_custom= Collection_merge_with sub { our ($a,$b)=@_; $a }, $c1,$c2;
+ #   which is pointless here.
+ # our $joined_custom_objs= Collection_merge $c1,$c2;
+ #   would only work if either the items were blessed into a class
+ #   with a "merge_with" method, or $Chj::Collection::current_merge
+ #   is localized
+ our $c1_without_c2= Collection_subtract $c1,$c2;
+ our $c2_without_c1= Collection_subtract $c2,$c1;
+ our $all_nonduplicates= Collection_add $c1_without_c2, $c2_without_c1;
+# our $always_true= Collection_equalp $all_nonduplicates, Collection_intersect $c1,$2;
+#nochnichtvorhanden und EH EHfalsch.
+ our $the_duplicates= Collection_intersect $c1,$c2;
+ our $always_empty= Collection_intersect $all_nonduplicates, $the_duplicates;
+
+
+ # Collection_subtract could be called Collection_remove, especially
+ # the Hashcoll_subtract_d could deserve that name.
+
 =head1 DESCRIPTION
+
+"merge" and "add" are join operations, where "merge" allows to look at
+the objects with identical 'keys' and generate new ones by use of the
+merge_with method or dynamic parameter.
+
+'The other common set(?) operations are:'
+
+"subtract" is  XXX.
+
+"intersect" is XXX.
+
+
+old docs:
 
 Interface common ?  for  minus etc handling.  on hashes foretc.
 
@@ -32,7 +66,15 @@ Does not modify it's arguments.
  accept either kind of collections as inputs. There are also some
  destructive routines which work on "Hashcoll" as input type.
 
+
+=head1 BUGS
+
+No way for customizing key generation is provided (only a custom merge
+operation) currently.
+
 =cut
+
+#'
 
 #used by:
 # - google-searcher script
@@ -40,8 +82,11 @@ Does not modify it's arguments.
 package Chj::Collection;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(
-	      Collection Collection_add Collection_addnew Collection_subtract Collection_items
-	      Collection_merge_with Collection_merge
+	      Collection
+	      Collection_add Collection_addnew Collection_merge_with Collection_merge
+	      Collection_subtract
+	      Collection_intersect
+	      Collection_items
 	      Hashcoll_add_d Hashcoll_filter_d
 	     );
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
@@ -125,6 +170,10 @@ sub Hashcoll_filter_d (& $ ) { # destructive filtering function.
 
 
 # constructor:
+# turn the argument list into a 'proper' collection.
+
+# This does an implicit "join" operation (only one of the objects with
+# 'identical keys' survives).
 
 sub Collection {
     +{ map { $_=> $_ } @_ }
@@ -149,6 +198,10 @@ sub mkCollection_add {
 *Collection_add= mkCollection_add (1);
 
 *Collection_addnew= mkCollection_add (0);
+
+
+# "merge" is a special form of "join" which allows to custom merge
+# items 'with identical keys'.
 
 sub Collection_merge_with ($ ; @ ) { # not &, for old fp reasons..
     my $merge= shift;
@@ -188,6 +241,7 @@ sub Collection_merge {
 
 sub Collection_subtract {
     die "not enough arguments" unless @_>=1;
+    #return {} unless @_;# die überbleibsel von keiner menge ist auch keine menge. --HMM falsch? das hier ist eh nicht intersect? gam (-) gibt error.
     # now unlike (- x) which returns -x this will return the argument unchanged.
     my $first= shift;
     return $first unless @_;# no copy. (see also above)
@@ -200,5 +254,45 @@ sub Collection_subtract {
 
 *Collection_items = \&Items;
 
+sub Hashcoll_of_collection ($ ) {
+    ((ref $_[0] eq "HASH") ? $_[0]
+     :
+     #(ref $_[0] eq "ARRAY") ? Collection (@{$_[0]}) #moreperformantvariant?
+     #:
+     #die "unknown collection type of '$_[0]'") #undwaswennobjirgendwas?.
+     Collection (Items $_[0]))# und was wenn es eine pseudo hash collection ist?
+}
+
+sub Collection_intersect {
+    my $first= shift;
+    # expect all of the others to be hash collections (for fast lookup):
+    my @rest= map {
+	Hashcoll_of_collection ($_)
+    } @_;
+    my $result= {};
+  VALUE: for my $value (Items $first) {
+	my $key= "$value";#ok? or use Itempairs ?
+	for my $hashcoll (@rest) {
+	    if (!exists $hashcoll->{$key}) {
+		next VALUE;
+	    }
+	}
+	$result->{$key}=$value; ###provide 'merge' operations ?
+	#BTW IST JA IDENTISCH ZU merge operation einfach dass im else case nicht added wird sondern skipped (und zwar early).!
+    }
+    $result
+}
+
 
 1
+__END__
+
+"GOT.
+main> :d Collection_subtract ([1],[2]);
+$VAR1 = {
+          '1' => 1
+        };
+main> :d Collection_subtract ([1],[1]);
+$VAR1 = {};
+das IST ja gar nicht überschiebe (intersec)
+"
