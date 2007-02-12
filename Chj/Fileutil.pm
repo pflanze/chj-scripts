@@ -15,6 +15,14 @@ Chj::Fileutil
 
 File handling functions. For easy file handling/editing. ("shell-like"?)
 
+Note that all functions do turn basic error checking into
+exceptions. The x* functions though do not signal (non-fundamental)
+failure through a return value, but through exceptions as well.
+
+E.g. Getlock will throw exceptions if the file does not exist or
+there's no permission opening it rw. (Ok, should this be prepended
+with x ? Do I ever know?)
+
 =cut
 
 
@@ -32,6 +40,7 @@ package Chj::Fileutil;
 	      xChecknolinks
 	      xChecklink
 	      xSymlink
+	      Getlock
 	     );
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
 
@@ -142,6 +151,37 @@ sub xSymlink($ $ ) {
     my ($value,$path)=@_;
     Warn "ln -s '$value' '$path'";
     xsymlink $value,$path;
+}
+
+use Fcntl ':DEFAULT',':flock';
+
+sub Getlock ($ ; $ ; $ ; $ ) {
+    my ($path,$maybe_waitingmsg, $maybe_create_mode, $flag_excl)=@_; # create_mode is actually umask exposed ("is subject to the current umask")
+    my $lck;
+    do {
+	if (defined ($maybe_create_mode)) {
+	    sysopen $lck, $path, O_RDWR|O_CREAT|($flag_excl ? O_EXCL : 0), $maybe_create_mode;
+	} else {
+	    sysopen $lck, $path, O_RDWR;
+	}
+    } or die "opening lock '$path' for reading/writing: $!";
+    if (flock($lck, LOCK_EX| LOCK_NB)) {
+	$lck
+    } else {
+	if (defined $maybe_waitingmsg) {
+	    if ($maybe_waitingmsg) {
+		print STDERR $maybe_waitingmsg
+	    }
+	    #else be silent
+	} else {
+	    print STDERR "waiting for lock '$path'..";
+	}
+	flock ($lck, LOCK_EX);
+	if ($maybe_waitingmsg or !defined ($maybe_waitingmsg)) {
+	    print STDERR "ok.\n";
+	}
+	$lck
+    }
 }
 
 
