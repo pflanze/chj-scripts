@@ -23,6 +23,23 @@ E.g. Getlock will throw exceptions if the file does not exist or
 there's no permission opening it rw. (Ok, should this be prepended
 with x ? Do I ever know?)
 
+
+=head1 FUNCTIONS
+
+...
+
+=item MsgfileRead
+
+A way to read from such 'msgfiles' from bash is (assuming it has been
+terminated with a newline when writing):
+
+ while true; do
+     read msg < foo
+     ...
+ done
+
+(In my tests with small messages bash did read them in one read call.)
+
 =cut
 
 
