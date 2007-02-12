@@ -36,7 +36,8 @@ package Chj::Fileutil;
 	      xUnlink
 	      _Realpath
 	      xWritefileln
-	      xRewritefileln
+	      MsgfileWrite
+	      MsgfileRead
 	      xEditfileln
 	      xChecknolinks
 	      xChecklink
@@ -96,7 +97,7 @@ sub xWritefileln ($ $ ) {
     Warn "writing to '$realpath'";
     my $f= xtmpfile $realpath;
     $f->xprint ($str);
-    $f->xprint ("\n") unless $str=~ /\n\z/s;
+    $f->xprint ("\n") unless $str=~ /\n\bz/s;
     $f->xclose;
     $f->xputback(0644);
 }
@@ -104,18 +105,35 @@ sub xWritefileln ($ $ ) {
 use Fcntl ':DEFAULT';
 use Encode '_utf8_off';
 
-sub xRewritefileln ($ $ ) { # writes into existing file: with two guarantees so-I-hope: the resulting file is always either completely empty, or contains valid information. Ok only works for small strings I'm sure..
-    my ($str,$path)=@_;
-    $str.="\n" unless $str=~ /\n\z/s;
-    _utf8_off($str); # so we can reliably check the length. hehe, ok?
+# overwrites existing file: with the guarantee so-I-hope that the resulting file always contains a valid $str message up to the given boundary even without locking.
+
+our $maxmsgsize= 4096; # including the delimiter; btw you have to respect the max. virtual memory size here, or allocation of the buffer does fail in MsgfileRead.
+
+sub MsgfileWrite ($ $ ; $ ) {
+    my ($path,$msg,$maybe_endchar)=@_; # NOTE that the order of the path/contents arguments is reversed compared with xWritefileln!
+    _utf8_off($msg); # so we can reliably check the length. ok?
+    $msg.= defined($maybe_endchar) ? $maybe_endchar : "\0";
+    my $msglen= length ($msg);
+    # be kind and already fail while writing, not only when reading:
+    $msglen<= $maxmsgsize or die "message exceeds maxmsgsize ($msglen instead of $maxmsgsize)";
     my $out;
-    sysopen $out, $path, O_WRONLY|O_TRUNC
-      or die "could not open file '$path' for writing/truncation: $!";
-    my $len= syswrite $out, $str;
+    sysopen $out, $path, O_WRONLY  # |O_TRUNC is of no use. except to reclaim space, but would have the drawback of the reader having to check for emptyness.
+      or die "could not open file '$path' for writing: $!";
+    my $len= syswrite $out, $msg;
     defined $len or die "could not write to '$path': $!";
-    my $strlen= length ($str);
-    $len == $strlen or die "could not write the whole string at once to '$path', only $len bytes of $strlen";
+    $len == $msglen or die "could not write the whole message at once to '$path', only $len bytes of $msglen";
     close ($out) or die "error closing '$path': $!";
+}
+
+sub MsgfileRead ($ ; $ ) {
+    my ($path, $maybe_delim)=@_;
+    my $f;
+    sysopen $f, $path, O_RDONLY or die "could not open '$path' for reading: $!";
+    my $msg;
+    defined (sysread( $f,$msg, $maxmsgsize)) or die "could not read from '$path': $!";
+    my $delim= defined ($maybe_delim) ? $maybe_delim : "\0";
+    $msg=~ s/${delim}.*//s or die "missing delimiter in '$path'";
+    $msg
 }
 
 use Chj::xopen 'xopen_read';
