@@ -36,6 +36,7 @@ package Chj::Fileutil;
 	      xUnlink
 	      _Realpath
 	      xWritefileln
+	      xRewritefileln
 	      xEditfileln
 	      xChecknolinks
 	      xChecklink
@@ -100,6 +101,23 @@ sub xWritefileln ($ $ ) {
     $f->xputback(0644);
 }
 
+use Fcntl ':DEFAULT';
+use Encode '_utf8_off';
+
+sub xRewritefileln ($ $ ) { # writes into existing file: with two guarantees so-I-hope: the resulting file is always either completely empty, or contains valid information. Ok only works for small strings I'm sure..
+    my ($str,$path)=@_;
+    $str.="\n" unless $str=~ /\n\z/s;
+    _utf8_off($str); # so we can reliably check the length. hehe, ok?
+    my $out;
+    sysopen $out, $path, O_WRONLY|O_TRUNC
+      or die "could not open file '$path' for writing/truncation: $!";
+    my $len= syswrite $out, $str;
+    defined $len or die "could not write to '$path': $!";
+    my $strlen= length ($str);
+    $len == $strlen or die "could not write the whole string at once to '$path', only $len bytes of $strlen";
+    close ($out) or die "error closing '$path': $!";
+}
+
 use Chj::xopen 'xopen_read';
 
 sub xEditfileln ($ $ ) {
@@ -153,7 +171,7 @@ sub xSymlink($ $ ) {
     xsymlink $value,$path;
 }
 
-use Fcntl ':DEFAULT',':flock';
+use Fcntl ':DEFAULT',':flock'; # DEFAULT already imported, though
 
 sub Getlock ($ ; $ ; $ ; $ ) {
     my ($path,$maybe_waitingmsg, $maybe_create_mode, $flag_excl)=@_; # create_mode is actually umask exposed ("is subject to the current umask")
