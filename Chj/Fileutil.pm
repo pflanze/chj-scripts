@@ -124,7 +124,19 @@ use Encode '_utf8_off';
 
 # overwrites existing file: with the guarantee so-I-hope that the resulting file always contains a valid $str message up to the given boundary even without locking.
 
-our $maxmsgsize= 4096; # including the delimiter; btw you have to respect the max. virtual memory size here, or allocation of the buffer does fail in MsgfileRead.
+our $maxmsgsize= 1000; # including the delimiter; riel says "the writer locks the page". But does this guarantee anything about tail-merged etc. files on a file system ?
+# use POSIX; ..  sysconf _SC_PAGESIZE  ; if it's of use at all.
+# T ODO: try to test on an SMP machine once I have one..
+# ah:
+eval {
+    require Linux::Cpuinfo;
+    my $n= Linux::Cpuinfo->new->num_cpus;
+    $n == 1 or warn "WARNING: your system has $n cpus, not 1, Msgfile* functions probably won't be safe";
+};
+if (ref $@ or $@) {
+    my $e="$@"; chomp $e;
+    warn "WARNING: could not test for the number of cpus ($e)";
+}
 
 sub MsgfileWrite ($ $ ; $ ) {
     my ($path,$msg,$maybe_endchar)=@_; # NOTE that the order of the path/contents arguments is reversed compared with xWritefileln!
