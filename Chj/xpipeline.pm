@@ -33,6 +33,7 @@ package Chj::xpipeline;
 	      xreceiverpipeline
 	      xreceiverpipeline_with_out_to
 	     );
+%EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
 use Chj::IO::Pipeline;
