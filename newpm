@@ -91,6 +91,7 @@ use Class::Array -fields=>
 	:
 	  "#\@ISA=\"Exporter\"; require Exporter;
 #\@EXPORT_OK=qw();
+#\%EXPORT_TAGS=(all=>\\\@EXPORT_OK);
 ";
 
 
