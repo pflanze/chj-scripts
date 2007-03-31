@@ -1,0 +1,169 @@
+#!/usr/bin/perl -w
+
+use strict;
+BEGIN {
+    $0=~ /(.*?)([^\/]*)$/s;
+    unshift @INC, $1;
+    require 'newperl.pl';
+}
+
+
+
+sub usage {
+    $0=~ /([^\/]*)$/;
+    print "$1 Some::Module | som/where/Some::Module | Some/Module[.pm] | /some/path/mymodule
+      [ -b[ase] Some::Baseclass | Some/BaseClass[.pm] ]
+
+  Macht neues Perlmodul-File im \$EDITOR (ist zurzeit '$ENV{EDITOR}') auf.
+  Im letzten Fall wird Namespace 'mymodule' angenommen (Du musst 
+  /some/path::mymodule angeben wenn Du es anders willst).
+  Optional kann Basisklasse vom Typ Class::Array angegeben werden.
+";
+	exit;
+}
+
+usage() unless @ARGV;
+
+my $baseclass="";
+my @additionaloptions;
+for (my $i=0; $i<@ARGV; $i++) {
+    if ($ARGV[$i]=~ /^--?b(ase)?(class)?$/) {
+	$baseclass= $ARGV[$i+1] or usage();
+	splice @ARGV, $i,2;
+	$i--;
+	$baseclass=~ s|^\./||;##MANN  warum habe ich unten dann sep  isch doch genau dasselbe?!!!!
+	$baseclass=~ s|/|::|sg;
+	$baseclass=~ s|\.pm$||;
+    }
+    elsif ($ARGV[$i]=~ /^--?h(elp)?$/) {
+	usage();
+    }
+    elsif ($ARGV[$i]=~ /^-/) {
+	# assume it's meant for the editor
+	push @additionaloptions, splice @ARGV, $i,1;
+	$i--;
+    }
+}
+
+
+my @paths;
+for (@ARGV) {
+    if (/^--?h(elp)?$/) {
+	usage();
+    } else {
+	# welches ist der pfad, welches der Namespace?
+	if ( /(.*?)((?:\w+::)*\w+)(?:\.pm)?$/ ) {
+	    my ($path,$ns)=($1,$2);
+	    $path.=join("/",split(/::/,$ns));
+	    if ($ns!~ /::/ and $path!~ /^\//) {
+		# Benutzer hat wohl slashes statt :: verwendet.
+		$ns= $path;
+		$ns=~ s|^\./||;##vgl oben
+		$ns=~ s|/|::|g;
+	    }
+	    $path.=".pm";
+	    create ($path,$ns);
+	} else {
+	    warn "Weiss nicht was mit '$_' anfanden.\n";
+	    usage();
+	}
+    }
+}
+
+edit (24,\@additionaloptions, @paths);
+
+
+sub create {
+    my ($path,$namespace)=@_; # global: $baseclass
+	
+    my $baseclassdefs= 
+      $baseclass ? "
+use $baseclass -extend=>
+  -publica=>
+  ;
+" : "
+use Class::Array -fields=>
+  -publica=>
+  ;
+";
+    my $exporterdefs=
+      $baseclass ? ""
+	:
+	  "#\@ISA=\"Exporter\"; require Exporter;
+#\@EXPORT_OK=qw();
+";
+
+
+    if (-e $path) {
+	warn "Datei $path existiert bereits!\n";
+	push @paths,$path;# trotzdem editieren
+    } else {
+	$path=~ /(.*?)[^\/]*$/ or die;
+	my $folder= $1;
+	if (length $folder) {
+	    if (-d $folder) {
+		# ok
+	    } else {
+		$|=1;
+		print "Der Ordner '$folder' existiert nicht. Kreieren? [j/n] ";
+		my $a=<STDIN>;
+		if ($a=~ /^[jy]/) {
+		    system "/bin/mkdir",$folder;
+		} else {
+		    warn "Cancel.\n";
+		    return;
+		}
+	    }
+	}
+	if (open OUT,">$path") {
+	    my $copy= copy();
+	    print OUT <<"END" or warn "Fehler beim Schreiben: $!";
+$copy
+#
+# \$Id\$
+
+=head1 NAME
+
+$namespace
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+
+=cut
+
+
+package $namespace;
+${exporterdefs}
+use strict;
+$baseclassdefs
+
+# sub new {
+#     my \$class=shift;
+#     my \$s= \$class->SUPER::new;
+#     (\@\$s[])=\@_;
+#     \$s
+# }
+
+#sub DESTROY {
+#    my \$s=shift;
+#    local \$@;
+#    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    \$s->SUPER::DESTROY;
+#}
+
+end Class::Array;
+END
+#end $namespace;
+# Könnte noch  use vars qw{$VERSION};  und  $VERSION = '0.00'; reintun. Aber naja?
+# oder müsste ich eh BEGIN { $DBI::VERSION= "..." } machen?
+
+	    close OUT;
+	    push @paths,$path;
+	} else {
+	    warn "Konnte Datei '$path' nicht öffnen: $!\n";
+	}
+    }
+}
+
