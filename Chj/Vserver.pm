@@ -44,7 +44,7 @@ use strict;
 use Carp;
 use Chj::Vserver::Status;
 use Chj::Cwd::realpath;
-use Chj::VserverSettings '$etcbase';
+use Chj::VserverSettings '$etcbase','chroot_sh_cat';
 
 use Class::Array -fields=>
   -pub=>
@@ -66,7 +66,7 @@ sub new {
 sub set_name {
     my $s=shift;
     my ($name)=@_;
-    $name=~ m|^([^/\s]+)\z|s or croak "name '$name' is invalid"; ##(should we restrict it even further? it's being untainted here after all)
+    $name=~ m|^([^./\s]+)\z|s or croak "name '$name' is invalid"; ##(should we restrict it even further? it's being untainted here after all) --heh ja, . war noch akzeptiert....
     $$s[Name]=$1
 }
 
@@ -88,7 +88,7 @@ sub has_unification {
     -d $s->configdir."/apps/vunify"
 }
 
-sub xname {
+sub xname {#actually I should use "name" for guaranteed value and "maybe_name" for accessor?
     my $s=shift;
     $s->name or croak "vserver name is undefined";
 }
@@ -115,6 +115,26 @@ sub rootdir {
 	# hope it's fine.
 	carp "root: WARNING: THIS IS NOT really a good way, don't trust this too much";
 	$attempt1
+    }
+}
+
+sub Stripspace ($ ) { #wie ewig dieser hier?
+    my ($str)=@_;
+    $str=~ s/^\s+//s;
+    $str=~ s/\s+\z//s;
+    $str
+}
+
+sub maybe_debian_version {
+    my $s=shift;
+    my $rd= $s->rootdir;
+    my $f= chroot_sh_cat $rd,"/etc/debian_version";
+    my $val= $f->xreadline_chomp;
+    if ($f->xfinish ==0) {
+	Stripspace($val)
+    } else {
+	warn "not a debian vserver: '$rd'";
+	undef # or return ?  implicit lists debianeh perl difficult.shig.
     }
 }
 
