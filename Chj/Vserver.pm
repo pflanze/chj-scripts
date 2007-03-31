@@ -44,6 +44,7 @@ use strict;
 use Carp;
 use Chj::Vserver::Status;
 use Chj::Cwd::realpath;
+use Chj::VserverSettings '$etcbase';
 
 use Class::Array -fields=>
   -pub=>
@@ -77,14 +78,33 @@ sub status {
     new Chj::Vserver::Status $$s[Name];
 }
 
+sub is_running { #ah just delegate..
+    my $s=shift;
+    $s->status->running
+}
+
+sub has_unification {
+    my $s=shift;
+    -d $s->configdir."/apps/vunify"
+}
+
+sub xname {
+    my $s=shift;
+    $s->name or croak "vserver name is undefined";
+}
+
+sub configdir {
+    my $s=shift;
+    "$etcbase/".$s->xname  #check for existence? not, too many stats.'for nothing'.('at least not until I cache the result here' but weh)
+}
 
 sub rootdir {
     # actually we should (really) do as in status: call the external tool; (but return an object?)
     my $s=shift;
     my $name= $s->name or croak "vserver name is undefined";
     my $attempt1= realpath "/vservers/$name"
-      or croak "vserver root does not seem to exist? (or I won't trust the config in /etc/vservers alone)";
-    if (my $attempt2= realpath "/etc/vservers/$name/vdir") {
+      or croak "vserver root does not seem to exist? (or I won't trust the config in '$etcbase' alone)";
+    if (my $attempt2= realpath "$etcbase/$name/vdir") {
 	if ($attempt1 eq $attempt2) {
 	    # assume it's all dandy
 	    $attempt1
