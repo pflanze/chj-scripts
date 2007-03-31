@@ -59,86 +59,68 @@ use Carp;
 
 my %metadata; # numified => pid
 
-sub _mklaunch {
+sub _launch {
     my ($subname,$otherendclose,$closeinchild)=@_;
-    sub {
+    sub {# curry unnötig, aber was sells (so gewachsen)
 	my $self=shift;
-	my ($otherend,$hdl,@cmd)=@_;
-	@cmd or die "$subname: missing cmd arguments";
+	my ($cmd)=@_;
+	@$cmd or die "$subname: missing cmd arguments";
 	my ($readerr,$writeerr)=xpipe;
 	if (my $pid= xfork) {
 	    $metadata{pack"I",$self}=$pid;
-	    sub {
-ç	    };
-	    $writeerr->xclose; # here it's clear that it's needed.
+	    &$otherendclose;
+	    $writeerr->xclose; #" here it's clear that it's needed."
 	    # close all handles that have been given for redirections? or leave that to the user? the latter.
 	    my $err= $readerr->xcontent;
 	    if ($err) {
-		croak __PACKAGE__."::$subname: could not execute @cmd: $err";
+		croak __PACKAGE__."::$subname: could not execute @$cmd: $err";
 	    }
 	    return $self
 	} else {
-	    &$closeinchild   ç
-	    if (ref($cmd[0]) eq "CODE") {
-		my $code= shift @cmd;
+	    &$closeinchild;
+	    if (ref($$cmd[0]) eq "CODE") {
+		my $code= shift @$cmd;
 		eval {
-		    $code->(@cmd);
+		    $code->(@$cmd);
 		    die "coderf did return";
 		};
 		$writeerr->xprint($@);# [well serialize it?..tja..]
 	    } else {
 		no warnings;
-		exec @cmd;
+		exec @$cmd;
 		$writeerr->xprint($!);
 	    }
 	    exit;
 	}
     }
 }
-*xlaunch= _mklaunch
-  ("xlaunch",
-   sub {
-       $otherend->xclose; # important; seems like it's not cleaned up and destroyed otherwise upon return from new_* methods [soon enough], xcontent and the like would block outside.
-   },
-   sub {
-       $otherend->xdup2($hdl);
-   }
-  );
 
-*xlaunch3= _mklaunch
-  ("xlaunch3",
-   sub { },
-   sub {
-       $in->xdup2(0) if $in;
-       $out->xdup2(1) if $out;
-       $err->xdup2(2) if $err;
-   }
-  );ç
+sub xlaunch {
+    my $self=shift;
+    my ($otherend,$hdl,@cmd)=@_;
+    _launch
+      ("xlaunch",
+       sub {
+	   $otherend->xclose; # important; seems like it's not cleaned up and destroyed otherwise upon return from new_* methods [soon enough], xcontent and the like would block outside.
+       },
+       sub {
+	   $otherend->xdup2($hdl);
+       })
+	->($self,\@cmd);
+}
 
-sub xlaunch3 { #hm, würkli fast ganze Kopie von xlaunch machen?
+sub xlaunch3 {
     my $self=shift;
     my ($in,$out,$err,@cmd)=@_;
-    @cmd or die "xlaunch: missing cmd arguments";
-    #$subname ||= "xlaunch"; na egal
-    my ($readerr,$writeerr)=xpipe;
-    if (my $pid= xfork) {
-	$metadata{pack"I",$self}=$pid;
-	$writeerr->xclose;
-	# close all handles that have been given for redirections? or leave that to the user? the latter.
-	my $err= $readerr->xcontent;
-	if ($err) {
-	    confess __PACKAGE__."::xlaunch3: could not execute @cmd: $err";
-	}
-	return $self
-    } else {
-	no warnings;
-	$in->xdup2(0) if $in;
-	$out->xdup2(1) if $out;
-	$err->xdup2(2) if $err;
-	exec @cmd;
-	$writeerr->xprint($!);
-	exit;
-    }
+    _launch
+      ("xlaunch3",
+       sub { },
+       sub {
+	   $in->xdup2(0) if $in;
+	   $out->xdup2(1) if $out;
+	   $err->xdup2(2) if $err;
+       })
+	->($self,\@cmd);
 }
 
 sub new_out {
