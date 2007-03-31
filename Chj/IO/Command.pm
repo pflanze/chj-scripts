@@ -59,32 +59,66 @@ use Carp;
 
 my %metadata; # numified => pid
 
-sub xlaunch {
-    my $self=shift;
-    my ($otherend,$hdl,@cmd)=@_;
-    #$subname ||= "xlaunch"; na egal
-    my ($readerr,$writeerr)=xpipe;
-    if (my $pid= xfork) {
-	$metadata{pack"I",$self}=$pid;
-	$otherend->xclose; # important; seems like it's not cleaned up and destroyed otherwise upon return from new_* methods [soon enough], xcontent and the like would block outside.
-	$writeerr->xclose; # here it's clear that it's needed.
-	my $err= $readerr->xcontent;
-	if ($err) {
-	    croak __PACKAGE__."::xlaunch: could not execute @cmd: $err";
+sub _mklaunch {
+    my ($subname,$otherendclose,$closeinchild)=@_;
+    sub {
+	my $self=shift;
+	my ($otherend,$hdl,@cmd)=@_;
+	@cmd or die "$subname: missing cmd arguments";
+	my ($readerr,$writeerr)=xpipe;
+	if (my $pid= xfork) {
+	    $metadata{pack"I",$self}=$pid;
+	    sub {
+ç	    };
+	    $writeerr->xclose; # here it's clear that it's needed.
+	    # close all handles that have been given for redirections? or leave that to the user? the latter.
+	    my $err= $readerr->xcontent;
+	    if ($err) {
+		croak __PACKAGE__."::$subname: could not execute @cmd: $err";
+	    }
+	    return $self
+	} else {
+	    &$closeinchild   ç
+	    if (ref($cmd[0]) eq "CODE") {
+		my $code= shift @cmd;
+		eval {
+		    $code->(@cmd);
+		    die "coderf did return";
+		};
+		$writeerr->xprint($@);# [well serialize it?..tja..]
+	    } else {
+		no warnings;
+		exec @cmd;
+		$writeerr->xprint($!);
+	    }
+	    exit;
 	}
-	return $self
-    } else {
-	no warnings;
-	$otherend->xdup2($hdl);
-	exec @cmd;
-	$writeerr->xprint($!);
-	exit;
     }
 }
+*xlaunch= _mklaunch
+  ("xlaunch",
+   sub {
+       $otherend->xclose; # important; seems like it's not cleaned up and destroyed otherwise upon return from new_* methods [soon enough], xcontent and the like would block outside.
+   },
+   sub {
+       $otherend->xdup2($hdl);
+   }
+  );
+
+*xlaunch3= _mklaunch
+  ("xlaunch3",
+   sub { },
+   sub {
+       $in->xdup2(0) if $in;
+       $out->xdup2(1) if $out;
+       $err->xdup2(2) if $err;
+   }
+  );ç
 
 sub xlaunch3 { #hm, würkli fast ganze Kopie von xlaunch machen?
     my $self=shift;
     my ($in,$out,$err,@cmd)=@_;
+    @cmd or die "xlaunch: missing cmd arguments";
     #$subname ||= "xlaunch"; na egal
     my ($readerr,$writeerr)=xpipe;
     if (my $pid= xfork) {
