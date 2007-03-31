@@ -40,7 +40,6 @@ use Chj::Vserver::Status_cmd_base -extend=>
   'processes',
   'uptime',
   ;
-end Class::Array;
 
 sub new {
     my $cl=shift;
@@ -76,4 +75,5 @@ sub running {
     $s->[Status] and $s->[Status] eq 'running'
 }
 
-1;
+
+end Class::Array;
