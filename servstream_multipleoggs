@@ -29,12 +29,8 @@ if (! @ARGV or @ARGV==1 and $ARGV[0] eq "-h") {
 our $opt_radius;
 our $opt_48;
 our $opt_mono;
-#use Chj::repl;repl;
-#warn "was?";
 {
     my @A=@ARGV;
-    #my $fn= shift @A;
-    #warn "hallo?";
     my @B= map {
 	if (/^--?radius$/) {
 	    $opt_radius=1;
@@ -49,15 +45,8 @@ our $opt_mono;
 	    $_
 	}
     } @A;
-    #warn "fn=".singlequote_many ($fn);
-    warn "A=".singlequote_many (@A);
-    warn "B=".singlequote_many (@B);
-    #@ARGV=($fn,@B);
     @ARGV=@B;
 }
-#warn "up?";
-
-use Chj::repl;repl;
 
 #warn "opt_radius=$opt_radius";
 
