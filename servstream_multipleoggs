@@ -18,6 +18,7 @@ if (! @ARGV or @ARGV==1 and $ARGV[0] eq "-h") {
              (recoden nach 44.1 output)
   --48       48 statt 44.1 input (eigentlich sollte es es von ogg's output selber lesen!!)
              (kein recoding, wird als 48 ins mp3 getan)
+  --mono     statt stereo
 
   sonstige optionen, z.B. -k hh:mm:ss werden an ogg123 gegeben.
 ";
@@ -25,11 +26,15 @@ if (! @ARGV or @ARGV==1 and $ARGV[0] eq "-h") {
 }
 
 #nachträglicheingeführtes options prozessig:
-my $opt_radius;
-my $opt_48;
+our $opt_radius;
+our $opt_48;
+our $opt_mono;
+#use Chj::repl;repl;
+#warn "was?";
 {
     my @A=@ARGV;
-    my $fn= shift @A;
+    #my $fn= shift @A;
+    #warn "hallo?";
     my @B= map {
 	if (/^--?radius$/) {
 	    $opt_radius=1;
@@ -37,12 +42,22 @@ my $opt_48;
 	} elsif (/^--?48$/) {
 	    $opt_48=1;
 	    ()
+	} elsif (/^--?mono$/) {
+	    $opt_mono=1;
+	    ()
 	} else {
 	    $_
 	}
     } @A;
-    @ARGV=($fn,@B);
+    #warn "fn=".singlequote_many ($fn);
+    warn "A=".singlequote_many (@A);
+    warn "B=".singlequote_many (@B);
+    #@ARGV=($fn,@B);
+    @ARGV=@B;
 }
+#warn "up?";
+
+use Chj::repl;repl;
 
 #warn "opt_radius=$opt_radius";
 
@@ -52,6 +67,13 @@ print "serving from port $PORT\n";
 use Chj::xperlfunc;
 use Chj::xpipe;
 #use Chj::xpipeline 'xreceiverpipeline';
+
+use Chj::singlequote 'singlequote_many';
+
+sub Vxexec {
+    warn "exec'ing ".singlequote_many (@_);
+    xexec @_;
+}
 
 my ($r,$w)=xpipe;
 if (my $pid=xfork) {
@@ -122,9 +144,11 @@ icy-aim: N/A
 		  #."|sox -t raw -x -s -w -r 44100 - -t raw -x -s -w -r 44100 - echo 0.5 0.5 60 0.6"
 		    ."|lame -r -x - -"
 	    } else {
-		xexec qw(lame -r -x),
-		  $opt_48 ? qw(-s 48) : (),
-		  qw( - -);#WOW. endlich geht es auch mit dem -x
+		Vxexec (qw(lame -r -x),
+			($opt_48 ? qw(-s 48) : ()),
+			($opt_mono ? qw(-m m) : ()),
+			qw( - -),
+		      );#WOW. endlich geht es auch mit dem -x
 	    }
 	}
 
