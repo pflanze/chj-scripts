@@ -1,0 +1,15 @@
+#!/bin/sh
+
+path1=/usr/local/Gambit-C/doc/gambit-c.html
+path2=/mnt/maxtor3/root/chroot-sarge/$path1
+
+if [ -e "$path1" ]; then
+    path="$path1"
+elif [ -e "$path2" ]; then
+    path="$path2"
+else
+    echo "finde gambit manual nicht, sollte irgendwo sein wie bei $path1"
+    exit 1
+fi
+
+links "$path" "$@"
