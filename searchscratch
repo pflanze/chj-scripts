@@ -1,25 +1,52 @@
 #!/bin/bash
 
+numberdefault=400
+
 if [ "$1" = '-N' ]; then
     number="$2"
     shift
     shift
-    #args=
 else
     if [ "$1" = '-h' -o "$1" = '--help' ]; then
 	echo "$0 [ -N n ] egrep-arguments"
-	echo "  searches for the given egrep arguments in the last n (default 100) files in your scratch directory"
+	echo " searches for the given egrep arguments in the last n (default $numberdefault) files in"
+	echo " your ~/scratch directory"
+	echo
+	echo " Options:"
+	echo " NOTE: these must be given in the order as listed here if multiple given"
+	echo "  -N n  instead of $numberdefault"
+	echo "  -F|-L:"
+	echo "   -F    passed to grep, chooses grep over egrep"
+	echo "   -L    only list the files which would have been searched instead of grep'ing them"
+	echo "         (with LF as record separator)"
+	echo "  (then follow egrep-arguments)"
 	exit;
     fi
-    number=100
-    #args=$*
+    number=$numberdefault
 fi
 
-if [ "$1" = '-F' ]; then
+if [ "X$1" = 'X-L' ]; then
+    do_only_list=1
+    shift
+    if [ $# -gt 0 ]; then
+	echo "error: no arguments after -L allowed, got: $@"
+	exit 1
+    fi
+fi
+
+if [ "X$1" = 'X-F' ]; then   #why did -F w/o X work?!heh so does bash some magic! or so
     grepcmd=grep
 else
     grepcmd=egrep
 fi
 
 cd ~/scratch
-ls -rt |grep -v '[~]'|tail -"$number"|tr '\n' '\0'|xargs -0 $grepcmd "$@"
+ls -rt |grep -v '[~]'|tail -"$number"| {
+    if test "$do_only_list"; then  #funny, anything (?) nonemptystring works as true value, even -e or some such. reallymagic or so.
+	#perl -wne 'print "~/scratch/$_"'|cat  #cat for speed on lombi--how does one switchperl to completelybuffered???todo.
+	perl -wne 'print "$ENV{HOME}/scratch/$_"'|cat
+    else
+	tr '\n' '\0'|xargs -0 $grepcmd "$@"
+    fi
+}
+
