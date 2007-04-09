@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ "$1" = '-N' ]; then
+    number="$2"
+    shift
+    shift
+    #args=
+else
+    if [ "$1" = '-h' -o "$1" = '--help' ]; then
+	echo "$0 [ -N n ] egrep-arguments"
+	echo "  searches for the given egrep arguments in the last n (default 100) files in your scratch directory"
+	exit;
+    fi
+    number=100
+    #args=$*
+fi
+
+if [ "$1" = '-F' ]; then
+    grepcmd=grep
+else
+    grepcmd=egrep
+fi
+
+cd ~/scratch
+ls -rt |grep -v '[~]'|tail -"$number"|tr '\n' '\0'|xargs -0 $grepcmd "$@"
