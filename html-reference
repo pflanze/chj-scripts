@@ -283,7 +283,22 @@ FORMS  (generally require a script on your server)
        Option           <OPTION>           (items that can be selected)
          Default Option   <OPTION SELECTED>
          Option Value     <OPTION VALUE="***">
-4.0    Option Group     <OPTGROUP LABEL="***"></OPTGROUP>       
+4.0    Option Group     <OPTGROUP LABEL="***"></OPTGROUP>
+[cj bsp:
+<select name="state" id="state" class="Advocacy">
+<option value="">Choose a State</option>
+<optgroup label="United States">
+<option value="AK" >AK</option>
+<option value="AL" >AL</option>
+..
+<option value="WY" >WY</option>
+</optgroup>
+<optgroup label="US Territories">
+<option value="AS" >AS</option>
+..
+</optgroup>
+</select>
+]
        Input Box Size   <TEXTAREA ROWS=? COLS=?></TEXTAREA>
          Name of Box      <TEXTAREA NAME="***"></TEXTAREA>
 N2       Wrap Text        <TEXTAREA WRAP=OFF|HARD|SOFT></TEXTAREA>
