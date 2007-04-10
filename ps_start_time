@@ -12,6 +12,10 @@ sub usage {
     print "$myname pid(s)
   Print start_time of the given processes in human readable format.
 
+  Options:
+  -u|--unix-timestamp   output unix timestamp instead of localtime
+  -v|--verbose          output more text
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
@@ -19,6 +23,8 @@ exit @_ ? 1 : 0;
 
 my @args;
 my $DEBUG=0;
+my $opt_u;
+my $verbose;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -28,6 +34,11 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?u(nix-?timestamp)?$/) {
+	$opt_u=1;
+	$verbose=0 unless defined $verbose;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -42,17 +53,36 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
+#$verbose=1 unless defined $verbose;
+
 use Chj::xopen 'xopen_read';
+use Time::HiRes 'time';
+
+sub Round_2 {
+    my ($v)=@_;
+    int ($v*100+0.5)/100
+}
 
 # current time and uptime?
-my $cur_uptime= (split / +/,(xopen_read "/proc/uptime")->xcontent)[0] * 100;
-my $cur_time=time;
-my $start_time= $cur_time-($cur_uptime/100);
-print "system was started at ".localtime($start_time)." (kooomisch, modulo sleeps undoderso)\n";
+my $start_time= do {
+    my $cur_uptime= (split / +/,(xopen_read "/proc/uptime")->xcontent)[0]; #seconds with decisecond precision.
+    my $cur_time= Round_2(time);
+    $cur_time - $cur_uptime;
+};
+
+if ($verbose) {
+    my $start_time_formatted= $opt_u ? $start_time : localtime($start_time);
+    print "system was started at $start_time_formatted (kooomisch, modulo sleeps undoderso)\n";
+}
 
 for my $pid (@args) {
     my $c=xopen_read("/proc/$pid/stat")->xcontent;
     my $start_uptime= (split / +/,$c)[21];
-    #my $start_uptime= $cur_uptime - $start_time;
-    print "process $pid was started ".localtime($start_time+$start_uptime/100)."\n";
+    my $start= ($start_time+$start_uptime/100);
+    $start= localtime($start) unless $opt_u;
+    if ($verbose) {
+	print "process $pid was started $start\n";
+    } else {
+	print "$pid\t$start\n";
+    }
 }
