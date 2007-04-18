@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ "`ulimit -v`" -lt 300000 ]; then
+    ulimit -S -v 300000 # statt 110000
+fi
+
+exec rlwrap gsc -:tE,f8 -i -e '(include "~/.gam.scm")' -

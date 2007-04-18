@@ -1,0 +1,8 @@
+#!/bin/bash
+
+ulimit -S -v 300000 # statt 110000
+
+#exec gsc -:tE,d-,t8,f8,tn -i -e '(include "~/.gam.scm")' -
+
+telnet localhost 7000
+
