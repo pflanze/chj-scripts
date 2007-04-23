@@ -1,0 +1,211 @@
+#!/usr/bin/perl -w
+
+# Mon Jun 14 14:23:41 MEST 2004 - 16:56
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+use Chj::Unix::Daemonizer;
+use Chj::xsysopen qw(xsysopen_append);
+use Digest::MD5 "md5_hex";
+use Chj::xperlfunc;
+use Chj::Util::AskYN;
+use Time::HiRes 'sleep';
+*Class::Array::clone=sub {my $self=shift;my $new=[@$self]; bless $new,ref $self} unless *Class::Array::clone{CODE};
+
+my $usage;
+my ($opt_stop, $opt_bg,$opt_nonice);
+my $runbase="(only calculated if cmd/arguments given)";
+my $basedir= "$ENV{HOME}/.daemonize-run";
+my $maxwait=3;#seconds
+
+ARG:{
+    while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
+	my $opt=$1;
+	shift @ARGV;
+	if ($opt=~ /^-(.*)/s){
+	    if (length $1) {
+		if ($1 eq 'stop' or $1 eq 'kill') {
+		    $opt_stop=1;
+		} elsif ($1 eq 'bg') {
+		    $opt_bg=1;
+		} elsif ($1 eq 'no-nice') {
+		    $opt_nonice=1;
+		} elsif ($1 eq 'nice') {
+		    $opt_nonice=0;
+		} elsif ($1 eq 'help') {
+		    $usage="";
+		    #last ARG; nope
+		} else {
+		    $usage= "unknown option '$1'";
+		    last ARG;
+		}
+	    } else {
+		# '--'
+		last ARG;
+	    }
+	} else {
+	    # single letter options
+	    while (length $opt){
+		my $o= substr $opt,0,1,"";
+		if ($o eq 's' or $o eq 'k') {
+		    $opt_stop=1;
+		} elsif ($o eq 'b') {
+		    $opt_bg=1;
+		} elsif ($o eq 'N') {
+		    $opt_nonice=1;
+		} elsif ($o eq 'h') {
+		    $usage="";
+		    #last ARG; nope
+		} else {
+		    $usage= "unknown option '$o'";
+		    last ARG;
+		}
+	    }
+	}
+    }
+}
+
+unless ($usage){ # no defined: only avoid if an *error* parsing the arguments has occurred.
+    if (@ARGV) {
+	my $hash= md5_hex join "\0",@ARGV;
+	$runbase= "$basedir/$hash";
+    } else {
+	$usage="" # if not already set to "" anyway
+    }
+}
+
+
+if (defined $usage) {
+    print STDERR "$usage\n" if $usage;
+    print "$myname [options] cmd arguments
+
+  Better than 'nohup' (it is immune to other signals too), better than
+  'batch' (it's quicker for you to notice what's happening), and also
+  makes sure the same daemon/job is not started again if it is running
+  already (hm, todo: should probably offer a way to override this?).
+  You can wait at the shell for the daemon/job to finish, or can stop
+  the 'waiter' (which doesn't stop the daemon/job itself). You can
+  stop a running daemon/job by adding the --stop option.
+
+  Options:
+  (all of them must be listed before the cmd, multiple short options
+   may be given together)
+  -b|--bg    do not wait for the daemon to terminate
+  -s|--stop|-k|--kill
+             stop the previously started daemon; you have to give
+             the exact same arguments.
+             First kills with SIGHUP, then if there are still
+             processes after $maxwait seconds, kills with SIGKILL.
+  -N|--no-nice  do not lower priority
+  --         terminate option processing
+
+  Note: the pid file (and the output if nohup.out is not used)
+  for this run will be stored in the directory
+   '$runbase'
+  you should never have a need to look at it.
+
+  Todo:
+  - rundir cleanup function only removing those dirs
+    for which no job is running anymore
+  - option to start a second/third.. invocation of the same job?
+  - to be usable for special users: use another dir than ~/.daemonize-run/
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+
+xmkdir $basedir unless -d $basedir;
+if (-d $runbase) {
+    utime time,time,$runbase  # for future cleaner, to ignore too new directories (though runfile check should be done anyway too)
+} else {
+    xmkdir $runbase,0700
+}
+my $runfile= "$runbase/run";
+
+#use Carp;
+#$SIG{__DIE__}=sub { confess @_};
+
+if ($opt_stop) {
+    my ($user,$hostname,$ip,$pid)=
+      Chj::Unix::DaemonRunfile->new($runfile)->readfile;
+    #die "$killdirpath/.run does not contain a pid" unless $pid and $pid=~ /^\d+$/; ##uuugly  <- why did I this?
+    ##hm, check if hostname is ok? todo.
+    #xkill "HUP",$pid;#nope, we want to kill the process group #(he ps unix problem?: possibility that the process group leader died, childs still there, pids wrap around, new process group leader with same pid does setsid again,-> reuse of pgroup id)
+    #kill -1,$pid or kill 1,$pid;# the latter in case the cmd did setsid again itself? bulshit, he couldnt.
+    xkill -1,$pid;#ps luschtig dass offenbar dies selbst dann children von nohup nicht terminiert wenn nohup selber direkt ausgeführt wurde und es also doch kein setsid machen konnte. wie macht nohup denn dann dass die children nicht... aha, wohl nach fork before exec?.
+
+    # "wait" until it was killed, -9 if not in some timeframe?
+  CHECK:{
+	my $st=time;
+	do {
+	    sleep 0.1;
+	    # try both the pid itself and the processgroup, since killing the pgroup using -$pid is not portable. tested on linux only, though.
+	    if ((kill 0,$pid) # for portability only, if it helps even
+		or
+		(kill 0,-$pid)
+	       ) {
+		# redo
+	    } else {
+		last CHECK;
+	    }
+	    #warn "notyetfinished\n";
+	} while ((time-$st)<$maxwait);
+	kill -9,$pid and warn "not all processes exited, killed again with signal 9\n";
+    }
+}
+
+else {
+    my $daemonizer= Chj::Unix::Daemonizer->default->clone;
+    $daemonizer->set_runpath($runfile);
+    my $output;
+    eval{
+	$output= xsysopen_append "nohup.out",0600;
+    };
+    if ($@) {
+	#warn "error opening nohup.out: $@";##sollte eben n object bekommen und davon sowas wie ->essentialmessage herkriegen.
+	#warn "error opening nohup.out: $!\n"; nope $! ist bereits leer hier.
+	my $msg=$@;
+	#$msg=~ s/:([^:]+) at/$1/;
+	$msg=~ m/: *([^:]+) at/ and $msg=$1;
+	warn "error opening nohup.out: $msg\n";
+    }
+    unless ($output) {
+	my $tm="".localtime();
+	$tm=~ s/://sg;
+	$tm=~ tr/ /_/;
+	my $path= "$runbase/$tm.out";
+	$output= xsysopen_append $path;
+	warn "output to '$path'\n";
+    }
+    $daemonizer->set_outputs($output);
+
+    if (my $pid= $daemonizer->fork) {
+	print STDERR "daemon running as pid $pid",($opt_bg ? () : " (you can hit ctl-c now)"),"\n";
+	unless ($opt_bg) {
+	    wait;
+	    if ($?) {
+		if ($?>255) {
+		    print STDERR "daemon exited with return code ".($?>>8)."\n";
+		} else {
+		    print STDERR "daemon exited by signal $?\n";
+		}
+	    } else {
+		print STDERR "daemon exited successfully.\n";
+	    }
+	    if (askyn "do you want to look at the output? "){
+		xexec "less",$output->path;
+	    }
+	}
+    } else {
+	use POSIX 'nice';
+	nice 5 unless $opt_nonice;
+	xexec @ARGV;
+    }
+}
+
