@@ -21,6 +21,7 @@ my ($opt_stop, $opt_bg,$opt_nonice);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= "$ENV{HOME}/.daemonize-run";
 my $maxwait=3;#seconds
+our $logfile= "nohup.out";
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -36,6 +37,12 @@ ARG:{
 		    $opt_nonice=1;
 		} elsif ($1 eq 'nice') {
 		    $opt_nonice=0;
+		} elsif ($1 eq 'out') {
+		    $logfile=$ARGV[0]; shift @ARGV;
+		    defined $ARGV[0] or do {
+			$usage= "missing argument to --out option";
+			last ARG;
+		    };
 		} elsif ($1 eq 'help') {
 		    $usage="";
 		    #last ARG; nope
@@ -101,9 +108,11 @@ if (defined $usage) {
              First kills with SIGHUP, then if there are still
              processes after $maxwait seconds, kills with SIGKILL.
   -N|--no-nice  do not lower priority
+  --out file  use file instead of 'nohup.out' for output (is opened in
+              append mode)
   --         terminate option processing
 
-  Note: the pid file (and the output if nohup.out is not used)
+  Note: the pid file (and the output if nohup.out is not used)-- ehr?.
   for this run will be stored in the directory
    '$runbase'
   you should never have a need to look at it.
@@ -165,15 +174,13 @@ else {
     $daemonizer->set_runpath($runfile);
     my $output;
     eval{
-	$output= xsysopen_append "nohup.out",0600;
+	$output= xsysopen_append $logfile,0600;
     };
     if ($@) {
-	#warn "error opening nohup.out: $@";##sollte eben n object bekommen und davon sowas wie ->essentialmessage herkriegen.
-	#warn "error opening nohup.out: $!\n"; nope $! ist bereits leer hier.
 	my $msg=$@;
 	#$msg=~ s/:([^:]+) at/$1/;
 	$msg=~ m/: *([^:]+) at/ and $msg=$1;
-	warn "error opening nohup.out: $msg\n";
+	warn "error opening '$logfile': $msg\n";
     }
     unless ($output) {
 	my $tm="".localtime();
