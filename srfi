@@ -9,12 +9,13 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname number
+    print "$myname [options] [number]
 
   Shows that srfi using links.
 
   Options:
   --top|--parent|--overview  show the overview page instead
+  --index   show index page instead
 
   (Christian Jaeger <$email>)
 ";
@@ -24,7 +25,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_overview;
-
+my $opt_index;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -36,6 +37,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?(o(verview)?|t(op)?|p(arent)?)$/) {
 	$opt_overview=1;
+    } elsif (/^--?(i(ndex)?)$/) {
+	$opt_index=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -48,43 +51,32 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args==1;
 
-my ($num)=@args;
-$num=~ /^\d+\z/ or usage "not a number: '$num'";
-
-#use Chj::Web::Fetch 'get_remote_file_ref';
-#use Chj::xtmpfile;
 use Chj::xperlfunc;
 
-#for my $base (qw(
+if ($opt_index) {
+    xexec "links", "http://srfi.schemers.org/"
+} else {
+    usage "expecting one argument" unless @args==1;
 
-# my $t= xtmpfile;
-# $t->xprint($$c);
-# $t->xclose;
+    my ($num)=@args;
+    $num=~ /^\d+\z/ or usage "not a number: '$num'";
 
-# xxsystem "links",$t->path;
+    # final:
+    # http://srfi.schemers.org/srfi-0/
+    # http://srfi.schemers.org/srfi-0/srfi-0.html
 
+    # draft:
+    # http://srfi.schemers.org/srfi-64/
+    # http://srfi.schemers.org/srfi-64/srfi-64.html
 
-# final:
-# http://srfi.schemers.org/srfi-0/
-# http://srfi.schemers.org/srfi-0/srfi-0.html
+    # withdrawn:
+    # http://srfi.schemers.org/srfi-73/
+    # http://srfi.schemers.org/srfi-73/srfi-73.html
 
-# draft:
-# http://srfi.schemers.org/srfi-64/
-# http://srfi.schemers.org/srfi-64/srfi-64.html
+    xexec "links",
+      ($opt_overview ?
+       "http://srfi.schemers.org/srfi-$num/"
+       : "http://srfi.schemers.org/srfi-$num/srfi-$num.html");
 
-# withdrawn:
-# http://srfi.schemers.org/srfi-73/
-# http://srfi.schemers.org/srfi-73/srfi-73.html
-
-# I'm superduper. Now I've begun writing a perl thing  etc  cause I thought they could have differnt locations  now that's notthecase.
-
-
-
-xexec "links",
-  ($opt_overview ?
-   "http://srfi.schemers.org/srfi-$num/"
-   : "http://srfi.schemers.org/srfi-$num/srfi-$num.html");
-
-
+}
