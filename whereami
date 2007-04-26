@@ -64,14 +64,13 @@ sub setitto {
 	    chomp $old;
 	    close IN;
 	}
-	if ($where eq $old) {
-	    print "whereami: already set to $where\n";
-	} else {
-	    switchto($where);
-	    open OUT, ">$file" or die "$name: Could not write to $file: $!\n";
-	    print OUT $where."\n";
-	    close OUT;
-	}
+	# new: switch anyway, even if $old is same as new. Since
+	# inserting wireless card changes the resolv.conf without
+	# changing the whereami status file!
+	switchto($where);
+	open OUT, ">$file" or die "$name: Could not write to $file: $!\n";
+	print OUT $where."\n";
+	close OUT;
     } else {
 	warn "$name: parameter `$whereorig' doesn't conform to rules. Ignoring.\n";
     }
