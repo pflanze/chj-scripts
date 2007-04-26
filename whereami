@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+# Christian Jaeger. Hinweis: es gibt auch ein whereami in Debian.
+# (-7. Nov 2001)
+# Fri, 15 Aug 2003 10:40:16 +0200:
+# copy instead of link, since dooofy wirelesskarte überschreibt.
+
+my $name="whereami";
+use strict;
+
+sub usage {
+    print "$0 [-s parameter]
+
+Speichert neuen Standort \& macht entsprechende Anpassungen.
+Oder printet den aktuellen Standort.
+";
+    exit;
+}
+
+sub switchtoOLD {
+    my $where=shift;
+    link "/etc/resolv.conf.$where", "/etc/resolv.conf.$$"
+      and
+	rename "/etc/resolv.conf.$$","/etc/resolv.conf"
+	  or warn "Could not re-link resolv.conf: $!";
+}
+sub switchto {
+    my $where=shift;
+    my $rv= system "cp","-f","/etc/resolv.conf.$where", "/etc/resolv.conf.TMP";
+    if ($rv!=0){
+	die "cp returned error status $rv";
+    }
+    rename "/etc/resolv.conf.TMP","/etc/resolv.conf"
+      or warn "Could not re-link resolv.conf: $!";
+}
+
+my $file= "/var/lib/whereami";
+
+sub printit {
+    open IN, "<$file" or exit(1);
+    print <IN>;
+    close IN;
+}
+
+
+sub rulez {
+    my $where=shift;
+    defined $where and length $where or return;
+    if ($where=~ m|^/etc/resolv.conf.([^/]+)\z|) {
+	return $1;
+    } elsif (not $where=~ m|/|) { # mann, bis heute Wed, 31 Mar 2004 11:14:55 +0200 war hier ! statt not
+	$where
+    } else {
+	undef
+    }
+}
+
+sub setitto {
+    my $whereorig=shift;
+    #if (defined $where and length($where) and $where!~ /\//) {
+    if (my $where= rulez $whereorig) {
+	my $old;
+	if (open IN, "<$file") {
+	    $old= <IN>;
+	    chomp $old;
+	    close IN;
+	}
+	if ($where eq $old) {
+	    print "whereami: already set to $where\n";
+	} else {
+	    switchto($where);
+	    open OUT, ">$file" or die "$name: Could not write to $file: $!\n";
+	    print OUT $where."\n";
+	    close OUT;
+	}
+    } else {
+	warn "$name: parameter `$whereorig' doesn't conform to rules. Ignoring.\n";
+    }
+}
+
+if (@ARGV) {
+    while (defined($_=shift)) {
+	if ($_ eq "-s") {
+	    if (@ARGV==1) {
+		setitto(shift)
+	    } else {
+		usage
+	    }
+	} elsif (/^--?h/) {
+	    usage
+	} elsif ($_ eq "eth0") {
+			# ignore
+	} else {
+	    warn "whereami: unknown argument `$_'\n"
+	}
+    }
+    printit;
+} else {
+    printit
+}
+
