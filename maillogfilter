@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+# Fre Apr 27 13:09:55 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+#hm did rename it to log-strip-mailaddress but, well(, how wouldirememberthis)
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [files]
+
+  Replaces email addresses with their md5_hex stamp to prevent the
+  admin from inadvertently seeing with whom his users are
+  communicating.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+
+use Chj::App::Maillogfilter;
+
+# sub filter {
+#     my ($in)= @_;
+#     while (<)
+
+@ARGV=@args; #to make <> really work. ok?
+
+#print (map_line $_) or die $! for (<>);
+#DOH!!!!! out of memory: slurping everything into memory. ah yes.
+
+print (map_line $_) or die $! while (<>);
+
+
