@@ -15,6 +15,7 @@ sub usage {
 
   Options:
   -n|--n-files n   use the n instead of $nfiles newest log files
+  -f               follow mode
 
   (Christian Jaeger <$email>)
 ";
@@ -23,6 +24,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+my $opt_f;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -32,6 +34,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?f(ollow)?$/) {
+	$opt_f=1;
     } elsif (/^--?n(?:files(?:=(.*))?)?$/) {
         if (defined $1) {
             $nfiles=$1
@@ -48,9 +52,14 @@ usage if @args;
 
 use Chj::xperlfunc;
 
-xexec
-  'myzcat `ls -rt /var/log/qmail/{current,@*}|tail -'
-  .$nfiles
-  .'`|'
-  .$mydir
-  .'/maillogfilter|tai|less';
+if ($opt_f) {
+    xexec
+      "fasttail /var/log/qmail/current| $mydir/maillogfilter --flush |tai";
+} else {
+    xexec
+      'myzcat `ls -rt /var/log/qmail/{current,@*}|tail -'
+      .$nfiles
+      .'`|'
+      .$mydir
+      .'/maillogfilter|tai|less';
+}
