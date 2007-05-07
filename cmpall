@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+set -u
+
+firstfile="$1"
+shift
+
+for f in "$@"; do
+    cmp "$firstfile" "$f"
+done
+
