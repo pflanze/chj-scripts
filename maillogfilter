@@ -24,6 +24,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+my $opt_flush;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -39,6 +40,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 #         } else {
 #             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
 #         }
+    } elsif (/^--?f(lush)?$/) {
+	$opt_flush=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -46,6 +49,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 
+$|++ if $opt_flush;
 
 use Chj::App::Maillogfilter;
 
