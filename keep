@@ -19,6 +19,7 @@ sub usage {
   -t           turn files around: move file to kept name, then copy it
                back to normal name. (Default is, to copy it from normal
                name to kept name.)
+  -v           output the filename choosen for the newly kept version(s)
 
   Notes:
   With -r, if there are holes in the numbering chain, it doesn't matter,
@@ -32,6 +33,7 @@ my $DEBUG=0;
 my $opt_r;
 my $opt_append="";
 my $opt_t;
+our $verbose;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -47,6 +49,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_append= $ARGV[++$i] or usage("--append option requires argument");
     } elsif (/^--?t$/) {
 	$opt_t=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -79,6 +83,7 @@ sub xcopy($$) {
     } else {
 	xxsystem "/bin/cp","-a","--",$a,$b;
     }
+    print $b,"\n" or die "printing to stdout: $!" if $verbose;
 }
 sub _cleaneditem {
     my ($item)=@_; # might also be a dir
