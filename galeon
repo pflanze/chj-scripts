@@ -9,6 +9,7 @@ use strict;
 use URI::Escape 'uri_escape';
 use Chj::ulimit;
 use Chj::Cwd;
+use Chj::xperlfunc;
 
 sub basename {
     my $str=shift;
@@ -85,10 +86,63 @@ my @args=
       $ret;
 } @ARGV;
 
-#use Data::Dumper;
-#print Dumper(\@args);
+
+#my $lckfile= "$ENV{HOME}/.galeon_lck";
+use Chj::xopendir;
+sub is_running {
+    #hm shit. actually i need a semaphore? or can I detect if some process has the file still open?
+    #hm pthread (nptl) semaphores?
+
+    #what if some gui/whatever did start galeon w/o our script opening the lck/semaphore?
+    #so still just scan proc?
+
+    my $base= "/proc";
+    my $d=xopendir $base;
+    my $uid= $>;
+    #while (<$d>) { FALSCH GRRRRRRRRRRRRR und keine exn
+    while (defined($_=$d->xnread)) {
+	next unless /^(\d+)\z/;
+	my $sub= "$base/$1";
+	if (local our $s= Xstat $sub) {
+	    #use Chj::repl;repl;
+	    if ($s->uid == $uid) {
+		if (defined (my $f= readlink "$sub/exe")) {
+		    #warn "checking '$f'";
+		    $f=~ s|.*/||s;
+		    return 1 if ($f eq "galeon" or $f eq "galeon-bin");
+		}
+	    }
+	}
+    }
+}
+
+sub keep_file {
+    my ($path,$add)=@_;
+    #warn "keeping '$path' with suffix '_$add'";  better let keep output the real path.for copy pasting.
+    {
+	local $|=1;
+	print "keeping: ";
+    }
+    xxsystem "keep","--verbose", $path,($add? ("-a", "_$add"):());
+}
+
+sub Chomp {
+    my ($s)=@_;
+    chomp $s;
+    $s
+}
+sub maybe_keep_session_crashed_file {
+    my $file= "$ENV{HOME}/.galeon/session_crashed.xml";
+    (keep_file $file, Chomp `date_`) if -e $file;
+}
+
+maybe_keep_session_crashed_file unless is_running;
+
 
 # "the next galeon"? SUPER like? geht das?
+
+#ps.  subkommandos welche von galeon allenfalls ja ausgeführt würden,
+#haben den PATH auch wieder nicht. dumme Idee also?
 
 sub strip_from_PATH {
     my $path=$ENV{PATH};
@@ -116,7 +170,6 @@ ulimit qw(-v 400000); # die Idee davon ist *rauf*setzen von 110000 oder so defau
 
 delete $ENV{MOZILLA_FIVE_HOME};
 
-exec "galeon",@args;
 
-
+xexec "galeon",@args;
 
