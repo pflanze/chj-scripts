@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+# Mon Jan  2 20:16:46 MET 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ files ]
+
+  If files are given, they are converted to suffix .scm (.xml suffix is stripped first).
+
+  If none are given, reads stdin then outputs to stdout.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+
+my @args;
+my $DEBUG=0;
+my $opt_loaddtd=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?loaddtd$/) {
+	$opt_loaddtd=1;
+	warn "UNFINISHED, loaddtd is ignored";# since "we" didn't find out how to do it with XML::LibXML (#axkit-dahut)
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr string_xml_to_sexpr);
+
+if (@args) {
+    file_xml_to_sexpr $_ for @args;
+} else {
+    #    print string_xml_to_sexpr do {local $/; <STDIN>}
+    #      or die "printing to stdout: $!";
+    #mensch ich bin so ne tröte  hier das und aber above doch zu stdout auf setz  misch schib.
+    string_xml_to_sexpr do {local $/; <STDIN>}
+}
+
