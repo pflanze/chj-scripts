@@ -1,0 +1,151 @@
+#!/usr/bin/perl -w
+
+# Die Dez 31 02:43:40 MET 2002
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname file(s)
+  Keeps a version of the mentioned file(s).
+  file.1 file.2 file.3 etc., by default it increments the number
+  for each new file and leaves the filenames of existing kept
+  versions unchanged.
+  Options:
+  -r --rotate  Rotate file numbers instead of sequential, so that
+               the oldest version has the highest number.
+  -a appendix  Append this to each filename (after the number)
+  -t           turn files around: move file to kept name, then copy it
+               back to normal name. (Default is, to copy it from normal
+               name to kept name.)
+
+  Notes:
+  With -r, if there are holes in the numbering chain, it doesn't matter,
+  it will move the numbers all the same.
+";
+exit @_;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_r;
+my $opt_append="";
+my $opt_t;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?r(otate)?$/) {
+	$opt_r=1;
+    } elsif (/^--?a(ppend)?$/) {
+	$opt_append= $ARGV[++$i] or usage("--append option requires argument");
+    } elsif (/^--?t$/) {
+	$opt_t=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+use lib "/root/extlib";
+use Filepaths;
+use Chj::Cwd::realpath;
+use Chj::xperlfunc qw(xlinkunlink xxsystem);
+
+my $inbetween=".";
+
+sub xrename($$) {
+    my ($a,$b)=@_;
+    -e $b and die "target '$b' exists, will not overwrite!\n";
+    # obiges is zwar raceconditionprone aber easier als mit temporary hardlinks, weil sons gehts nich mit directories, right?.
+    rename $a,$b or die "could not rename '$a' to '$b': $!\n";
+}
+sub xcopy($$) {
+    my ($a,$b)=@_;
+    -e $b and die "target '$b' exists, will not overwrite!\n";
+    if ($opt_t) {
+	#xlinkunlink $a,$b; shit that doesn't work with paranoid grsecurity. and since we already checked target path anyway, we just do:
+	xrename $a,$b;
+	xxsystem "/bin/cp","-a","--",$b,$a;
+    } else {
+	xxsystem "/bin/cp","-a","--",$a,$b;
+    }
+}
+sub _cleaneditem {
+    my ($item)=@_; # might also be a dir
+    #$item=~ s|/+$||s; # strip ending slash
+    #$item= "./$item" unless $item=~ m|/|; ###soviel zu portabilität.
+    #-e $item or die "item '$item' does not exist\n";
+    #$item
+    xrealpath $item;
+}
+
+sub rotate($) {
+    my $item= _cleaneditem(@_);
+    my $dir=FolderOfThisFile($item); ###btw should be called FolderOfThisItem !!!!
+    ###und filename auch gleich liefern ey.
+    my $itemname= Filename($item); ### sollte Itemname heissen!!!
+    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    my %takennumbers;
+    while (defined (local $_=readdir DIR)){
+	if (/^\Q$itemname\E\.(\d+)/s) {
+	    # found a (probable) backup item.
+	    if (exists $takennumbers{$1}) {
+		die "Problem: '$_' uses same backup number as '$takennumbers{$1}'. Terminating.\n";
+	    }
+	    $takennumbers{$1}= $_;
+	}
+    }
+    closedir DIR or die "error closing dir: $!";
+    for (sort {$b<=>$a} keys %takennumbers) {
+	my ($newname,$oldname);
+	$oldname=$newname=$takennumbers{$_};
+	my $newnumber= $_+1;
+	$newname=~ s/(\Q$itemname\E\.)\d+(.*)/$1$newnumber$2/s or die "BUG";
+	#xrename "$item.$_","$item.".($_+1);
+	xrename $oldname,$newname;
+    }
+    #xrename $item, "$item.1"; ## well, sollte ich null verwenden?
+    #xcopy "$item.1",$item;
+    xcopy $item,"$item.1$opt_append";
+}
+
+sub keep($) {
+    my $item= _cleaneditem(@_);
+    my $dir=FolderOfThisFile($item);
+    my $itemname= Filename($item);
+    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    my $usenumber=1;
+    while (defined (local $_=readdir DIR)){
+	#if (/^\Q$itemname\E\.(\d)(?:[_ :-]|$)/s) { ## auch fortführung möglich
+	if (/^\Q$itemname\E\.(\d+)/s) { ## auch fortführung möglich
+	    # found a backup item.
+	    if ($1 >= $usenumber){
+		$usenumber= $1+1;
+	    }
+	}
+    }
+    xcopy $item,"$item.$usenumber$opt_append";
+}
+
+for(@files){
+    $opt_r ? rotate($_) : keep($_);
+}
+
+__END__
+
+Brauchts nun auch ein 'unkeep', für wenn fehler gemacht?
+Und eben norm nich rotate son raufzahl.
+
+	 Idee:
+	 Flag "-n" für explizite Nummervergabe. Trotzdem alle files durchgehn
+	 als Kontrolle.  UND: zuerst ALLE Items durchkontrollieren und erst DANN die Aktion erledigen wenn alles ok scheint. Transaktig.
