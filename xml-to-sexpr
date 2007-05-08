@@ -15,6 +15,10 @@ sub usage {
 
   If none are given, reads stdin then outputs to stdout.
 
+  WARNING: DOCTYPE declaration is stripped from input when using
+  stdin, but not from files, which will make it parse files SLOWLY if
+  they contain such decls with remote uris.
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
@@ -50,11 +54,28 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 #usage unless @args;
 
-use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr port_xml_to_sexpr);
+use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr
+				 string_xml_to_sexpr
+				 port_xml_to_sexpr);
 
 if (@args) {
     file_xml_to_sexpr $_ for @args;
 } else {
-    port_xml_to_sexpr *STDIN{IO}
+    #port_xml_to_sexpr *STDIN{IO}
+    my $str= do {
+	local $/;
+	<STDIN>
+    };
+    close STDIN or die "closing stdin: $!";
+    #$str=~ s/^\s*<\!DOCTYPE\b[^>]*>//s; ACH ist ja nicht mal am anfang.
+    $str=~ s{(<\!DOCTYPE\b[^>]*>)}
+      {
+      my $str=$1;
+      my $n= $str=~ tr/\n/\n/;
+      "\n"x$n
+      }se;# SUCH a HACK. but how otherwise solve this Shick.
+    #warn "did read it in '$str'";
+    #local $XML::LibXML::skipDTD = 1; doesn't help
+    string_xml_to_sexpr $str
 }
 
