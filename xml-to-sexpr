@@ -50,14 +50,11 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 #usage unless @args;
 
-use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr string_xml_to_sexpr);
+use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr port_xml_to_sexpr);
 
 if (@args) {
     file_xml_to_sexpr $_ for @args;
 } else {
-    #    print string_xml_to_sexpr do {local $/; <STDIN>}
-    #      or die "printing to stdout: $!";
-    #mensch ich bin so ne tröte  hier das und aber above doch zu stdout auf setz  misch schib.
-    string_xml_to_sexpr do {local $/; <STDIN>}
+    port_xml_to_sexpr *STDIN{IO}
 }
 
