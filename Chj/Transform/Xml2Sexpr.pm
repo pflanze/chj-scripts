@@ -23,6 +23,7 @@ package Chj::Transform::Xml2Sexpr;
 @EXPORT_OK=qw(
 	      file_xml_to_sexpr
 	      string_xml_to_sexpr
+	      port_xml_to_sexpr
 	      string_xml_to_sexpr_string
 	     );
 
@@ -101,8 +102,8 @@ sub file_xml_to_sexpr {
     $o->xputback(0666);
 }
 
-sub string_xml_to_sexpr {
-    my ($string,$opt_outport)=@_;
+sub STRING_OR_PORT_xml_to_sexpr {
+    my ($method, $string_or_port, $opt_outport)=@_;
     my $o= $opt_outport || do {
 	my $o= bless *STDOUT{IO},"Chj::IO::File";
 	if ($new_perl) {
@@ -112,11 +113,22 @@ sub string_xml_to_sexpr {
 	}
 	$o
     };
-    my $tree= $parser->parse_string($string);##or die ?
+    my $tree= $parser->$method($string_or_port);##or die ?
     my $top= $tree->documentElement  or die;
     walk_element $top,$o;
     $o->xclose;
 }
+
+sub string_xml_to_sexpr {
+    my ($string, $opt_outport)=@_;
+    STRING_OR_PORT_xml_to_sexpr ("parse_string",$string,$opt_outport)
+}
+
+sub port_xml_to_sexpr {
+    my ($inport,$opt_outport)=@_;
+    STRING_OR_PORT_xml_to_sexpr ("parse_fh",$inport,$opt_outport)
+}
+
 
 
 {
