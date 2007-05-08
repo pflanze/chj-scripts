@@ -1,0 +1,122 @@
+#!/usr/bin/perl -w
+
+# Fre Feb 27 16:34:02 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+
+use URI::Escape 'uri_escape';
+use Chj::ulimit;
+use Chj::Cwd;
+
+sub basename {
+    my $str=shift;
+    $str=~ s|.*/||s;
+    $str
+}
+
+# if (@ARGV) {
+#     next if /^-/;
+#     next if /^(http|ftp|gopher|telnet):/i;
+#     # zurückschreiben wenn die func es nicht unterstützt? na nich mal perl unterstützt es ja? $_="fdfdf" isch nix. nur s/// zeug? ev noch $_++?
+#     # also bleibt das kopieren des arrays?
+
+
+my @args=
+  # cj Fri, 10 Sep 2004 17:19:17 +0200 och, muss auch ( ) escapen:
+#   map {
+#       s/\(/\%28/sg;
+#       s/\)/\%29/sg;
+#       $_
+#   }
+# nein, das wars nicht. mann. ev zu langer file name?.-> see below
+  map {
+    #uri_escape $_
+    # nun ist es so geil dass /usr/bin/galeon www.psg.com/%7Edlamkins/sl/cover.html das nonexistente file aufmachen will whereas www.psg.com/%257Edlamkins/sl/cover.html was existieren würde tut http assumen.
+    # exist oder nich is egal, das %25 drin macht den unterschied.
+    # if (
+    # nun ja, sowieso annehmen es sei ein pfad nun.
+    #my $path= uri_escape $_;
+#    m|^/| ? "file://".uri_escape($_) : uri_escape "file://".cwd."/".$_
+#} grep {
+#    not /^-/ and not /^(http|ftp|gopher|telnet|file):/i;
+# MANN ich idiot
+      my $dir= do{
+	  my $d=$_;
+	  $d=~ s|[^/]*\z||s;
+	  #length($d)? $d : "./";  eh geht eh direkt
+	  $d
+      };
+      my $origpath= $_;
+
+      my $res=do {
+	  if (not /^-/ and not /^(http|ftp|gopher|telnet|file):/i) {
+	      m|^/| ? "file://".uri_escape($_) : uri_escape "file://".cwd."/".$_
+	  } else {
+	      $_
+	  }
+      };
+      # cj  Fri, 10 Sep 2004 17:19:17 +0200
+      my $ret;#hackhacknonfunc
+      #warn "res=$res";
+      #if ($res > 40) { ECH
+      if (length(basename($res))>80  and not $res=~ m/^(?:http|ftp|mailto|nntp|telnet):/i) { # cj 21.11.04 das protokollanschauen angefügt. mann spaghetti
+	TRY:{
+	      my $lastpath;
+	      for (1..3) {
+		  my $randomname= ".randomlink_".int(rand(400100));
+		  my $rndpath= "$dir$randomname";
+		  $lastpath= $rndpath;
+		  print STDERR "$0: might be too long filename, linking it to a short one: $randomname\n";
+		  link $origpath,$rndpath and #last TRY;#och. return $rndpath  och.
+		    do {
+			$ret=$rndpath;
+			last TRY;
+		    };
+	      }
+	      #die "could not hardlink '$origpath' to '$rndpath': $!";  öh gibt es hier auch nicht mehr.
+	      die "could not hardlink '$origpath' to something like '$lastpath': $!";
+	  }
+      } else {
+	  #warn "KURZ";
+	  $ret=$res;
+      }
+      $ret;
+} @ARGV;
+
+#use Data::Dumper;
+#print Dumper(\@args);
+
+# "the next galeon"? SUPER like? geht das?
+
+sub strip_from_PATH {
+    my $path=$ENV{PATH};
+    for (@_) {
+	#$path=~ s/(?:^|:)\Q$_\E(?::|\z)/:/s;
+	$path=~ s/(?:^|:)$_(?::|\z)/:/s; # attention, accept regexes!
+    }
+    $ENV{PATH}=$path
+}
+
+strip_from_PATH((split /:/, "/root/bin:/root/local/sbin:/root/sbin"),
+		'/home/[^/]+/bin');
+
+# na, eigentlich reichts den eigenen path zu strippen, right?
+my $path=$0; $path=~ s|/[/]+\z||s;
+#strip_from_PATH "\Q$path\E"; #geht das?
+strip_from_PATH quotemeta $path;
+
+# und nun das ulimit dings auch hier einbauen   oder ?
+# ja sinnvollerweise.
+
+#ulimit qw(-v 200000); # die Idee davon ist *rauf*setzen von 110000 oder so default.
+# cj Fri, 19 Aug 2005 16:29:35 +0200:
+ulimit qw(-v 400000); # die Idee davon ist *rauf*setzen von 110000 oder so default.
+
+delete $ENV{MOZILLA_FIVE_HOME};
+
+exec "galeon",@args;
+
+
+
