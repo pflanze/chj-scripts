@@ -49,6 +49,10 @@ sub outencode {
 }
 
 my $parser= XML::LibXML->new;
+$parser->load_ext_dtd(0); # !!!  and they don't even say that it was on by default?
+#URGH but STILL NO HELP.
+$parser->validation(0); #doesn't help either.
+
 
 sub walk_element {
     my ($node,$o)=@_;
