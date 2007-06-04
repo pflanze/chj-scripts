@@ -1,0 +1,124 @@
+#!/usr/bin/perl -w
+
+# Son Jun  3 22:12:16 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $orig_gv= "/usr/bin/gv";
+our $filecmd= "/usr/bin/file";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] possibly-gzipped-file
+
+  if one file is given and it is compressed, uncompress it into a tempfile
+  and call $orig_gv with the original options 
+
+  (Christian Jaeger <$email>)
+  Help of original gv $orig_gv:
+
+  ".`$orig_gv -h 2>&1`."
+";# 2 sachen: erstens nein es geht nid wie bei shell dass backticks rein interpretiert werden. zweitens, gv so doof dass es help nid anzeigen kann wenn kein display. und stderr, muss das eben, tie us to unix and thi particular shell,  machen.
+exit (@_ ? 1 : 0);
+}
+
+#hm wie genau options 'parsen'.  longe denke?
+
+# my @options;
+# my @args;
+# my $DEBUG=0;
+# for (my $i=0; $i<=$#ARGV; $i++) {
+#     local $_=$ARGV[$i];
+#     if (/^--?h(elp)?$/) {
+#     	usage
+#     } elsif ($_ eq '--') {
+#     	push @args, @ARGV[$i+1..$#ARGV];
+#     	last;
+#     } elsif (/^--?d(ebug)?$/) {
+# 	$DEBUG=1;
+# #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+# #         if (defined $1) {
+# #             $XXX=$1
+# #         } else {
+# #             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+# #         }
+#     } elsif (/^-./) {
+#     	usage("Unknown option '$_'\n");
+#     } else {
+#     	push @args, $_
+#     }
+# }
+# usage unless @args;
+
+# our @args=@ARGV;
+# our @fileargs= grep { not /^-/ } @args;
+# if (@fileargs==1 and )
+#and position? or how will i do it ?.
+
+our @args= map {
+    # the argument, and whether it is a filearg
+    [ $_, not /^-/ ]
+} @ARGV;
+
+our @fileargs= grep {
+    $$_[1]
+} @args;
+
+use Chj::xperlfunc;
+sub normalexe {
+    xexec $orig_gv,@ARGV;
+}
+
+use Chj::IO::Command;
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+use Chj::xpipeline 'xreceiverpipeline_with_out_to';
+
+sub uncompress {
+    my ($file)=@_;
+    my $c=  Chj::IO::Command->new_sender($filecmd,"--",$file);
+    my $cnt=$c->xcontent;
+    $c->xxfinish;
+    my $decmd= do {
+	if ($cnt=~ /: gzip compressed/) {
+	    ["gunzip"]
+	} elsif ($cnt=~ /: bzip2 compressed/) {
+	    ["bunzip2"]
+	} else {
+	    undef
+	}
+    };
+    $decmd and do {
+	#{mtime Sun Jun  3 22:32:56 2007}
+	#{Mon Jun  4 21:03:32 2007}
+	#wiedermal  pipelinenötig
+	my $f= xopen_read $file;
+	my $t= xtmpfile;
+	my $r= xreceiverpipeline_with_out_to($t, $decmd);
+	$f->xsendfile_to($r);
+	$r->xxfinish;
+	$t->xclose;#ps ich gebe $t hin aber in wahrheit tut es fd gell geben ?.
+	$t
+    }
+}
+
+if (@fileargs==1) {
+    my $file= $fileargs[0][0];
+    if (my $uncompressed= uncompress $file) {
+	xxsystem $orig_gv, map {
+	    if ($$_[1]) {
+		$uncompressed->path
+	    } else {
+		$$_[0]
+	    }
+	} @args;
+    } else {
+	normalexe;
+    }
+} else {
+    normalexe;
+}
+
