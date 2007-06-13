@@ -5,25 +5,28 @@
 
 use strict;
 
-our $orig_gv= "/usr/bin/gv";
 our $filecmd= "/usr/bin/file";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [options] possibly-gzipped-file
+    print "$myname originalprogram [options] possibly-gzipped-file
 
   if one file is given and it is compressed, uncompress it into a tempfile
-  and call $orig_gv with the original options 
+  and call originalprogram with the original options.
+
+  See ${mydir}gv and ${mydir}xpdf wrappers, they are calling me.
 
   (Christian Jaeger <$email>)
-  Help of original gv $orig_gv:
-
-  ".`$orig_gv -h 2>&1`."
-";# 2 sachen: erstens nein es geht nid wie bei shell dass backticks rein interpretiert werden. zweitens, gv so doof dass es help nid anzeigen kann wenn kein display. und stderr, muss das eben, tie us to unix and thi particular shell,  machen.
-exit (@_ ? 1 : 0);
+";
+    exit (@_ ? 1 : 0);
 }
+
+@ARGV or usage;
+usage if $ARGV[0]=~ /^--?h(elp)?$/;
+
+our $origprog=shift @ARGV;
 
 our @args= map {
     # the argument, and whether it is a filearg
@@ -36,7 +39,7 @@ our @fileargs= grep {
 
 use Chj::xperlfunc;
 sub normalexe {
-    xexec $orig_gv,@ARGV;
+    xexec $origprog,@ARGV;
 }
 
 use Chj::IO::Command;
@@ -73,7 +76,7 @@ sub uncompress {
 if (@fileargs==1) {
     my $file= $fileargs[0][0];
     if (my $uncompressed= uncompress $file) {
-	xxsystem $orig_gv, map {
+	xxsystem $origprog, map {
 	    if ($$_[1]) {
 		$uncompressed->path
 	    } else {

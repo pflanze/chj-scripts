@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec _uncompress-run /usr/bin/gv "$@"
