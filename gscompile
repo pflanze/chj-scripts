@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+
+# Fre Feb 25 20:29:10 CET 2005
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+use Chj::xperlfunc;
+
+sub sys_is_x86 {
+    `uname -m` =~ /86/    # stimmts? ist jedenfalls ppc auf lombi.
+}
+
+my @cflags= (
+	     # Flags for elvis = athlon32 machine.
+	     "-O3",
+	     #"-D___SINGLE_HOST", Nein, das verlangsamt, jedenfalls fib! (0m0.840s vs. 0m0.740s
+	     "-fomit-frame-pointer", # ja bringt bissel was, 0m0.730s vs. 0m0.760s
+	     #"-fstrict-aliasing", # bringt keinen sichtbaren unterschied bei fib
+	     #"-mcpu=i586", # hm bringt auch keinen ersichtlichen unterschied bei fib
+	     #"-mcpu=athlon", nein machts langsamer, 0m0.770s vs. 0m0.730s
+	     #"-mcpu=i686",  nein, 0m0.740s vs. 0m0.730s
+	     #  ^- well, eh rechte variabilitaet, nicht sicher dass ich echte untrschiede gesehen
+	     #    aber he, fib isch eh ein doofer test für dies wohl.
+	     (sys_is_x86() ? "-mpreferred-stack-boundary=2" : ()), # auch kein unterschied gesehen.   ##mannnnn !!! () nach sys_is_x86 sind nötig.
+  #"-Wall",#not interesting.
+#  "-Wdisabled-optimization",#maybe interesting -> but doesn't work with gcc on woody.
+	    );
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname sourcefile(s)
+
+  automatic compiler
+  kind of like csc for chicken
+  does *not* currently check for already available still-valid results
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $VERBOSE=0;
+my $opt_debug;
+my $opt_track_scheme;
+my $opt_warnings=1;
+my $opt_chpax;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$opt_debug=1;
+	$opt_track_scheme=1 unless defined $opt_track_scheme;#oder so. muss explizit abschalten damit das nöd kommt.
+	$opt_chpax=1 unless defined $opt_chpax;
+    } elsif (/^--?(no-?)t(rack(-scheme)?)?$/) {
+	$opt_track_scheme= ! $1;
+    } elsif (/^--?(no-?)w(arn(ings)?)?$/) {
+	$opt_warnings= ! $1;
+    } elsif (/^--?(v+)(erbose)?$/) {
+	$VERBOSE+=length($1);
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+for (@args) {
+    /\.(scm|c)$/ or not /\.\w{1,4}$/ or die "invalid argument '$_': only accepting .c and .scm files currently (files without suffix are meant to be .scm files)";
+}
+
+
+sub Do {
+    print join(" ",@_),"\n";
+    xxsystem @_
+}
+
+
+my @schemesource= map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @args;
+
+
+Do "gsc",
+  "-:f8",
+  ($opt_debug ? "-debug" : ()),
+  ($opt_track_scheme ? "-track-scheme" : ()),
+  ($opt_warnings ? "-warnings" : ()), # aber beachte: eher viele Nontail call with interrupts disabled  wenn meine üblichen declare's verwenden.
+  #"-expansion", nein. geht wirkli auch hier zu stdout  aber .c code auch generiert  also will ich wohl nur andere zwecke. in less pipen oder sowas.
+  @schemesource;
+
+
+my @allcsource= map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @args;
+
+my $linkfile= do {
+    #hmm?  wie?
+    # guess: letztes scm file?
+    $schemesource[-1]."_.c"
+};
+my $executablename= do {
+    $schemesource[-1]
+};
+
+Do "gcc",
+  @cflags,
+  ($opt_debug ? "-g" : ()),
+  @allcsource,
+  $linkfile,
+  "-I/usr/local/Gambit-C/include",
+  "-L/usr/local/Gambit-C/lib",
+  "-lgambc",
+  # und, nur für linux aber nicht für macosx: (gem. doku)
+  "-lm",
+  "-lutil",
+  "-ldl",
+  "-o",$executablename,
+  ;
+
+if ($opt_chpax) {
+    Do "chpax","-sr",$executablename
+}
