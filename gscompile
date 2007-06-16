@@ -94,6 +94,7 @@ my @schemesource= map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @args;
 
 Do "gsc",
   "-:f8",
+  "-link",
   ($opt_debug ? "-debug" : ()),
   ($opt_track_scheme ? "-track-scheme" : ()),
   ($opt_warnings ? "-warnings" : ()), # aber beachte: eher viele Nontail call with interrupts disabled  wenn meine üblichen declare's verwenden.
@@ -117,8 +118,8 @@ Do "gcc",
   ($opt_debug ? "-g" : ()),
   @allcsource,
   $linkfile,
-  "-I/usr/local/Gambit-C/include",
-  "-L/usr/local/Gambit-C/lib",
+  "-I/usr/local/Gambit-C/current/include",
+  "-L/usr/local/Gambit-C/current/lib",
   "-lgambc",
   # und, nur für linux aber nicht für macosx: (gem. doku)
   "-lm",
