@@ -1,0 +1,160 @@
+#!/usr/bin/perl -w
+
+# Sam Jun 16 20:22:54 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to [file]
+
+  from and to can be byte positions or percentual numbers with % appended
+
+  When no file given, stdin is used.
+
+  Percents need the ability to stat or fstat the given input file/fd.
+  (Well a non-zero from also needs seekability of the given input, which probably
+  amounts to the same. Currently there's no read-over-from-bytes implementation
+  here.)
+
+  Output is written to stdout
+
+  Options:
+  --verbose  show the 'exact' byte range used (interesting for percent stuff)
+
+  Note: we probably *have* to use floats (doubles) for everything since int
+  isn't wide enough anymore for seek/size operations today. (Sigh, whatever
+  that really does for accuracy.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+our $verbose;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless (@args>=2 and @args <=3);
+
+# hm percent berechnung schon  vorhandendoch  wie immer nid libararisisert gell
+# ah inline perl in shellscript..
+
+# wie handhabe ich percent?
+
+# delayed?   warum kam i daruf aha weil  2 steps  parsen  und  berechnen
+use Chj::FP::lazy;
+sub parse_position {
+    my ($str)=@_;
+    if ($str=~ /^(\d+)\z/) {
+	# gar kein delay nötig wäre  nun jo eben?
+	# hmmm  filehandle vorhanden sein muss also hier schon geben   schlecht? doch nicht sondern functions geben.--dann mit memoization maybe.
+	my $pos=$1;
+	sub {
+	    my ($_totlen_)=@_;
+	    $pos
+	}
+    } elsif ($str=~ /^(\d+(?:\.\d*)?)\%\z/) {
+	my $percentpos= $1;
+	if ($percentpos < 100) {
+	    sub {
+		# my ($totlen)=@_; NO since the outer side doesn't know IFF she must stat the fd
+		#my ($fh)=@_;
+		#hm how do we cache the stat result ? ah  give a delayed stat mensch.
+		my ($totlen_)=@_;
+		Force($totlen_) * $percentpos / 100
+	    }
+	} else {
+	    usage "invalid percent number: $percentpos"
+	}
+    } else {
+	usage "invalid format of position: '$str'";
+    }
+}
+
+
+
+our $from__= parse_position shift @args;
+our $to__= parse_position shift @args;
+
+our ($maybe_file)=@args;
+
+
+
+use Chj::IO::File;
+use Chj::xopen 'xopen_read';
+use POSIX 'fstat';
+use Chj::xperlfunc;
+use Chj::Backtrace;
+
+our ($f,$totlen_)= do {
+    if ($maybe_file) {
+	(xopen_read ($maybe_file),
+	 Delay { xstat ($maybe_file)->size }  # HAVE to Delay here as well since our Force doesn't accept non-promise values.
+	)
+    } else {
+	my $f= bless(*STDIN{IO},"Chj::IO::File");
+	($f,
+	 Delay {
+	     my @s= fstat(0) or die "could not fstat stdin: $!";
+	     warn "fstat gave: @s" if $DEBUG;
+	     my $size= $s[7];
+	     warn "    size: $size" if $DEBUG;
+	     $size
+	 })
+    }
+};
+
+# must be seekable? well just try? if bytepositions given, can also just read over that many bytes
+
+# well for now just require seeking  [so above delay was in vain]
+
+our $from= &$from__ ($totlen_);
+our $to= &$to__ ($totlen_);
+#^- heh. int?. nope 32bit?. heh. mensch
+
+if ($verbose) {
+    warn "cutting from $from to $to..\n";
+}
+
+if ($from) {# sendfile has an offset argument, but doesn't seem to be in a working state, so:
+    $f->xseek ($from);
+    warn "did seek to $from" if $DEBUG;
+}
+
+my $buf;
+
+#dafür sollte doch auch ne sendfile_partial methode existieren ?.
+#AH das hat es sogar!
+
+our $out= bless *STDOUT{IO}, "Chj::IO::File";
+$f->xsendfile_to ($out, 0, $to-$from);
+
+$f->xclose;
+$out->xclose;
+
