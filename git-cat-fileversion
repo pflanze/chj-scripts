@@ -11,6 +11,25 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname commitid path
 
+  BUT see this after-the fact discussion on #git:
+    * pflanze has now written a git-cat-fileversion perlscript for his purpose
+    <Randal> git-show COMMITISH:path/to/file doesn't do it for you?
+    <oMish> you can prolly patch cat-file and send in the patch
+    <Randal> you want git-cat of a file at a given commit, right?
+    <Randal> pflanze?
+    <pflanze> yeahh
+    <pflanze> grr
+    <Randal> heh
+    <Randal> That's underdocumented
+    <Randal> part of the folklore you get from hanging out on the mailing list.
+    <Randal> basically COMMITISH:some/path is the sha1 of that item, so you can use that with git-show
+    <pflanze> oMish--, you lead me to believe it doesn't exist.
+    <pflanze> but so be it.
+    <Randal> git-ls-tree -r COMMITISH:Some/SubDir
+    <Randal> that does an ls-tree of an old version.
+    <oMish> pflanze, you didn't help me with my problem either
+    <Randal> etc etc
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
