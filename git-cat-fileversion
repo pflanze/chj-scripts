@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Son Jun 17 18:06:59 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname commitid path
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+use Chj::repl;
+use Chj::Backtrace;
+use Chj::xperlfunc;
+
+our ($commitid,$path)=@args;
+
+sub git_cat_file {
+    my ($id)=@_;
+    my $cmd= Chj::IO::Command->new_sender ("git-cat-file","-p",$id);
+    my $cnt= $cmd->content;
+    $cmd->xxfinish;
+    $cnt
+}
+
+sub commit_2_tree {
+    my ($str)=@_;
+    $str=~ /^tree (\S+)/ or die "not a commit object (missing ^tree)?: '$str'";
+    $1
+}
+
+
+sub treeid_find_subpath {#returns id as usual
+    local our ($treeid,$subpath)=@_;
+    local our $tree= (git_cat_file $treeid);
+    local our ($curname,$rest)= split m|/+|,$subpath,2;
+    if($DEBUG){warn "in tree_find_subpath\n";repl;}
+    for my $line (split /\n/,$tree) {
+	$line=~ /^(\d+) (\S+) (\S+)\t(.*)/ or die "can't match tree line: '$line'";
+	local our ($perms,$type,$id,$pathname)=($1,$2,$3,$4);
+	if ($pathname eq $curname) {
+	    if($DEBUG){warn "in loop,found.\n";repl;}
+	    if ($type eq "blob") {
+		return $id
+	    } elsif ($type eq "tree") {
+		@_=(
+		    $id,
+		    $rest
+		   );
+		goto \&treeid_find_subpath;
+		die "never get here right?";
+	    } else {
+		die "unknown type: '$type'";
+	    }
+	}
+    }
+    undef
+}
+
+
+#repl;
+
+if (my $treeid= (commit_2_tree (git_cat_file $commitid))) {
+    if (my $id= treeid_find_subpath $treeid, $path) {
+	xexec "git-cat-file","blob",$id
+    } else {
+	warn "$myname: could not find path '$path' in commit '$commitid'\n";
+	exit 1
+    }
+} else {
+    die "never happens?"
+}
+
