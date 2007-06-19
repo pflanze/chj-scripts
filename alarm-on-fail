@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+
+# Die Jun 19 15:19:52 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our @alarm= ("alarm");
+
+our $interval= 60*60*24; #seconds
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd args
+
+  Runs cmd with args, runs @alarm program with 'cmd args' as arguments
+  if cmd returns with non-zero exit code.
+
+  But only sends an alarm of the same cmd+args once ~a day~.
+
+  Does not trap the output of cmd currently (let that go through as cron mails).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+our $verbose;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>=1;
+
+sub homedir {
+    ## is this complication needed or not?
+    if (my $h= $ENV{HOME}) {
+	$h
+    } else {
+	if (my @r= getpwuid($>)) {
+	    $r[7] or die "can't get home dir for user $>";
+	} else {
+	    die "can't get user entry $>";
+	}
+    }
+}
+
+our $basedir= homedir."/.$myname";
+
+mkdir $basedir,0700;
+
+use Digest::MD5 'md5_hex';
+use Chj::xperlfunc;
+use Chj::FileStore::Stamp;
+use Chj::singlequote 'singlequote_many';
+
+our $md= md5_hex(join "\0",@args);
+
+# touch. hm  again  wo und so.
+
+our $stamp= Chj::FileStore::Stamp->new("$basedir/$md");
+
+our $maybe_mtime= $stamp->mtime;
+
+our $time= time;
+
+if ($maybe_mtime and ($time - $maybe_mtime) < $interval) {
+    print "$myname: already sent alarm for $md (".singlequote_many(@args).") at ".localtime($maybe_mtime)."\n" if $verbose;
+} else {
+    xxsystem @alarm,@args;
+    $stamp->xtouch;
+}
+
+#{Tue Jun 19 15:34:32 2007}
+#so  so shcwer waras auch nieder wicht.
+
+#-{Tue Jun 19 15:38:58 2007}
