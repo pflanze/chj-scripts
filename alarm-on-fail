@@ -27,8 +27,8 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-my @args;
-my $DEBUG=0;
+our @args;
+our $DEBUG=0;
 our $verbose;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -50,10 +50,14 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
-    	push @args, $_
+    	#push @args, $_
+	push @args, @ARGV[$i..$#ARGV];
+	last;
     }
 }
 usage unless @args>=1;
+
+#use Chj::repl;repl;
 
 sub homedir {
     ## is this complication needed or not?
@@ -77,24 +81,26 @@ use Chj::xperlfunc;
 use Chj::FileStore::Stamp;
 use Chj::singlequote 'singlequote_many';
 
-our $md= md5_hex(join "\0",@args);
+sub conditional_alarm {
+    my ($rv)=@_;
+    local our $md= md5_hex(join "\0",@args);
+    local our $stamp= Chj::FileStore::Stamp->new("$basedir/$md");
+    local our $maybe_mtime= $stamp->mtime;
+    local our $time= time;
 
-# touch. hm  again  wo und so.
-
-our $stamp= Chj::FileStore::Stamp->new("$basedir/$md");
-
-our $maybe_mtime= $stamp->mtime;
-
-our $time= time;
-
-if ($maybe_mtime and ($time - $maybe_mtime) < $interval) {
-    print "$myname: already sent alarm for $md (".singlequote_many(@args).") at ".localtime($maybe_mtime)."\n" if $verbose;
-} else {
-    xxsystem @alarm,@args;
-    $stamp->xtouch;
+    if ($maybe_mtime and ($time - $maybe_mtime) < $interval) {
+	print "$myname: already sent alarm for $md (".singlequote_many(@args).") at ".localtime($maybe_mtime)."\n" if $verbose;
+    } else {
+	xxsystem @alarm,$rv,@args;#rvheh.
+	$stamp->xtouch;
+    }
 }
 
-#{Tue Jun 19 15:34:32 2007}
-#so  so shcwer waras auch nieder wicht.
+our $rv= system @args;
+if ($rv==0) {
+    #all well
+} else {
+    conditional_alarm ($rv);
+}
 
-#-{Tue Jun 19 15:38:58 2007}
+
