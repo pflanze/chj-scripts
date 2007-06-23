@@ -80,7 +80,7 @@ my %drychar=(
 	     },
 	    );
 
-sub encode_permissive {
+sub old_encode_permissive {
     my $from=$_[1]||"ascii";
     my $to=$_[2]||"latin1";
     ## is input multibyte?
@@ -174,5 +174,22 @@ sub encode_permissive {
 	}
     }
 }
+
+
+sub new_encode_permissive {
+    my $from=$_[1]||"ascii";
+    my $to=$_[2]||"latin1";
+    my $decoded= decode($from, $_[0]);
+    encode($to, $decoded, sub { "?" })
+}
+
+if ($] >= 5.008) {
+    require Encode;
+    import Encode qw(decode encode);
+    *encode_permissive= *new_encode_permissive;
+} else {
+    *encode_permissive= *old_encode_permissive;
+}
+
 
 1;
