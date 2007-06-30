@@ -9,7 +9,7 @@ my $num=shift||1;
 sysopen STDOUT,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht öffnen: $!";
 $|=1;
 for (1..$num) {
-	print "\007";
-	usleep 120000;
+    print "\007";
+    usleep 200000; #12000 was too short for elvis. 20000 is rather slow but let's one really count the number of the beeps when listening.
 }
 
