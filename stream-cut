@@ -81,7 +81,7 @@ sub parse_position {
 	}
     } elsif ($str=~ /^(\d+(?:\.\d*)?)\%\z/) {
 	my $percentpos= $1;
-	if ($percentpos < 100) {
+	if ($percentpos <= 100) {
 	    sub {
 		# my ($totlen)=@_; NO since the outer side doesn't know IFF she must stat the fd
 		#my ($fh)=@_;
@@ -110,7 +110,7 @@ use Chj::IO::File;
 use Chj::xopen 'xopen_read';
 use POSIX 'fstat';
 use Chj::xperlfunc;
-use Chj::Backtrace;
+#use Chj::Backtrace;
 
 our ($f,$totlen_)= do {
     if ($maybe_file) {
