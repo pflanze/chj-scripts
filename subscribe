@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+# Don Feb 27 00:15:21 MET 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [-s listname] mailinglistsubscriptionadress(es)
+
+  Options:
+  -s listname  give mailinglist name, necessary for majordomo lists.
+               will be sent as message body 'subscribe name'.
+
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_listname;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+     } elsif (/^--?s(?:ubscribe(?:=(.*))?)?$/) {
+         if (defined $1) {
+             $opt_listname=$1
+         } else {
+             $opt_listname=$ARGV[++$i] or usage "missing argument for '$_' option";
+         }
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+use Chj::Util::AskYN;
+
+my $from= $ENV{EMAIL} or die "need the \$EMAIL env var to be set to email address";
+
+for my $to (@files) {
+    # analyze to address, hja
+    my ($user,$host)=  $to=~ /^([^\@]+)\@([^\@]+)\z/s or die "address '$to' doesn't look like a mail address";
+    if ($user=~ /-subscribe\z/) {
+	# ok
+	print "address '$to' might be ok but if it doesn't work, try -request instead\n";
+    } elsif ($user=~ /-request\z/) {
+	# ok
+    } else {
+	my $newto= "$user-request\@$host";
+	if (askyn "address '$to' doesn't look like a subscription address. should I change it to '$newto' instead? ") {
+	    $to=$newto;
+	}
+    }
+	
+    # do the work
+    my $subscribeline= do {
+	$opt_listname ? "subscribe $opt_listname\n" :
+	  $to=~ /subscribe/i ? undef : "subscribe\n";
+    }||"";
+    my $date= `date -R`; chomp $date;
+    open OUT,"|sendmail -t" or die "could not open pie to sendmail: $!";
+my $mail=<<"END";
+Date: $date
+To: $to
+From: $from
+User-Agent: $myname
+
+$subscribeline
+END
+    ;
+    chop $mail;
+    print OUT $mail or die "err piping: $!";
+    close OUT or die "error sending mail, $!";
+    print "sent mail from $from to $to\n";
+}
+
