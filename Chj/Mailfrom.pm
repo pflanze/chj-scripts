@@ -21,41 +21,59 @@ package Chj::Mailfrom;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(mailfrom mailfromaddress
 	      maybe_extend_with_realname
-	      mailrealname
+	      maybe_mailrealname
+	      maybe_name_from_gcos
 	     );
 
 use strict;
 use Chj::catfiletrim;
 use Chj::username;
 
-sub mailrealname {
+sub maybe_name_from_gcos {
+    @_==1 or die "expecting 1 argument";
+    my ($username)=@_;
+    if (my ($name,$passwd,$uid,$gid,  $quota,$comment,$gcos,$dir,$shell,$expire)
+	= getpwnam $username) {
+	(split /,/, $gcos)[0]
+    } else {
+	undef
+    }
+}
+
+sub maybe_mailrealname {
     my ($maybe_path)=@_;
-    $maybe_path||= "$ENV{HOME}/.mailrealname";
-    catfiletrim $maybe_path;
+    $ENV{MAILREALNAME} || do {
+	$maybe_path||= "$ENV{HOME}/.mailrealname";
+	catfiletrim $maybe_path;
+    } || do {
+	#my $user=$ENV{USER} and maybe_name_from_gcos ($user)   nope. it's 'recursive', not cond
+	my $user;
+	$user=$ENV{USER} and maybe_name_from_gcos ($user)
+    }
 }
 
 sub maybe_extend_with_realname ( $ ) {
     my ($email,$maybe_realname_path)=@_;
-    my $realname=mailrealname($maybe_realname_path);
-    unless($realname) {
-	return $email
-    }
-    if ($email=~ /\S\s*<[^<>]*\@[^<>]*>/
-	or
-	$email=~ /<[^<>]*\@[^<>]*>\s*\S/
-       ) {
-	# fullname already there.
-	$email
-    } else {
-	my $quotedrealname= $realname;
-	$quotedrealname=~ s/\"//sg;#well
-	$quotedrealname="\"$quotedrealname\"";
-	if ($email=~ /<[^<>]*\@[^<>]*>/) {
-	    # angle brackets already there.
-	    "$quotedrealname $email"
+    if (my $realname=maybe_mailrealname($maybe_realname_path)) {
+	if ($email=~ /\S\s*<[^<>]*\@[^<>]*>/
+	    or
+	    $email=~ /<[^<>]*\@[^<>]*>\s*\S/
+	   ) {
+	    # fullname already there.
+	    $email
 	} else {
-	    "$quotedrealname <$email>"
+	    my $quotedrealname= $realname;
+	    $quotedrealname=~ s/\"//sg;#well
+	    $quotedrealname="\"$quotedrealname\"";
+	    if ($email=~ /<[^<>]*\@[^<>]*>/) {
+		# angle brackets already there.
+		"$quotedrealname $email"
+	    } else {
+		"$quotedrealname <$email>"
+	    }
 	}
+    } else {
+	$email
     }
 }
 
