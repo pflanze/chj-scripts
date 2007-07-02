@@ -1,0 +1,87 @@
+#!/usr/bin/perl -w
+
+# Don Jun 28 15:17:21 MEST 2007   finally,ey?
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Prepend timestamps to each line.
+  By default, use the localtime() format.
+
+  Options:
+  --hires|-H  output subseconds, use (almost) the same format as 'tai64|tai'
+              (there are only 6 subsecond digits as opposed to 9)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+$|++;
+
+my @args;
+my $DEBUG=0;
+our $opt_hires;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?hires$/) {
+	$opt_hires=1;
+    } elsif (/^-H$/) {
+	$opt_hires=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+if ($opt_hires) {
+    require Time::HiRes;
+    while (<STDIN>) {
+	#my $t= Time::HiRes::time();
+	#my $t_full=
+	my ($seconds, $microseconds) = Time::HiRes::gettimeofday();
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($seconds);
+	printf '%4d-%02d-%02d %02d:%02d:%02d.%06d %s',
+	  $year+1900, $mon, $mday, $hour,$min,$sec, $microseconds, $_
+	    or die "printing to stdout: $!";
+    }
+} else {
+    while (<STDIN>) {
+	print localtime()."  $_" or die "printing to stdout: $!";
+    }
+}
+
+#Thu Jun 28 15:18:22 2007  fewf
+
+#vs. apachelog:
+#74.6.26.207 - - [24/Jun/2007:06:36:27 +0200] "GET /feedback/eingabe/?forum_p=unipoly%3Bforum_t=Duell+zu+Wasser HTTP/1.0" 200 14699 "-" "Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)"
+
+#syslog:
+#Jun 24 10:31:22 ethlife-a -- MARK --
+
+#tai64n|tai:
+#2007-06-28 15:19:50.481778500 fwef
+
+#whatever?.
+
