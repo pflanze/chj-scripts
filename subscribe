@@ -7,9 +7,19 @@ use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
+
+use Chj::Mailfrom 'mailfrom';
+my $from= mailfrom;
+use Chj::singlequote;
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [-s listname] mailinglistsubscriptionadress(es)
+
+  Using ".singlequote($from)."
+  as from address (unless you set another one in the env vars (see
+  Chj::Mailfrom source).  Note that there should be a realname
+  specified to satisfy some spam filters.
 
   Options:
   -s listname  give mailinglist name, necessary for majordomo lists.
@@ -48,7 +58,7 @@ usage unless @files;
 
 use Chj::Util::AskYN;
 
-my $from= $ENV{EMAIL} or die "need the \$EMAIL env var to be set to email address";
+$from or die "cannot figure out your mail address, please set the \$EMAIL (and \$MAILREALNAME) env var(s) or specify them in another way suitable for Chj::Mailfrom";
 
 for my $to (@files) {
     # analyze to address, hja
