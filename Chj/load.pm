@@ -74,14 +74,19 @@ sub load {
 	$name=~ s|::|/|sg;
 	$name.=".pm";
 
-	if (defined (my $v= $$loaded{$name})) {
-	    push @rv, $v
+	my $incpath;
+	my $rv;
+	if (defined ($incpath= $INC{$name})
+	    and
+	    defined ($rv= $$loaded{$incpath})) {
+	    # ok already loaded
 	} else {
 	    # always execute in scalar context (good? (or what?))
-	    my $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
-	    $$loaded{$name}=$rv;
-	    push @rv,$rv
+	    $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
+	    $incpath= $INC{$name};
+	    $$loaded{$incpath}=$rv;
 	}
+	push @rv,$rv
     }
     wantarray ? @rv : $rv[-1]
 }
