@@ -1,6 +1,6 @@
-# Tue May  6 12:15:02 2003  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
+# Tue May  6 12:15:02 2003  Christian Jaeger, christian at jaeger mine nu
 # 
-# Copyright 2003 by Christian Jaeger
+# Copyright 2003-2007 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -28,6 +28,28 @@ Chj::load
 
 Sometimes you want to load classes at runtime or by string.
 
+=head1 BY THE WAY
+
+You can:
+
+    $ calc -MChj::load
+    calc> :l use vars '$halo'
+    calc> :l load "/opt/chj-priv/etc/maillogfilter_knownadresses"
+    calc> :l $halo
+    gla
+
+where the loaded file contains
+
+    use strict;
+    $halo="gla";
+
+(note that no 'our' keyword is given). Interestingly, only 'use vars'
+is "powerful" enough to yield this behaviour, saying 'our
+$halo="initvalue";' outside will lead to the error
+
+ Variable "$halo" is not imported at /opt/chj-priv/etc/maillogfilter_knownadresses.pm
+
+
 =head1 SEE ALSO
 
 http://pflanze.mine.nu/~chris/scripts/utilities/perl_path2namespace
@@ -43,11 +65,15 @@ require Exporter;
 use strict;
 
 sub load {
-    for $_ (@_) {
-	my $name=$_;
+    my $caller=caller;
+    for my $nameorig (@_) {
+	my $name= $nameorig; # make a copy to be sure it is not an alias of a read-only value
 	$name=~ s|::|/|sg;
 	$name.=".pm";
-	require $name;
+	#package $caller;  not possible
+	#require $name;
+	eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
+	# should I call this complete brokennes or  ?
     }
 }
 
