@@ -64,6 +64,8 @@ require Exporter;
 
 use strict;
 
+our $loaded={}; # path => return value. Question: is it a good idea to cache the return value? (memory retention)
+
 sub load {
     my $caller=caller;
     my @rv;
@@ -71,8 +73,15 @@ sub load {
 	my $name= $nameorig; # make a copy to be sure it is not an alias of a read-only value
 	$name=~ s|::|/|sg;
 	$name.=".pm";
-	my $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
-	push @rv,$rv
+
+	if (defined (my $v= $$loaded{$name})) {
+	    push @rv, $v
+	} else {
+	    # always execute in scalar context (good? (or what?))
+	    my $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
+	    $$loaded{$name}=$rv;
+	    push @rv,$rv
+	}
     }
     wantarray ? @rv : $rv[-1]
 }
