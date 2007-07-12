@@ -22,6 +22,7 @@ my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= "$ENV{HOME}/.daemonize-run";
 my $maxwait=3;#seconds
 our $logfile= "nohup.out";
+our $opt_quiet;
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -33,6 +34,8 @@ ARG:{
 		    $opt_stop=1;
 		} elsif ($1 eq 'bg') {
 		    $opt_bg=1;
+		} elsif ($1 eq 'quiet') {
+		    $opt_quiet=1;
 		} elsif ($1 eq 'no-nice') {
 		    $opt_nonice=1;
 		} elsif ($1 eq 'nice') {
@@ -62,6 +65,8 @@ ARG:{
 		    $opt_stop=1;
 		} elsif ($o eq 'b') {
 		    $opt_bg=1;
+		} elsif ($1 eq 'q') {
+		    $opt_quiet=1;
 		} elsif ($o eq 'N') {
 		    $opt_nonice=1;
 		} elsif ($o eq 'h') {
@@ -193,7 +198,8 @@ else {
     $daemonizer->set_outputs($output);
 
     if (my $pid= $daemonizer->fork) {
-	print STDERR "daemon running as pid $pid",($opt_bg ? () : " (you can hit ctl-c now)"),"\n";
+	print STDERR "daemon running as pid $pid",($opt_bg ? () : " (you can hit ctl-c now)"),"\n"
+	  unless $opt_quiet;
 	unless ($opt_bg) {
 	    wait;
 	    if ($?) {
