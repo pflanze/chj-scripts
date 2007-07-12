@@ -71,9 +71,7 @@ sub load {
 	my $name= $nameorig; # make a copy to be sure it is not an alias of a read-only value
 	$name=~ s|::|/|sg;
 	$name.=".pm";
-	#package $caller;  not possible
-	#require $name;
-	my $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@); # should I call this complete brokennes or  ?
+	my $rv= eval 'package '.$caller.'; require $name'; die $@ if (ref $@ or $@);
 	push @rv,$rv
     }
     wantarray ? @rv : $rv[-1]
