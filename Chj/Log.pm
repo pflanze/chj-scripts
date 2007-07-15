@@ -31,7 +31,12 @@ use Chj::xopen 'xopen_append';
 
 sub logging_to_fh ( $ $ ; $ ) {
     my ($fh,$thunk,$do_close)=@_;
-    #local *STDOUT{IO}= $fh; Can't modify glob elem in local. fun.
+    my $maybe_closeit= sub{
+    	if ($do_close) {
+	    eval { $fh->xclose };
+	    warn "logging_to_fh: while closing fh: $@" if (ref $@ or $@);
+	}
+    };
     local *STDOUT= $fh;
     local *STDERR= $fh;
     my $wantarray= wantarray;
@@ -40,11 +45,10 @@ sub logging_to_fh ( $ $ ; $ ) {
     };
     if (ref $@ or $@) {
 	my $e=$@;
-	if ($do_close) {
-	    eval { $fh->xclose };
-	    warn "while closing fh: $@" if $@;
-	}
-	die $e
+	&$maybe_closeit;
+	die  $e
+    } else {
+	&$maybe_closeit;
     }
     $wantarray ? @rv : $rv[0]
 }
@@ -53,6 +57,9 @@ sub logging_to ( $ $ ) {
     my ($path,$thunk)=@_;
     logging_to_fh( xopen_append ($path), $thunk, 1)
 }
+
+# use Chj::Util::Interprocess ?
+
 
 
 1
