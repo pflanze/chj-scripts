@@ -72,6 +72,7 @@ sub logging_to ( $ $ ) {
 use Chj::xperlfunc;
 use Chj::xpipe;
 use Time::HiRes;
+use POSIX 'setsid';
 
 sub timedlogging_to_fh ($ $ ; $ ) {
     my ($fh,$thunk, $do_close)=@_; # note that the do_close is not so useful here: it's being closed by the logger child (and thus flushed/error-checked) *anyway*, closing it in the parent basically doesn't have any effect really.
@@ -88,7 +89,9 @@ sub timedlogging_to_fh ($ $ ; $ ) {
 	$wantarray ? @rv : $rv[0]
     } else {
 	xclose $w;
+	setsid or die $!;
 	close STDIN; close STDOUT; close STDERR;
+	chdir "/";
 	# logger process
 	{ my $oldfh= select;
 	  select $fh;
