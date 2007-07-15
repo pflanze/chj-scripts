@@ -45,17 +45,53 @@ package Chj::Log;
 use strict;
 
 use Chj::xopen 'xopen_append';
+use Fcntl qw(F_SETFD FD_CLOEXEC F_GETFL F_SETFL);
+
+use Inline (C => '
+#include <unistd.h>
+#include <fcntl.h>
+int my_cloexec_set (int fd, int setting) {
+    return fcntl(fd, F_SETFD, setting ? FD_CLOEXEC : 0)<0 ? errno : 0;
+}
+');
+
+
+sub create_keepcopy {
+    my ($fd)=@_;
+    my $kept= POSIX::dup($fd);# or die "dup($fd): $!";? no. just don't restore if not dup'able.
+    #warn "kept=$kept";
+    if (defined $kept) {
+	#CORE::fcntl ($kept, F_SETFD , FD_CLOEXEC)
+	my_cloexec_set ($kept,1)==0
+	  or die "logging_to_fh: could not set FD_CLOEXEC flag on kept fd $fd as $kept: $!";
+    }
+    $kept
+}
+#use Chj::repl;repl;
 
 sub logging_to_fh ( $ $ ; $ ) {
     my ($fh,$thunk,$do_close)=@_;
-    my $maybe_closeit= sub{
-    	if ($do_close) {
-	    eval { $fh->xclose };
-	    warn "logging_to_fh: while closing fh: $@" if (ref $@ or $@);
-	}
-    };
-    local *STDOUT= $fh;
-    local *STDERR= $fh;
+    #local *STDOUT= $fh;
+    #local *STDERR= $fh;
+    # nope. those only work for perl functions! not for sub
+    # processes. perl doesn't copy those to the real stderr/stdout
+    # upon exec it seems. [sigh.]
+    # so what do we do now? keep the old fd's using dup? (That's the
+    # crux of not running the code in a child process. SIGH.) And the
+    # duplicates should autoclose upon exec btw.
+
+    my $old_stdout_fd= create_keepcopy (1);
+    my $old_stderr_fd= create_keepcopy (2);
+    {
+	my $fno= fileno($fh);
+	my $redirect= sub {
+	    my ($target)=@_;
+	    #POSIX::close ($target); not necessary. done by dup2 anyway.
+	    POSIX::dup2($fno,$target) or die "logging_to_fh: could not redirect: dup2($fno,$target): $!";
+	};
+	&$redirect (1);
+	&$redirect (2);
+    }
     my $oldfh= select;
     select $fh; ##good idea? (or necessary?) additionally to redirecting STDOUT?
     $|++;
@@ -65,11 +101,25 @@ sub logging_to_fh ( $ $ ; $ ) {
     };
     my $e=$@;
     select $oldfh;
+
+    # close / restore filehandles:
+    if ($do_close) {
+	eval { $fh->xclose };
+	warn "logging_to_fh: while closing fh: $@" if (ref $@ or $@);
+    }
+    my $maybe_dupback=sub {
+	my ($kept,$target)=@_;
+	POSIX::close ($target);
+	if (defined $kept) {
+	    POSIX::dup2($kept,$target)
+		or warn "warn: could not restore filehandle: dup2($kept,$target): $!";
+	}
+    };
+    &$maybe_dupback ($old_stdout_fd,1);
+    &$maybe_dupback ($old_stderr_fd,2);
+
     if (ref $e or $e) {
-	&$maybe_closeit;
 	die  $e
-    } else {
-	&$maybe_closeit;
     }
     $wantarray ? @rv : $rv[0]
 }
@@ -103,6 +153,7 @@ sub timedlogging_to_fh ($ $ ; $ ) {
 	      : scalar logging_to_fh($w, $thunk, 1) )
 	};
 	my $e=$@;
+	close $w; #!, to make sure that the child will exit!! deadlock arises on exceptions otherwise quickly..
 	if (ref $e or $e) {
 	    waitpid $pid, 0 or warn "timedlogging_to_fh note: waitpid $pid: $!";
 	    die $e;
@@ -116,11 +167,15 @@ sub timedlogging_to_fh ($ $ ; $ ) {
 	eval { # need this, or it will escape to another handler!! and not even exit!
 	    xclose $w;
 
-	    # prevent getting sigint's
+	    # prevent getting sigint's and the like
 	    setsid or die $!;
 
 	    # detach from other stuff
 	    close STDIN; close STDOUT; close STDERR;
+	    # btw can't close fd's of which I don't know... the old
+	    # problem (e.g. calc); luckily we probably terminate as
+	    # soon as the parent does so it shouldn't usually be a
+	    # problem.
 	    chdir "/";
 
 	    # autoflush on, and why not just use printf instead of print $fh sprintf:
