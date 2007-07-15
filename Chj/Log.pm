@@ -19,7 +19,10 @@ Chj::Log
 
 package Chj::Log;
 @ISA="Exporter"; require Exporter;
-@EXPORT_OK=qw(logging_to);
+@EXPORT_OK=qw(
+	      logging_to
+	      logging_to_fh
+	     );
 %EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
@@ -28,6 +31,9 @@ use Chj::xopen 'xopen_append';
 
 sub logging_to_fh ( $ $ ; $ ) {
     my ($fh,$thunk,$do_close)=@_;
+    #local *STDOUT{IO}= $fh; Can't modify glob elem in local. fun.
+    local *STDOUT= $fh;
+    local *STDERR= $fh;
     my $wantarray= wantarray;
     my @rv = eval {
 	$wantarray ? &$thunk : scalar &$thunk
