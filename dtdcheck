@@ -1,0 +1,137 @@
+#!/usr/bin/perl -w
+
+# Mit Okt 30 18:44:55 MET 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname [ -iso | -utf8 ] path/to/file.dtd [ -iso | utf8 ] xmlfile(s)
+  Optionen:
+  -iso  Input ist ISO-Latin1, nicht UTF-8. 
+        Wenn die Option vor der dtd-Datei angegeben wird, wirkt sie
+        auch auf diese.
+  -utf8 Input ist UTF-8
+";
+exit @_;
+}
+
+my @files;
+my $flag_seendtd;
+my ($opt_iso_xmldoc, $opt_iso_xsldoc);
+for (my $i=0; $i<=$#ARGV; $i++) {
+  local $_=$ARGV[$i];
+  if (/^--?h(elp)?$/) {
+    usage
+  } elsif ($_ eq '-iso') {
+    if (!$flag_seendtd) {
+      $opt_iso_xsldoc=1;
+    }
+    $opt_iso_xmldoc=1;
+  } elsif ($_ eq '-utf8') {
+    if (!$flag_seendtd) {
+      $opt_iso_xsldoc=0;
+    }
+    $opt_iso_xmldoc=0;
+  } elsif ($_ eq '--') {
+    push @files, @ARGV[$i+1..$#ARGV];
+    last;
+  } elsif (/^-./) {
+    warn "Unknown option '$_'\n";
+    usage(1)
+  } else {
+    push @files, $_;
+    $flag_seendtd=1;
+  }
+}
+usage unless @files>=1;
+
+my $dtdfile= shift @files;
+
+use XML::LibXML;
+#use XML::LibXML::Dtd; nope
+#use fileutils 'fetchfile';###
+#=pod
+sub fetchfile {
+    my $file=shift;
+    open FILE, "<$file" or die "$myname: could not open '$file' for reading: $!\n";
+    local $/;
+    my $c=<FILE>;#error checking?
+    close FILE or die "$myname: error closing input '$file': $!\n";
+    \$c
+}
+#=cut
+
+my $parser = XML::LibXML->new();
+
+#$parser->validation(1); # hmm? woher wissen woher dtd, ist die Frage, wenns nicht im xml selber steht. Wenn nicht scheints stillschweigend nicht gecheckt zu werden?.
+
+
+my $dtd;
+{
+  my $doc= ${fetchfile($dtdfile)};
+  if ($opt_iso_xsldoc){
+    $doc= encodeToUTF8("iso-8859-1",$doc);
+  }
+  $dtd= XML::LibXML::Dtd->parse_string($doc);#  or die "ç";
+}
+
+if (@files) {
+  FILE:
+  for (@files) {
+    #my $source= $parser->parse_file($_) or die "ç";
+    my $source;
+    {
+      my $doc= ${fetchfile($_)};
+      if ($opt_iso_xmldoc) {
+	$doc= encodeToUTF8("iso-8859-1",$doc);
+      }
+      if (!$doc) {
+	print "File '$_' is empty. Ignoring.\n\n";
+	next FILE;
+      }
+      $source= $parser->parse_string($doc);
+    }
+    eval {
+      $source->validate($dtd);# ah das macht selber schon die wenn nicht valid.
+    };
+    if ($@) {
+      if (@files > 1) {
+	print "File '$_':\n\n$@\n";
+      } else {
+	print "\n$@\n";
+	exit 1;
+      }
+    } else {
+      if (@files > 1) {
+	print "File '$_' matches dtd.\n\n";
+      } else {
+	print "File matches dtd.\n";
+	exit 0;
+      }
+    }
+  }
+}
+else {
+  my $source;
+  {
+    local $/;
+    my $doc= <STDIN>;
+    if ($opt_iso_xmldoc){
+      $doc= encodeToUTF8("iso-8859-1",$doc); 
+    } 
+    $source= $parser->parse_string($doc); 
+  }
+  eval {
+    $source->validate($dtd);
+  };
+  if ($@) {
+    print "\n$@\n";
+    exit 1;
+  } else {
+    print "XML matches dtd.\n";
+    exit 0;
+  }
+}
