@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+# Die Aug 31 23:18:16 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $mirror= "http://switch.dl.sourceforge.net/sourceforge";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname sfuri(s)
+
+  source forge downloader.
+  If you're fed up with that multi click download process,
+  esp if you're logged in a server,
+  run this and paste sf uris that end with ?download.
+
+  Set your preferred mirror in the file $0
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+# http://sourceforge.net/project/showfiles.php?group_id=70209&package_id=74130&release_id=263757
+
+# kommt ne grosse weitere seite "Below is a list of the files in the selected file release.":
+# SAWA-0.79.tar.gz27313 0 Platform-IndependentSource .gz
+# link -> http://prdownloads.sourceforge.net/sawa/SAWA-0.79.tar.gz?download
+
+# kommt länderwahlseite:
+# select mirror.  aha ich hatte keinen mehr gewählt in ,meinem browser kookie draussen?
+
+# kommt seite mit:
+# Your download should begin shortly. If it does not, try
+# http://switch.dl.sourceforge.net/sourceforge/sawa/SAWA-0.79.tar.gz
+# or choose a different mirror
+
+
+# Könnte ich den direkt wählen? jedenfalls geht letztere url mit wget.
+# ok das machen.
+
+sub transform {
+    map {
+	s/\?download$// or die "'$_': not a ?download uri";
+	s#^http://prdownloads\.(sourceforge|sf)\.net/##
+	  or die "'$_': does not match, not a download uri?";
+	"$mirror/$_"
+    } @_
+}
+
+sub download {
+    my ($uri)=@_;
+    system "wget","--",$uri;
+}
+
+map { download $_ } (do {
+    if (@args) {
+	transform @args
+    } else {
+	transform grep { length } map {
+	    s/^\s+//s; s/\s+\z//s; $_
+	} <STDIN>
+    }});
