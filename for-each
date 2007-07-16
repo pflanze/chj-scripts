@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# cj Sun, 15 Aug 2004 21:26:39 +0200
+# so lange hat das gebraucht.
+
+
+code="$1"
+shift
+
+# make it behave more like the interactive shell. sigh?
+if [ -e ~/.bashrc ]; then
+    PS1='not interactive'
+    . ~/.bashrc
+fi
+
+set -e
+# ^- ahaaaa das darf erst hier stehen wegen mesg error.
+
+for arg in "$@"; do
+    eval $code "$arg"
+    #HEH.  $code "$arg"  ging nicht. na. nun ja klar.
+    #####schEISS, "$arg" geht doch ned gibt fehler mit '(bla...' files. wegen eval offenbar. mannnn
+done

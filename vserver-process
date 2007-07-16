@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+# Sam Sep  3 22:21:56 CEST 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname options pid(s)
+
+  Action options:
+  --ip|--ipv4roots  show ipv4 roots
+
+  Other options:
+  -a|--all    run given actions on all processes, not those given as arguments.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_ipv4roots,
+    $opt_all,
+    );
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?ip(v4roots)?$/) {
+	$opt_ipv4roots=1;
+    } elsif (/^--?a(ll)?$/) {
+	$opt_all=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+if ($opt_all) {
+    usage "both --all and pids given" if @args
+} else {
+    usage unless @args;
+}
+
+usage "currently only --ipv4roots is supported" unless $opt_ipv4roots;
+
+use Chj::Vserver::ProcessInfo;
+use Chj::System::Processes;
+
+sub show_a_pid {
+    my ($pid)=@_;
+    print "$pid:\n";
+    my $p= Chj::Vserver::ProcessInfo->new_of_pid($pid);
+    if ($opt_ipv4roots) {
+	print "  ipv4roots:\n";
+	for my $r ($p->ipv4roots) { # returns Chj::Net::IpMask objects
+	    print "    ip: ".$r->ip.", mask: ".$r->mask."\n";
+	}
+    }
+}
+
+if ($opt_all) {
+    #hm loop hier selber programmieren ?  sollte doch auch oben rein irgendwo. ja.
+    #ok Sat, 03 Sep 2005 22:46:11 +0200: (it took genau 16 minuten für jene lib)
+    my $s= Chj::System::Processes->new;
+    $s->set_callback(\&show_a_pid);
+    $s->run;
+} else {
+    for my $pid (@args) {
+	show_a_pid $pid
+    }
+}

@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+# Mit Jan  4 14:32:32 CET 2006
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file-with-filelist dir1 dir2 [-- diffoptions ]
+
+  Example: diff-files-from list-foo foob15 foob16 -- -ubB | less
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>=3;
+
+my $filesfrom= shift @args;
+my $dir1= shift @args;
+my $dir2= shift @args;
+
+use Chj::xopendir;
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+use Chj::xopen 'xopen_read';
+use Chj::IO::Command;
+
+my $direct=0;# true means let diff print to stdout directly - drawback: can't exclude items which are identical.
+
+my $f= xopen_read($filesfrom);
+while(defined(my$line=$f->xreadline)){
+    chomp $line;
+    $line=~ s|^\./||;
+    my @cmd= ("diff",@args,"$dir1/$line","$dir2/$line");
+    if ($direct) {
+	print join (" ",@cmd),"\n" or die $!;
+	my $rv= xsystem @cmd;
+	$rv==0 or $rv==256 or $rv==512 or die "$myname: diff exited with rv $rv\n";
+    } else {
+	my $in= Chj::IO::Command->new_sender(@cmd);
+	my $content= $in->xcontent;
+	my $rv= $in->xfinish;
+	$rv==0 or $rv==256 or $rv==512 or die "$myname: diff exited with rv $rv\n";
+	if ($rv==0) {
+	    # do not output anything
+	} else {
+	    print join (" ",@cmd),"\n" or die $!;
+	    print $content or die $!;
+	}
+    }
+}

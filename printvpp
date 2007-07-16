@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+if ($ARGV[0] && $ARGV[0]=~ /^--?h(elp)?$/) {
+	die "Interaktives vpp printing tool von cj.
+Filename(n) als Argument geben. Rest wird gefragt.
+";
+}
+
+my $des= "hgg30";
+my $dev= "pts"; # NICHT weglassen, sonst wird's PRINTER und es wird kein ps file gedruckt!
+my $fo= "";
+my $flag;
+
+print "Destination=? [$des] "; $_=<STDIN>; chomp; $des=$_ if $_;
+print "Device=? [$dev] "; $_=<STDIN>; chomp; $dev=$_ if $_;
+print "Form=? [$fo] "; $_=<STDIN>; chomp; $fo=$_ if $_;
+print "Flagpage? [n] "; $_=<STDIN>; chomp; $flag= ($_ and /[jy]/);
+
+@exe= ('vpp', "-des=$des", "-dev=$dev", $flag?():'-noflag', $fo?"-fo=$fo":(), @ARGV);
+
+print "\n",join(" ",@exe),"\n";
+print "OK? "; $_=<STDIN>;
+exec @exe;

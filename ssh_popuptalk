@@ -1,0 +1,117 @@
+#!/usr/bin/perl -w
+
+# Die Jul 20 15:05:47 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+my $MINDELAY= 60;#sec
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  Runs ssh with the given arguments, but observes the output for
+  talk requests from another user and pops up an xmessage in that case.
+
+  (Future improvement idea: make a gtk popup, with option 'popup another
+   popup if opponent is talking furtherly to me'(on/off).)
+  (Other Futuristic idea: per-user server process to be signalled for
+  talks, instead of per-ssh-session; why? because all ssh sessions to
+  the same machine will popup a message all at once, hehehe)
+
+  ah und nochmal was: mitschneidegelegenheiten. hm. klaro.
+  inkl timestamps? und die hinrichtung ehr  auch?.
+  damit eruieren koennen was ich sage was der andere.
+  Oder aber eben timestamp mit escapes  und cursormovements verstehen fur zuordnung?
+  oder beides
+  # pts allocation gestöre aber, oderso, oder kann ich ssh forcieren  oder isches eh
+   egal?  nah muss dem sagen dass es auf der andern seite pts allozieren soll.
+
+  Das lustige an unverändertem log ist dass man mit cat oder fasttail einfach wiederspielen oder verfolgen kann.
+  Aber nicht zeitgemäss. Also für zeitgemässheit ev eher ein wrapper bieten der eben die timestamps versteht dann.
+  Also relative zeiten aufzeichnen vielleicht? und startmarker der auch absolute starteit beinhaltet. ach oder eben einfach immer 4 bytes anyway. aber login speziell markieren.
+  \\n gilt als eine marker schicht, andere als andere eben
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $logfile;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?l(?:og(?:file)?(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $logfile=$1
+        } else {
+            $logfile=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	#push @args, $_
+	push @args, @ARGV[$i..$#ARGV];
+	last;
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+use Chj::xperlfunc qw(xlaunch);
+use Chj::xpipe;
+#use Chj::xopen 'xopen_append';
+use Chj::xsysopen 'xsysopen_excl';
+BEGIN{*theopen=*xsysopen_excl}
+
+# warum habe ich immer schuld dass ich zuviel mache
+# oo? unvollständige oo.
+# callbacks?
+use Chj::Log::Timed;
+
+my $lastpopt=0;
+sub popup {
+    my $t=time;
+    #warn "t=$t, lastpopt=$lastpopt, minus ergibt ".($t-$lastpopt).", MINDELAY=$MINDELAY";
+    if (($t-$lastpopt)>$MINDELAY) {
+	$lastpopt=$t;
+        xlaunch "xmessage",@_;
+    }
+}
+
+# in spite of senselessly shared to the child, the log should be opened here already to not make the ssh process fail irrationally (with tcsetattr: Input/output error)
+my $log;
+if ($logfile) {
+    $log=theopen $logfile,0600 if $logfile; # unbuffered. maybe I want this :)  # ACH HHHHH wann lerne ich noch dass es nicht auf das open draufankommt. sondern nur auf das nachstehende print. oder alternative auf autoflush status.
+    $log->autoflush(1);
+}
+
+my ($r,$w)=xpipe;
+if (xfork) {
+    $w->xclose;
+    $|++;
+    #my $log=xopen_append $logfile if $logfile;
+    my $buf;
+    while($r->xsysread($buf,8192)){
+	if ($buf=~ /(talk: connection requested by \S+)/) {
+	    popup $1
+	}
+	print $buf;
+	#print $log $buf if $logfile;
+	Chj::Log::Timed::write($log,$buf) if $logfile;
+    }
+} else {
+    $r->xclose;
+    $w->xdup2(1);
+    xexec "ssh", @args;
+}

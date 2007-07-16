@@ -1,0 +1,7 @@
+#!/bin/sh
+settitle 'mysqldoc'
+if [ -f /usr/local/mysql/docs/manual_toc.html ]; then
+    exec links /usr/local/mysql/docs/manual_toc.html
+else 
+    exec links /usr/share/doc/mysql-doc/index.html
+fi

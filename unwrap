@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+# cj 23.8.00
+# take stdin, reformat, print to stdout
+
+## ?? wieso warnt perl nicht dass $lastwasempty typo?
+
+use constant SHORTLINE=>50; # lines shorter than that will not be merged
+
+my ($lastwasempty,$lastwasshort)=(0,0);
+
+while (<STDIN>) {
+	if (/^>/) {
+		print;
+		$lastwasshort=1;# pseudo, weil ich \n bereits ausgeg habe
+	} else { # normal:
+		if (/^\s{0,3}$/ and not $lastwasshort) { print "\n"}# \n nachholen
+		if (length($_)<SHORTLINE) {
+			print;
+			$lastwasshort=1;
+		} else {
+			chomp;print; print " " unless / $/;
+			$lastwasshort=0;
+		}
+	}
+}
+
+__END__
+
+while (<STDIN>) {
+	chomp;
+	if (length($_)==0) {
+		if ($lastwasempty) {
+			# emtpy again
+			print "\n";
+		} else {
+			print "\n\n";
+		}
+		$lastwasempty=1;
+	} else {
+		$lastwasempty=0;
+		print;
+		if (length($_)<50) {
+			if ($lastwasshort) {
+				# let it stand alone on a line
+				print "\n";
+			}
+			$lastwasshort=1;
+		} else {
+			$lastwasshort=0;
+		}
+	}
+}

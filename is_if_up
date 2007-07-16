@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+# cj Mon, 15 Apr 2002 04:42:47 +0200
+# works both as a tool and as a test for is_if_up.pm
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname interface
+  Prints either nothing (and returns exit code 2) if the 
+  given interface is down, or prints it's current ip (and return 0).
+  (returns exit code from ifconfig in case of error, probably 1)
+";
+exit;
+}
+
+usage unless @ARGV==1;
+my ($if)= @ARGV;
+usage if $if=~/^-/;
+
+use lib "/root/extlib";
+use is_if_up;
+
+my $ip= is_if_up($if);
+if (defined $ip) {
+	if (length $ip) {
+		print "$ip\n";
+		exit 0;
+	} else {
+		exit 2;
+	}
+} else {
+	exit $? >> 8;
+}

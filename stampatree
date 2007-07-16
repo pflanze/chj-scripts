@@ -1,0 +1,131 @@
+#!/usr/bin/perl -w
+
+# Mit Sep 24 18:21:42 CEST 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname folder
+
+  print a stamp list to stdout.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+use Chj::xopendir;
+use Chj::xopen;
+use Chj::xperlfunc;
+use elcms_general_settings;
+use EL::Util::DateFormat "unix2xsdatetime";
+
+my ($basedir)=@args;
+unless ($basedir eq '/') {
+    $basedir=~ s/\/\z//;
+    if ($basedir eq '.') {
+	$basedir=""
+    } else {
+	$basedir.="/"
+    }
+}
+
+sub esc {
+    my ($str)=@_;
+    $str=~ s/"/""/sg; # staun, NICHT \" sonder "" als escaping, so schreibt gnumeric csv.
+    # ach der tubel kann sein eigenes format dann nicht mehr importieren.
+    # aber scheint schon zu stimmen, CSV modul von perl macht es auch so.
+    "\"$str\""
+}
+sub fmt_time {
+    my ($t)=@_;
+    unix2xsdatetime shift
+}
+sub fmt_mode {
+    sprintf '%o',shift
+}
+my %uid;
+sub fmt_user{
+    my ($uid)=@_;
+    exists $uid{$uid} ? $uid{$uid} : $uid{$uid}= scalar getpwuid $uid
+}
+my %gid;
+sub fmt_group {
+    my ($gid)=@_;
+    exists $gid{$gid} ? $gid{$gid} : $gid{$gid}= scalar getgrgid $gid
+}
+
+sub sformat_file {
+    my ($s)=@_;
+    "f\t".$s->size."\t".fmt_time($s->mtime)."\t".$s->ino."\t".fmt_mode($s->mode)."\t".fmt_user($s->uid)."\t".fmt_group($s->gid)
+      ## nlink/hardlink zeug mal weglassen?   mann   für was habe ich cd ding programmiert.
+}
+sub sformat_dir {
+    my ($s)=@_;
+    "d\t\t".fmt_time($s->mtime)."\t".$s->ino."\t".fmt_mode($s->mode)."\t".fmt_user($s->uid)."\t".fmt_group($s->gid)
+}
+sub sformat_dev {
+    my ($s)=@_;
+    die "unfertig";
+}
+#sub sformat_link {} nope, below.
+
+sub stamptree {
+    my ($reldir)=@_;
+    my $abspath= "$basedir$reldir";
+#    warn "abspath='$abspath'";
+    my $d=xopendir ($abspath eq '' ? '.' : $abspath);
+    my (@files,@dirs);
+    while(defined(my$item=$d->xnread)){
+	my $relpath="$reldir$item";
+	my $s=xlstat "$basedir$relpath";
+	if (-l _) {
+	    push @files, esc($relpath)."\tl\t".esc(xreadlink "$basedir$relpath");
+	} elsif (-d _) {
+	    push @dirs, [$relpath,
+			 esc($relpath)."\t".sformat_dir($s)];
+	#} elsif (  device file ##!
+	} else {
+	    push @files, esc($relpath)."\t".sformat_file($s);
+	}
+    }
+    for (sort @files) { # sorted by name. alphabetically. even "" don't matter.
+	print "$_\n";
+    }
+    for (sort { $a->[0] cmp $b->[0] } @dirs) {
+	my ($relpath,$str)=@$_;
+	print "$str\n";
+	stamptree ($relpath."/");
+    }
+}
+
+stamptree "";

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+LANG=C exec /usr/bin/man "$@"

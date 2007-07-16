@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Son Dez 14 04:00:27 CET 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+use Chj::Unix::Mount qw(mount_if_not_already);
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ mount_options ] source mountpoint
+  First checks in /proc/mounts whether something is already
+  mounted on mountpoint, if not, executes the system mount
+  command with the given arguments.
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^-./) {
+    	#usage("Unknown option '$_'\n");
+	push @args, $_
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+#exit ! mount_if_not_already @args ;
+
+#mount_if_not_already @args ;
+#exit( $? >> 8);
+
+#exit !
+# OCH. muesste lib anpassen.  ev eh bissel fraglich?  na, sollte dort wohl xxsystem verwenden, damit mount ding code weiter raus.  oder richtige exceptions meinerleiige.
+mount_if_not_already @args ;

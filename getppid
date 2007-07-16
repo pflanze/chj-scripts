@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Son Mai 25 16:30:06 MEST 2003
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid(s)
+  Shows the parent pids of the given processes.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage "Unknown option '$_'";
+    } else {
+	if (/^\d+\z/s) {
+	    push @files, $_
+	} else {
+	    usage "Invalid value '$_'";
+	}
+    }
+}
+usage unless @files;
+
+use Chj::xopen;
+use Errno 'ENOENT';
+
+for my $pid (@files) {
+    eval {
+	my $f= xopen "/proc/$pid/status";
+	$f->xcontent=~ /PPid:\s*(\d+)/ or die "invalid proc/pid/status format";
+	if (@files>1) {
+	    print "$pid: $1\n"
+	} else {
+	    print "$1\n"
+	}
+    };
+  check:{
+	if ($@) {
+	    if ($@=~ /xopen/) {
+		#if ($!==ENOENT) {  Fun: $! is 0 here. Why? We need good exceptions..
+		    warn "No such pid $pid\n";
+		    last check;
+		#} else {
+		#    warn "error is ".($!+0);
+		#}
+	    }
+	    die;
+	}
+    }
+}

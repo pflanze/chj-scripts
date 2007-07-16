@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+$0=~ /([^\/]+)$/s;
+my $me= $1;
+sub usage {
+	die "$me  list of packages to upgrade
+  Checks each package whether it is really installed, and if yes,
+  apt-get install's it.
+";
+	exit;
+}
+
+usage unless @ARGV;
+
+# get list of installed packages
+my %packs= map { chomp; $_=>1 } `dpkglist -i`; # dpkglist is from me too
+$|=1;
+for (@ARGV) {
+	if (/^-/) {
+		usage
+	} else {
+		if ($packs{$_}) {
+			print "$me: calling apt-get for '$_'...\n";
+			system qw(apt-get install),$_;
+		} else {
+			print "$me: package '$_' is not installed.\n";
+		}
+		print "\n";
+	}
+}
+
+
+__END__
+
+root@lombi root# dpkg -l|egrep '^.?i'|wc -l
+    724
+
+root@lombi root# dpkglist -i|wc -l
+    723
+
+root@lombi root# dpkg -l|egrep '^.?i'|psed 's/....([\w.+-]+).*/$1/'| sort>egrep_out
+(Mit breitem Fenster damit nicht namen abgeschnitten!!)
+
+root@lombi root# dpkglist -i|sort > dpkglist_i_out
+
+chris@lombi root > diff -u egrep_out dpkglist_i_out  
+--- egrep_out	Mon Feb  4 23:11:52 2002
++++ dpkglist_i_out	Mon Feb  4 22:55:54 2002
+@@ -673,7 +673,6 @@
+ xaw3dg
+ xaw3dg-dev
+ xbase-clients
+-xchat
+ xchat-common
+ xchat-gnome
+ xemacs21
+
+chris@lombi root > dpkg -l xchat
+Gewünscht=Unbekannt/Installieren/R=Entfernen/P=Säubern/Halten
+| Status=Nicht/Installiert/Config/U=Entpackt/Fehlgeschl. Konf./Halb install.
+|/ Fehler?=(keiner)/Halten/R=Neuinst. notw/X=beides (Status, Fehler: GROß=schlecht)
+||/ Name                Version             Beschreibung
++++-===================-===================-======================================================
+ic  xchat               1.8.3-1             IRC client for X similar to AmIRC
+
+dpkglist zeigt also die "die WIRKLICH" installiert sind. nun gut so.
+

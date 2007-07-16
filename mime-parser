@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+# Fre Aug  6 01:30:02 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [file(s)]
+  or stdin.
+  Options:
+  -h headername   print header value(s?)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_h;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (0) {
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?h(?:eader(?:=(.*))?)?$/) {
+         if (defined $1) {
+             $opt_h=$1
+         } else {
+             $opt_h=$ARGV[++$i] or usage "missing argument for '$_' option";
+         }
+    } elsif (/^--?h(elp)?$/) {
+    	usage
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+use MIME::Parser;
+use Chj::xopen 'xopen_read';
+use Chj::singlequote;
+
+my $parser = new MIME::Parser;
+$parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd.
+
+sub parsemsg {
+    my ($fh)=@_;
+    my $ent= $parser->parse($fh);
+    #use Data::Dumper;
+    #print Dumper $ent;
+    $ent
+}
+
+if (@args) {
+    for(@args) {
+	print "File ".singlequote($_).":\n";
+	my $f=xopen_read $_;
+	my $ent=parsemsg($f);
+	##unfinished:
+	if ($opt_h){
+	    #show header
+	    my $head=$ent->head;
+	    my @vals= $head->get($opt_h);
+	    if (@vals==0) {
+		print "no such header ".singlequote($opt_h)."\n";
+	    } elsif(@vals==1){
+		print "one such header ".singlequote($opt_h).": ".singlequote($vals[0])."\n";
+	    } else {
+		my $i=0;
+		for(@vals){
+		    print "$i. header ".singlequote($opt_h).": ".singlequote($_)."\n";
+		    $i++;
+		}
+	    }
+	}else {
+	    die "unknown command requested <--- unfinished";
+	}
+    }
+}
+else {
+    parsemsg(*STDIN{IO});
+}

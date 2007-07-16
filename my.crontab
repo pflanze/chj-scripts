@@ -1,0 +1,113 @@
+#!/usr/bin/perl -w
+
+# Fre Apr 11 21:16:09 MEST 2003
+# $_="christian:jaeger=ethlife:ethz:ch",tr/:=/.@/,print
+
+# This is a wrapper around Vixie's crontab command. For better handling of
+# dangerous options and for making it possible to use editors that unlink
+# and recreate files upon writing.
+# It should be installed as something like my.crontab, and then an alias
+# put into your .bashrc like "alias crontab=my.crontab", so that scripts
+# using crontab are not calling this wrapper (might disturb them).
+
+# Changelog:
+# Tue, 22 Apr 2003 03:12:01 +0200: Doh, I forgot a truncate, so when the edited file has become smaller, it left parts of the old file.
+
+
+use strict;
+
+my $crontab= "/usr/bin/crontab";
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+
+use constant DEBUG=> $ENV{MY_CRONTAB_DEBUG} ? 1 : 0;
+
+if (!exists $ENV{EDITOR_CRONTABHELPER}){
+    my @files;
+    my $DEBUG=0;
+    my @options;
+    my ($opt_r,$opt_e);
+    for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^-(.+)/) {
+	    my $opts=$1;
+	    for (split //,$opts) {
+		if ($_ eq 'r') {
+		    $opt_r=1;
+		} elsif ($_ eq 'e') {
+		    $opt_e=1;
+		}
+	    }
+	    push @options,$_;
+	} else {
+	    push @options, $_
+	}
+    }
+    if ($opt_r) {
+	$|=1;
+	my $ans;
+      ASK: while(1) {
+	    print "Are you sure you want to remove the crontab (for $ENV{USER})? ";
+	    $ans=<STDIN>;
+	    if ($ans=~ /^n/i){
+		print "Cancelling.\n";
+		exit;
+	    }
+	    last if $ans=~ /^[yj]/i;
+	    print "Please say yes or no.\n";
+	}
+    }
+    if ($opt_e) {
+	$ENV{EDITOR_CRONTABHELPER}= $ENV{EDITOR};
+	$ENV{EDITOR}= $0;
+    }
+    exec $crontab,@ARGV;
+}
+
+else {
+    # secondstage editor wrapper
+
+    require File::Temp; # contained in Debian's perl-modules package
+    require Digest::MD5;
+
+    my $file= $ARGV[0] or die "missing file argument";
+
+    my $dir= File::Temp::tempdir(CLEANUP=>1) or die;
+
+    open IN,"+<$file" or die "could not open '$file' for modification: $!";
+    my $tmpfile= "$dir/$myname.file";
+    open OUT, ">$tmpfile" or die "could not create '$tmpfile': $!";
+    my $buf;
+    my $dig1= new Digest::MD5;
+    while (read IN,$buf,1000) {
+	print OUT $buf or die "error writing $tmpfile: $!";
+	$dig1->add($buf);
+    }
+    close OUT or die "error closing $tmpfile: $!";
+    system $ENV{EDITOR_CRONTABHELPER}, $tmpfile;
+    exit $? if $?;
+    open EDITED,"<$tmpfile" or die "tempfile $tmpfile seems to have been deleted by editor";
+    my $dig2= new Digest::MD5;
+    $dig2->add($buf) while read EDITED,$buf,1000;
+    if ($dig1->digest eq $dig2->digest) {
+	print "$myname: file has not been changed\n" if DEBUG;
+	exit;
+    }
+    seek EDITED,0,0 or die "seek $tmpfile: $!";
+    seek IN,0,0 or die "seek $file: $!";
+    truncate IN,0 or die "truncate $file: $!";
+    my @bufs;
+    my $bufidx=0;
+    $buf= \$bufs[$bufidx];
+    while (read EDITED,$$buf,1000){
+	print IN $$buf or die "error writing to $file: $!";
+	$bufidx= $bufidx ? 0 : 1;
+	$buf= \$bufs[$bufidx];
+    }
+    close EDITED or die "closing $tmpfile: $!";
+    $bufidx= $bufidx ? 0 : 1;
+    $buf= \$bufs[$bufidx];
+    print IN "\n" or die "error writing to $file: $!" unless $$buf=~ /\n\z/s;
+    close IN or die "closing $file: $!";
+}

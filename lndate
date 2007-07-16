@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Mit Mai 14 06:36:56 MEST 2003
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_force=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?f(orce)?$/) {
+	$opt_force=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+my $dir= pop @files;
+-d $dir or die "$myname: no such directory '$dir'.\n";
+
+use File::Basename;
+use Chj::xperlfunc;
+
+my $date=`date_`; chomp $date; die "date_ returned no value" unless length $date;
+
+for my $path (@files) {
+    my $name= basename $path;
+    xsystem "ln",$opt_force ? "-f" : "-i","--",$path, "$dir/${name}_$date";
+}

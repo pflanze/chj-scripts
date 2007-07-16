@@ -1,0 +1,115 @@
+#!/usr/bin/perl -w
+
+# christian Jaeger 2000/9/30 pflanze@gmx.ch
+# Takes one optional parameter: directory (default is cwd)
+# Note: this estimates the actual blocksize by looking at file sizes and file blocks, 
+#  which is not always correct. I didn't know a better way to find out.
+
+# Sun, 21 Nov 2004 20:15:04 +0100: lstat instead of stat. man.
+
+
+sub usage {
+    print "$0 dir
+  options:
+  --blocksize|-b n   blocks are n bytes big
+";
+    exit 1;
+}
+my $blocksize;
+my $flag_blocksize_given;
+my $dir;
+if (@ARGV) {
+    if ($ARGV[0]=~ /^--?h/) {
+	usage
+    } else {
+      hey_you_think_this_is_chaos_eh:
+	if ($ARGV[0]=~ /^--?b(locksize)?$/) {
+	    @ARGV<=3 or usage;
+	    $blocksize=$ARGV[1];
+	    $flag_blocksize_given=1;
+	    $dir=$ARGV[2] unless defined $dir;
+	} elsif (@ARGV==3) {
+	    $dir=shift;
+	    goto hey_you_think_this_is_chaos_eh;
+	} elsif (@ARGV==1) {
+	    $dir=shift;
+	} else {
+	    usage
+	}
+    }
+}
+
+my $sortfunc= sub { $b->[1] <=> $a->[1] };
+
+if (defined($dir)&&length($dir)) {
+	$dir=~ s|/$||;
+	$dir.="/";
+} else {
+	$dir="./";
+}
+
+
+if (opendir DIR,$dir) {
+	my @items;
+	my $total=0;
+	my $totalfiles= 0; # blocks
+	my $ownsize= (lstat($dir))[12];# blocks
+	#my $blocksize=0;# will be guessed
+	$blocksize=0 unless $flag_blocksize_given;
+	my ($blocks,$bytes);
+	while (defined ($item= readdir DIR)) {
+		next if $item eq '.' or $item eq '..';
+		if (-d "$dir$item") {
+			my $line= execute('du','-sk','--',"$dir$item");
+			chomp $line;
+			if ($line=~ /^(\d+)/) {
+				$total+=$1;
+				push @items,[$item,$1];#[$item,$1,$line];
+			} else {
+				warn "Problem: line is '$line'";
+			}
+		} else {
+			($blocks,$bytes)=(lstat("$dir$item"))[12,7];
+			next unless $blocks; #zero lenghts
+			$totalfiles+= $blocks;
+			if ($bytes) {
+			    my $bs= 2** int(log($bytes/$blocks)/log(2)+0.5);
+			    #print "Blocksize: $bs, bytes=$bytes, blocks=$blocks\n";
+			    $blocksize=$bs if $bs>$blocksize # get the highest number as estimate
+			      and !$flag_blocksize_given;
+			} else {
+			    #warn "Hmm, stat $dir$item gave bytes=".(defined $bytes ? $bytes : "undef");
+			    # heh, warum hab ich den Fall nicht früher getroffen? 24.3.03
+			    # If the file is empty, we can't abschätzen was das für die Blockgrösse heisst well.
+			    # so just ignore
+			}
+		}
+	}
+	closedir DIR;
+	
+	foreach (sort $sortfunc @items) {
+		print $_->[1].substr("        ",length($_->[1])).$_->[0]."\n";
+	}
+	$ownsize= $ownsize*$blocksize/1024;
+	print "TOTAL: folders $total k, files ".($totalfiles*$blocksize/1024)." k, dir $ownsize k  (blocksize=${blocksize}b".(${blocksize} eq 512? '':' ?').")\n";
+} else {
+	warn "Could not open dir '$dir': $!\n";
+}
+
+sub execute {
+	my $rv=open IN,"-|";
+	if (defined $rv) {
+		if ($rv) {
+			# parent
+			local $/=undef;
+			my $in=<IN>;
+			close IN;
+			#wait; nötig?
+			$in;
+		} else {
+			exec @_;
+		}
+	} else {
+		die "Could not fork: $!\n";
+	}
+}

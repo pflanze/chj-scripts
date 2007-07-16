@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+
+# Fre Aug 20 01:47:57 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname .newsuffix 'command [options]' file(s)
+
+  Call command (which may contain options -- it is going to be fed
+  to a shell) with quoted infile outfile appended, then if
+  successful, copy mtime and atime.
+
+  Options:
+  -f|--force   don't care about existing target files.
+  -R|--remove|--trash   trash or remove the original.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_f;
+my $opt_remove;
+my $opt_trash;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?f(orce)?$/) {
+	$opt_f=1;
+    } elsif (/^--remove$/ or /^-R/) {
+	$opt_remove=1;
+    } elsif (/^--trash$/) {
+	$opt_trash=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>=3;
+
+usage "both trash and remove options given" if $opt_trash and $opt_remove;
+
+my $suffix=shift @args;
+my $cmd=shift @args;
+$suffix=~ /^\./ or usage "suffix argument must start with a dot";
+#my @cmd= split / +/,$cmd;##nunja. bissel schräge heuristik?. Ja zu schräg: müsste anführungszeichen und quoting überprüfen. Shell-like parsen. Oder halt doch die shell machen lassen??
+
+use Chj::xperlfunc;
+use Chj::Shelllike::touch_r;
+use Chj::Trash 'trash';
+
+for my $path (@args) {
+    my $newpath=$path;
+    #warn "newpath vorher: '$newpath'";
+    $newpath=~ s|(?:\.[^.]{1,5}){1,2}\z|$suffix| or do {
+	$newpath.=$suffix;#hmm?
+    };
+    #warn "newpath nachher: '$newpath'";
+    if (!$opt_f and -e $newpath) {
+	die "file '$newpath' already exists, give -f option to overwrite";
+    }
+    #xxsystem @cmd,$path,$newpath;
+    #xxsystem "$cmd ".shellquote($path)." ".shellquote($newpath);#tja. security wohin oder so.
+    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);#still tja?
+    # assume it has been successfully done.
+    touch_r $path,$newpath; #or call it copy_mtime ?  copy_times? copy_time?
+    if ($opt_remove) {
+	unlink $path;
+    } elsif ($opt_trash) {
+	trash $path;
+    }
+}
+

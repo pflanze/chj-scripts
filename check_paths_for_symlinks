@@ -1,0 +1,137 @@
+#!/usr/bin/perl -w
+
+# Son Mai  9 22:06:30 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  Checks the given path(s) for symlinks in each of it's segments.
+  Exits with status 2 if any symlink is found, 1 if no symlink but
+  errors were detected, 0 otherwise.
+
+  Options:
+  -q   be totally quiet, only return exit status
+  -v   be more verbose than normal
+  -s   be silent about errors, but print symlinks; this also means
+       that no exit code 1 will ever be given
+#  -f   follow symlinks if they are relative and don't point outside the
+#       base path (see -b)
+#  -ff  same as -f but also accept absolute links, basing them on the
+#       base path (see -b) for further evaluation.
+  -b path  base for -f and -ff
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_q;
+my $opt_v;
+my $opt_s;
+my $opt_f;
+my $opt_ff;
+my $opt_b;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_q=1;
+	$opt_v=0;
+    } elsif (/^--?v(erbose)?$/) {
+	$opt_v=1;
+	$opt_q=0;
+    } elsif (/^--?s(ilent)?$/) {
+	$opt_s=1;
+	$opt_v=0;
+    } elsif (/^--?f(?:ollow)?$/) {
+	$opt_f=1;
+    } elsif (/^--?ff(?:ollow)?$/) {
+	$opt_ff=1;
+    } elsif (/^--?b(?:ase(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $opt_b=$1
+	} else {
+	    $opt_b=$ARGV[++$i] or usage "missing argument for '$_' option";
+	}
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+my $basepath= do {
+    if (!defined $opt_b){
+	$opt_b
+    } else {
+	"." ## çhmmm.?  ich brauche eine gute pfad liberary man
+    }
+};
+
+
+$|++;
+
+my ($errors,$symlinks);
+
+OUTER:
+for (@args) {
+    print "checking path '$_':\n" if $opt_v;
+    my @subpath;
+    s|/\z||;
+    push @subpath,$_;
+    while (s|/+[^/]*\z||s) {
+	push @subpath,$_ if length $_;
+    }
+    for (reverse @subpath) {
+	print "  checking subpath '$_'.." if $opt_v;
+	my @s= lstat $_
+	  or do {
+	      if ($opt_v) {
+		  print " *error*: $!\n";
+	      } else {
+		  print "error with path '$_': $!\n" unless $opt_q or $opt_s;
+	      }
+	      $errors++;
+	      next OUTER;
+	  };
+	if (-l _) {
+	    if (defined $opt_f) {
+		die "UNFINISHED";
+	    }
+	    # else:
+	    if ($opt_v) {
+		print " *IS A SYMLINK*!!\n";
+	    } else {
+		print "path '$_' is a symlink\n" unless $opt_q;
+	    }
+	    $symlinks++;
+	} else {
+	    print "ok\n" if $opt_v;
+	}
+    }
+}
+
+
+if ($symlinks) {
+    exit 2
+} elsif ($errors and not $opt_s) {
+    exit 1
+} else {
+    exit 0
+}
+

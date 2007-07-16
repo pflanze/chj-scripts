@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+
+# Fre Jan 21 22:35:26 MET 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname n
+
+  Copy stdin to stdout, but skip the last n lines of input.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+my ($n)=@args;
+$n=~ /^\d+\z/ or usage "expected number, not '$n'";
+
+if ($n==0) {
+    exec "cat" or exit 127;
+}
+
+
+my @buf;
+my $pos=0;
+WHOLE:{
+    for(;$pos<$n;$pos++){
+	if(defined($_=<STDIN>)) {
+	    #warn "didit\n";
+	    $buf[$pos]=$_;
+	} else {
+	    last WHOLE;
+	}
+    }
+    $pos=0;
+
+    #ach, für 0 gibts noch keine lösung.
+    #if(defined($_=<STDIN>)) {
+    #ach, einfach special case machen anyway.
+
+
+    while(<STDIN>){
+	#     if (@buf < $n) {
+	# 	push @buf,$_;
+	#     } else {
+	# 	print(shift @buf) or die "$myname: stdout: $!\n" if @buf;
+	# 	#if ($n){
+	# 	    push @buf,$_;
+	# 	#} else {
+	# 	#    print..
+	# 	#}
+	#     }
+    #} print(shift @buf) or die "$myname: stdout: $!\n" if @buf;#grrr wieder n grenzfall.  aber wär auch wieder falsch.
+	print $buf[$pos] or die "$myname: stdout: $!\n";
+	$buf[$pos]=$_;
+	$pos++;
+	if ($pos>=$n) {
+	    $pos=0;
+	}
+    }
+}
+#for(1..$n) {
+#    print $buf[$pos] or die "$myname: stdout: $!\n";
+#    $pos++;
+#    if ($pos>=$n) {
+#	$pos=0;
+#    }
+#} fuck wie komm ich denn auf den schnurzfurz
+
+close STDIN or die "$myname: closing stdin: $!\n";

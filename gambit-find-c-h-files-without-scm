@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# cj Sat, 21 May 2005 22:24:33 +0200
+
+if [ $# -gt 0 ]; then
+    dir="$1"
+else
+    dir="."
+fi
+
+
+#find "$dir" -name "*.[ch]"|perl -wne 'my $l=$_; chomp; s/\.[ch]$//; print $l unless -e "$_.scm"'|sort
+# hmmm. in chicken sources it is possible to have both .h and .scm files. and yes, doesn't make much sense as such.
+
+
+find "$dir" -name "*.[ch]"|perl -wne 'my $l=$_; chomp; print $l unless s/\.c$// && -e "$_.scm"'|sort

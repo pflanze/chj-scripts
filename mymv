@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Don Jan  2 23:09:32 MET 2003
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname source dest
+  Calls the system 'rename(2)' command, but first checks to see
+  whether the target already exists and asks for confirmation if
+  it is.
+  If the target is a directory, it uses dest/filename as target
+  just like mv.
+";
+exit @_;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files>=2;
+
+my $target= pop @files;
+if (-e $target) {
+    if (-d _) {
+	movetodir(@files,$target);
+    } else {
+	if (@files>1) {
+	    die "When given multiple source items, the target must be a directory.\n";
+	} else {
+	    if (confirm("The target '$target' already exists. Overwrite it?")) {
+		

@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# Fre Mär  7 22:17:23 MET 2003
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname < in > out
+  output lines randomly changed in order
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage if @files;
+
+# könnte sicher besser sein hier einfach basics
+
+my @lines=map { /\n$/s ? $_ : "$_\n" } <STDIN>;
+
+while (my $n=@lines) {
+    print splice @lines,int(rand($n)),1
+}

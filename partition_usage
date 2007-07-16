@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# Sam Jun 14 23:24:27 CEST 2003
+
+use strict;
+use Chj::xopen;
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname partition_devices
+  Searches for use of those partitions in some 'strategic'
+  places to try and find out if they are in use.
+  The arguments must be something like:
+   /dev/hda8   or  hda8  or  md8  ...
+  ATTENTION: could of course still be that they are used
+  for something.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+my @fstab= grep {! /^\s*#/ } (xopen "/etc/fstab")->xreadline;
+sub fstab {
+    my ($dev)=@_;
+    for (@fstab) {
+	chomp;
+	warn "checking line: $_ for dev '$dev'" if $DEBUG;
+	if (/\Q$dev\E/s) {
+	    return $_
+	}
+    }
+    undef
+}
+
+sub chase {
+    my ($dev)=@_;
+    UNFERTIG ççç  siehe Chj::xchase.
+sub isit {
+    my ($res)=@_;
+    if ($res) {
+	"YES: $res\n"
+    } else {
+	"no\n"
+    }
+}
+	
+for (@files) {
+    my $dev;
+    if (/^\s*\/dev\/([a-z]\w+)\s*\z/) {
+	$dev=$1;
+    } elsif (/^\s*([a-z]\w+)\s*\z/) {
+	$dev=$1;
+    } else {
+	usage "Argument '$_' does not look right";
+    }
+    $dev= "/dev/$dev";
+    print "Checking device $dev:\n";
+    print "fstab: ", isit fstab $dev;
+    print "\n";
+}#    isit 
+    

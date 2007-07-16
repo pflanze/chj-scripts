@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+# Son Feb 23 16:29:58 MET 2003 -17:45
+# written by jaeger@ethlife.ethz.ch, credits and patches welcome.
+
+use strict;
+use POSIX qw(ENOTEMPTY EACCES);
+use Symbol;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] dir age
+  Purges all non-dir items older than age days and also
+  directories if empty.
+  Options:
+  -v|--verbose   report each removed item / dir to stderr
+  -q|--quiet     do not report non-fatal errors
+  -p|--preserve  restore modification+access time of directories that have
+                 been partially emptied.
+  -a|--always    always delete empty directories, even if their
+                 timestamp is not older than age.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $VERBOSE=0;
+my ($opt_p,$opt_q,$opt_a);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?v(erbose)?$/) {
+	$VERBOSE=1;
+    } elsif (/^--?p(reserve)?$/) {
+	$opt_p=1;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_q=1;
+    } elsif (/^--?a(lways)?$/) {
+	$opt_a=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files==2;
+
+my ($directory,$age)=@files;
+
+use vars '$cwd';
+$cwd=""; # will include trailing slash
+
+sub purgeolditemsin { # returns true if direct dir contents are changed
+    my ($dir)=@_; # path (or name if we are in dir above); must be a real dir, no symlink.
+    if (chdir $dir){ ## btw there is one drawback of the chdir approach: if a directory is readable, but not accessible (i.e. drw-rw-r--), it *could* still be cleaned, but not this way.
+	local $cwd="$cwd$dir/";
+	my $unlinked;
+	my $DIR= gensym;
+	if (opendir $DIR,"."){
+	    my $item;
+	    while(defined ($item=readdir $DIR)){
+		next if $item eq '.' or $item eq '..';
+		lstat $item or die "lstat $cwd$item: $!; aborting.\n";
+		if (-d _) {
+		    my ($atime,$mtime)= (stat _)[8,9] if $opt_p;
+		    my $M= -M _;
+		    my $didchange= purgeolditemsin($item);
+		    my $removed;
+		    if ($M >= $age or $opt_a){
+			if ($removed= rmdir $item){
+			    warn "removed dir $cwd$item\n" if $VERBOSE;
+			    $unlinked++;
+			} else {
+			    warn "rmdir $cwd$item: $!\n" unless $!==ENOTEMPTY or $opt_q;
+			}
+		    }
+		    if ($opt_p and ! $removed and $didchange){
+			utime $atime,$mtime, $item
+			  or do{warn "warning: could not restore timestamps on $cwd$item: $!\n" unless $opt_q};
+		    }
+		} else {
+		    if (-M _ >= $age){
+			if (unlink $item){
+			    warn "unlinked $cwd$item\n" if $VERBOSE;
+			    $unlinked++;
+			} else {
+			    warn "unlink $cwd$item: $!\n" unless $opt_q;
+			}
+		    }
+		}
+	    }
+	    closedir $DIR or die "closedir $cwd: $!; aborting.\n";
+	} else {
+	    if ($!==EACCES){
+		warn "opendir $cwd: $!\n" unless $opt_q;
+	    } else {
+		die "opendir $cwd: $!; aborting.\n";
+		# could be there are no more filehandles
+	    }
+	}
+	ungensym $DIR;
+	chdir ".." or die "chdir ..: $!; aborting.\n";
+	$unlinked
+    } else {
+	warn "chdir $cwd$dir: $!\n" unless $opt_q;
+	0
+    }
+}
+
+$directory=~ s|/$||s;
+purgeolditemsin($directory);

@@ -1,0 +1,4 @@
+#!/usr/bin/perl -w
+sub num {shift=~/(\d+)/ or do{warn "no number in line: $_"; return 0}; $1 }
+
+print sort {num($a)<=>num($b)} <STDIN>

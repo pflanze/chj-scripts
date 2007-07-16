@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+# Fre Dez 13 23:17:24 MET 2002 - Sat, 14 Dec 2002 00:16:56 +0100 (inkl etwas .xemacs config fiddlen)
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname [ -{number} ] [ file(s) ]
+  Convert given files. Not only filters using expand(2) but
+  also strips whitespace in lines only containing whitespace.
+  Indent is 4 unless overridden by -{number of cols} option.
+";
+exit @_;
+}
+
+my @files;
+my $cols=4;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+        usage
+    } elsif ($_ eq '--') {
+        push @files, @ARGV[$i+1..$#ARGV];
+        last;
+    } elsif (/^-(\d+)$/s) {
+        $cols=$1;
+    } elsif (/^-/) {
+        warn "Unknown option '$_'\n";
+        usage(1)
+    } else {
+        push @files, $_
+    }
+}
+#usage unless @files;
+
+
+use Fcntl;
+use POSIX 'EEXIST';
+
+sub opentmp{
+    my ($fname)=@_;
+    my ($path,$name)= $fname=~ m|(.*?)([^/]+)$|s or die "missing filename";
+    my $tmpfile= "$path.$name.tmp.$myname.$$";
+    if (sysopen TMP, $tmpfile, O_WRONLY|O_CREAT|O_EXCL) {
+	return $tmpfile;
+    } elsif ($!==EEXIST) {
+	warn "$myname: temp file '$tmpfile' already exists, moving it to the trash\n";
+	system "trash", $tmpfile or die "$myname: could not trash tmp file, terminating\n";
+	sysopen TMP, $tmpfile, O_WRONLY|O_CREAT|O_EXCL
+	  or die "$myname: could still not open tmpfile '$tmpfile' for writing: $!\n";
+	return $tmpfile;
+    } else {
+	die "$myname: could not open tmpfile '$tmpfile' for writing: $!\n";
+    }
+}
+
+sub xfork() {
+    my $pid= fork;
+    defined $pid or die "$myname: could not fork: $!";
+    $pid
+}
+
+if (@files) {
+    for my $file (@files) {
+	my $tmpfile= opentmp($file);
+	pipe READ,WRITE;
+	if (xfork) {
+	    close WRITE;
+	    local $_;
+	    while (<READ>) {
+		if (/^\s*$/){
+		    print TMP "\n" or die "$myname: error writing to tmpfile '$tmpfile': $!\n";
+		} else {
+		    print TMP $_ or die "$myname: error writing to tmpfile '$tmpfile': $!\n";
+		}
+	    }
+	    close TMP or die "$myname: error closing tmpfile: $!";
+	    wait;
+	    die "$myname: child returned error code $?\n" if $?;
+	    rename $file,$file.'~' or die "$myname: could not rename '$file' to backup '$~': $!";
+	    rename $tmpfile,$file or die "$myname: could not rename tmpfile '$tmpfile' to '$file': $!\n";
+	} else {
+	    close READ;
+	    open STDOUT,">&WRITE" or die $!;
+	    exec "expand", "-$cols","--", $file;
+	    die "$myname child: could not exec expand\n";
+	}
+    }
+}
+else {
+    pipe READ,WRITE;
+    if (xfork) {
+	close WRITE;
+	local $_;
+	while (<READ>) {
+	    if (/^\s*$/){
+		print "\n" or die "$myname: error writing to stdout: $!\n";
+	    } else {
+		print or die "$myname: error writing to stdout: $!\n";
+	    }
+	}
+	wait;
+	die "$myname: child returned error code $?\n" if $?;
+    } else {
+	close READ;
+	open STDOUT,">&WRITE" or die $!;
+	exec "expand","-$cols";
+	die "$myname child: could not exec expand\n";
+    }
+}
+
+__END__
+
+  OH shit: -i option hätte wohl auch getan was ich wollte?
+
+

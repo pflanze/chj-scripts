@@ -1,0 +1,3 @@
+#!/bin/sh
+
+w;echo;free;echo;df

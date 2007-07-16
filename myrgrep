@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# Thu Oct 11 22:41:13 CEST 2001
+# Rekursives grep mit ECHTEN perlregexps. (pgrep kann weder -r noch '\0', argggh)
+
+use Mmap;
+use strict;
+
+my $regex=shift or die "Bitte Regex und Pfad (und evtl. filematchregex) angeben";
+my $path=shift or die "Bitte zusätzlich zur Regex Pfad (und evtl. filematchregex) angeben";
+my $optionalfileregex= shift; # Spezialzeichen ! am Anfang hat spezialbedeutung
+my $fileregex_is_negative=1 if $optionalfileregex and $optionalfileregex=~ s/^\!//s;
+
+use constant DEBUG => 0;
+
+scandir($path);
+
+sub scandir {
+	my ($dir)=@_;
+	warn "Scanning dir $dir\n" if DEBUG;
+	if (opendir DIR,$dir) {
+		my $item;
+		#while (defined ($item= readdir DIR)) {   ->  AHA shit
+		my @items= readdir DIR;
+		closedir DIR;
+		for $item (@items) {
+			next if $item eq '.' or $item eq '..';
+			if (-d "$dir/$item") {
+				#warn "Found dir: $item\n" if DEBUG;
+				if (-l "$dir/$item") {
+					warn "Ignoring directory link `$dir/$item'\n";
+				} else {
+					scandir ("$dir/$item");
+				}
+			} elsif (-f _) {
+				if (defined $optionalfileregex) {
+					if ($item=~ /$optionalfileregex/os) {
+						warn "Datei $item matcht '$optionalfileregex'\n" if DEBUG;
+						next if $fileregex_is_negative;
+					} else {
+						warn "Datei $item matcht '$optionalfileregex' NICHT\n" if DEBUG;
+						next unless $fileregex_is_negative;
+					}
+				}
+				#warn "Found file: $item\n" if DEBUG;
+				scanfile ("$dir/$item");
+			} else {
+				warn "Special file $dir/$item\n";
+			}
+		}
+	} else {
+		warn "Konnte $dir nicht öffnen: $!\n";
+	}
+}
+my $map; # WOW, musste dies rausnehmen weil sonst
+		#  panic: leave_scope clearsv at /home/chris/bin/myrgrep line 42.
+		# wenn $map aufgelöst wird und es null bytes lange war.
+sub scanfile {
+	my ($file)=@_;
+	warn "Scanning file $file\n" if DEBUG;
+	no strict 'subs'; # ARGH wegen mmap unten
+	if (open FILE ,"<$file") { # noch komisch: Name "main::FILE" used only once: possible typo
+		#my $map;
+		if (mmap ($map,0, PROT_READ, MAP_SHARED, FILE)) {
+			if (length($map)) {
+				if ($map=~ /$regex/os) {
+					print $file."\n";
+				} else {
+					warn "No match in $file\n" if DEBUG;
+				}
+			} else {
+				warn "File $file is empty\n" if DEBUG;
+			}
+			munmap($map);
+		} else {
+			warn "Error bei mmap von file $file: $!\n";
+		}
+		close FILE;
+	} else {
+		warn "Konnte file $file nicht öffnen: $!\n";
+	}
+}

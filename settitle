@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# does not work of course if also using 
+#settitle () {
+#	echo -ne "\033]2;"
+#	echo -n "$@"
+#	echo -ne "\007"
+#	unset PROMPT_COMMAND
+#};
+# inyour .bashrc
+# but works for scripts.
+
+	echo -ne "\033]2;"
+	echo -n "$@"
+	echo -ne "\007"
+	unset PROMPT_COMMAND

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+objdump -d "$1" #|less

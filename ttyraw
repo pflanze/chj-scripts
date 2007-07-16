@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+
+# Sam Jan 11 02:50:16 MET 2003
+# pflanze@gmx.ch
+
+# Tue, 20 Jul 2004 19:24:49 +0200
+# luschtig, war echt noch auf Modify: Sat Jan 11 03:42:22 2003
+# corrected END thing. wrote Chj::Unix::Terminal::Raw now
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ -e ] command [ arguments ]
+  Set the current tty to raw mode and executes the given command.
+  With option -e, an exec is done, without it, it waits for the
+  command to return and then sets the terminal back to cooked mode.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_e;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?e(xec)?$/) {
+	$opt_e=1;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	#push @files, $_
+	# push all the rest.
+	push @files, @ARGV[$i..$#ARGV];
+	last;
+    }
+}
+usage unless @files;
+
+use POSIX qw(:termios_h);
+
+my $fd_stdin = fileno(STDIN);
+my $term     = POSIX::Termios->new();
+$term->getattr($fd_stdin);
+my $oterm     = $term->getlflag();
+
+my $echo     = ECHO | ECHOK | ICANON;
+my $noecho   = $oterm & ~$echo;
+
+sub cbreak {
+    $term->setlflag($noecho);
+    $term->setcc(VTIME, 1);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+sub cooked {
+    $term->setlflag($oterm);
+    $term->setcc(VTIME, 0);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+cbreak;
+
+END {
+    cooked if $term; # reset it if exec fails.
+}
+
+if ($opt_e) {
+    exec {$files[0]} @files;
+    exit 1; # !
+}else {
+    (system {$files[0]} @files) >=0 or exit 1;# or exit 1;  KOOOOOMISCH: aha ne logo: .   SHITT TODO: sollte noch dividieren durch 256 für actual exit value und so? EBEN: EWIGES ZEUG DAS ICH SCHON IN C HATTE        >=0 ist schon mal richtiger.      PS könnte (sollte?) wohl auch $^W ausschalten und stattdessen die machen. Damit krieg ich dann auch kontrolle über das Ende-der-warnungszeile (keine zeilennummer im skript).
+    exit $?/256; #YUP, nich vergessen zu teilen!  PS TUT es nun wirklich hier das END aufrufen? Offenbar. Staunlich.
+}
+
+# es ist wirklich nötig, exec zu machen, resp. darf nicht zu früh zurückkehren RESP. was ich meine ist, es ist nicht nötig eine system version anzubieten da auch bei exec die shell nach der rückkehr eh wieder zurücksetzt. (Komischerweise war das aber doch nicht der Fall als es kein END hatte und command nicht fand. ???)
+# HMMMMM, nur mit Ctl-C abbrechen macht das resetting. Sonst NICHT!!! Also doch system.
+
+
+__END__
+
+Weitere beobachtungen:
+Es wird eben das echo abgestellt. Das ist nötig sonst gibt gnometerminal sie doch aus.
+  Wenn das subprogramm die daten nicht abholt, werden sie nach Rückkehr alle in der shell ausgegeben. Warum? (doofe Frage, was ich meine ist: ) Wo werden sie gebuffert? Im Character Device selber?
+
+  (Es is interessant dass unlike ich dachte nicht die shell "alles" macht sondern vieles eben das terminal.)

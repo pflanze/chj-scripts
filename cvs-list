@@ -1,0 +1,146 @@
+#!/usr/bin/perl -w
+# christian jaeger pflanze@gmx.ch 
+# Sat Jul 28 17:11:33 CEST 2001
+
+use constant DEBUG=>0;
+
+use strict;
+
+$0=~ /([^\/]*$)/; my $name=$1;
+
+sub usage {
+	print "1. $name [-laA] [dir]
+2. $name [-d cvsroot] -m[laA] modulepath
+ Prints a list of the files that exist in the repository.
+ You can either give a path to a working copy of the directory
+ you want to list files for (case 1) or give a (module-)path
+ inside the repository (case 2). Variant 2 takes the cvs root
+ from the environment (\$CVSROOT) unless -d is given.
+ If -l is given, only the given directory's contents is listed, 
+ otherwise the listing is recursive.
+ If -a is given, also 'attic' (deleted) files are listed. 
+ With -A, *only* attic files are listed.
+";
+	exit;
+}
+
+my ($dir,$flag_l,$flag_m, $flag_a, $flag_A, $Root);
+for (my $i=0; $i<@ARGV; $i++) {
+	local $_= $ARGV[$i];
+	if (/^-([lmaA]+)$/) {
+		my $options=$1;
+		for (my $j=0; $j<length($options); $j++) {
+			local $_= substr($options,$j,1);
+			if ($_ eq 'l') { 
+				$flag_l=1 
+			} elsif ($_ eq 'm') {
+		 		$flag_m=1 
+			} elsif ($_ eq 'a') {
+				$flag_a=1
+			} elsif ($_ eq 'A') {
+				$flag_A=1
+			};
+		}
+	} elsif ($_ eq '-d') {
+		defined ($Root= $ARGV[++$i]) or usage;
+	} elsif (/^--?h(elp)?$/) {
+		usage;
+	} else {
+		if (defined $dir) {
+			usage
+		} else {
+			$dir=$_;
+		}
+	}
+}
+unless (defined $dir) {
+	$dir= ".";
+}
+usage if defined $Root and !$flag_m;
+if ($flag_a and $flag_A) {
+	warn "Don't set both -a and -A options.\n";
+	usage;
+}
+
+my ($method,$basepath);
+my @findcommand;
+my ($Repos);
+if ($flag_m) {
+	unless (defined $Root) {
+		$Root=$ENV{CVSROOT} or die "Missing \$CVSROOT environment variable.\n";
+	}
+	$Repos=$dir;
+} else {
+	# CVS/Repository, i.e. some/module/some/subdir
+	open GET,"<$dir/CVS/Repository" or die "Directory `$dir' doesn't contain a CVS/Repository file.\n";
+	$Repos= <GET>;
+	close GET;
+	chomp $Repos;
+
+	# CVS/Root, i.e. :ext:62.2.102.18:/home/cvs
+	open GET,"<$dir/CVS/Root" or die "Directory `$dir' doesn't contain a CVS/Root file.\n";
+	$Root= <GET>;
+	close GET;
+}
+
+if ($Root=~ /^:ext:([^:]*):([^:]*)$/) {
+	my ($adr,$base)=($1,$2);
+	chomp $base;
+	$basepath= $base."/".$Repos;
+	$basepath=~ s|/{2,}|/|sg;
+	$method = sub {
+		$ENV{CVS_RSH} or die "\$CVS_RSH is not set\n";
+		exec $ENV{CVS_RSH}, $adr, @findcommand;
+		die "Could not find `$ENV{CVS_RSH}': $!";
+	}
+} elsif ($Root=~ /^([^:]*)$/) {
+	my ($base)= $1;
+	chomp $base;
+	$basepath= $base."/".$Repos;
+	$basepath=~ s|/{2,}|/|sg;
+	$method = sub {
+		exec @findcommand;
+		die "Could not find `find': $!";
+	}
+} else {
+	die "Currently, only the local and :ext: cvs access methods are supported (`$Root' given)\n";
+}
+
+
+@findcommand= ("find", $basepath, "-type", "f",
+	$flag_l ? ("-maxdepth", "2"):(), # 2 needed to enter 'Attic', too  
+); # adding "-follow" would make find slower (implies -noleaf)
+
+
+pipe READER,WRITER;
+my $pid=fork;
+die $! unless defined $pid;
+if ($pid) {
+	# parent
+	close WRITER;
+	while (<READER>) {
+		chomp;
+		if (m|^$basepath/?(.*),v$|) {
+			local $_=$1;
+			if (s|^Attic/|| or s|/Attic/|/|) {
+				if ($flag_A or $flag_a) {
+					print "$_\n";
+				}
+			} elsif (!$flag_l || !m|/| and !$flag_A) {
+				print "$_\n";
+			}
+		} elsif (m|^$basepath|) {
+			# it's still a file
+			warn "Ignoring `$_'\n" if DEBUG;
+		} else {
+			warn "Don't understand line `$_'\n";
+		}
+	}
+	wait;
+	
+} else {
+	close READER;
+	open STDOUT, ">&WRITER" or die $!;
+	&$method($Repos);
+}
+

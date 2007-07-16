@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 18 15:22:40 MET 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+  Strip out saved applications out of the WindowMaker state files.
+  This is because I don't like applications being restarted after
+  a crash/restart: they won't be in any usable state anyway.
+  Call from .Xsession file or similar, before wmaker startup.
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+usage if @ARGV;
+
+use Chj::xopen qw(xopen_read);
+use Chj::xtmpfile;
+use Chj::xperlfunc qw(xlinkreplace);
+
+my $file= "$ENV{HOME}/GNUstep/Defaults/WMState";
+
+my $content= xopen_read($file)->xcontent;
+
+if ($content=~ s/ *Applications = \((?:\s*{[^}]*},\s*)*{[^}]*}\s*\);(\s*}\s*)$/  Applications = \(\n  \);$1/s ) { #}{;
+    my $t=xtmpfile $file;
+    $t->xprint($content);
+    $t->xclose;
+    xlinkreplace($file,"$file.bck");
+    #$t->xrename_to($file);
+    $t->xrename($file);
+}
+else {
+    die "no match";
+}
+
+

@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# Fre Mai 16 17:13:13 MEST 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ inputfiles ]
+  filtering by appending .out to filepaths, or stdin to stdout
+  # ps. wieder mal wär ein standardisierter inputtooutputfilenamefiltermechanismus gut.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+
+use Chj::xopen;
+
+my %entity= (
+	     amp=> '&',
+	     quot=> '"',
+	     nbsp=> ' ', ##well, wrong, 0xa0 oder sowas.
+	     lt=> '<',
+	     gt=> '>',
+	     auml=> 'ä',
+	     ouml=> 'ö',
+	     uuml=> 'ü',
+	     Auml=> 'Ä',
+	     Ouml=> 'Ö',
+	     Uuml=> 'Ü',
+	     );
+
+sub handle {
+    my ($in,$out)=@_;
+    my $content= $in->xcontent;
+    $content=~ sé\&(\w+);é
+	my $t= $1;# do not lc()
+	if (my $v= $entity{$t}) {
+	    $v
+	} else {
+	    warn "unknown entity \&$t;\n";
+	    '&'.$t.';'
+	}
+    ésge;
+    $out->xprint($content);
+}
+
+
+if (@files) {
+    for (@files) {
+	my $in= xopen $_;
+	my $out= xopen ">$_.out"; ### O_EXCL?  !
+	handle($in,$out);
+    }
+}
+else {
+    my $in= *STDIN{IO};
+    bless $in, "Chj::IO::File";
+    my $out= *STDOUT{IO};
+    bless $out, "Chj::IO::File";
+    handle($in,$out);
+}

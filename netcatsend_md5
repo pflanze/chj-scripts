@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# cj Wed, 19 Feb 2003 16:12:42 +0100
+
+if [ $# -ne 2 ]; then
+    echo "Usage: `basename $0` server port < file"
+    echo "  OHNE kompression und OHNE chiffrierung, schreibts per netcat raus,"
+    echo "  berechnet gleichzeitig md5 summe des outputs."
+    exit 1
+fi
+
+server="$1"
+port="$2"
+
+echo "  Auf dem Server musste bereits"
+echo "  'netcatreceive_md5 $port > ausgabedatei' eingeben worden sein!"
+echo "bin dran.."
+
+multifeed --delayed '|' md5sum '&' netcat -q 1 "$server" "$port"
+
+#if [ $? -eq 0 ]; then
+#    echo "fertig."
+#fi
+# nein denn md5stamp wird eh ausgegeben.
+

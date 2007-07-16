@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ "$1" ]; then
+ifdown eth0
+whereami -s "$1"
+ifup eth0
+else
+	echo "Bitte Parameter angeben!"
+fi
+

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec scp -o compression=no "$@"

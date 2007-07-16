@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+#cjaeger14.9.2000
+
+my $name= 'untrash';
+
+my $trash;
+if ($ENV{TRASHCAN}) {
+	$trash= $ENV{TRASHCAN}
+} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
+	$trash=$ENV{HOME}."/Desktop/Trash/";
+} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
+	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} else {
+	die "Konnte Deinen Trashcan nicht finden. ";
+}
+
+if ($ARGV[0]=~ /^--?h(elp)?$/ or @ARGV<2) {
+	die "$name item1 item2 .. destination
+  Move each listed item (relative to trash directory root)
+  from ~/Desktop/Trash back to the designated destination.
+"} else {
+	my $dest= pop @ARGV;
+	exec '/bin/mv', '--', (map {"$trash/$_"} @ARGV), $dest;
+}

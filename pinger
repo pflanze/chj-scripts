@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+# 30.9.02 umgestellt dass es beeponserver benutzt.
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname address
+  Continuously pings address and beeps if it can't reached.
+  For use with bad network cabling so you know when you've lost connectivity.
+";
+exit;
+}
+
+
+usage unless @ARGV==1;
+my $address= shift;
+usage if $address=~ /^-/;
+
+use Fcntl;
+use Time::HiRes 'usleep';
+
+pipe READ,WRITE;
+
+my $pid=fork;
+defined $pid or die $!;
+
+if ($pid) {
+	#father
+	close WRITE;
+	#sysopen HUHU,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht öffnen: $!";
+	#my $old=select HUHU; $|=1; select $old;
+	#$|=1;
+	$SIG{ALRM}= sub {
+		die "ALRM\n";
+		#print TTY "\007";
+		#alarm 0;
+	};
+	my $lastbeep=0;
+	while(1) {
+		eval {
+			alarm 2;
+			while (<READ>) {
+				alarm 2;
+				print "$_";
+				if ($lastbeep) {
+					$lastbeep=0;
+					#print HUHU "\007"; # andere tonlage?
+					system "/root/bin/beeponserver";
+					print localtime()."\tWEITER\n";
+				}
+			}
+		};
+		die unless $@ eq "ALRM\n";
+		my $time=time;
+		if ($time-$lastbeep > 10) {
+			$lastbeep=$time;
+			#print HUHU "\007";
+			system "/root/bin/beeponserver";
+			usleep 150000;
+			#print HUHU "\007";
+			system "/root/bin/beeponserver";
+			print localtime($time)."\tUNTERBRUCH\n";
+		}
+	}
+}
+else {
+	close READ;
+	open STDOUT,">&WRITE";
+	exec "ping",$address;
+	die
+}

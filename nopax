@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#chpax -pemrxs
+# EH hier isses:
+
+#chpax -z "$@"
+# eh nein geht doch ned so? ??  setzt es bloss den default von: PeMRxS ? scheint so.
+
+chpax -pemrxs "$@"
+
+##well
+#echo "Nun ist es:"
+##chpax -v -- "$@"  geht ned mal mann das --
+#chpax -v "$@"
+

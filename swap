@@ -1,0 +1,51 @@
+#!/usr/bin/perl -w
+
+# jaeger@ethlife.ethz.ch
+# Sat, 14 Dec 2002 22:39:16 +0100 // 16 Dec: fix 'swap dir/ otherdir' case
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname file1 file2
+  Renames the two files so that afterwards they are 'swapped'.
+";
+exit @_;
+}
+
+usage unless @ARGV==2;
+
+my ($a,$b)= map { s|/$||s; $_ } @ARGV;
+
+sub tmpname {
+    my $name=shift;
+    $name.= ".tmp.";
+    for (1..10) {
+	$name.= int(rand()*10);
+	if (not -f $name) {
+	    return $name;
+	}
+    }
+    die "$myname: Could not find a unique temp name, giving up.\n";
+}	
+
+my $tmp= tmpname($a);
+
+if (rename $a,$tmp) {
+    if (rename $b,$a) {
+	if (rename $tmp,$b) {
+	    exit 0;
+	} else {
+	    warn "$myname: could not rename '$tmp' to '$b': $!\n";
+	    rename $a,$b or warn "$myname: WARNING: could not rename '$a' back to '$b': $!\n";
+	    rename $tmp,$a or warn "$myname: WARNING: could not rename '$tmp' back to '$a': $!\n";
+	}
+    } else {
+	warn "$myname: could not rename '$b' to '$a': $!\n";
+	rename $tmp,$a or warn "$myname: WARNING: could not rename '$tmp' back to '$a': $!\n";
+    }
+} else {
+    warn "$myname: could not rename '$a' to '$tmp': $!\n";
+}
+exit (1);

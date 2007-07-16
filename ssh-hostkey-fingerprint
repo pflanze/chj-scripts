@@ -1,0 +1,5 @@
+#!/bin/sh
+set -x
+ssh-keygen -l -f /etc/ssh/ssh_host_rsa_key
+ssh-keygen -l -f /etc/ssh/ssh_host_dsa_key
+ssh-keygen -l -f /etc/ssh/ssh_host_key

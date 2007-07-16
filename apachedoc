@@ -1,0 +1,6 @@
+settitle 'apachedoc'
+if checkhostport -q localhost; then
+	exec links http://localhost/doc/apache/manual/
+else
+	exec links http://ethlife-dev.ethz.ch/doc/apache/manual/
+fi

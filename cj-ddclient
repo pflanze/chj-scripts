@@ -1,0 +1,524 @@
+#!/usr/bin/perl -w
+
+# Son Feb 11 18:41:05 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+our $statedbpath= "$ENV{HOME}/.$myname"; mkdir $statedbpath, 0700;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname configfile ip
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+use Chj::singlequote 'singlequote_many';
+use Chj::Socket::SSL;
+our $useragent= "cj-ddclient/1";
+
+#sub xgeturl ($ $ $ $ ) {
+
+{
+    package _Connections;
+    sub Sysreadline ($ ) {
+	my ($fh)=@_;
+	my $buf;
+	my $line="";
+	while(1) {
+	    my $res= sysread($fh,$buf,1);
+	    defined $res or die "Sysreadline: error $!";
+	    if ($res) {
+		$res==1 or die "??? got $res bytes how can this be";
+	    } else {
+		# eof.
+		# complain?
+		warn "got eof before end of line";
+		#return $line
+		if (length $line) {
+		    return $line;
+		} else {
+		    return undef
+		}
+	    }
+	    $line.= $buf;
+	    if ($buf eq "\n") {
+		return $line;
+	    }
+	}
+    }
+    use MIME::Base64 'encode_base64';
+    use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
+    use Class::Array -fields=> -publica=>
+      ('connections', # host => connection
+      );
+    sub connection_for_host_port {
+	my $s=shift;
+	my ($host,$port)=@_;
+	my $chs=
+	  $$s[Connections]{"$host:$port"}
+	    ||= Chj::Socket::SSL->new_host_port ($host,$port);
+##TODO	$chs->xvalid;
+# 	{
+# 	    # switch to non-blocking io so that we can read using <> ok?
+# 	    my $s=$chs->socket;
+# 	    my $flags= fcntl ($s, F_GETFL, 0);
+# 	    fcntl($s, F_SETFL, $flags | O_NONBLOCK) or die "fcntl: $!";
+# 	}
+#nope not a good idea of course since i would read too fast before result is here (i get undef before anything has arrived (even on localhost)). [ah and btw what should it mean with encrypted connection???!]
+	{
+	    # switch buffering off, so <> is safe at least while reading the header ok? -- it STILL isn't safe to mix sysread and <>.though. right?oderbinich BUG OFF?
+	    my $oldfh= select $chs->socket;
+	    $|++;
+	    select $oldfh;
+	}
+	$chs  #und wie machen dass rausfinden ob noch lebendig ? ?[todo]
+    }
+    sub remove_connection_for_host_port {
+	my $s=shift;
+	my ($host,$port)=@_;
+	warn "remove_connection_for_host_port ($host,$port)";#
+	if (my $c= $$s[Connections]{"$host:$port"}) {
+	    $c->socket->close;
+	}
+	delete $$s[Connections]{"$host:$port"};
+    }
+    sub DESTROY {
+	my $s=shift;
+	for my $c (values %{$$s[Connections]}) {
+	    eval {
+		$c->socket->close;
+	    };#hm was ichnich erwartet hatt: 'Can't call method "close" on an undefined value' "manchmal"
+	    my $e=$@;
+	    eval{ warn "note: ".$c->host.": $e" if $e}
+	}
+    }
+    sub xgeturl {
+	my $self=shift;
+	my ($url, $login, $password)=@_;
+	#warn "xgeturl ".singlequote_many ($url);
+
+	my $default_port= 443;
+	$url    =~ s%^https?://%%i;
+	my $server = $url;
+	$server =~ s%/.*%%;
+	my ($host,$port)= split /:/, $server;
+	$port||=$default_port;
+	$url    = "/" unless $url =~ m%/%;
+	$url    =~ s%^[^/]*/%%;
+
+	my $request= "GET ";
+	#$request .= "http://$server" if $proxy;
+	$request .= "/$url HTTP/1.1\n";
+	$request .= "Host: $server\n";
+	if (defined $login) {
+	    my $auth = encode_base64("${login}:${password}");
+	    $request .= "Authorization: Basic $auth";
+	}
+	$request .= "User-Agent: $useragent\n";
+	$request .= "Connection: keep-alive\n";
+	$request .= "\n";
+	warn "xgeturl: firing request to '$host' port $port: ---\n$request--- ";
+	(my $rq = $request) =~ s/\n/\r\n/g;
+	my $nretries=0;
+      SENDREQUEST:
+	my $chs= $self->connection_for_host_port ($host,$port);
+	local our $s= $chs->socket;
+	my $res= $s->syswrite ($rq);
+	if($res != length ($rq)) {
+	    my $e= $!;
+	    eval { $self->remove_connection_for_host_port ($host,$port); }; warn $@ if $@;
+	    die "cannot sent to $host:$port ($e)"; ##  ssl anders?  und   nicht die  ?.achdochhe.?.
+	    #"[und close?.. na wenn weakref installed sei es safe?]"ehnumm
+	} else {
+	    ####hmm timouts gehen doch nicht mehr so bei neuem perl ?
+	    ##ABER das socket hat doch SELBER gute timeout  oderetwanid?
+	    my $reply= _Reply->new;
+	    #while (<$s>) {
+	  REPLY: {
+		while (defined($_= Sysreadline($s))) {
+		    $reply->add_headerline($_);
+		    if (/^\r?\n\z/) {
+			# body will follow if any.
+			if (my $length= $reply->header ("Content-Length")) {
+			    if (my $v=$reply->header("Accept-Ranges")) {
+				$v eq 'bytes' or warn "warning: unknown range '$v'"; #grr hatte eq /bytes/ und perl tut nid reklame
+			    }
+    # 			my $body;
+    # 			my $res= $s->sysread ($body,$length);
+    # 			defined $res or die "error while reading: $!";## und close und so!..
+    # 			$res == $length or die "expected $length bytes, got $res";## dito
+    #und NEINNN das ist NICIICIICIHT so bei perl, das gibt 8192 statt 39132 motze.
+			    my $body="";
+			    my $pos=0;
+			    while ($pos<$length) {
+				my $res= $s->sysread ($body,$length-$pos,$pos);
+				defined $res or die "error while reading: $!";## und close und so!..
+				#todo MUSS ich nun signals behandeln oder muss ich nicht. perl sooo x ?.
+				if ($res == $length-$pos) {
+				    last;
+				}
+				if (!$res) {
+				    die "expected ".($length-$pos)." bytes, got $res";## dito
+				}
+				$pos+= $res;
+			    }
+			    $reply->set_body ($body);
+			} elsif (do {
+			    #$reply->is_chunked
+			    my $str= $reply->header("Transfer-Encoding");
+			    $str and lc($str) eq 'chunked'
+			}) {
+			    # chunked:
+			    my $body="";
+			    my $globalpos=0;
+			  CHUNK: {
+				while (defined (my $line= Sysreadline($s))) { #"#PS HEH: "wie kann eigtl sein" dass dies geht aber chomp dann doch \r nid sensitiv ist ? hm klaro: <> tut an \n brechen. chomp nur \n removen. so kommt das."
+				    #again:warn "line: {{{$line}}}";
+				    #if ($line eq "\r\n" or $line eq "\n") {
+				    #    $line= Sysreadline ($s); #which is probably even *expected*.
+				    #}
+				    $line=~ /^([0-9a-fA-F]+) *\r?\n\z/ or die "expected chunk size, got: '$line'";# the " *" *is* necessary for elvis-proxy even!!!
+				    #do {warn "expected chunk size, got: '$line'";#
+				    #$line= Sysreadline($s); goto again;};#todo wieder die
+				    my $hexlength= $1;
+				    my $length= hex $hexlength;
+				    if ($length==0) {
+					# OCH but first read off AGAIN AN expected terminating linebreak after the chunk size designation ??!:
+					my $line= Sysreadline($s);
+					if ($line eq "\r\n" or $line eq "\n") {
+					    #ok
+					} else {
+					    die "expected linebreak after chunk, got: '$line'";
+					}
+					#/OCH
+					last CHUNK;
+				    }
+				    # nun kommt quasi COPY von oben, AUSSER $globalpos statt $pos bei string pos
+				    # OCH ud dann ich sovielefehler. $remaininglength wirklich zuweisen zuerstmal WIRKLICH.
+				    my $pos=0;
+				    while ($pos<$length) {
+					my $remaininglength= ($length-$pos);
+					my $res= $s->sysread ($body,$remaininglength,$globalpos);
+					#warn " -- res= ".(defined($res)? $res : "undef");
+					defined $res or die "error while reading: $!";##
+					#warn  "$res bytes: {{{{".substr($body,$globalpos,$res)."}}}}\n";#
+					$pos+=$res; ## VOOR last!! gr.
+					$globalpos+=$res;
+					if ($res == $remaininglength) {
+					    # no more buf part to read. go to next chunk.
+					    # but first read off the expected terminating linebreak after the chunk!
+					    my $line= Sysreadline($s);
+					    if ($line eq "\r\n" or $line eq "\n") {
+						#ok
+					    } else {
+						die "expected linebreak after chunk, got: '$line'";
+					    }
+					    last;
+					}
+					if (!$res) {
+					    die "expected $remaininglength bytes, got eof?";## dito
+					}
+				    }## und newlines hintedran eingeschlossen oder wie?. kommt zeilenumbruch vor der nexchsten zalhl oder nicht?
+				    #warn "did read $pos bytes, body is now: '$body'";
+				}
+				die "got eof before final chunk";#
+			    }
+			    $reply->set_body ($body);
+			}
+			last REPLY;
+		    }
+		}
+		warn "got eof before end of header";
+		$self->remove_connection_for_host_port ($host,$port);#mit eval drumrum?
+		if ($nretries++ < 3) {
+		    warn "resendig request";
+		    goto SENDREQUEST;
+		}
+	    }
+	    unless ($reply->is_keepalive) {
+		$self->remove_connection_for_host_port ($host,$port);
+	    }
+	    $reply
+	}
+    }
+    end Class::Array;
+}
+
+{
+    package _Reply;
+    use Class::Array -fields=> -publica=>
+      ("headerlines","body");
+    sub Chomp ($ ) {
+	$_[0]=~ s|\r?\n\z||;
+    }
+    sub add_headerline {
+	my $s=shift;
+	push @{$$s[Headerlines]},@_;
+    }
+    sub is_keepalive {
+	my $s=shift;
+	if (defined(my $v= $s->header ("connection"))) {
+	    #warn "found connection header: '$v'";#
+	    $v=~ /keep-?alive/i #i nid vergessen bittee..
+	} else {
+	    0
+	}
+    }
+    sub header { #get_, _ref
+	my $s=shift;
+	my ($name)=@_;
+	#$name=lc ($name); ach ich idio, die sind ja auch nid lowercase. also futile
+	for (@{$$s[Headerlines]}) {
+	    #warn "looking at hdr '$_'";
+	    return if /^\r?\n\z/;
+	    #warn "  checking for '$name'";
+	    #if (/^\Q$name\E:\s*(.*?)\r?\n?\z/s) {
+	    # return $1
+	    if (/^\Q$name\E:/i) {
+		my $str= $_; $str=~ s/.*?:\s*//; $str=~ s/\r?\n\z//s;
+		#warn "MATCH: '$_'";
+		#warn "returning: '$str'";
+		return $str
+	    }
+	}
+    }
+    sub xheader_ok {
+	my $s=shift;
+	my ($host) = @_;
+	my $line= $$s[Headerlines][0];
+	defined $line or die "no reply";#
+	Chomp $line;# argh chomp doesn't work.
+	if ($line =~ m%^s*HTTP/1.*\s+(\d+)%i) {
+	    my $result = $1;
+	    if ($result eq '200') {
+		#ok
+	    } elsif ($result eq '401') {
+		die sprintf("updating '%s': authorization failed (%s)", $host, $line);
+	    } else {
+		die "updating '$host': $line";
+	    }
+	} else {
+	    die sprintf("updating %s: unexpected line (%s)", $host, $line);
+	}
+    }
+    ##hmm eben wirklich mit return schaffen nid excns?  aber valius doch bitte nicht seiten sematnikn.
+    end Class::Array;
+}
+
+
+#our $cjconfig= require "$ENV{HOME}/tmp/cj-ddclient.pl";
+#our $dyndnshost= join(":",@args);##hack;  members.dyndns.org
+our $dyndnshost= "https://members.dyndns.org";
+
+
+{
+    package _Configentry;#damit s kein multifunction copy ist/wird. patternmatch nur an einer stelle. wastive?no
+    use Class::Array -fields=> -publica=>
+      qw(type host flag_wildcard maybe_mx flag_backupmx login password);
+    sub new {
+	my $class=shift;
+	my ($configentry)=@_;
+	@$configentry==6 or die "invalid argument width";
+	my ($type, $host, $flag_wildcard, $maybe_mx, $flag_backupmx, $account)=@$configentry;#'patternmatch'
+	@$account==2 or die "invalid account data width";
+	my ($login,$password)=@$account;
+	bless [($type, $host, $flag_wildcard, $maybe_mx, $flag_backupmx, $login, $password)],$class  #dank perl nicht nur dollarzeichen uberall sondern auch noch kommas.
+    }
+    end Class::Array;
+}
+
+our $connections= new _Connections;
+
+sub nic_dyndns2_update_GET ($ $ ) {
+    my ($configentry,$ip)=@_;
+
+    my $url = "$dyndnshost/nic/update?system=";
+    my $type= $configentry->type;
+    if ($type eq 'custom') {
+	$url .= 'custom';
+    } elsif ($type eq 'static') {
+	$url .= 'statdns';
+    } elsif ($type eq 'dynamic') {
+	$url .= 'dyndns';
+    } else {
+	die "invalid type '$type'";
+    }
+
+    my $hosts=$configentry->host;##derzeit eben nur einer, keine kommaseparierte liste.
+    $url  .= "&hostname=$hosts";
+    $url  .= "&myip=";
+    $url  .= $ip            if $ip;
+
+    # some args are not valid for a custom domain.
+    $url  .= "&wildcard=ON" if $configentry->flag_wildcard;
+    if ($configentry->maybe_mx) {
+	$url .= "&mx=".$configentry->maybe_mx;
+	$url .= "&backmx=" . ($configentry->flag_backupmx ? 'YES' : 'NO');
+    }
+
+    my $reply = $connections->xgeturl($url, $configentry->login, $configentry->password);
+    $reply
+}
+
+our $statedb= Chj::FileStore::PIndex->new ($statedbpath);
+our $state= sub ($ $ $ ) {
+    my ($host,$key,$value)=@_;
+    warn "SAVING '$host', '$key', '$value'";
+    $statedb->set ("$host|$key",$value);
+};
+our $now= time;
+
+sub warning {
+    my ($fmt,@vals)=@_;
+    print STDERR "warning: ".sprintf($fmt,@vals)."\n";
+}
+
+sub nic_dyndns2_update_CHECK ($ $ ) {
+    my ($configentry,$reply)=@_;
+    $reply->xheader_ok($configentry->host);
+
+    my %errors = (
+		  'badauth'  => 'Bad authorization (username or password)',
+		  'badsys'   => 'The system parameter given was not valid',
+
+		  'notfqdn'  => 'A Fully-Qualified Domain Name was not provided',
+		  'nohost'   => 'The hostname specified does not exist in the database',
+		  '!yours'   => 'The hostname specified exists, but not under the username currently being used',
+		  '!donator' => 'The offline setting was set, when the user is not a donator',
+		  '!active'  => 'The hostname specified is in a Custom DNS domain which has not yet been activated.',
+		  'abuse',   => 'The hostname specified is blocked for abuse; contact support@dyndns.org to be unblocked',
+
+		  'numhost'  => 'System error: Too many or too few hosts found. Contact support@dyndns.org',
+		  'dnserr'   => 'System error: DNS error encountered. Contact support@dyndns.org',
+
+		  'nochg'    => 'No update required; unnecessary attempts to change to the current address are considered abusive',
+		 );
+
+    my $h= $configentry->host;
+
+    if (defined $reply->body) {
+	my ($status, $ip) = $reply->body =~ /^(.*?) (\S+)/;
+	# 	    $result{'status'} = $status;
+	if ($status eq 'good') {
+	    # 		    $config{$h}{'ip'}     = $ip;
+	    # 		    $config{$h}{'mtime'}  = $now;
+	    # 		    success("updating %s: %s: IP address set to %s", $h, $status, $ip);
+	    #$state->host($h)->set_ip ($ip);
+	    #oder eher n function mmit multi values ??
+	    #kür fein kurry
+	    $state->($h,'ip',$ip);
+	    $state->($h,'mtime',$now);
+	    # multikall versus commits         ?.
+	    $state->($h,'status','good'); #fehlte, hab ich wohl weg editiert?.
+	} elsif (exists $errors{$status}) {
+	    if ($status eq 'nochg') {
+		warning("updating %s: %s: %s", $h, $status, $errors{$status});
+		# 			$config{$h}{'ip'}     = $ip;
+		# 			$config{$h}{'mtime'}  = $now;
+		# 			$config{$h}{'status'} = 'good';
+		$state->($h,'ip',$ip);
+		$state->($h,'mtime',$now);
+		$state->($h,'status','good');
+	    } else {
+		#failed("updating %s: %s: %s", $h, $status, $errors{$status});
+		die "failed updating '$h': status '$status' ($errors{$status})";
+		##und, state was setzen ?
+	    }
+	} elsif ($status =~ /w(\d+)(.)/) {
+	    my ($wait, $units) = ($1, lc $2);
+	    my ($sec,  $scale) = ($wait, 1);
+
+	    ($scale, $units) = (1, 'seconds')   if $units eq 's';
+	    ($scale, $units) = (60, 'minutes')  if $units eq 'm';
+	    ($scale, $units) = (60*60, 'hours') if $units eq 'h';
+
+	    $sec = $wait * $scale;
+	    #$config{$h}{'wtime'} = $now + $sec;
+	    $state->($h,'wtime',$now + $sec); ##todo wo wird das benutzt?
+	    warning("updating %s: %s: wait $wait $units before further updates", $h, $status, $ip);
+
+	} else {
+	    #failed("updating %s: %s: unexpected status (%s)", $h, $line);
+	    die "unexpected status '$status'";#
+	}
+    } else {
+	#failed("updating %s: Could not connect to %s.", $hosts, $config{$h}{'server'});
+	die "did not get a body in the reply";## irgend error handlicng isch ja ibmmer schwer sagt man
+    }
+}
+
+sub nic_dyndns2_update ($ $ ) { # gets one host entry. do only one update at once.(we're using keep-alive instead, this gives us more for sure --except that dyndns doesn't support it tja)
+    my ($configentry,$ip)=@_;
+    my $reply= nic_dyndns2_update_GET ($configentry,$ip);
+    nic_dyndns2_update_CHECK ($configentry,$reply);
+}
+
+
+my ($configfile,$ip)=@args;
+
+#use Storable 'store','retrieve';
+#our $cjconfig= require "$ENV{HOME}/tmp/cj-ddclient.pl";
+#our $cfg0= _Configentry->new ($$cjconfig[0]);
+#use Chj::repl;;repl;
+
+my $cfgs= require $configfile;
+
+use Chj::FileStore::PIndex;
+
+our $updateinterval= 15*24*60*60; #seconds
+
+for my $_cfg (@$cfgs) {
+    my $cfg= _Configentry->new ($_cfg);
+    # does the host need updating?
+    my $host= $cfg->host;
+    my $lastip= $statedb->get ("$host|ip");
+    if ($lastip) {
+	if ($lastip eq $ip) {
+	    my $lastupdate= $statedb->get ("$host|mtime");
+	    if (!$lastupdate or ($now-$lastupdate)>$updateinterval) {
+		# yes needs update
+		nic_dyndns2_update ($cfg, $ip);
+	    } else {
+		warn "note: unchanged ip and last update has been on ".localtime($lastupdate).", so no update";
+	    }
+	} else {
+	    nic_dyndns2_update ($cfg, $ip);
+	}
+    } else {
+	nic_dyndns2_update ($cfg, $ip);
+    }
+}
+

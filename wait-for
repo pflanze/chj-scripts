@@ -1,0 +1,84 @@
+#!/usr/bin/perl -w
+
+# Sat, 26 Aug 2006 22:22:03 +0200
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [-s] expression [ arguments ]
+
+  waits until the given expression becomes true.  The arguments are
+  bound to \@_, and additionally the first argument is bound to \$_,
+  and this both at compile as well as at runtime (which means you can
+  access the values inside BEGIN{} 'tokens').
+
+  Options:
+  -s | --strict   do not attach 'no strict;' before the expression.
+
+  Examples:
+
+  * Emulate wait-for-filemod:
+   wait-for 'BEGIN{\$m= xstat(\$_)->mtime } xstat(\$_)->mtime > \$m' somefile
+
+  * Wait until the file has not been updated anymore for more than 15
+    seconds:
+   wait-for 'time - xstat(\$_)->mtime > 15' somefile
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_s;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(trict)?$/) {
+	$opt_s=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>=1;
+
+my $expr= shift @args;
+
+use Chj::xperlfunc;
+
+
+my $sub= do {
+    local $_ = $args[0];
+    local @_ = @args;
+    eval(($opt_s ? "" : "no strict; ")."sub{ $expr }");
+};
+die $@ if( ref $@ or $@);
+
+my $sleeptime=1;
+
+while(1) {
+    sleep $sleeptime;
+    local $_ = $args[0];
+    if ($sub->(@args)) {
+	last;
+    }
+}

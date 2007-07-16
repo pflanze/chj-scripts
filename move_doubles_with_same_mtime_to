@@ -1,0 +1,96 @@
+#!/usr/bin/perl -w
+
+# Mit Jan 14 11:45:42 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname trashdir files
+hmm, files isch ja begrenzt
+und well trash: wenn mehrfach derselbe name gibts bei xlinkunlink n abbruch
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+#my $opt_trash;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?t(?:rash(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $opt_trash=$1
+#         } else {
+#             $opt_trash=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>1;
+my $trash=shift @args;
+
+sub filename_of {
+    my $path=shift;
+    $path=~ s|.*/||s;
+    $path
+}
+
+use Digest::MD5;
+use Chj::xperlfunc qw(xlinkunlink xlstat);
+use Chj::xopen 'xopen_read';
+
+my %items; # size,mtime -> [paths]
+
+for my $file (@args) {
+    my $s= xlstat $file;
+    if (-l _) {
+	warn "ignoring symlink '$file'\n";
+    } elsif (-d _) {
+	warn "ignoring directory '$file'\n";
+    } elsif (-f _) {
+	# act
+	push @{$items{$s->size.",".$s->mtime}},$file;
+    } else {
+	warn "ignoring special file '$file'\n";
+    }
+}
+
+for my $key (keys %items) {
+    my ($size,$mtime)= split /,/,$key;
+    #if ($size==0) {
+    #warn "
+    my %md5s; #md5->[files]
+    for my $file (@{$items{$key}}) {
+	my $ctx= new Digest::MD5;
+	my $f= xopen_read $file;
+	$ctx->addfile($f);
+	$f->xclose;
+	push @{$md5s{$ctx->hexdigest}}, $file;
+    }
+    for my $key2 (keys %md5s) {
+	if ((my $n=@{$md5s{$key2}})>1) {
+	    print "$n files with md5 $key2; ";
+	    my $kept= shift @{$md5s{$key2}};
+	    for my $file (@{$md5s{$key2}}) {
+		#die unless $opt_trash; ### einfach löschen isch gefährlich?
+		xlinkunlink $file,"$trash/".filename_of($file);
+	    }
+	    print "kept '$kept'\n";
+	}
+    }
+}

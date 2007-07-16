@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Mit Okt 30 18:44:55 MET 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    if (@_) {
+	print STDERR map { "$_\n" } @_;
+    }
+    print "$myname path/to/file.xsl [ xmlfile(s) ]
+  Transforms xmlfiles or STDIN using the given xsl file.
+  Options:
+  -a|--appendix ..   new appendix (dot stays)
+  -A|--Appendix ..   new appendix, replaces everything and including
+                      dot onwards
+  -s|--strip         strip *all* appendices from the old filename
+  -f|--folder ..     output folder
+  -h|--html          parse input in html mode
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my ($opt_appendix,$opt_s,$opt_folder,$opt_html,$opt_Appendix);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--help$/) {
+	usage
+    } elsif ($_ eq '--') {
+	push @files, @ARGV[$i+1..$#ARGV];
+	last;
+    } elsif (/^--?a(ppendix)?$/) {
+	$opt_appendix= $ARGV[++$i] or usage "missing appendix value";
+    } elsif (/^--?A(ppendix)?$/) {
+	$opt_Appendix= $ARGV[++$i] or usage "missing Appendix value";
+    } elsif (/^--?s(trip)?$/) {
+	$opt_s= 1;
+    } elsif (/^--?f(older)?$/) {
+	$opt_folder= $ARGV[++$i] or usage "missing folder value";
+    } elsif (/^--?h(tml)?$/) {
+	$opt_html=1;
+    } elsif (/^-/) {
+	usage "Unknown option '$_'\n";
+    } else {
+	push @files, $_
+    }
+}
+usage unless @files>=1;
+
+my $xslfile= shift @files;
+
+use XML::LibXSLT;
+use XML::LibXML;
+
+my $parser = XML::LibXML->new();
+my $stylesheet;
+{
+  my $style_doc= $parser->parse_file($xslfile);# or die "ERrorç";
+  $stylesheet= XML::LibXSLT->new->parse_stylesheet($style_doc) or die "ç";
+}
+
+if (@files) {
+    for (@files) {
+	my $source= $opt_html ? $parser->parse_html_file($_) : $parser->parse_file($_) or die "error parsing file $_";
+	my $results= $stylesheet->transform($source) or die "çç";
+	#print "Kriegte results '$results'\n";  'XML::LibXML::Document=SCALAR(0x100ed344)'
+	my $outfile= $_;
+	if ($opt_s) {
+	    $outfile=~ s/\..*//s;
+	}
+	if ($opt_appendix) {
+	    $outfile=~ s/(?:\.xml)?$/.$opt_appendix/s or die "??";
+	} elsif ($opt_Appendix) {
+	    $outfile=~ s/(?:\.xml)?$/$opt_Appendix/s or die "??";
+	} elsif ($opt_folder) {
+	    # see below
+	} else {
+	    $outfile=~ s/(?:\.xml)?$/_out.xml/s or die "??";
+	}
+	if ($opt_folder) {
+	    $outfile=~ s{^(?:.*/)?}{$opt_folder/};
+	}
+
+	open OUT,">$outfile" or die "Could not open '$outfile' for writing: $!. Terminating";
+	print OUT $stylesheet->output_string($results) or die "Error writing to '$outfile': $!. Terminating"; # SUPER strange. Warum nicht $results->output_string ?
+	#print OUT $results->output_string; Can't locate object method "output_string" via package "XML::LibXML::Document"
+	close OUT or die "Error closing '$outfile': $!. Terminating";
+    }
+}
+else {
+    local $/;
+    my $source= $opt_html ? $parser->parse_html_string(<STDIN>) :
+      $parser->parse_string(<STDIN>) or die "error parsing stdin";
+    my $results= $stylesheet->transform($source) or die "çç";
+    #warn "Kriegte results '$results'\n";
+    print $stylesheet->output_string($results) or die "Error writing to STDOUT: $!. Terminating";
+}
+__END__
+  Wed, 30 Apr 2003 15:21:09 +0200
+  ps. es gebe segfaults wenn er das xml nicht finde das man angebe  (oder kein xsl nur xmls ? ne dan motze er richtig)
+

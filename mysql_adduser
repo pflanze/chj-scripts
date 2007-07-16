@@ -1,0 +1,168 @@
+#!/usr/bin/perl -w
+
+# Don Jun 19 10:28:10 CEST 2003
+# christian jaeger at ethlife ethz ch
+
+# Fri, 09 Jun 2006 19:04:07 +0200: (btw no change since 2003-06-20 00:12!)
+# added database creation ability.
+
+use strict;
+use DBI;
+use Chj::Util::AskPassword;
+use Chj::Util::AskYN;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname user [ database(s) ]
+  Works very similar to the adduser command from Debian.
+  With one argument, creates a new user.
+  With a second argument (or more), give user access to the given database(s).
+  Options:
+  -h|--host[=]...  Host,
+  -P|--port[=]...  port of database.
+  -p|--password  Ask for admin password. (The --password=... form is insecure!!)
+  -f|--fromhost[=]... Host (mask) for which the user is allowed to connect from.
+
+  Warning: the set of permissions given to [the new user (well
+  actually none are given there) and] to his permissions in the db
+  table are 'hard' coded into this script. In newer mysql versions,
+  that could leave newly created permission values in a dangerous
+  value. So better check that.
+";
+
+    exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $adminuser="root";
+my $adminpwd="";
+my $fromhost="localhost";
+my $host="localhost";
+my $port;
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?p(?:assword(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $adminpwd=$1
+	} else {
+	    undef $adminpwd;
+	}
+    } elsif (/^--?h(?:host(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $host=$1
+	} else {
+	    $host= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^--?f(?:romhost(?:=(.*))?)?$/) {
+	if (defined $1) {
+	    $fromhost=$1
+	} else {
+	    $fromhost= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^(?:-P)|(?:--port(?:=(.*))?)$/) {
+	if (defined $1) {
+	    $port=$1
+	} else {
+	    $port= $ARGV[++$i] or usage "missing argument to '$_' option";
+	}
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+if (!defined $adminpwd) {
+    $adminpwd= askpassword "Please enter password for $adminuser: ";
+}
+
+my $user=shift @args;
+
+my $DB= DBI->connect("DBI:mysql:database=mysql;host=$host".($port? ";port=$port":""),$adminuser,$adminpwd,
+		     {RaiseError => 1}) ; ##or die ; ?
+
+my $flusch= $DB->prepare("FLUSH PRIVILEGES");
+
+if (!@args) {
+    {
+	my $check= $DB->prepare('select count(*) from user where User=? and Host=?');
+	$check->execute($user,$fromhost);
+	my ($cnt)=$check->fetchrow_array;
+	if ($cnt>=1){
+	    die "User/host combination '$user'/'$fromhost' already registered.\n";
+	}
+    }
+    my $passwd= askpassword "Enter password for new user '$user': ";
+    if (length $passwd) {
+	my $passwd2= askpassword "Please enter password again for confirmation: ";
+	die "Passwords do not match. Aborting.\n" unless $passwd eq $passwd2;
+	my $insertuser= $DB->prepare("insert into user set Host=?,User=?,Password=password(?)");
+	$insertuser->execute($fromhost,$user,$passwd);
+    } else {
+	print "Warning: creating passwordless account!\n";
+	my $insertuser= $DB->prepare("insert into user set Host=?,User=?");
+	$insertuser->execute($fromhost,$user);
+    }
+
+} else {
+    {
+	my $check= $DB->prepare('select count(*) from user where User=?');
+	$check->execute($user);
+	my ($cnt)=$check->fetchrow_array;
+	if ($cnt<1){
+	    die "No such user '$user'.\n";
+	}
+    }
+    
+    my $eff= $DB->prepare(
+			  #'insert into db set host=?,db=?,user=?,Select_priv="y",Insert_priv="y",Update_priv="y",Delete_priv="y",Create_priv="y",Drop_priv="y",Grant_priv="y",References_priv="y",Index_priv="y",Alter_priv="y"'
+			  #'insert into db set host=?,db=?,user=?,Select_priv="y",Insert_priv="y",Update_priv="y",Delete_priv="y",Create_priv="y",Drop_priv="y",Grant_priv="y",References_priv="y",Index_priv="y",Alter_priv="y",Create_tmp_table_priv="y"' # I'm never using Lock_tables_priv anymore.
+			  #BUT, dumbass, our dumps do have locktable statements.
+			  'insert into db set host=?,db=?,user=?,Select_priv="y",Insert_priv="y",Update_priv="y",Delete_priv="y",Create_priv="y",Drop_priv="y",Grant_priv="y",References_priv="y",Index_priv="y",Alter_priv="y",Create_tmp_table_priv="y",Lock_tables_priv="y"'
+			 );
+
+    for my $db (@args) {
+	{
+	    my $check= $DB->prepare('show databases like ?');
+	    $check->execute($db);
+	    my ($result1)=$check->fetchrow_array;
+	    if (!$result1 or $result1 ne $db){
+		#die "No such database '$db'.\n";
+		if (askyn "No such database '$db'. Should I create it? [y/n] ") {
+		    #my $cr= $DB->prepare("create database ?");;
+		    #$cr->execute($db)==1 or die "couldn't create db '$db' ??";
+		    $DB->do("create database $db")==1 or die "couldn't create db '$db' ??";
+		} else {
+		    warn "cancelled by user.\n";
+		    exit 1;
+		}
+	    }
+	}
+	{
+	    my $check= $DB->prepare('select count(*) from db where host=? and db=? and user=?');
+	    $check->execute($fromhost,$db,$user);
+	    my ($cnt)=$check->fetchrow_array;
+	    if ($cnt>=1){
+		die "User/host combination '$user'/'$fromhost' is already added to database '$db'.\n";
+	    }
+	}
+	$eff->execute($fromhost,$db,$user)
+    }
+}
+
+$flusch->execute;
+
+
+#fleisch exekut

@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+# Son Jun 25 20:29:50 CEST 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname patch
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xopen 'xopen_read';
+
+sub searchpatch {
+    my ($fh)=@_;
+    my $cnt= $fh->xcontent;
+    #warn $cnt;
+    #while (m{(^|\n)diff --git a/(.*?) b/[^\n]*\nnew file}sg) {
+    #while (m{(^|\n)diff(.*?)}sg) {
+    #mensch ev noch $cnt
+    #while ($cnt=~ m{(^|\n)diff --git a/(.*?) b/[^\n]*\nnew file}sg) {  GRRR und was isch da futsch mit *? ? warum multi lines
+    while ($cnt=~ m{(^|\n)diff --git a/([^\n]*?) b/[^\n]*\nnew file}sg) {#grrrrrr. WHAT EVR
+	print "$2\n";
+    }
+}
+#ps ev kann patch auch /toplevel was sein statt a/relativ ?.
+
+searchpatch(xopen_read $_) for @args;

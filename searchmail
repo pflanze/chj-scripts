@@ -1,0 +1,170 @@
+#!/usr/bin/perl -w
+
+# Mon Sep 22 00:36:41 CEST 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+#use Carp 'cluck';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ -d folder ] -H '/^Subject:..../m' [-B '...'] [ files ]
+
+  Search a list of email (lines of filepaths given on stdin, or
+  path of folder containing mail files given as argument, or list of
+  files given as additional arguments) for
+  patterns.
+
+  Options:
+  -H | --headers 'code'  code is executed with \$_ set to the
+                         whole undecoded multiline header block.
+  -B | --body 'code'     code is executed with \$_ set to the
+                         whole undecoded body of the mail (the
+                         whole rest after the head)
+
+  The different search options must both match (return true) for
+  the filename to be printed to the output.
+  If only -H is given, only the head of the email files is read in.
+  If both options are given, and the code of the -H option returned
+  true, then (and only then, or if only the -B option has been given)
+  the rest of the email is read in as well.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_headers,$opt_dir,$opt_body);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+#    } elsif (/^--?d(ebug)?$/) {
+#	$DEBUG=1;
+    } elsif (/^--?[Hh](?:eaders(?:=(.*))?)?$/) {
+	usage "headers option given multiple times" if defined $opt_headers;
+	if (defined $1) {
+	    $opt_headers=$1
+	} else {
+	    defined ($opt_headers=$ARGV[++$i]) or usage "missing argument for '$_' option";
+	}
+    } elsif (/^-B$/ or /^--body(?:=(.*))?$/) {
+	usage "body option given multiple times" if defined $opt_body;
+	if (defined $1) {
+	    $opt_body=$1
+	} else {
+	    defined ($opt_body=$ARGV[++$i]) or usage "missing argument for '$_' option";
+	}
+    } elsif (/^--?d(?:ir(?:=(.*))?)?$/) {
+	usage "dir option given multiple times" if defined $opt_dir;
+	if (defined $1) {
+	    $opt_dir=$1
+	} else {
+	    defined ($opt_dir=$ARGV[++$i]) or usage "missing argument for '$_' option";
+	}
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+my $blocksize=512; # only relevant for reading header.
+#my $blocksize=1;
+
+use Chj::xopendir;
+use Chj::xsysopen; use Fcntl;
+
+sub file_getmailhead {
+    my ($file)=@_;
+    my $f= xsysopen $file,O_RDONLY;
+    my ($lastbufendedwithnewline,$buf,@bufs);
+    while ($f->xread($buf,$blocksize)>0) {
+	#push @bufs,$buf; # optimieren? erst dann in liste bevor neues gelesen wird.  aber, um rauszufinden obs was gibt brauch ich neuen puffer damits keine gefahr gibt alten zu überschreiben. also war nix.? Na: erst dann kopieren wenn ich weiss, dass ich neu lesen gehen werde! das ist es!
+	if ($lastbufendedwithnewline and substr($buf,0,1) eq "\n") {
+	    #last;
+	    #return join("",@bufs);
+	    #last;
+	    return wantarray ? (join("",@bufs),$f,substr($buf,1)) : join("",@bufs);
+	}
+	if ($buf=~ /\n\n/sg) {
+	    #return join("",@bufs,substr($buf,0,pos($buf)-1));
+	    return wantarray ?
+	      (join("",@bufs,substr($buf,0,pos($buf)-1)),$f,substr($buf,pos($buf)))
+	      : join("",@bufs,substr($buf,0,pos($buf)-1));
+	}
+	$lastbufendedwithnewline= substr($buf,-1) eq "\n";
+	push @bufs,$buf;
+    }
+    # attention: $buf can be empty, or start with a newline, depending on entry point
+    # well, so changed code above again so it becomes simple again here.
+    return wantarray ? (join("",@bufs),$f,"") : join("",@bufs);
+}
+
+sub file_getmailbody {
+    my ($f,$bodystart)=@_;
+    $bodystart.= $f->xcontent;
+    $bodystart
+}
+
+sub searchfile {
+    my ($file,$codehead,$codebody)=@_;
+    local $_;
+    if ($codebody) {
+	my ($f,$rest);
+	($_,$f,$rest)= file_getmailhead($file);
+	if (! $codehead or &$codehead) {
+	    $_= file_getmailbody($f,$rest);
+	    if (&$codebody) {
+		print "$file\n";
+	    }
+	}
+    } else {
+	$_ = file_getmailhead($file);
+	if (&$codehead) {
+	    print "$file\n";
+	}
+    }
+}
+
+defined $opt_headers or defined $opt_body
+  or usage "missing search option";
+
+my $codehead;
+if (defined $opt_headers) {
+    $codehead= eval "sub { $opt_headers }"; die $@ if $@;
+}
+my $codebody;
+if (defined $opt_body) {
+    $codebody= eval "sub { $opt_body }"; die $@ if $@;
+}
+
+if (@args) {
+    for(@args){
+	searchfile $_,$codehead,$codebody;
+    }
+}
+elsif ($opt_dir) {
+    my $d=xopendir $opt_dir;
+    while (defined(my$item=$d->xnread)) {
+	if (-f "$opt_dir/$item") {
+	    searchfile "$opt_dir/$item",$codehead,$codebody;
+	} else {
+	    warn "not a file: '$opt_dir/$item'\n";
+	}
+    }
+}
+else {
+    while (<STDIN>) {
+	chomp;
+	searchfile $_,$codehead,$codebody;
+    }
+}

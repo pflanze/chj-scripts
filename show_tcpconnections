@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# options:
+if [ "$1" == "--http" ]; then
+    export OPT_HTTP=1
+fi
+
+
+netstat -n -A inet -p |grep -v -F 127.0.0.1 | perl -we '
+use strict;
+sub get_s_context {
+    my ($pid)=@_;
+    if (open IN,"</proc/$pid/status") {
+	local $/;
+	my $cnt=<IN>;
+	if ($cnt=~ /^s_context\:\s*(\d+)/m) {
+	    $1
+	} else {
+	    undef
+	}
+    } else {
+	# die "opening /proc/$pid/status: $!";
+	return
+    }
+}
+
+BEGIN {
+    #*warn=sub {};
+    #*warn= *CORE::warn; Undefined subroutine &CORE::warn called   wenn  &warn( "HE");
+    $SIG{__WARN__}= sub {};# ok THIS works.
+}
+
+# check whether we are running on a vserver-enabled kernel and in ctx 1
+if (defined(my $ctx=get_s_context "self")) {
+    if ($ctx==1){
+	# ok need to parse everything
+	my $lineno=0;# line 0: <<Active Internet connections (w/o servers)>>, line 1: header
+	while (<STDIN>) {
+	    if ($lineno==0) {
+		# ignore it
+	    } else {
+		if ($lineno==1) {
+		    s|(\sPID/)|${1}Ctx/|i or warn "HE";
+	        } else {
+		    s|^(.{78}.*?\s+)(\d+)/|"$1$2/".get_s_context($2)."/"|e or warn "HE2";
+		    # ps. that a process like <<sshd: root@pts/16>> is shown like 14132/49198/16 is not my fault, that is already in the output from netstat (like "14132/16").
+		}
+	        # try to shorten line
+	        s/^(.{35}[^\s]*)\s{1,5}/$1/ or warn "huh";
+	        s/\s+\z/\n/s;
+	        print unless $lineno>1 and $ENV{OPT_HTTP} and not m/:80/;
+	    }
+	    $lineno++;
+	}
+	exit;
+    }
+}
+# else:
+<STDIN>;
+#print unless $ENV{OPT_HTTP} and m/:80/ while <STDIN>;
+print scalar <STDIN>;
+while(<STDIN>) {
+    print unless $ENV{OPT_HTTP} and not m/:80/;
+}
+'

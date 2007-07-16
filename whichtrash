@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $name= 'whichtrash';
+
+if (@ARGV) {
+	print "$name
+
+Prints the location of your trashcan (determined with the same 
+rules that the other *trash tools use). 
+";
+	exit;
+}
+
+my $trash;
+if ($ENV{TRASHCAN}) {
+	$trash= $ENV{TRASHCAN}
+} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
+	$trash=$ENV{HOME}."/Desktop/Trash/";
+} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
+	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} else {
+	die "Konnte Deinen Trashcan nicht finden. ";
+}
+print $trash."\n";

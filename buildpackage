@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#if ! grep -q -i 'Christian.*Jaeger' debian/changelog ; then
+if ! grep '^ -- ' debian/changelog | head -1 | grep -q -i "$USER" ; then
+    if [ "$1" = "-f" ]; then
+	shift
+    else
+	echo "Vermisse die Angabe Deiner Wenigkeit im debian/changelog. (Bitte eintragen oder/und Option -f angeben zum forcieren.)" >&2
+	exit 1
+    fi
+fi
+
+exec nice dpkg-buildpackage -uc -us -b -rfakeroot "$@"

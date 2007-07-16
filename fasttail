@@ -1,0 +1,204 @@
+#!/usr/bin/perl -w
+
+# Sam Apr  5 19:38:29 MEST 2003
+
+# Fri, 09 Jun 2006 20:10:49 +0200 (last change (mtim): 2004-05-09 00:37)
+
+use strict;
+use Fcntl ":seek";
+
+my $check_interval=20;
+# this is in iterations, so with 20 iterations per second this means once each second
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] file
+  Same as tail -f, but checks the file 20 times per second not only once.
+  Options:
+  -t, --time   translate (possibly floatingpoint) unix seconds to
+               a localtime representation
+  -c  --checkfile  check file inode number and size to
+               detect replacements or truncations.
+               This is now the default. Switch off with -C
+  -C           switch off the periodic file stat
+  -s | --sleep-interval seconds  (may also be fractional) defaults to 0.05
+  -w | --wait  wait for the file to appear, do not terminate if it vanishes.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my ($opt_t,$opt_c,$opt_q,$opt_s,$opt_wait);
+$opt_s=1/20;
+$opt_c=1;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?w(ait)?$/) {
+	$opt_wait=1;
+    } elsif (/^--?t(time)?$/) {
+	$opt_t=1;
+    } elsif (/^--?c(heck(?:file))?$/) {
+	$opt_c=1;
+    } elsif (/^--?(C|no-check(?:file))?$/) {
+	$opt_c=0;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_q=1;
+    } elsif (/^--?s(?:leep-interval(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_s=$1
+        } else {
+            $opt_s=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+  } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files==1;
+
+my $didwarn=0;
+sub doopen {
+    open IN,"<$files[0]"
+      or do {
+	  if ($opt_wait) {##hrm regardless of kind of error ?
+	      unless($didwarn) {
+		  warn "trying to open '$files[0]': $!, but going to try again endlessly.\n";
+		  $didwarn++
+	      }
+	      sleep 1;
+	      goto \&doopen;
+	  } else {
+	      die "$myname: coult not open '$files[0]': $!\n";
+	  }
+      };
+}
+doopen;
+
+
+#sysseek IN, 500,SEEK_END  or die $!;
+#my $size=(stat $files[0])[7]; ## sollte fstat haben...
+my ($size,$curino); # now the spaghetti begins
+{
+    ##copy!! see below
+    my @s= stat $files[0]
+      or die "$myname: could not stat file '$files[0]': $!\n";
+    $curino= $s[1];
+    $size=$s[7];
+}
+
+
+my $readpos=$size-500; $readpos=0 if $readpos<0;
+sub doseek {
+    sysseek IN, $readpos, SEEK_SET
+      or die "$myname: seek on '$files[0]': $!\n";
+}
+if ($readpos>0) {
+    doseek;
+}
+
+
+{
+    my @months= qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    sub leftjustify {
+	my ($len,$str)=@_;
+	my $l=length($str);
+	if ($len>$l) {
+	    $str.= "0"x($len-$l)
+	} else {
+	    substr($str,0,$len)
+	}
+    }
+    sub formattime {
+	my ($timesec,$timefract)=@_;
+	my ($sec,$min,$hour,$mday,$mon,$year)=localtime($timesec);
+	$year+=1900;
+	$mon++;
+	defined($timefract) # && length($timefract)
+	  ?
+	  #sprintf('%02d/%s/%04d:%02d:%02d:%02d.%-3d',$mday,$months[$mon],$year,$hour,$min,$sec,$timefract) 
+	  # AQRGGGGGGHGGHHHHHH 
+	  sprintf('%02d/%s/%04d %02d:%02d:%02d.%s',$mday,$months[$mon],$year,$hour,$min,$sec,leftjustify(3,$timefract))
+	:
+	  sprintf('%02d/%s/%04d %02d:%02d:%02d',$mday,$months[$mon],$year,$hour,$min,$sec)
+    }
+}
+
+my ($newbuf,$buf,$rest);
+$buf=$rest="";
+$|=1;
+my $count=0;
+while (1) {
+    select "","","",$opt_s;
+    defined(my $cnt=sysread IN,$newbuf,1000)
+      or die "$myname: error reading from $files[0]: $!\n";
+    if ($cnt) {
+	if ($opt_t) {
+	    $buf.=$newbuf;
+	    #warn "buf='$buf'";
+	    #if ($buf=~ s/(^|\n)([^\n]*)$/$1/s) {
+	    if ($buf=~ s/(^|\n)([^\n]+)\z/$1/s) { # tatsächlich. ich bin mehr
+						  # als 30 jahre alt und merke
+						  # erst jetzt dass es
+						  # verdammtnochmal \z braucht
+						  # nicht $
+		#warn "did cut unfinished line:'$2'";
+		$rest= $2;
+	    } else {
+		$rest= "";
+	    }
+	    $buf=~ s/(^|\n)(\d+)(?:\.(\d*))?(\s)/$1.formattime($2,$3).$4/sge;
+	    print $buf or die "$myname: error printing to stdout: $!\n";
+	    $buf=$rest;
+	} else {
+	    print $newbuf or die "$myname: error printing to stdout: $!\n";
+	}
+	if ($opt_c) {#well
+	    $readpos+=$cnt;
+	}
+    } else { # check file only if nothing is there to be read anymore, ok?
+	if ($opt_c) {
+	    $count++;# only count the non-filehasbeenincremented periods
+	    if ($count>=$check_interval) {
+		$count=0;
+		my @s= stat $files[0]
+		  or die "$myname: could not stat file '$files[0]': $!\n";
+		#my
+		  $size=$s[7];
+		my $ino=$s[1];
+		if ($ino!=$curino) {
+		    warn "$myname: file '$files[0]' has been replaced, reopening.\n"
+		      unless $opt_q;
+		    # zuendelesen zuerst? ##achwas  well mit obiger else logik eh nümm nötig
+		    # reopen:
+		    doopen;
+		    $readpos=0;
+		    $curino=$ino;
+		} elsif ($size < $readpos) {
+		    warn "$myname: file '$files[0]' has been truncated (or at least shortened), reread from beginning.\n"
+		      unless $opt_q;
+		    # zuendelesen zuerst? ##achwas
+		    $readpos=0;
+		    doseek;
+		}
+	    }
+	}
+    }
+}
+
+print $rest;
+
+__END__
+
+  todo: timecode auslagrn, stat auf inodenr und damit filechange sehn.
+hmm und in c impl hätt ich sobald erstes zeichen kein digit ist auf sofortausgeben schalten koebnnen

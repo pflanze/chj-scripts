@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# cj Wed, 19 Feb 2003 16:12:42 +0100
+
+if [ $# -gt 0 ]; then
+    echo "Usage: `basename $0` < file_to_offer"
+    echo "  chiffriert stdin OHNE kompression, und offeriert es auf einem Port,"
+    echo "  berechnet gleichzeitig md5 summe des outputs."
+    exit 1
+fi
+
+
+if [ ! "$PORT" ]; then
+    PORT=$((14123+$UID))
+fi
+
+echo "  Bitte auf Server 'netcatfetch_md5  `publicip` $PORT > ausgabedatei' eingeben!"
+ 
+gpg -c -z 0 | multifeed --delayed '|' md5sum '&' netcat -l -q 1 -p "$PORT" 

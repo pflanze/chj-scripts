@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 15 07:33:06 CET 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  filters newline-based input list of paths.
+
+  ex.:  dpkgL foo|filter-files|myxargs_oneinvocation l
+  shows only the contained files.
+
+  items which don't exist are always suppressed.
+  stat permission errors terminate the program.
+
+  the program does lstat, so symlinks to files are not considered files.
+
+  options:
+  -v   reverse operation: suppress files and nothing else (except
+       nonexisting ones as said above)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_v;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v$/) {
+	$opt_v=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+use Chj::xperlfunc 'Xlstat';
+
+#while(<>) {#wellll good idea? without having spliced ARGV above?
+while(<STDIN>) {
+    chomp;
+    if (my $s= Xlstat $_) {
+	my $isfile= $s->is_file;
+	print "$_\n" or die "$myname: printing to stdout: $!"
+	  if ($isfile and !$opt_v) or (!$isfile and $opt_v); #xor bou
+    }
+}

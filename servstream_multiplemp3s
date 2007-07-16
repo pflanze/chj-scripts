@@ -1,0 +1,146 @@
+#!/usr/bin/perl -w
+# cj Fri, 17 Sep 2004 21:57:23 +0200
+
+use strict;
+
+my $PORT= $ENV{PORT}||1112;
+
+unless (@ARGV) {
+    print "bitte filename angeben des files das tail'ed und served werden soll
+  Das ist ein quickhack eines streaming servers, der für proxybetrieb gedacht ist.
+  Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *während* des runterladens
+  hiermit wieder offeriert werden. Als Port wird $PORT verwendet (per \$PORT overridebar).
+
+  --radius   48 statt 44.1 input (eigentlich sollte es es von ogg's output selber lesen!!)
+             (recoden nach 44.1 output)
+  --48       48 statt 44.1 input (eigentlich sollte es es von ogg's output selber lesen!!)
+             (kein recoding, wird als 48 ins mp3 getan)
+
+  sonstige optionen werden an mpg321 gegeben:
+  -k frames  (kann offenbar bei mpg321 keine min:sec angaben machen :/)
+
+";
+    exit 1
+}
+
+#nachträglicheingeführtes options prozessig:
+my $opt_radius;
+my $opt_48;
+{
+    my @A=@ARGV;
+    my $fn= shift @A;
+    my @B= map {
+	if (/^--?radius$/) {
+	    $opt_radius=1;
+	    ()
+	} elsif (/^--?48$/) {
+	    $opt_48=1;
+	    ()
+	} else {
+	    $_
+	}
+    } @A;
+    @ARGV=($fn,@B);
+}
+
+
+print "serving from port $PORT\n";
+
+use Chj::xperlfunc;
+use Chj::xpipe;
+#use Chj::xpipeline 'xreceiverpipeline';
+
+my ($r,$w)=xpipe;
+if (my $pid=xfork) {
+    eval {
+	$r->xclose;
+	my $icyname= join (" ",map {
+	    my $n=$_;
+	    $n=~ s|.*/||s;
+	    $n=~ s|'|\\'|sg;
+	    "'$n'";
+	} @ARGV);
+	my $msg=
+qq{ICY 200 OK
+icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2: SHOUTcast Distributed Network Audio Server/SolarisSparc v1.9.2<BR>
+icy-name: $icyname
+icy-genre: Trance Techno Dance
+icy-url: http://www.di.fm
+icy-pub: 1
+icy-metaint: 0
+icy-br: 96
+icy-irc: #shoutcast
+icy-icq: 0
+icy-aim: N/A
+
+};
+	$msg=~ s/\n/\r\n/sg;
+	$w->xprint($msg);
+	$w->xflush;
+
+	my ($r2,$w2)=xpipe;
+	if (my $pid=xfork) {
+	    eval {
+		$r2->xclose;
+		$w2->xdup2(1);
+		$w2->xclose;
+		$w->xclose;#hm, not too fast? nö wenn forked dann ischer doch kept.
+		#xxsystem qw(/usr/bin/mpg123 -w -),@ARGV;  falsch, wav ist zu kurz und drum lame fertig.
+		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann übersehen
+		#xxsystem qw(/usr/bin/mpg123 -s),@ARGV;
+		#och  nun noch  jung at the beginning.
+
+		# JAA!!!!!!!! mpg321 kann meine getmpradio dinger spielen  mpg123 nicht!  leider hats aber keine sample rate angabe. also ich selber wieder.
+		xxsystem qw(/usr/bin/mpg321 -s -v),@ARGV;
+	    };
+	    if ($@) {
+		print STDERR $@;
+		kill $pid or warn $!;
+	    }
+	    #warn "goigntowait1";
+	    #ach, v.a. das muss mann:!!!!
+	    close STDOUT or warn $!;
+	    wait;
+	} else {
+	    $w2->xclose;
+	    $r2->xdup2(0);
+	    $r2->xclose;
+	    $w->xdup2(1);
+	    $w->xclose;
+	    #xexec qw(lame -r -x - -);#WOW. endlich geht es auch mit dem -x
+
+            if ($opt_radius) {
+		xexec (
+		       "sox -t raw -c 2 -x -s -w -r 48000 - -t raw -c 2 -x -s -w -r 44100 - resample"
+		       .
+		       "|lame -r -x - -"
+		      );
+	    } else {
+		xexec (
+		       qw(lame -r -x),
+		       $opt_48 ? qw(-s 48) : (),
+		       qw( - -)
+		       );
+	    }
+	}
+
+    };
+    if ($@) {
+	print STDERR $@;
+	kill $pid or warn $!;
+    }
+    #close STDOUT or warn $!;
+    #$w->xclose; oder schon in parent nach fork. ah dort stehts eh scho
+    warn "waiting 2";
+    wait;# nun ist leider /usr/bin/mpg123 so ein geiles kommando dass es mit 0 exitet obwohl input file not found. hm, immerhin  mit  close STDOUT unten netcat abschliessen? nein, nix isch. ach.
+
+} else {
+    $r->xdup2(0);
+    $r->xclose;
+    $w->xclose;
+    #close STDOUT or die $!;
+    xexec qw(netcat -q 1 -l -p), $PORT
+}
+
+

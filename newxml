@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Son Jul  4 14:50:20 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+#use Chj::xsysopen 'xsysopen_excl';  gibt es nicht, ev richtigerweise?.
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+
+my $txt=<<'END';
+<?xml version="1.0" encoding="iso-8859-1"?>
+<page>
+  
+END
+
+chomp $txt;
+
+for (@args) {
+    eval {
+	my $f= xtmpfile $_,0666;
+	$f->xprint($txt);
+	$f->xclose;
+	$f->xlinkunlink($_);
+    };
+    print STDERR $@ if $@;
+}
+
+xexec $ENV{EDITOR}||"e", @args;
+

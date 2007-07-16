@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Mon Jan 20 04:54:45 MET 2003
+# hmm, mit *welchem* gnu tool kann man schon wieder summieren? uniq isses nicht. sort auch nicht. ?
+# dann halt so.
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+  Sum all numbers given on stdin.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage if @files;
+
+my $tot=0;
+while (defined(local $_=<STDIN>)){
+    chomp;
+    /^\s*[+-]?\s*\d+(\.\d*)?\s*$/
+      # könnte auch noch zulassen:
+      # 1_324   1_134.245_123
+      # 1,324 -> europ. oder amerik.?
+      or do{
+	  print STDERR "$myname: ignoring invalid input line '$_'\n";
+	  next;
+      };
+    s/\s+//sg;
+    $tot+=$_;
+}
+print "$tot\n";

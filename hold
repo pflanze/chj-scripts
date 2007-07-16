@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+# Sat Jul 13 00:33:46 MEST 2002
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname packagename [ packagename ..]
+  Puts the mentioned packages on hold. (Debian only)
+";
+exit @_;
+}
+
+my @package;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @package, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @package, $_
+	}
+}
+usage unless @package;
+
+for my $package (@package) {
+	chomp $package;
+	if ($package=~ /^[^\s]+$/s) {
+		open OUT,"| dpkg --set-selections" or die "Could not execute dpkg command: $!";
+		print OUT "$package\thold\n";
+		close OUT;
+		if ($? != 0) {
+			warn "dpkg returned error code $? for package $package\n";
+		}
+	} else {
+		warn "$myname: ignoring strange input '$_'\n";
+	}
+}

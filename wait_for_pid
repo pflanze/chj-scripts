@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Fre Dez 13 14:38:13 CET 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname pid
+  Wait til pid finishes.
+";
+exit @_;
+}
+
+my @files;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @files, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @files, $_
+	}
+}
+usage unless @files>=1;
+
+if (@files>1) {
+    while (kill (0,@files)==@files) {
+	sleep 1;
+    }
+} else {
+    do {
+	sleep 1;
+    } until not kill 0,@files and $! != 1; # EPERM
+}
+
+die "$myname: $!\n" if $! and $!!=3; # no such process

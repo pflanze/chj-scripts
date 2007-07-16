@@ -1,0 +1,43 @@
+#!/bin/sh
+# cj Thu, 15 Jan 2004 21:14:30 +0100
+
+if [ -z "$PORT" ]; then
+    PORT=1112
+fi
+
+
+if [ $# -ne 1 -o "H$1" == "H-h" ]; then
+    echo "bitte filename angeben des files das tail'ed und served werden soll"
+    # gopf cat nöd echo
+    cat <<EOF
+Das ist ein quickhack eines streaming servers, der für das servieren eines files von beginn weg ist.
+EOF
+    exit 1
+fi
+
+file="$1"
+
+{
+{
+# hier cat, nicht echo, hey gopf.
+cat <<END
+ICY 200 OK
+icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2: SHOUTcast Distributed Network Audio Server/SolarisSparc v1.9.2<BR>
+icy-name: $@
+icy-genre: Trance Techno Dance
+icy-url: http://www.di.fm
+icy-pub: 1
+icy-metaint: 0
+icy-br: 96
+icy-irc: #shoutcast
+icy-icq: 0
+icy-aim: N/A
+
+END
+} | perl -wne 'chomp; print "$_\r\n"'
+
+#tail -c $(( 1024*32 ))  -f -- "$1" | bfr
+cat "$file"
+
+} | netcat -q 1 -l -p $PORT

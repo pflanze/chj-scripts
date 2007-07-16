@@ -1,0 +1,234 @@
+#!/usr/bin/perl -w
+
+# Die Jun 22 14:01:09 MEST 2004 - Tue, 22 Jun 2004 16:45:49 +0200 (inkl xreadline_backwards schreiben in ner alphaversion)
+
+(my $email='christian.jaeger%ethlife,ethz,ch')=~ tr/%,/@./;
+
+use strict;
+my $allowed_hole=30;
+my $allowed_overlap=15;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  show start date and, unless it's compressed, the end date of the file(s).
+
+  options:
+  -a|--all     read/uncompress whole file if compressed to also get end time.
+  -m|--mtime   use the mtime of compressed files as endtime.
+  -s|--sort    sort on start time.
+  -l           list files only, no time output; only works if also sorting.
+  -c|--check   check if there are holes or overlaps between the logfiles.
+               accept a hole of $allowed_hole or overlap of $allowed_overlap seconds.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_readall;
+my $opt_sort;
+my $opt_l;
+my $opt_check;
+my $opt_mtime;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?a(ll)?$/) {
+	$opt_readall=1;
+    } elsif (/^--?s(ort)?$/) {
+	$opt_sort=1;
+    } elsif (/^--?l(ist-only)?$/) {# orwhatever it is called in grep
+	$opt_l=1;
+    } elsif (/^--?c(heck)?$/) {
+	$opt_check=1;
+    } elsif (/^--?m(time)?$/) {
+	$opt_mtime=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+usage "it does not make to give both -m and -a" if $opt_readall and $opt_mtime;
+
+
+my @all;# [unix,filepath,str]
+{
+    #argh, +- copy of code at end of program
+    my $previous_end;#undef=no previous file; 0= previous file had no end time
+
+    sub myprint {
+	my ($unixtime,$endunixtime,$filepath,@rest)=@_;
+	if ($opt_sort) {
+	    push @all,[$unixtime,$filepath,(join "",@rest),$endunixtime];
+	} else {
+	    if ($opt_check) {
+		my $start= $unixtime;
+		if (defined $previous_end) {
+		    if ($previous_end) {
+			if ($start > $previous_end) {
+			    if (($start - $previous_end)> $allowed_hole) {
+				print " *** hole of ".($start - $previous_end)." seconds ***\n";
+			    }
+			} else {
+			    if (($previous_end - $start)> $allowed_overlap) {
+				print " *** overlap of ".($previous_end - $start)." seconds ***\n";
+			    }
+			}
+		    } else {
+			print " (cannot check hole/overlap as endtime of previous file is missing)\n";
+		    }
+		}
+		my $end= $endunixtime;
+		$previous_end=$end||0;
+	    }
+	    print @rest;
+	}
+    }
+}
+
+#use Chj::IO::Command;
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL_";
+use Chj::xperlfunc;
+use Compress::Zlib ;
+use Chj::xopen qw(xopen_read);
+use Fcntl ':seek';
+
+my $parser=new Chj::Parse::Apache::Accesslog;
+
+sub show_start_end_of {
+    my($path)=@_;
+    if ($path=~ /gz$/) {
+	# zipped, only show start.
+	# hmmm wildes pipen aufbauen, oder doch einfach nur selber in mem?
+	my $gz = gzopen($path, "r")
+	  or die "$myname: gzopen('$path'): $!";
+	unless ($opt_readall) {
+	    my $buf;
+	    $gz->gzread($buf,8192)
+	      or die "$myname: gzread gave error";
+	    $buf=~ /^([^\n]+)\n/
+	      or die "$myname: no lineending seen in the first 8192 chars of file '$path'\n";
+	    $parser->parseline_time($1)
+	      or die "$myname: error parsing first line of file '$path': ".$parser->errmsg."\n";
+	    my $unixstart= $parser->[AL_Unixtime];
+	    my $unixend;
+	    if ($opt_mtime) {
+		if (my @s= stat $path) {
+		    $unixend=$s[9];
+		} else {
+		    warn "could not stat '$path': $!";
+		}
+	    }
+	    my $end= $unixend? "".localtime($unixend) : "";
+	    myprint $unixstart,$unixend,$path,"$path:\t".localtime($unixstart)."\t-\t$end\n";
+	} else {
+	    my $line;
+	    my ($first,$last);#last needed since line will be clobbered on eof
+	    while(1) {
+		my $rv=$gz->gzreadline($line) ;
+		if ($rv<0){
+		    die "$myname: gzreadline gave error ";##
+		}
+		if ($rv==0) {
+		    last;
+		}
+		if (!defined $first) {
+		    $first=$line;
+		} else {
+		    $last=$line;
+		}
+	    }
+	    if (!defined $first) {
+		die "$myname: no line in file '$path'";
+	    }
+	    $parser->parseline_time($first)
+	      or die "$myname: error parsing first line of file '$path': ".$parser->errmsg.": $first";
+	    my $start= localtime($parser->[AL_Unixtime]);
+	    my $unixstart=$parser->[AL_Unixtime];
+	    my $end;
+	    my $unixend;
+	    if (defined $last) {
+		$parser->parseline_time($last)
+		  or die "$myname: error parsing last line of file '$path': ".$parser->errmsg.": $last";
+		$unixend=$parser->[AL_Unixtime];
+		$end=localtime($parser->[AL_Unixtime]);
+	    } else {
+		$end="(same, only 1 line in file)";
+	    }
+	    myprint $unixstart,$unixend,$path, "$path:\t$start\t-\t$end\n";
+	}
+    } else {
+	my $f=xopen_read $path;
+	$parser->parseline_time(scalar $f->xreadline)
+	      or die "$myname: error parsing first line of file '$path': ".$parser->errmsg."\n";
+
+	my $start= $parser->[AL_Unixtime];
+	$f->xseek(0,SEEK_END);
+	$parser->parseline_time(scalar $f->xreadline_backwards)
+	  or die "$myname: error parsing last line of file '$path': ".$parser->errmsg."\n";
+	my $end=$parser->[AL_Unixtime];
+	myprint $start,$end,$path,"$path:\t".localtime($start)."\t-\t".localtime($end)."\n";
+    }
+}
+
+
+for (@args) {
+    eval {
+	show_start_end_of $_
+    };
+    if ($@) {
+	print STDERR $@;
+    }
+}
+
+if ($opt_sort) {
+    my $previous_end;#undef=no previous file; 0= previous file had no end time
+    for (sort { $a->[0] cmp $b->[0] } @all) {
+	if ($opt_check) {
+	    my $start= $_->[0];
+	    if (defined $previous_end) {
+		if ($previous_end) {
+		    if ($start > $previous_end) {
+			if (($start - $previous_end)> $allowed_hole) {
+			    print " *** hole of ".($start - $previous_end)." seconds ***\n";
+			}
+		    } else {
+			if (($previous_end - $start)> $allowed_overlap) {
+			    print " *** overlap of ".($previous_end - $start)." seconds ***\n";
+			}
+		    }
+		} else {
+		    print " (cannot check hole/overlap as endtime of previous file is missing)\n";
+		}
+	    }
+	    my $end= $_->[3];
+	    $previous_end=$end||0;
+	}
+	if ($opt_l) {
+	    print $_->[1],"\n";
+	} else {
+	    print $_->[2]
+	}
+    }
+}

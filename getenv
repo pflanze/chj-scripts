@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+# Tue,  5 Feb 2002 00:45:36 +0100
+# in der Tradition von getrlimits auch get* benamsen. ?
+
+$0=~ /([^\/]+)$/s;
+my $name=$1;
+sub usage {
+	print "$name  pid  [ VAR [, VAR ] ]
+  Gets the value of environment variable VAR of the process with the given
+  pid, or all its environment variables if no VAR is given.
+";
+exit;
+}
+
+usage unless @ARGV;
+
+my ($pid,@vars);
+for (my $i=0; $i< @ARGV; $i++) {
+	if ($ARGV[$i]=~ /^--?h/) {
+		usage
+	} elsif (! defined $pid) {
+		$pid=$ARGV[$i];
+		$pid=~ /^\d+$/s or do  {
+			warn "Wrong argument. Expecting process id.\n";
+			usage
+		};
+	} else {
+		push @vars, $ARGV[$i]
+	}
+}
+
+usage unless defined $pid;
+
+open IN,"</proc/$pid/environ" or do {
+	if ($!==2) {
+		die "$name: No process with pid $pid.\n";
+	} else {
+		die "$name: Error opening proc entry: $!\n";
+	}
+};
+
+$/=  "\0";
+
+if (@vars) {
+	my %vars= map { $_=>1 } @vars;
+	while (<IN>) {
+		if (/^(.*?)=(.*)\0/s) {
+			if ($vars{$1}) {
+				print "$2\n";
+			}
+		} else {
+			substr($_,-1)="";
+			warn "$name: strange env entry '$_'!!\n";
+		}
+	}
+} else {
+	while (<IN>) { 
+		tr /\0/\n/;
+		print;
+	}
+}

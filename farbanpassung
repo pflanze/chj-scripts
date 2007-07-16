@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+
+unless (@ARGV==3) {
+	die "Usage: $0 [#]000000 [#]f0e5c0 0.85
+	Calculates the color value between the first and the second
+	RBG color, for which the scaling factor is given as third 
+	argument (0=left value, 1=right value).
+	cj 2000-08-08/2001-01-28
+"
+} else {
+	recalc(@ARGV)
+}
+
+
+sub recalc {
+	my ($col1,$col2,$mult)=@_;
+	
+	$col1=~ /^#?(..)(..)(..)/ or die "don't understand color code '$col1'\n";
+	my @cols1 = ($1,$2,$3);
+	$col2=~ /^#?(..)(..)(..)/ or die "don't understand color code '$col2'\n";
+	my @cols2 = ($1,$2,$3);
+	my @targ;
+	for $i (0..2) { 
+		my $a=hextodec($cols1[$i]);
+		my $b=hextodec($cols2[$i]);
+		$targ[$i]= dectohex( ($b-$a)*$mult +$a );
+	};
+	print "#".join('',@targ)."\n";
+	
+}
+
+
+# these work with bytes:
+
+sub hextodec {
+	#$_[0]= unpack("C",pack("H2",$_[0]));  # my $h=shift: macht schon kopie. $h zuweisen geht ni raus 
+	if ($_[0]=~ /^[0-9a-fA-F]{2}$/) {
+		$_[0]= unpack("C",pack("H2",$_[0]));
+	}else {
+		warn "Fehler: '$_[0]' ist keine ein-bytige Hexzahl\n"
+	}
+}
+
+sub dectohex {
+	$_[0]= unpack("H2",pack("C",$_[0]));
+}
+

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+cat <<END
+
+Datumsfeldtypen: hierrein können leider in *beiden* Fällen *nicht* unixtimezahlen gesp. werden.
+  datetime:  
+  timestamp:  update auf now() wenn:
+                 - es der erste ist und record upgedatet
+                 - NULL reinspeichern. (0 macht nix das ist sogar verbatim rein speicherbar).
+              PS. "timestamp" ist automatisch *immer* not null definiert auch ohne solche Angabe.
+  
+Integer-für-Datum-missbrauchen:
+  #int unsigned  0 to 4294967295. Wobei die unixtime ja eben glaub signed ist?he!
+  int            -2147483648 to 2147483647 (4 Bytes).
+   
+(PS. ein mediumint ist 3 Bytes und geht -8388608 to 8388607. Ein bigint ist 8 Bytes 
+(64 Bit, aber nur 63 Bits zur Nutzung empfohlen).)
+
+Konversionen:
+
+   FROM_UNIXTIME(unix_timestamp) 
+
+   UNIX_TIMESTAMP()
+   UNIX_TIMESTAMP(date)
+
+
+END

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# cj Tue, 07 Mar 2006 13:59:10 +0100 / Thu, 23 Nov 2006 13:58:43 +0100
+
+if [ $# -lt 2 -o "$1" = "-h" -o "$1" = "--help" ]; then  #well die letzteren checks kann ich mir nun sparn da 2 args req..
+    echo "usage: $0 dir pattern"
+    exit
+fi
+
+dir="$1"
+shift
+#find "$dir" -name "*.scm" -print0 | xargs -0 grep "$@"
+
+# ignore .git directories:
+
+find "$dir" -name .git -prune -o \( -name "*.scm" -a -print0 \) | xargs -0 grep "$@"
+
+#ps. todo:
+# - ist dummer name, grep-scm oder grep-pm sollten diese doch wohl heissen
+# - in find-pm obiges .git exclude ebenfalls reinmachen.  und parametrisieren statt copy...

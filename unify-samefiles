@@ -1,0 +1,276 @@
+#!/usr/bin/perl -w
+
+# Die Sep 14 23:38:20 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $minsize= 1025;
+my $readsize= 1024/2;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname directory
+
+  scans directory and hardlinks files that have the same permissions/metainfo
+  and same content (does md5 sum check).
+
+  --report    do not actually link them, just report xxxçç
+  --dry-run   do not actually link them, just report all the actions which would be taken if not given.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $verbose;
+my $opt_dryrun;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif (/^--?dry(-run)?$/) {
+	$opt_dryrun=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+$verbose||=$DEBUG;
+
+use Chj::xopendir;
+use Chj::singlequote;
+use Chj::xperlfunc;
+use Chj::xperlfunc qw(xlinkunlink);
+use Chj::xopen 'xopen_read';
+use Digest::MD5;
+
+# map:  diversestatinfos -> [  [ path, path, ...],
+#                              { md5sum=>[path,..] vielleicht?.
+
+my %map;
+my %seeninodes;# so we only look at it once   aber: damit vergebe ich die chance einen pfad zu finden der nicht (nicht?) unlinkable isch.  aber wichtig isches schon nur weil statistikzahlen sonst falsch sind.
+
+sub addstatinfos {
+    my ($path,$s)=@_;
+    my $key=join "\0",$s->size,$s->mode,$s->uid,$s->gid,$s->mtime; # natürlich wäres auch möglich nicht auf stat infos ausser size zu schauen  und dann hinweisen dass unifizierbar wenn auf das verzichten!.
+    push @{ $map{$key}[0] }, $path;
+}
+
+sub scan {
+    my ($dir)=@_;
+    my $d=xopendir $dir;
+    while(defined(my$item=$d->xnread)){
+	my $itempath="$dir/$item";
+	my $s=xlstat $itempath;
+	if (-l _) {
+	    next;
+	} elsif (-d _) {
+	    scan ($itempath);
+	} elsif (-f _) {
+	    # so, und nun das dings alles infos speichern.
+	    # [ino? nein]
+	    # mode,  [nlink? hm, nöd würkli? höchstens warnung 'is prelinked']
+	    # uid, gid, [rdev: nein, nur normale files anschauen]
+	    # size JA
+	    # [atime hm?->warnung wenn unterschiedlich?,]
+	    # mtime, [ctime nein]
+	    # dev: na wenn der nicht gleich, eh grad aufhören.<- bei recurse.
+	    if (exists $seeninodes{$s->ino}) {
+		warn "ignoring already seen inode of '$itempath'\n" if $verbose;
+	    } else {
+		if ($s->size > $minsize) {
+		    addstatinfos($itempath,$s);
+		    $seeninodes{$s->ino}=undef;
+		} else {
+		    warn "ignoring too small file '$itempath'\n" if $verbose;#veryverbose.
+		}
+	    }
+	} else {
+	    warn "ignoring special file(?) '$itempath'\n" if $verbose;
+	}
+    }
+}
+
+
+for(@args){
+    scan $_
+}
+
+use Data::Dumper;
+
+#print Dumper \%map;
+
+#find those that have multiple paths for the same key:
+
+sub xlinkallthose { # args: paths to be merged. returns: number of deleted files
+    # should all be on the same fs.
+    # hm, dann könnte noch stragegie kommen, von wo nach wo  wegen permissions auf directory.  also mal alle renamen zuerst well eh xlinkunlinken.
+    my (@real_paths)=@_;
+    my @moved_paths=@real_paths;
+    my $sourcefile;
+    for(@moved_paths) {
+	if ($_ eq $real_paths[-1] # last durchgang - wie sonst feststellen?
+	    and !defined $sourcefile) {
+	    $sourcefile= $_;
+	    $_=undef; # UND AUCH HIER!  aus anderem Grund?? Grund1 isch es kann nicht gemoved werden, Grund2 isch wir wollen es gar nicht moven weil es das letzte isch und keins vorkam das wir nicht moven konnten.
+	    #last;  gefährlich?
+	    next;
+	}
+	eval {
+	  TRY: {
+		for my $attempt (1..3) {
+		    my $random= int(rand(500000));
+		    eval {
+			my $movedpath="$_.$myname.$random";
+			if ($opt_dryrun) {
+			    warn "$myname: would xlinkunlink(".singlequote($_).",".singlequote($movedpath),")\n"
+			} else {
+			    warn "$myname: xlinkunlink(".singlequote($_).",".singlequote($movedpath),")\n" if $verbose;
+			    #xlinkunlink $_,$movedpath; -> Useless use of private variable in void context at /root/bin/unify-samefiles line 136.  bin ja baff
+			    xlinkunlink ($_,$movedpath);
+			}
+			$_=$movedpath;
+		    };
+		    if (ref$@ or $@) {
+			next;
+		    }
+		    last TRY;
+		}
+		# could not move the file. either link or unlink.
+		# be pragmatic: use it as sourcefile instead.
+		$sourcefile=$_;
+		$_=undef;
+		die $@;
+	    }
+	};
+	warn $@ if $@;# and $verbose; ? ##  weil nur dann relevant? aber eben, ev nochbuggy bei alle besetzt  wie reagiert denn dann der code? ç.
+    }
+    # ok, those that could be moved have different path now. funny solution.
+    # find one file to use as source first.
+#   TRY: {
+# 	for (my $i=0;$i<$#real_paths; $i++) {
+# 	    if ($real_paths[$i] eq $moved_paths[$i]) {
+# 		# looks like no luck moving the file, so ignore
+# 	    } else {
+# 		$sourcefile= $real_paths[$i];
+# 		warn "going to use '$sourcefile' as sourcefile\n" if $DEBUG;
+# 		last TRY;
+# 	    }
+# 	}
+# 	die "could not find any movable sourcefile
+    # eh ich dodl isch doch egal, source eh verwendbar. einfach erstes?. AH NEIN, idee war,   wenn das erste removeable isch aber das andere nicht, das andere als source nehmen.
+    # ehr, oben schon suchen  und wenn nix gefunden erstes nehmen.
+#     unless(defined $sourcefile) {
+# 	$sourcefile= $moved_paths[0];
+#     }
+    # nein, sondern oben schon, damit schon gar nicht moved.
+    for (my $i=0;$i<=$#real_paths; $i++) {
+	#if ($real_paths[$i] eq $moved_paths[$i]) {
+	# well, hab dann auf undef umgestellt.  auch noch sehr funny.
+	if (!defined $moved_paths[$i]) {
+	    # looks like no luck moving the file, so ignore
+	} else {
+	    if ($sourcefile eq $real_paths[$i]) {
+		# sourcefile was choosen from an unmovable one, and it's this one. so don't do anything
+	    } else {
+		if ($opt_dryrun) {
+		    warn "$myname: would xlink(".singlequote($sourcefile).",".singlequote($real_paths[$i]),")\n"
+		} else {
+		    warn "$myname: xlink(".singlequote($sourcefile).",".singlequote($real_paths[$i]),")\n" if $verbose;
+		    xlink $sourcefile,$real_paths[$i];
+		}
+	    }
+	}
+    }
+    # und am ende alle moved_paths löschen wenn obige xlinks alle gut gingen.
+    my $count;
+    for (@moved_paths) {
+	if (defined) {
+	    if ($opt_dryrun) {
+		warn "$myname: would xunlink(".singlequote($_).")\n"
+	    } else {
+		warn "$myname: xunlink(".singlequote($_).")\n" if $verbose;
+		xunlink $_
+	    }
+	    $count++;
+	}
+    }
+    $count;
+}
+
+my $deletedbytes=0;
+my $deletedfiles=0;
+for (keys %map) {
+    my $paths= $map{$_}[0];
+    my $size= (split /\0/,$_)[0];
+    if (@$paths >1) {
+	#print scalar( @$paths)." paths: @$paths\n";
+	# nun eben: jene alle die auch inhaltlich gleich sind eben...
+	# {erstebytes}-> [paths]
+	my %firstbytes;
+	for (@$paths) {
+	    my $f= xopen_read $_;
+	    my $buf;
+	    $f->xsysread($buf,$readsize) == $readsize or die "?komisch, nicht genug lesen können, EINTR oder so was geschehen, bei '$_'; sys error?: $!";
+	    push @{ $firstbytes{$buf} },$_;
+	}
+	# nun alle mit identischem firstbyte schauen:
+	for (keys %firstbytes) {
+	    my $paths= $firstbytes{$_};
+	    if (@$paths>1) {
+		warn  "definitely looking interesting: @$paths" if $DEBUG;
+		my %md5s;
+		for (@$paths) {
+		    my $f= xopen_read $_;
+		    my $d=new Digest::MD5;
+		    $d->addfile($f);#hopefully error reporting.
+		    $f->xclose;
+		    my $md5= $d->hexdigest;
+		    push @{ $md5s{$md5} },$_;
+		}
+		# nun schauen nach ident. md5.
+		for (keys %md5s) {
+		    my $paths= $md5s{$_};
+		    if (@$paths>1) {
+			warn "definitely found highprobablyidentical files, all with md5 $_: @$paths" if $DEBUG;
+			my $cnt=xlinkallthose(@$paths);
+			$deletedbytes+= $cnt * $size;
+			$deletedfiles+= $cnt;
+		    }
+		}
+	    }
+	}
+    }
+}
+
+END {
+    print STDERR "deleted $deletedfiles files with a total of $deletedbytes bytes\n"
+      if $deletedfiles; # (to prevent undef errors e.g. when calling the usage)
+}
+
+
+__END__
+was geschieht   wenn   alle files fehler geben bei xlinkunlink  sollte dann abbruch machen doch  sicher nicht xlinkallthose?ehr, isch jo dort drin.
+
+

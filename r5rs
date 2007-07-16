@@ -1,0 +1,4 @@
+#!/bin/sh
+
+#links /usr/lib/plt/collects/doc/r5rs/index.html
+links /usr/lib/plt/collects/doc/r5rs/r5rs-Z-H-2.html

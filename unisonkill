@@ -1,0 +1,62 @@
+#!/usr/bin/perl -w
+
+# Mit Sep  4 16:07:51 MEST 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname ..
+";
+exit @_;
+}
+
+my @files;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @files, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @files, $_
+	}
+}
+usage if @files;
+
+use constant DEBUG=>1;
+
+my $COL= qr/\s*\S+\s+/;
+my $SIG=15;
+#my $SIG=0;
+
+sub getpids {
+	grep { $_ } map { 
+		(/^$ENV{USER} +(\d+).*ssh .* -e none unison/
+		or
+		/^$ENV{USER} +(\d+)${COL}{8}unison-gtk\b/)
+		and $1 or 0
+	} `ps auxww`;
+}
+
+print join("\n",getpids);
+my $cnt=0;
+for (getpids) {
+	kill ($SIG,$_) ? $cnt++ : warn "Couldn't kill pid $_: $!\n";
+}
+warn "Signaled $cnt processes\n";
+
+if (my @lkefiles= glob "$ENV{HOME}/.unison/lk*") { # lke ist schon 1 Buchstabe zuviel
+	system "trash", @lkefiles;
+	warn "Trashed ".@lkefiles." lock files\n";
+} else {
+	warn "No lock files to trash\n";
+}
+
+

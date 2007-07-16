@@ -1,0 +1,140 @@
+#!/usr/bin/perl -w
+
+# Son Jun  1 17:16:19 MEST 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+  Korrigiert komische outputs von pdftotext auf some latex dokumenten
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+#usage unless @files;
+
+use Chj::xsysopen; use Fcntl;
+
+# (LQI.KUXQJ
+# 28 4c 51 49 81 ...
+# Einführung
+# 45 69 6e 66 fc ...
+# meist 29 differenz. bei ü aber 123 differenz.
+
+# Kleinbuchstaben:
+# 4c=i   latin: 69=i 61=a    also dezimal 68 ist das a vom latex
+# Gross:
+# 28=E   latin: 45=E 41=A    also dezimal 36
+# Zahlen:
+# latex \cX\cS ist 50
+# 1813         3530    also 29 zu tief.
+#
+
+sub convert {
+    my ($line)=@_;
+    my $i=0;
+    my $outline="";
+    while($i<length($line)){
+	my $c= substr($line,$i,1);
+	my $a=ord $c;
+	if (($a >= 68 and $a <= 68+26) or ($a>=36 and $a<=36+26)){
+	    # kleinbuchstabe oder Grossbuchstabe
+	    $outline.=chr($a+29);
+	} elsif (($a >= 19 and $a <= 19+10)) {
+	    # Ziffern
+	    $outline.=chr($a+29);
+	} elsif ($a==0x81) {
+	    $outline.="ü"
+	} elsif ($a==0x7c) {
+	    $outline.="ö"
+	} elsif ($a==0x11) {
+	    $outline.="."
+	} elsif ($a==0x0b) {
+	    $outline.="("
+	} elsif ($a==0x0c) {
+	    $outline.=")"
+	} elsif ($a==0x10) {
+	    $outline.="-"
+	} elsif ($a==0x0f) {
+	    $outline.=","
+	} elsif ($a==ord("l")) {
+	    $outline.="ä"
+	} elsif ($a==0x9c) {
+	    $outline.="*"
+	} elsif ($a==ord("\c]")) {
+	    $outline.=":"
+	} elsif ($a==ord("h")) {
+	    $outline.="Ü"
+	} elsif ($a==ord("\cR")) {
+	    $outline.="/"
+	} elsif ($a==ord("\c^")) {
+	    $outline.=";"
+	} elsif ($a==ord("#")) {
+	    $outline.='@'
+	} elsif ($a==ord("²")) {
+	    $outline.="--"
+	} elsif ($a==ord("±")) {
+	    $outline.="--"
+	} else {
+	    $outline.=$c;
+	}
+	$i++;
+    }
+    $outline;
+}
+
+sub filter {
+    my ($i,$o)=@_;
+    while (defined(my$line=$i->xreadline)) {
+	my $i=0;
+	my @outparts;
+	# first find parts that are already correct:
+	my @parts;
+	my $old="";
+	while( $line=~ m{(.*?)(http\://.*?)(\cL|$)}sgc) {
+	    my ($pre,$mid,$post)=($1,$2,$3);
+	    $old.=$pre;
+	    push @parts,convert $old;
+	    push @parts,$mid;
+	    $old=$post;
+	}
+	if ($line=~ m|\G(.*)|sg) {
+	    $old.=$1;
+	    push @parts,convert $old;
+	}
+	$o->xprint(join("",@parts))
+    }
+}
+
+if (@files==2){
+    filter((xsysopen $files[0],O_RDONLY),
+	   (xsysopen $files[1],O_CREAT|O_EXCL|O_WRONLY));
+}
+elsif (@files){
+    usage "expect 2 arguments or none";
+}
+else {
+    filter((bless *STDIN{IO},"Chj::IO::File"),
+	   (bless *STDOUT{IO},"Chj::IO::File"))
+}

@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+# Weil unison 3 parameter gibt aber tkdiff nur 2 handhaben kann.
+# Der einzige grosse Scheiss ist wohl nur dass unison wohl filenames nicht \' escaped resp.
+#   halt das wär nich mal korrekt. Sondern wohl eher \  whitespace escaped? Fuckthe hell mit the shell
+
+die "Dies iss bloss n helper skript, für unison" unless @ARGV==3;
+
+my ($CURRENT1,$CURRENT2,$NEW)=@ARGV;
+
+system "tkdiff", $CURRENT1, $CURRENT2;
+# wenn's zurückkehrt, wird es BITTE das file "$CURRENT1-merge" geschrieben haben.
+
+$CURRENT1=~ /(^.*?)(\.[^.]*)?$/;
+my ($p1,$p2)=($1,defined $2 ? $2 : "");
+
+#print "$0: '$p1' '$p2' resp. '$p1-merge$p2'\n";
+
+if (-e "$p1-merge$p2") {
+	warn "Oky, tkcvs hat mergefile geschrieben.\n";
+	system "/bin/mv","$p1-merge$p2",$NEW;
+	if ($?) {
+		warn "$0: Fehler: mv command hat $? gegeben";
+	} else {
+		#warn "ok, nach '$NEW' gemovet.\n";
+	}
+} else {
+	#warn "tkcvs hat KEIN file '$p1-merge$p2' geschrieben.\n"
+}
+
+__END__
+
+tkcvs macht    cmd.c  ->  cmd-merge.c
+

@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+
+# Mit Apr  9 23:44:40 MEST 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ options ]
+  Filters for example the line
+    'EL/Exception.pm line 95.'
+  to
+    'EL::Exception'
+
+  Options:
+  +use     don't print 'use ' before each line and ';' afterwards.
+  --load   print 'load my \$Bar= \"Foo::Bar\";' instead (use Chj::load first!).
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_u;
+my $opt_load;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?l(oad)?$/) {
+	$opt_load=1;
+    } elsif (/^\+\+?u(se)?$/) {
+	$opt_u=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage if @files;
+
+while (<STDIN>){
+    if (m{(\S+\.pm)}) {
+	my $path=$1;
+	$path=~ s{^\./}{};
+	my $class= $path;
+	$class=~ s/\.pm$//;
+	$class=~ s|/|::|sg;
+	if ($path=~ m{^/}) { # absolute
+	    if (-f $path) {
+		if (open IN,"<$path") {
+		    local $/;
+		    my $content= <IN>;
+		    close IN;
+		  CHECK:{
+			while ($content=~ m{\bpackage +([\w:]+)}g) {
+			    my $namespace= $1;
+			    if ($class=~ m/\Q$namespace\E$/) {
+				warn "cutting '$class' down to '$namespace'\n" if $DEBUG;
+				$class= $namespace;
+				last CHECK;
+			    }
+			}
+			warn "could not find any package definition in '$path' matching it's path\n";
+		    }
+		} else {
+		    warn "could not open '$path': $!\n";
+		}
+	    } else {
+		warn "there is no such file as '$path'\n";
+	    }
+	}
+	$opt_u ?
+	  print "$class\n"
+	    :
+	      $opt_load ?
+		do {
+		    my $short=$class;
+		    $short=~ s/.*:://s;
+		    print "load my \$$short= \"$class\";\n";
+		}
+		  :
+		    print "use $class;\n";
+    }
+}

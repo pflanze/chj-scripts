@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+# Sam Jan 27 16:56:57 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd args inputfile
+
+  opens inputfile to stdin and exec's cmd with args
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args= @ARGV;
+usage unless @args >=2;
+
+
+my $path = pop @args;
+close STDIN or warn "closing stdin: $!";#  only warn, for case where it is already closed?
+open STDIN,"<",$path or die "opening '$path' for input: $!";
+
+exec @args;
+die "could not exec '$args[0]': $!";
+

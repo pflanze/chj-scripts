@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+# Don Dez 11 12:22:45 MET 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+use Chj::xperlfunc;
+use Chj::Util::AskChoose qw(askchoose_autonum_withcanceldef);
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --to folder1,folder2,folder3 files
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_to;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?t(?:o(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_to=$1
+        } else {
+            $opt_to=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args and $opt_to;
+
+my @to=split /,/,$opt_to;
+
+@to or usage "no folders given";
+
+for my $file (@args) {
+    xsystem "less",$file;
+    if (defined (my $target=askchoose_autonum_withcanceldef(["n","[n]o move"],@to))) {
+	#my $fromdir= $file; $fromdir=~ s{[^/]+\z}{} or die "'$file' is not a file path";
+	my $filename= $file; $filename=~ s{.*/}{}s;
+	my $to= "$target/$filename";
+	xrename $file,$to;
+    }
+}
+

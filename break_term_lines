@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+sub usage {
+die "
+# Mon,  4 Feb 2002 17:59:38 +0100
+# für Pastes von links oder make menuconfig runterzubrachen. (aus gnome-terminal)
+# stdin->stdout
+# für nedit
+
+Eintige Option:  -w weite_des_termfensters
+";
+}
+
+my $width= $ENV{COLUMNS}||100; # default
+for (my $i=0; $i<= $#ARGV; $i++) {
+	if ($ARGV[$i] eq '-w') {
+		$width= $ARGV[++$i]  or usage;
+	} else {
+		usage
+	}
+}
+
+while (<STDIN>) {
+	my $x=0;
+	while ($x<length) {
+		my $s= substr($_,$x,$width);
+		$s=~ s/\s*$//s;
+		print $s."\n";
+		$x+= $width;
+	}
+}

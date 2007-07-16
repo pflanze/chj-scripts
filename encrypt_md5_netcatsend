@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# cj Wed, 19 Feb 2003 16:12:42 +0100
+
+if [ $# -ne 2 ]; then
+    echo "Usage: `basename $0` server port < file"
+    echo "  chiffriert stdin OHNE kompression, schreibts per netcat raus,"
+    echo "  berechnet gleichzeitig md5 summe des outputs."
+    exit 1
+fi
+
+server="$1"
+port="$2"
+
+echo "  Vor Drücken von Enter (nach Eingabe der Keyphrase) auf dem Server"
+echo "  'netcatreceive_md5 $port > ausgabedatei' eingeben!"
+
+#gpg -c -z 0 | multifeed --delayed '|' md5sum '&' netcat -q 1 "$server" "$port"
+
+# cj Sat, 17 Apr 2004 23:04:15 +0200:
+gpg -c -z 0 --force-mdc | multifeed --delayed '|' md5sum '&' netcat -q 1 "$server" "$port"

@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+
+# Son Okt 26 04:32:20 MET 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file1 [file2 [...]]
+  schnittmenge, cross, wie sagt man?
+  diejenigen entries die in allen files vorkommen.
+  zeilen werden newlinegestutzt und neu vernewlined.
+
+  optionen:
+  -s | --sort   sort output
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_s;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(ort)?$/) {
+	$opt_s=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args>=1;
+
+use Chj::xopen qw(xopen_read);
+
+# my %entries; # key -> undef   dann während 2.fileanschau inc, danach drübergehen und alle removen die noch bei undef sind.
+# # erstes mal ist es ausnahme (komicsh?), nicht da heisst nicht es is nich erlaubt sondern wir sind die ersten.
+
+# sub kreuze {
+#     my ($file,$is_first)=@_;
+#     my $f= xopen_read $file;
+#     while(defined (my$item=$f->xreadline)){
+# 	chmop $item;
+# 	if ($is_first) {
+# 	    $entries{$item}=undef;
+# 	} else {
+# 	    if (exists $entries{item}) {
+# 		$entries{item}++; ## well, könnt auch in 2. hash tun (während kuck auf 1). Dann wenn 1 scannen auf 2 kucken.
+		
+# }
+
+my $commonentries;
+sub kreuze {
+    my ($file)=@_;
+    my $f= xopen_read $file;
+    my $newentries={};
+    while(defined (my$item=$f->xreadline)){
+	chomp $item;
+	if (!$commonentries or exists $$commonentries{$item}) {
+	    $$newentries{$item}=undef;
+	}
+    }
+    $commonentries=$newentries;
+}
+
+#my $not_first;
+for my $file (@args) {
+    #kreuze($file, !(not_first++));
+    kreuze($file);
+}
+
+# common meint, "die in ALLEN files vorkommen";
+
+if ($opt_s){
+    for (sort keys %$commonentries) {
+	print $_,"\n";
+    }
+} else {
+    while (my ($a,undef)= each %$commonentries) {
+	print $a,"\n";
+    }
+}

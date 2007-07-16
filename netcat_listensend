@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Sun,  2 Mar 2003 19:29:24 +0100
+
+if [ $# -ne 1 ]; then
+    {
+    echo "Usage: `basename $0` port < file"
+    echo "  hört auf port, und sendet dann data raus."
+    echo "  (macht keine md5 summe)"
+    } >&2
+    exit 1
+fi
+
+port="$1"
+
+echo "(Bitte nun netcat_receivefrom starten)" >&2
+
+exec netcat -l -q 1 -p "$port" 

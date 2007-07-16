@@ -1,0 +1,2 @@
+#!/bin/sh
+exec zless /usr/share/doc/RFC/rfc-index.txt.gz

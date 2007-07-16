@@ -1,0 +1,72 @@
+#!/usr/bin/perl -w
+
+# Son Mär 13 23:38:03 CET 2005
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file.pl/pm
+
+  Replaces all 'warn' statements with 'note'. You're supposed to
+  provide a definition for note yourself; maybe something like:
+
+".'   sub note {
+       warn @_,($DEBUG ? () : "\n");
+   }
+
+  Note that this tool is simply using the regex
+    s/^(\s*(?:#\s*)*)\bwarn\b/$1note/
+  and thus will miss warn statements which are not first on a line
+  (and might replace warn words which are not function calls).
+'."
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xopen qw(xopen_read);
+use Chj::xtmpfile;
+use Chj::singlequote;
+
+for my $file (@args) {
+    my $content= xopen_read($file)->xcontent;
+    if (my $n= $content=~ s/^(\s*(?:\#\s*)*)\bwarn\b/$1note/mg) { # für emacs muss ich in usage '..' nehmen und hier \ vor # und keine { } um 1 bei $1
+	my $tmp= xtmpfile $file;
+	$tmp->xprint($content);
+	$tmp->xclose;
+	$tmp->xputback;
+	print "$n changes in ".singlequote($file)."\n";
+    }
+    else {
+	print "no change in ".singlequote($file)."\n";
+    }
+}

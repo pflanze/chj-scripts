@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+# Mon Mai 29 12:32:23 CEST 2006
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname config1 config2
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+#use Chj::xoutpipe;
+#use Chj::IO::Command;
+#hmmmmmmmmmmmmnein auch nicht?
+use Chj::xpipeline qw(xreceiverpipeline_with_out_to);#well das ist imprinzip auch in Chj::IO::Command drin.
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+use Chj::xperlfunc;
+
+sub stripcomment_n_sort {
+    my ($path)=@_;
+    my $in= xopen_read $path;
+    my $t= xtmpfile; ## und name angeben ?
+    my $out= xreceiverpipeline_with_out_to($t,
+					   ["filter_stripcomments"],
+					   ["sort"],
+					  );
+#    warn "ha";
+    #my $in= xopen_read $path; muss oben stehen sonst bei exception lockt es pipeline destroy mensch todo
+#    warn "hu";
+    #$in->sendfile($out);
+    #$out->xsendfile($in);
+    $in->xsendfile_to($out);
+#    warn "sent";
+    $in->xclose;
+#    warn "closed";
+    #$out->xclose;
+    $out->xxfinish;
+#    warn "finishd";
+    $t
+}
+
+#so ewig~
+
+#ahaaaa    grrr  on exceltpion  will es  finishen oderwas.  das geht dan in die hose lock.
+
+#our $t= stripcomment_n_sort $args[0];
+
+
+my @t= map { stripcomment_n_sort $_ } @args;
+#muss ich. wg gc
+
+#apply btw
+
+my $r= xsystem "diff","-u", map { $_->path } @t;
+
+$r==256 or $r==0 or die "diff exited with status $r";
+exit( $r ? 1 : 0);#klammern modal ehr  so
+
+#use Chj::repl; repl;

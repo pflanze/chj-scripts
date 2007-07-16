@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+
+# Son Mai 18 01:55:57 CEST 2003
+
+use strict;
+#use Errno 'EPERM';
+  
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir(s)
+  Find items in given dirs, either files, or subdirs ending in '¬'.
+  This is so to give you a way to make dirs that look like files,
+  which is useful for example in backup directory structures
+  (you can define which is one backup item).
+  Symlinks and special files are ignored (by default/currently).
+  Options:
+  -s|--strip  remove ¬ char from dirnames before printing.
+  -v|--verbose  print paths of ignored items to stderr
+";
+exit @_ ? 1 : 0;
+}
+
+my @dirs;
+my $DEBUG=0;
+my $verbose=0;
+my $opt_remove;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @dirs, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(trip)?$/) {
+	$opt_remove=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @dirs, $_
+    }
+}
+usage unless @dirs;
+
+use Chj::xopendir;
+use Chj::xperlfunc;
+
+$|++;
+
+sub enterdir;
+sub enterdir {
+    my ($dir)=@_;
+    eval {
+	my $d=xopendir $dir;
+	while (defined( my $item= $d->xnread)) {
+	    # idee: $item grad objekt das gleichzeitig stat info kennt? und fullpath?
+	    my $path= "$dir/$item";
+	    xlstat $path;
+	    if (-l _) {
+		warn "ignoring link ",$path,"\n" if $verbose;
+	    } else {
+		if (-f _) {
+		    print $path,"\n";
+		} elsif (-d _) {
+		    if ($opt_remove ? $path=~ s/¬\z// : $path=~ /¬\z/) {
+			print $path,"\n";
+		    } else {
+			enterdir $path;
+		    }
+		} else {
+		    warn "ignoring special file ",$path,"\n" if $verbose;
+		}
+	    }
+	}
+    };
+    if ($@) {
+	#if ($! == EPERM) {
+	my $err= $@; $err=~ s/(.*) at.*?$/$1/s;
+	    warn $err;
+	#} else {
+	#    die;
+	#}
+    }
+}
+
+	
+
+for my $dir (@dirs) {
+    enterdir($dir);
+}

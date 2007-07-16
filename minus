@@ -1,0 +1,131 @@
+#!/usr/bin/perl -w
+
+# Son Okt 26 01:58:20 MEST 2003 - Sun, 26 Oct 2003 02:42:30 +0200
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+#use Chj::IO::File;
+use Chj::xopen qw(xopen_input xopen_output);
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print STDERR "$myname file1 file2 [ file2-file1 ]
+  output lines of file1 minus lines of file2.
+  optionally, also output lines of file2 minus lines of file1
+   to the path given as third argument.
+  preserves order of lines and line endings in the outputs (but
+   strips line endings for comparisons).
+
+  Options:
+  -i   insensitive comparison
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_i;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?i(nsensitive)?$/) {
+	$opt_i=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2 or @args==3;
+
+my ($infile,$minusfile,$minusminusinfile)=@args;
+
+# my $n=0;
+# #my %file1;
+# my @file1;
+# my $in= bless *STDIN{IO},"Chj::IO::File";
+# while(defined(my$line=$in->xreadline)){
+#     my $key=$line; chomp $key;
+#     push @file1,$line;
+#     $file1{$key}=$n++;
+# }
+
+my $minus= xopen_input $minusfile;
+my %minus;
+my @minus;
+if (defined $minusminusinfile) {
+    while(defined(my $line=$minus->xreadline)){
+	my $key=$line; chomp $key;
+	push @minus,$line;
+	if ($opt_i) {
+	    $minus{lc($key)}=$#minus;
+	} else {
+	    $minus{$key}=$#minus;
+	}
+    }
+} else {
+    while(defined(my $line=$minus->xreadline)){
+	chomp $line;
+	if ($opt_i) {
+	    $minus{lc($line)}=undef;
+	} else {
+	    $minus{$line}=undef;
+	}
+    }
+}
+
+# and *now* look at input.
+
+my $in= xopen_input $infile;
+while(defined(my$line=$in->xreadline)){
+    my $key=$opt_i ? lc($line) : $line; chomp $key;
+    #print $line unless exists $minus{$key};
+    if (exists $minus{$key}) {
+	#$minus{$key}++;  nein, sondern umgekehrt counter löschen wenn benutzt.
+	#$minus{$key}=undef; och nein, eher so: damit unten dann in reihenfolge iterieren möglich und kein hashlokup mehr nötig.
+	undef $minus[$minus{$key}] if defined $minusminusinfile;
+    } else {
+	print $line;
+    }
+}
+
+# was es nicht machen kann ist warnen wenn in minus teil zeilen vorkommen die nicht im input sind.  well ausser ich mach das oben hah noch rein.
+
+
+# for (keys %minus){
+#     if (!$minus{$_}){
+# 	print STDERR $_,"\n";
+#     }
+# }
+
+# well, aber sortiert ist das garantiert nicht mehr. und zeilenenden.
+
+if (defined $minusminusinfile) {
+    $minusminusinfile= xopen_output $minusminusinfile;
+#     for (keys %minus){
+# 	if (defined $minus{$_}){
+# 	    $minusminusinfile->xprint($minus[$minus{$_}]);
+# 	}
+#     }
+# grrr, reihenfolge  ich mann
+    for (@minus) {
+	#my $key=$_; chomp $key;
+	$minusminusinfile->xprint($_) if defined;
+    }
+}

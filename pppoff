@@ -1,0 +1,27 @@
+#!/usr/bin/perl -w
+
+use strict;
+use lib "/root/local/etc/";
+our $which;
+require "ppponoff.pl";
+
+%ENV=();
+
+$<=0;
+
+if(!is_if_up("ppp0")){warn "ppp0 is not up anyway\n"; exit 0};
+
+system "/usr/bin/poff", $which  
+	and die; # siehe perldevelopmemnt/system.pl lombi
+
+
+for (1..60) {
+	if (!is_if_up("ppp0")) {
+		print "ok\n";
+		exit 0;
+	}
+	sleep 1;
+}
+
+print "Timeout\n";
+exit 1;

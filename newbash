@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if [ $# -eq 1 ]; then
+    if test -f "$1"; then
+	echo "File $1 existiert bereits!" >&2
+    else
+	echo -n -e "#!/bin/bash\n\n"> "$1"
+	if [ "$EDITOR" = "nc" ]; then
+	    echo >> "$1"   # nedit overwrites the selected line upon typing
+	fi
+	chmod +x "$1"
+	if [ "$EDITOR" ]; then
+	    if [ "$EDITOR" = "nc" ]; then 
+		exec nc -line 3 "$1"
+	    elif [ "$EDITOR" = "e" ]; then
+		exec e +3 "$1"
+	    else
+		exec "$EDITOR" "$1"
+	    fi
+	else
+	    echo "Your EDITOR env var is not set"
+	fi
+    fi
+else
+    echo "Bitte genau 1 Argument angeben" >&2
+    exit 1
+fi

@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+#Fri, 31 May 2002 15:50:51 +0200
+#^--sigh, erst jetzt einen bug geflickt   bisher warn einzelne - in url nicht erkannt   weil es (-{2,}) war
+use strict;
+use Chj::Web::FileescapeUrl qw(fileescapeurl);
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname [ url's ]
+";
+exit;
+}
+
+if (@ARGV and $ARGV[0]=~ /^-/) {
+    usage
+}
+
+if (@ARGV) {
+    for (@ARGV) {
+	print escapeline($_."\n")
+    }
+} else {
+    while (<STDIN>) {
+	print escapeline($_)
+    }
+}
+
+sub escapeline {
+    my ($line)=@_;
+    $line=~ sé(?:http|ftp|telnet|gopher|https)://([^\s]+)é
+      fileescapeurl($1);
+    ée
+      or
+    $line=~ sé(www\.[^\s]+)é
+      fileescapeurl($1);
+    ée
+      or
+    $line= fileescapeurl($line);
+    $line
+}

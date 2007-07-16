@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+
+use MIME::Base64;
+
+if ($ARGV[0] and $ARGV[0]=~ /^--?h(elp)?/) {
+	die "debase64 wird ohne argumente aufgerufen, filtert STDIN nach STDOUT.\n";
+}
+
+#while (read(STDIN, $buf, 57)) {
+#	print encode_base64($buf);
+#}eh ich will ja decode
+
+local $/=undef;
+print decode_base64(<STDIN>);

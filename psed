@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+sub usage {
+	die "$0 's/../../.'
+  Takes one argument, something like a perl regular expression.
+  (Could also be any other perl code operating on \$_)
+  Filters STDIN to STDOUT, acting on each line which is put in \$_
+  and modified by the given code.
+";
+exit
+}
+
+usage unless @ARGV==1;
+usage if $ARGV[0]=~ /^--?h(elp)?/;
+
+my $regex=shift;
+
+eval "sub doreg { $regex }"; # Operiert auf $_; Vorsicht, natürlich auch alien code möglich.
+
+die $@ if $@;
+
+# do eval this too, cause doreg is'nt known here
+eval '
+while (<STDIN>) {
+	doreg;
+	print
+}
+
+';
+
+die $@ if $@;

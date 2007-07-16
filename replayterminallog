@@ -1,0 +1,155 @@
+#!/usr/bin/perl -w
+
+# Die Jul 20 18:29:00 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  was es noch nicht kann, ist wenn dasselbe log weitergefüllt wird.
+
+  na und was es auch noch nicht kann ist überspringen.  ctl-c verwenden?
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+use Chj::Log::Timed;
+use Chj::xopen 'xopen_read';
+use Time::HiRes 'time','sleep';
+use Chj::Unix::Terminal::Raw;
+
+$|++;
+
+my $raw= Chj::Unix::Terminal::Raw->raw;
+
+#my $flag_hit=0;
+#$SIG{INT}= sub { $flag_hit=1; };
+
+
+
+sub waituntil {
+    my ($realtargettime,$virtualstarttimeref, $a,$b)=@_;#
+    #warn "waituntil $realtargettime";
+    my $time=time;
+    while ((my $diff=$time-$realtargettime)<0) {
+	#warn "going to sleep for $diff seconds..\n";
+#	sleep $diff if $diff>0;#aha, if ist essentiell.
+# 	if ($flag_hit){
+# 	    $flag_hit=0;
+# 	    #hm und nun muss ich noch machen dass nexte eben nur diff auf jetzt sind. also log time schieben. na schön wäre auch ein stop. per term raw mode und nonblocking input, resp sleep hier durch select ersetzen.
+# 	    last
+# 	}
+	$diff=0 if $diff <0;
+	my ($rin,$win,$ein)=@_;
+	$rin=$win=$ein='';
+	vec($rin,fileno(STDIN),1) = 1;
+	$ein = $rin | $win;
+	select $rin,$win,$ein,$diff;
+      again:
+	if (vec($rin,fileno(STDIN),1)) {
+	    #warn "kann was lesen";
+	    my $charbuf;
+	    my $rv=sysread STDIN,$charbuf,8192;
+	    defined $rv or die "STDIN lost?: $!";
+	    if ($rv>4) {
+		warn "$myname: ignoring long keyboard entry\n";
+	    } else {
+		for my $char (split //,$charbuf) {
+		    if ($char eq 's') {
+			#warn "$myname: stopped\n";
+			$rin=$win=$ein='';
+			vec($rin,fileno(STDIN),1) = 1;
+			$ein = $rin | $win;
+			select $rin,$win,$ein,1000000;
+			goto again;#likeit
+		    } elsif ($char eq 'c') {
+			#warn "$myname: continuing\n";
+			# make that the target time of this waituntil call is reached just now. future waituntil calculations must base xyz
+			#a) diff von anfangs aufbehalten.  kommt echte zeit rein?
+			#mann sinds eh wirklich zwei verschiedene faelle?
+			#habe ich kein praktisches verständnis der mathematik oder was is los? (f*ckich war eh immer schleccht im )
+			# kann ich nicht ein flag setzen das beim nächsten mal ausgewertet wird wenn waituntil kommen soll? time-starttime+realstarttime=time().
+			$$virtualstarttimeref += $realtargettime - time;
+			return;
+		    } elsif ($char eq 'C') {
+			$$virtualstarttimeref += 10;
+			return;
+		    } else {
+			warn "$myname: unknown command char '$char' (supported ones are 's' for stop and 'c' for continue, 'C' for jumping 10 seconds forward)\n";
+		    }
+		}
+	    }
+	}
+	$time=time;
+    }
+}
+
+
+sub output_debug {
+    my ($str,$time)=@_;
+    print "found a frame for ".localtime($time)." ($time), length ".length($str)."\n";
+}
+# sub output_real {
+#     my ($str,$time)=@_;#copycopycopyyy
+# }
+# *output=*output_real;
+
+sub replaylog {
+    my ($fh)=@_;
+    my $realstarttime=time;
+    my ($str,$starttime)=Chj::Log::Timed::read($fh) or return;
+    #warn "starttime=$starttime";
+    print $str or die $!;
+    #printframe($str,$starttime);
+    my $time;
+    while (($str,$time)=Chj::Log::Timed::read($fh)) {
+	#warn "time=$time";
+	waituntil($time-$starttime + $realstarttime, \ $starttime, $time,$realstarttime);
+	print $str or die $!;
+	#output($str,$time);
+    }
+}
+
+
+if (@args) {
+    for (@args) {
+	#replaylog xopen_read $_ #or warn "log '$_' does not contain anything or so"; nope normal end of log.
+	my $fh= xopen_read $_;
+	replaylog $fh;
+    }
+}else {
+    replaylog *STDIN{IO} or warn "stdin didn't give any log or so";
+}
+

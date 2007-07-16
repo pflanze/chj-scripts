@@ -1,0 +1,117 @@
+#!/usr/bin/perl -w
+
+# Son Jan 25 01:30:13 MET 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $startn=5;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Options:
+  -e|--exclude regex   regex matching referrers to be excluded
+                       like '(?i:^http://lombi.mine.nu(?:/|\$))'
+  --startn n           take n. instead of $startn. value for \"start time\"
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my @exclude;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?e(?:xclude(?:=(.*))?)?$/) {
+	my $re;
+        if (defined $1) {
+            $re=$1
+        } else {
+            $re=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+	push @exclude,qr/$re/;
+    } elsif (/^--startn(?:=(.*))?$/) {
+        if (defined $1) {
+            length($startn=$1) or usage "missing argument for '$_' option";
+        } else {
+            defined($startn=$ARGV[++$i]) or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL";
+use Chj::Excel::GenCSV qw(excel_quote excel_unix2datetime);
+
+my $parser= new Chj::Parse::Apache::Accesslog;
+
+my %referrers;
+
+LINE: while(<STDIN>) {
+    $parser->parseline($_)  # or ->parseline_time if you always want the unixtime
+      or do { warn "error parsing: ".$parser->errmsg.": $_"; next };
+    if ($$parser[ALReferrer]) {
+	for (@exclude) {
+	    if ($$parser[ALReferrer]=~ /$_/) {
+		next LINE;
+	    }
+	}
+	push @{$referrers{$$parser[ALReferrer]}},[
+						  $parser->[ALHost],
+						  $parser->xunixtime,
+						  ];
+    }
+}
+
+
+print "A. Summen:\n\n";
+print "Anz. Hits\tZeit $startn. oder letzter Hit\tURL\n";
+for my $url (sort { @{$referrers{$b}} <=> @{$referrers{$a}} } keys %referrers) {
+    # anzahl hits, datum start, welcher
+    my $starttime;
+    if (my $startentry= $referrers{$url}->[$startn-1]) {
+	$starttime= $startentry->[1];
+    } else {
+	$starttime= $referrers{$url}->[-1]->[1];
+    }
+    print join("\t",
+	       scalar @{$referrers{$url}},
+	       $starttime ? excel_unix2datetime($starttime):"",
+	       excel_quote($url),
+	      )."\n";
+}
+
+print "\n\nB. Detailliert in Gruppen:\n\n";
+print "URL\tZeit\tHost\n";
+for (sort { @{$referrers{$b}} <=> @{$referrers{$a}} } keys %referrers) {
+    print excel_quote($_)."\n";
+    for (@{$referrers{$_}}) {
+	print "\t".excel_unix2datetime($_->[1])."\t".excel_quote($_->[0])."\n";
+    }
+    print "\n";
+}
+
+__END__
+
+Algorithmus für "wann begann es"?
+  Der 5.Hit  oder die ersten 5% der hits abgeschlossen?   Wenn es sehr viele waren, mehr als 5 hits hintersichlassen? wirklich?
+  oder wenn weniger, der letzte
+
+  

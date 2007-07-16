@@ -1,0 +1,126 @@
+#!/usr/bin/perl -w
+
+# Don Aug 19 00:23:44 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname directory [directory2 ..]
+  Outputs name of the last modified *file* which does not begin
+  with a dot or ~ or end in ~ in given directory
+
+  --fullpath  full path (including directory) is output, not only
+              the filename.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_fullpath;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?full(?:-?path(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_fullpath=$1
+        } else {
+            $opt_fullpath=1
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+$opt_fullpath = 1 if @args > 1;
+
+sub showit {
+    my ($dir)=@_;
+    #use Chj::singlequote; warn "dir=".singlequote($dir);
+    opendir DIR, $dir or die "opendir '$dir': $!";
+    $dir=~ s|/+\z||s;# only for path appending we strip it off. so that '/' still works for opendir.
+    my @items;
+    #while (<DIR>) { tja
+    while (defined ($_=readdir DIR)){
+	next if /^[.~]/ or /~\z/;
+        my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
+        if (-f _) {
+	    push @items,[$opt_fullpath ? "$dir/$_" : $_,
+			 $s[9]];# einsortieren während sammeln wär 'kool'. leider hat perl keine sorted maps
+	}
+    }
+    if (@items) {
+	print ( (sort { $b->[1] <=> $a->[1] } @items)[0]->[0] );# heh, -> ist nötig hier nach [0]. !!
+	print "\n";
+    } # else  return error status ?
+#    print "\n";
+}
+
+for (@args) {
+    showit $_
+}
+
+
+__END__
+
+chris@lombi chris > time lastfile .
+nohup.out
+
+real	0m0.427s
+user	0m0.279s
+sys	0m0.052s
+
+chris@lombi chris > time sh -c "find . -type f '!' -name '.*' '!' -name '~*' '!' -name '*~' -maxdepth 1 -print0 | xargs -0 ls -dt|head -1"
+./nohup.out
+xargs: Prozeß ls abgebrochen durch das Signal 13.
+
+real	0m0.245s
+user	0m0.097s
+sys	0m0.069s
+
+chris@lombi chris > l|wc -l
+   1797
+
+...also wär doch schon noch viel drin mittels verwendung von C++. (oderso)(ocaml? incrementalsortlibrary?)  oder: dass vfs mit perl eben doch nöd top isch nana
+
+Hm strange, scheint dass vorher doch multiple aufrufe waren klaro, und dass es schneller war als einer:
+chris@lombi chris > time sh -c "find . -type f '!' -name '.*' '!' -name '~*' '!' -name '*~' -maxdepth 1 -print0 | xargs -0 --no-run-if-empty -s 129023 -n 129023 ls -dt|head -1"
+./nohup.out
+xargs: Prozeß ls abgebrochen durch das Signal 13.
+
+real	0m0.319s
+user	0m0.131s
+sys	0m0.100s
+
+
+#!/bin/sh
+
+# cj Sun Nov 24 12:11:40 2002
+
+# modified Aug 08 2004:
+# - turned into perl script because of too many problems (xargs list may be too long, message about ls getting sigpipe)
+
+if [ $# -eq 1 ]; then
+	find "$1" -type f '!' -name '.*' '!' -name '~*' '!' -name '*~' -maxdepth 1 -print0 | xargs -0 ls -dt|head -1
+else
+	{
+		echo "`basename $0` directory"
+		echo "  Outputs name of the lasted modified file which does not begin"
+		echo "  with a dot or ~ or end in ~ in given directory"
+	} >&2
+fi

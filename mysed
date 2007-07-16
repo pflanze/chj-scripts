@@ -1,0 +1,268 @@
+#!/usr/bin/perl -w
+
+# Sun,  4 Nov 2001 05:30:00 +0100
+# Searchreplace in EINEM File, oder in einem Baum falls 2.Arg=Folder und 3 Argumente angegeben.
+# Verschiebt die alten Versionen in den Trash.
+# Tue,  6 May 2003 22:08:07 +0200: trash not on same partition problem: ask user first.
+# Mon, 10 Nov 2003 23:01:30 +0100: alternatively, work with file lists (require -r flag for old behaviour)
+# -Tue, 11 Nov 2003 02:18:02 +0100. Ah und was auch noch fehlt, ist permissions rebuild. eben, writebackfile anwenden. todo.
+
+use constant DEBUG => 0;
+my $name= "mysed";
+use strict;
+
+use Fcntl;
+use File::Path;
+use POSIX 'EXDEV';
+
+sub usage {
+    warn @_,"\n" if @_;
+    print "$name s/../../sigo -r . [ '\\.html?\$' ]\n";
+    print "$name s/../../sigo file1 file2 file3 ...\n";
+    print "$name s/../../sigo -T filelist\n";
+    print "$name s/../../sigo -l < filelist\n";
+    print "  Applies perl regex to all given files; moves old versions of the modified\n";
+    print "  files to the trash can (if possible).\n";
+    exit (@_ ? 1 : 0);
+}
+
+
+my $regex=shift or usage;# "Bitte Regex und Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
+my $mode; # f=filelist in @ARGV, -=filelist on stdin, r=recursive with $path and $optionalpathregex
+my ($path,$optionalpathregex,$fileregex_is_negative);
+{
+    local $_= $ARGV[0]; defined or usage;
+    if ($_ eq '-r') {
+	$mode='r';
+	shift;
+	$path=shift or usage "Bitte zusätzlich zur Regex Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
+	$optionalpathregex= shift; # Spezialzeichen ! am Anfang hat spezialbedeutung
+	$fileregex_is_negative=1 if $optionalpathregex and $optionalpathregex=~ s/^\!//s;
+    } elsif ($_ eq '-l') { ## which option should I use? 'files from stdin'
+	$mode='-';
+	shift;
+    } elsif ($_ eq '-T') { # same as tar's -T option
+	defined($ARGV[1])&&length($ARGV[1]) or usage "missing argument for -T";
+	open STDIN, "<$ARGV[1]" or die "opening '$ARGV[1]' for input: $!";
+	$mode='-';
+	shift;
+    } elsif ($_ eq '--') {
+	# ignore
+	shift;
+	$mode='f';
+    } else {
+	$mode='f';
+    }
+}
+
+
+eval "sub doreg { $regex }"; # Operiert auf $_; Vorsicht, natürlich auch alien code möglich.
+if ($@) {
+    die "Konnte regex nicht parsen: $@";
+}
+
+my $trash; ###hmm, ~copy from trash
+if ($ENV{TRASHCAN}) {
+    $trash= $ENV{TRASHCAN}
+} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
+    $trash=$ENV{HOME}."/Desktop/Trash/";
+} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
+    $trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} else {
+    die "Konnte Deinen Trashcan nicht finden. ";
+}
+
+if ($mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks wirklich nicht? und werd ich nie mount --bind machen? NA: odersogar normaler ichdummkopfeinfacher mount innerhalb tree reicht für change. todo. na, einfach auf EXDEV testen unten und in jedem solchen Falle nachfragen sigh. todo also eher: aufräumen,streamlinen.
+ {
+    my $trashdev= (stat $trash)[0]; ## or die?
+    my $pathdev= (stat $path)[0]; defined $pathdev or die "could not stat '$path': $!";
+    ASK: {
+	my $ans;
+	do {
+	    #print STDERR "Na: $trashdev , $pathdev\n";
+	    if (!defined $trashdev) {
+		print STDERR "Your trash could not be stat'ed: $!. Do you want to do without trash? [y/n] ";
+	    } elsif ( $trashdev != $pathdev) {
+		print STDERR "Your trash is not on the same partition as the directory.  Do you want to do without trash? [y/n] ";
+	    } else {
+		last ASK
+	    }
+	    $ans=<STDIN>;
+	} until ($ans=~ /^y/i or $ans=~ /^n/i and die "user cancelled.\n");
+	$trash=0; ##seufz so hasslich
+    }
+}
+my $appendix= "".localtime();
+$appendix=~ s/ /_/sg;
+my $actualtrashdir= "$trash/$name/$appendix";
+
+
+sub scandir {
+    my ($dir)=@_;
+    warn "Scanning dir $dir\n" if DEBUG;
+    if (opendir DIR,$dir) {
+        my $item;
+        #while (defined ($item= readdir DIR)) {   ->  AHA shit
+        my @items= readdir DIR;
+        closedir DIR;
+        for $item (@items) {
+            next if $item eq '.' or $item eq '..';
+            if (-d "$dir/$item") {
+                #warn "Found dir: $item\n" if DEBUG;
+                if (-l "$dir/$item") {
+                    warn "Ignoring directory link `$dir/$item'\n";
+                } else {
+                    scandir ("$dir/$item");
+                }
+            } elsif (-f _) {
+                if (defined $optionalpathregex) {
+                    if ("$dir/$item"=~ /$optionalpathregex/os) {
+                        warn "Datei $dir/$item matcht '$optionalpathregex'\n" if DEBUG;
+                        next if $fileregex_is_negative;
+                    } else {
+                        warn "Datei $dir/$item matcht '$optionalpathregex' NICHT\n" if DEBUG;
+                        next unless $fileregex_is_negative;
+                    }
+                }
+                #warn "Found file: $item\n" if DEBUG;
+                changefile ($dir,$item);
+            } else {
+                warn "Special file $dir/$item\n";
+            }
+        }
+    } else {
+        warn "Konnte Verzeichnis $dir nicht öffnen: $!\n";
+    }
+}
+
+my $opt_L;
+
+sub changefile {
+    my ($folder,$file)=@_;
+    my $path= length($folder)? "$folder/$file" : $file;##hum?
+    my $trashpath= $folder;
+    $trashpath=~ s|^../|__/|s;
+    $trashpath=~ s|/../|/__/|sg;
+    $trashpath=~ s|/..$|/__|s;
+    $trashpath= "$actualtrashdir/$trashpath";
+    warn "Scanning file $path\n" if DEBUG;
+    if (open FILE ,"<$path") {
+        local $/=undef;
+        local $_=<FILE>;
+        close FILE;
+        if (my $cnt = doreg()) {
+            print "$cnt ".($cnt==1 ? "change": "changes")." in $path\n";
+            if (sysopen OUT, "$path.$appendix",O_EXCL|O_CREAT|O_WRONLY) {
+                my $r=syswrite OUT,$_;
+                if (defined $r and $r==length($_)) {
+                    close OUT;#(sollte oben stehen, aber das würde $! spoilen)(c ist so haässlich)
+		  CHANGE:{
+			mkpath($trashpath); # error check?
+			if ($trash) {
+			    if (rename $path,"$trashpath/$file") {
+				# ok
+			    } elsif ($!==EXDEV) {
+				if ($opt_L) {
+				    unlink "$path.$appendix";
+				    last CHANGE;
+				}
+			      ASK:{
+				    print STDERR "'$path' could not be moved to '$trashpath/$file', because they are not on the same filesystem. What should I do: [l]eave file unchanged, [L]eave always without asking, [o]verwrite old file without backup, [O]verwrite always without asking ? ";
+				    my $ans=<STDERR>;chomp $ans;
+				    if ($ans eq 'l') {
+					unlink "$path.$appendix";
+					last CHANGE;
+				    } elsif ($ans eq 'L') {
+					unlink "$path.$appendix";
+					$opt_L=1;
+					last CHANGE;
+				    } elsif ($ans eq 'o') {
+					last ASK;
+				    } elsif ($ans eq 'O') {
+					undef $trash;
+					last ASK;
+				    } else {
+					redo ASK;
+				    }
+				}#/ASK
+			    } else {
+				die "Could not move `$path' to trash dir `$trashpath/$file': $!";
+			    }
+			}
+			if (rename "$path.$appendix",$path) {
+			    # OK!
+			} else {
+			    die "Could not rename `$path.$appendix' to `$path': $!";
+			}
+		    }#/CHANGE
+                } else {
+                    die "Could not write (everything) to file `$folder/$file.$appendix': $!";
+                }
+            } else {
+                die "Could not open file `$folder/$file.$appendix' for writing: $!";
+            }
+        } else {
+            warn "No match in $path\n" if DEBUG;
+        }
+    } else {
+        warn "Konnte Datei '$path' nicht öffnen: $!\n";
+    }
+}
+#warn "mode=$mode";
+if ($mode eq 'r') {
+    if (-d $path) {
+	if (defined $optionalpathregex) {
+	    scandir($path);
+	} else {
+	    die "Hast Directory angegeben, aber keine optionalpathregex.";
+	}
+    } else {
+	$path=~ m|(.*?)([^/]+)$|s or die "???";
+	my ($folder,$file)=($1,$2);
+	$folder=~ s/\/$//s;
+	changefile($folder,$file);
+    }
+} elsif ($mode eq '-') {
+    while (<STDIN>) {
+	chomp;
+	m|(.*?)([^/]+)$|s or die "???";
+	my ($folder,$file)=($1,$2);
+	$folder=~ s/\/$//s;
+	changefile($folder,$file);
+    }
+} elsif ($mode eq 'f') {
+    for (@ARGV) {
+	m|(.*?)([^/]+)$|s or die "???";
+	my ($folder,$file)=($1,$2);
+	$folder=~ s/\/$//s;
+	changefile($folder,$file);
+    }
+} else {
+    die "?? mode=$mode";
+}
+
+__END__
+
+HISTORY:
+
+ALIGN="CENTER"><a HREF="http://ads.web.aol.com.*?/div>
+
+ sed 's/<div ALIGN="CENTER"><a HREF="http://ads.web.aol.com.*?\/div>//' */*  
+
+ sed --silent 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*\/div>//i' silbsee/silbsee.htm
+ 
+geht alles nicht.
+
+find -exec sed 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*\/div>//' '{}' 
+
+
+
+ARGGGGGH.
+
+perl
+
+05:26
+time passes
+06:49
+chris@lombi may > mysed 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*?\/div>//si' . '.html?$'
+cool!
