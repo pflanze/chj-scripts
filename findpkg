@@ -1,0 +1,57 @@
+#! /bin/sh
+
+#   findpkg - Find files and packages in Debian
+#   Copyright (c) 2000,3,5  Martin Schulze <joey@infodrom.org>
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
+
+# Updates: http://www.infodrom.org/Infodrom/tools/findpkg.html
+
+# Default settings
+#
+server=ftp.debian.org
+dist=woody
+wgetopts=
+arch=`dpkg --print-installation-architecture`
+
+# Overwrite the defaults with values from inside the config file
+#
+if [ -s /etc/dpkg/findpkg.conf ]
+then
+    . /etc/dpkg/findpkg.conf
+fi
+
+
+if [ $# -gt 0 ]
+then
+    case $1 in
+    --update|-u)
+	tmp=`tempfile`
+	trap "rm -f $tmp; exit" INT EXIT
+	set -e
+	wget ${wgetopts} -O $tmp http://${server}/debian/dists/${dist}/Contents-${arch}.gz
+	set +e
+	cp $tmp /var/lib/dpkg/Contents-${arch}.gz
+	chmod 644 /var/lib/dpkg/Contents-${arch}.gz
+	;;
+    -*)
+	echo "No such parameter \`$1'"
+	;;
+    *)
+	zgrep "$@" /var/lib/dpkg/Contents-${arch}.gz
+	;;
+    esac
+fi
+

@@ -1,0 +1,76 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  8 16:57:06 CET 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  stdin to stdout
+
+  list of numbers: upon each line, compute diff to previous line and output that
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+
+
+sub splitem {
+    my ($str)=@_;
+    my @p= split /\s+/s,$str;
+    map {
+	$_=~ /^\d+(?:\.\d+)?\z/ or die "invalid entry '$_'";
+	$_+0
+    } @p;
+}
+
+my $curnumbers;
+
+{
+    my $firstline= <STDIN>;
+    defined $firstline or exit;
+    $curnumbers= [ splitem $firstline ];
+}
+
+while(<STDIN>) {
+    my $new= [ splitem $_ ];
+    @$curnumbers == @$new or die "not same number of elements on line: $_";
+    for my $i (0.. $#$new) {
+	print "",($new->[$i] - $curnumbers->[$i]),"\t";
+    }
+    print "\n";
+    $curnumbers=$new;
+}
+

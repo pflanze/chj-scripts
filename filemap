@@ -1,0 +1,209 @@
+#!/usr/bin/perl -w
+
+# Mon Okt 24 01:53:26 MEST 2005
+# -Mon, 24 Oct 2005 03:25:46 +0200
+# -Mon, 24 Oct 2005 04:06:43 +0200 debugging+necessaryimprovements
+
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+use Storable qw(nstore_fd fd_retrieve);
+use Chj::xperlfunc;
+use Chj::xperlfunc qw( xxcarefulrename);#xlinkunlink
+use Carp;
+use Chj::xopen qw(xopen_read xopen_write);
+use lib "/root/extlib"; use Filepaths;
+use Chj::Cwd::realpath;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd [ args ]
+
+ cmd and it's args are:
+
+  create filelistinput hashoutput
+
+    reads file list from filelistinput, and outputs binary (Storable) hash
+    with  filetype\\0filename\\0mtime\\0size => parentfolderpath
+    to hashoutput
+
+  apply filelistinput hashinput
+
+    reads file list from filelistinput, and applies moves to them as
+    declared in the hash found in hashinput.
+    Uses xlinkunlink. #thus won't work with Dirs ?  !
+    ah nope: uses xxcarefulrename.!.
+
+ Options:
+  -0 | --null   null terminated input fields instead of newline terminated.
+  --dry|--dry-run     do not really move files in apply, only output notes.
+
+
+(Bei den inputs/outputs dachte ichzuerst: auch fileno geben können. doch: die shell hält dafür ja auch was übrig, also no fear. Und '-' ist neu fon xopen_* auch supportete.)
+
+ Todo:  das programm sollte sich alle pfade mit dem selben key merken.
+  und beim apply dann, wenn mehrere, den user fragen oder so. auchgleichsagen welche davon schon besetzt sind.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $dryrun;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?dry-?(run)?$/) {
+	$dryrun=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+#$|++; #! wie immer.  (well ob das auch auf '-' für hash out put geht? aber egal) well kanns ja nach unten schieben.
+
+sub readhash {
+    my($file)=@_;
+    my $f=xopen_read($file);
+    fd_retrieve($f)
+}
+sub storehash {
+    my($file,$hash)=@_;
+    my $f=xopen_write($file);
+    nstore_fd($hash,$f);
+    $f->xclose
+}
+
+sub filekey {
+    my ($path)=@_;
+    my $s= xlstat($path);
+    my $filename=Filename($path);
+    join("\0",
+	 $s->filetype,
+	 #$s->permissions,
+	 $filename,
+	 #$s->mtime,  oder auch nicht, wenn schon permissions nicht ?
+	 $s->size   # bei foldern auch nicht   ?
+	);
+}
+
+sub PathJoin ( $ $ ) {
+    my ($parent,$filename)=@_;
+    if (! length $parent) {
+	$filename
+    } else {
+	"$parent/$filename";
+    }
+}#ok alwasy?.
+
+sub maybexlinkunlink {
+#     if ($dryrun) {
+# 	#warn "maybexlinkunlink: ",join(", ",map{"'$_'"}@_);
+#     } else {
+	my ($from,$to,$parent)=@_;#$parent is only informal
+	my $doandsay=sub {
+	    if (!$dryrun) {
+# 		if (-e $to) {
+# 		    die "target '$to' already exists";
+# 		}
+# 		lstat $from;
+# 		if (-d _) {
+# 		    # opfere ein wenig safety.  ps hab ich das nicht schon drin irgendwo?. DOOOOOOOOOOOCH. xxcarefulrename
+# 		    xrename $from,$to;
+# 		} else {
+# 		    xlinkunlink $from,$to;
+# 		}
+		xxcarefulrename($from,$to);
+	    }
+	    print( ($dryrun ? "would move" : "moved")." '$_' into '$parent'\n");
+	};
+	if (lstat $to) {#exists already.
+	    if (defined(my $rto=realpath $to)) {
+		my $rfrom= xrealpath $from;
+		if ($rto eq $rfrom) {
+		    print "'$rfrom' is already at the right place\n";
+		} else {
+		    &$doandsay
+		}
+	    } else {
+		&$doandsay
+	    }
+	} else {
+	    &$doandsay
+	}
+#    }
+}
+
+my %cmd=
+  (create=>sub{
+       @_==2 or croak "expecting 2 args";
+       my ($filelistinput, $hashoutput)=@_;
+       my $in=xopen_read($filelistinput);
+       my $h={};
+       while(<$in>){
+	   chomp;
+	   eval {
+	       my $key= filekey($_);
+	       my $parent= FolderOfThisFile($_);
+	       $$h{$key}=$parent;
+	   };
+	   if (ref$@ or $@){
+	       my $e="$@";
+	       $e=~ s/ at $0 line \d*//;
+	       print STDERR "WARNING: $e";
+	   }
+       }
+       $in->xclose;
+       #my $out= xopen_write($hashoutput);
+       storehash($hashoutput,$h);
+   },
+   apply=>sub {
+       @_==2 or croak "expecting 2 args";
+       my ($filelistinput,$hashinput)=@_;
+       $|=1; #"! wie immer.  (well ob das auch auf '-' für hash out put geht? aber egal)       my $in=xopen_read($filelistinput);"
+       my $in=xopen_read($filelistinput);
+       my $h= readhash($hashinput);
+       while(<$in>){
+	   chomp;
+	   eval {
+	       my $key= filekey($_);
+	       my $filename=Filename($_);
+	       my $oldparent= FolderOfThisFile($_);
+	       if (defined (my $parent= $$h{$key})) {
+		   maybexlinkunlink($_,PathJoin($parent,$filename),$parent);
+	       } else {
+		   print "'$_' not in hash\n";
+	       }
+	   };
+	   if (ref$@ or $@){
+	       my $e="$@";
+	       $e=~ s/ at $0 line \d*//;
+	       print STDERR "WARNING: $e";
+	   }
+       }
+   },
+  );
+
+my $cmd=shift @args;
+my $c=$cmd{$cmd}
+  or usage "unknown command '$cmd'";
+$c->(@args);

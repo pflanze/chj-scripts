@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Die Jan 21 23:03:15 CET 2003
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+  Filter text cut from a 'Depends:' line or the like of a deb
+  package from stdin to stdout.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage if @files;
+
+local $/;
+my $a= <STDIN>;
+
+$a=~ s/\(.*?\)//sg;
+$a=~ s/>//sg;
+$a=~ s/\s*\|\s*/|/sg;
+my @multi;
+my @rest= map {s/\|/ | /sg ? do{push @multi;""} : "$_ "} split /[\s,]+/,$a;
+
+print STDERR map {"$_\n"} @multi if @multi;
+print @rest;
+
+__END__
+bug-buddy gnome-control-center libeel2-2 eog gconf-editor gnome-applets gnome-panel gnome-session gnome-system-monitor gnome-terminal gnome2-user-guide gnome-utils libgail-gnome0 libgnomeprintui-0 libgtkhtml2-0 libgtop2 librsvg2-2 libwnck4 libzvt2  scrollkeeper yelp gnome-media gedit file-roller system-tray-applet
+
+  aptinstall -t unstable bug-buddy gnome-control-center libeel2-2 eog gconf-editor gnome-applets gnome-panel gnome-session gnome-system-monitor gnome-terminal gnome2-user-guide gnome-utils libgail-gnome0  libgtkhtml2-0 libgtop2 librsvg2-2 libwnck4 libzvt2  scrollkeeper yelp gnome-media file-roller system-tray-applet

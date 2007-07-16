@@ -1,0 +1,61 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  8 00:40:32 CET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  stdin to stdout
+  snips off filename before colon (output from grep)
+  and outputs localtime of mtime instead.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+use Chj::xperlfunc;
+
+while(<STDIN>) {
+    if (m|^([^:]+):|){
+	my ($filename)=$1;
+	my $s=xstat $filename;
+	print "".localtime($s->mtime), substr($_,length($filename));
+    }
+    else {
+	warn "line does not match: $_";
+	print
+    }
+}
+
