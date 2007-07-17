@@ -23,3 +23,6 @@ Chj/Unix/UserAccount.pm
 Chj/Web/UrlUtils.pm
 Chj/loadconfig.pm
 Chj/xchase.pm
+
+# not tracked through this repository (from /root/Setup/, but writes it's result into our range)
+Chj/Cwd
