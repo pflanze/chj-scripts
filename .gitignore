@@ -5,3 +5,21 @@
 
 Chj/IO/Tempfile.pmORIG
 *.unison.bak
+
+
+# todo fix those (they don't load):
+
+Chj/DataStructure/Megalist
+Chj/Excel/GenXLS.pm
+Chj/FileStore/MIndex/Iterator.pm
+Chj/Format/Squirrelmailabook.pm
+Chj/Mailfilter.pm
+Chj/Parse/Braceexpand.pm
+Chj/Unix/Authenticate.pm
+Chj/Unix/DaemonFactory.pm
+Chj/Unix/File.pm
+Chj/Unix/Interfaces.pm
+Chj/Unix/UserAccount.pm
+Chj/Web/UrlUtils.pm
+Chj/loadconfig.pm
+Chj/xchase.pm
