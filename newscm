@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+# Don Apr 12 19:54:47 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname name(s)
+
+  Options:
+  -a|--add  git-add the files
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_add;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?a(dd)?$/) {
+	$opt_add=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+
+sub createscm {
+    my ($name)=@_;
+    $name=~ s/\.scm$//;
+    #xxsystem "cp", "MODULETEMPLATE.scm", "$name-module.scm";
+    #xxsystem "cp", "MODULEBODY.scm", "$name.scm";
+    map {
+	xxsystem "cp", "-i", @$_;
+	$$_[1]
+    } (
+       [ "MODULETEMPLATE.scm", "$name-module.scm"],
+       [ "MODULEBODY.scm", "$name.scm"]
+      )
+}
+
+my @files= map { createscm $_ } @args;
+
+if ($opt_add) {
+    #xxsystem "git-add", @args;  huh geht gar nicht?
+    xxsystem "cg-add", @files;
+    #xxsystem "git-add", @args;  definitiv nicht
+    #xxsystem "git-add", @files; definitiv nicht wirklich.
+}
+
