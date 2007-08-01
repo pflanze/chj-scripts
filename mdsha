@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for f in "$@"; do
+    md5sum "$f"
+    sha1sum "$f"
+done
