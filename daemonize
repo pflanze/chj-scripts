@@ -115,6 +115,7 @@ if (defined $usage) {
   -N|--no-nice  do not lower priority
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
+  --quiet|-q  be quiet (do not output the pid of the daemon)
   --         terminate option processing
 
   Note: the pid file (and the output if nohup.out is not used)-- ehr?.
