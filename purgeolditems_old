@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+# 23. Feb 14:17 2003 -15:52
+# jaeger@ethlife.ethz.ch
+
+use strict;
+use File::Find;
+require 5.6.1; # since at least File::Find from perl 5.005_03 is not suitable and also since it's option parsing is loose :-(
+use POSIX 'ENOTEMPTY';
+
+$File::Find::dont_use_nlink=1;
+# ^-- see warning about AFS in File::Find manpage
+
+die "Usage: $0 directory age
+  Purges all non-dir items older than age days and also
+  directories if empty.\n" unless @ARGV==2;
+
+my ($dir,$age)=@ARGV;
+my $VERBOSE=0;
+
+my @dirstack=[]; # list of lists of dir names
+
+find {
+    preprocess=>sub{
+	push @dirstack,[];
+	@_
+    },
+    wanted=>sub{
+	lstat or die "lstat '$File::Find::name': $!"; # should never happen
+	if (-M _ >= $age){
+	    if (not -l _ and -d _){
+		push @{$dirstack[$#dirstack]}, $_;
+	    }else{
+		if (unlink){
+		    warn "removed item '$File::Find::name'\n" if $VERBOSE;
+		}else {
+		    warn "unlink $File::Find::name: $!\n"
+		}
+	    }
+	}# else {
+	#	print "newer $File::Find::name\n"
+	#}
+    },
+    postprocess=>sub{
+	my $frame= pop @dirstack;
+	for (@$frame){
+	    if (rmdir) {
+		warn "removed dir '$File::Find::dir/$_'\n" if $VERBOSE;
+	    }else{
+		warn "rmdir $File::Find::dir/$_: $!\n" unless $!==ENOTEMPTY
+	    }
+	}
+    },
+}, $dir;
+
+
+# NOTE:  $File::Find::prune could maybe also be used for similar effect.

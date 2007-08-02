@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+# Mon Mai 19 23:25:39 MEST 2003
+# - Mon, 19 May 2003 23:52:15 +0200
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir(s)
+  Finds all items and records them sorted, and outputs them
+  with newestly modified last. (sorry my englisch ist bad)
+
+  BUGS/todo:
+  - does not include the very first top level items into the list.
+";
+exit @_ ? 1 : 0;
+}
+
+my @dirs;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @dirs, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @dirs, $_
+    }
+}
+usage unless @dirs;
+
+use Chj::xopendir;
+use Chj::xperlfunc;
+
+my @items; # mtime, linestring
+
+
+sub permstring {
+    my ($mode)=@_;
+    #"-rwxr-xr-x"  ###
+    -l _ ? "l" : -d _ ? "d" : -p _ ? "p" : -S _ ? "S" : -b _ ? "b" : -c _ ? "c" : "-"
+}
+# sub buildline {
+#     my ($mtime,$mode,$size,$uid,$gid,$nlink, $filename)=@_;
+#     sprintf "%s  %i %s %s %i %s %s\n",
+#       (permstring $mode),
+# 	$nlink,
+# 	  $uid,$gid,
+# 	    $size,
+# 	      $filename;
+# }
+sub buildline {
+    my ($mtime,$mode,$size,$uid,$gid,$nlink, $path)=@_;
+    sprintf "%s  %s %s\n",
+      (permstring $mode),
+	scalar localtime($mtime),
+	  $path;
+}
+
+sub enterdir {
+    my ($dir)=@_;
+    my $d= xopendir $dir;
+    while (defined( my $item= $d->xnread)) {
+	my $path= "$dir/$item";
+	my ($mtime,$mode,$size,$uid,$gid,$nlink)= (xlstat $path)[9,2,7,4,5,3];
+	push @items,[$mtime, buildline($mtime,$mode,$size,$uid,$gid,$nlink, $path)];
+	if (-d _) {
+	    enterdir($path);
+	}
+    }
+}
+
+for my $dir (@dirs) {
+    enterdir($dir);
+}
+
+for ( sort { $a->[0] <=> $b->[0] or $a->[1] cmp $b->[1] } @items ) {
+    print $_->[1]
+}

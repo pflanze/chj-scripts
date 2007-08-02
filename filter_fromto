@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+
+# Mit Sep 29 16:32:59 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --mfrom marker1 --mto marker2
+
+  filters stdin to stdout starting from the line after the line being marker1
+  until the line before the next following line being marker2.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_mfrom,$opt_mto);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?mf(?:rom(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_mfrom=$1
+        } else {
+            $opt_mfrom=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?mt(?:o(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_mto=$1
+        } else {
+            $opt_mto=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+usage "currently options mfrom and mto are required" unless defined $opt_mfrom and defined $opt_mto;
+
+
+outer:{
+    while (<STDIN>) {
+	if (/^\Q$opt_mfrom\E$/o) {
+	    while(<STDIN>){
+		if (/^\Q$opt_mto\E$/o) {
+		    last outer;
+		}
+		print
+	    }
+	    last outer;
+	}
+    }
+}

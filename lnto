@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+# Mon, 24 Jun 2002 17:55:50 +0200
+# pflanze@gmx.ch
+
+use strict;
+
+my $cmd= "ln";
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname folder files...
+  Same as $cmd, but the target is the *first* argument.
+  For use with xargs or the like.
+";
+exit @_;
+}
+
+my (@files,@options);
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/s) {
+		usage
+	} elsif (/^-[bfiuv]+$/s) {
+		push @options, $_;
+	} elsif (/^-[SV]$/s) {
+		push @options, $_, $ARGV[++$i];
+	} elsif ($_ eq '--') {
+		push @files, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @files, $_
+	}
+}
+usage unless @files >= 2;
+
+exec $cmd,@options, "--", @files[1..$#files], $files[0];

@@ -1,0 +1,4 @@
+#!/usr/bin/perl -w
+
+#exec qw(/usr/bin/gpg --keyserver 212.55.198.213), @ARGV;
+exec qw(/usr/bin/gpg --keyserver pgp.mit.edu), @ARGV;

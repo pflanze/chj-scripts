@@ -1,0 +1,217 @@
+#!/usr/bin/perl -w
+
+# Sam Nov 29 20:21:03 MET 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname program [arguments]
+  Allocates a new pseudo tty, sets up a proxy that copies io between
+  the pty master and the old stdin/stdout, and executes the given
+  program with stdin/stdout/stderr redirected to the pty slave.
+
+  Example:
+  type into a terminal:  ttyraw notty allocpty bash
+  or:  ttyraw notty -d allocpty -d bash
+
+  Options:
+  -d      give debug info
+
+  Bugs:
+  - does not handle all signals, esp. not SIGSTOP (ctl-z). Should be
+    rewritten to only have one proxy process (nonblocking io) and to
+    exec the command directly in the parent.
+  - some things do not work, like programs cannot query the terminal
+    size. (e.g. less; be sure to use a 24x80 terminal)
+  - sometimes 'less' blocks for no apparent reason.
+  - using bash as command: 'bash: no job control in this shell': I do
+    not know why. & works but fg not. Programs put into background
+    with & will stay running after exiting from bash.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my $DEBUG;
+my $BUFSIZ=4096*16;
+my @args;
+for (my $i=0; $i<@ARGV; $i++){
+    local $_= $ARGV[$i];
+    if ($_ eq '--') {
+	@args= splice @ARGV,$i+1;
+	last;
+    } elsif (/^-/) {
+	if (/^--?h/) {
+	    usage
+	} elsif (/^--?d/) {
+	    $DEBUG=1
+	} else {
+	    usage "unknown option '$_'";
+	}
+    } else {
+	@args= splice @ARGV,$i;
+	last;
+    }
+}
+usage unless @args;
+
+##copy from 'notty' script
+use Carp;
+sub xfork { my $pid=fork ; defined($pid) or croak "fork: $!"; $pid}
+sub xsysread ( * $ $ ) {
+    my $rv= sysread $_[0],$_[1],$_[2];
+    defined $rv or croak "sysread: $!";
+    ## noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+    $rv
+}
+sub xsyswriteall ( * $ ) {
+    my $written=0;
+    my $rv;
+    my $len= length $_[1];
+    do {
+	if ($written==0) {
+	    $rv=syswrite $_[0],$_[1];
+	} else {
+	    $rv=syswrite $_[0],substr($_[1],$written);# oder wär abschneiden nach getan effizienter? Na in C wärs klar wie machen.   Wann habe ich die Nase voll von syswriteall routinen schreiben?
+	}
+	defined $rv or croak "syswrite: $!";
+	## TODO noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+	$written+=$rv;
+    } until ($written==$len);
+}
+
+# make the parent proxy signals.   Das wär ein grund, gleich im parent exec zu machen. Aber child signals? Well sollte nie geschehen. Umschreiben? Hm, stdin lesendes child wird halt dann nie enden solang stdin da ist; das ist in notty ein problem. Müsste halt auch umschreiben dass stdin lesendes child merkt wenn der output weg ist, d.h. nonblocking io.
+
+for my $sig (qw(QUIT TERM USR1 STOP CONT HUP INT)) {
+    $SIG{$sig}= sub {
+	warn $myname,": SIG",$sig," catched\n" if $DEBUG;
+    };
+}
+## /copy
+
+
+use IO::Pty;
+
+$SIG{STOP} = sub {
+    warn "SIGSTOP\n";
+#childish playground
+};
+
+my $parenty;
+my $childy;
+{
+#    my $pty= new IO::Pty;
+#    my $slave= $pty->slave;
+#    $parenty= $pty;
+#    $childy= $slave;
+#    $parenty= $slave;
+#    $childy= $pty;
+    #nee führt zu:    mesg: /dev/ptmx: Operation not permitted
+    $parenty= new IO::Pty;
+    $childy= $parenty->slave;
+}
+
+# wer für was?
+# slave für den prozess?
+
+my (%pid,$pid);
+
+$pid=xfork;
+if ($pid==0) {
+    # handle stdout of the process
+
+    close STDIN or die $!;
+    undef $childy;
+
+    my $buf;
+    while (1){
+	exit unless xsysread $parenty,$buf,$BUFSIZ;
+	xsyswriteall STDOUT,$buf;
+	warn "$myname: copied ".length($buf)." bytes from pty master to STDOUT\n" if $DEBUG;
+    }
+
+}
+$pid{$pid}="stdout";
+
+
+$pid=xfork;
+if ($pid==0) {
+    # handle stdin of the process
+
+    close STDOUT or die $!;
+    undef $childy;
+
+    my $buf;
+    while (1){
+	exit unless xsysread STDIN,$buf,$BUFSIZ;
+	xsyswriteall $parenty,$buf;
+	warn "$myname: copied ".length($buf)." bytes from STDIN to pty master\n" if $DEBUG;
+    }
+
+}
+$pid{$pid}="stdin";
+my $pid_stdin= $pid;
+
+
+$pid=xfork;
+if ($pid==0) {
+    # cmd child
+    close STDIN or die $!;
+    close STDOUT or die $!;
+    # leave STDERR as is? no. but leave it open for errmsgs until below. (wär eh ned nötig alle zu schliessen)
+    undef $parenty;
+    open STDIN,"<&".fileno($childy) or die $!;
+    open STDOUT,">&".fileno($childy) or die $!;
+    open STDERR,">&".fileno($childy) or die $!;
+    warn "$myname: will exec '$args[0]' now\n" if $DEBUG;
+    exec @args;
+    exit 127;
+}
+$pid{$pid}="cmd";
+
+
+undef $parenty;
+undef $childy;
+
+##copy from 'notty' script
+
+my $exitcode;
+while (%pid) {
+    $pid=waitpid(-1,0);
+    defined $pid or do { warn "?? waidpid: $!"; sleep 1; redo };
+    if (my $what= $pid{$pid}) {
+	if ($? == 0) {
+	    warn "$myname: child for $what has exited successfully\n" if $DEBUG;
+	} else {
+	    warn "$myname: child for $what has exited with exit code $?\n" if $DEBUG;
+	}
+	if ($what eq 'cmd') {
+	    $exitcode=$? if $?;
+	    #kill 9, $pid_stdin or warn "kill: $!"
+	    #  if $pid{$pid_stdin};
+	    # leider beenden die dinger nicht selber hier, komischerweise. (werden pty slaves nicht richtig geschlossen? hm well: da ich 2 childs offen hab, eines lesen eines schreiben, scheints deadlocked zu sein!)
+	    for (keys %pid) {
+		kill 9,$_
+	    }
+	} else {
+	    $exitcode||=$?;
+	}
+	delete $pid{$pid};
+    } else {
+	warn "?? reaped child not created by me";
+    }
+}
+
+if ($exitcode > 255) {
+    exit ($exitcode >> 8);
+} elsif ($exitcode) {
+    kill $exitcode,$$;
+    sleep 1;
+    exit 1;# to make sure that if we should block that signal we return an error nonetheless.
+}
+

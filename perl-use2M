@@ -1,0 +1,201 @@
+#!/usr/bin/perl -w
+
+# Mon Jun 26 21:03:19 MEST 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+#-Mon, 26 Jun 2006 21:36:32 +0200  halbe h. wegen dem bug(?)
+# ochccasfdfuck  noch gar nicht fertgi. ncohmals n scheis.
+#-Mon, 26 Jun 2006 21:58:22 +0200  un glaublcihacscda.
+
+
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  convert use statements to -Mfoo=bar 'statements'  strings   arguments  parameters.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+local $/;
+local our $cnt=<STDIN>;
+close STDIN or die $!;
+
+our @pa;
+#while ($cnt=~ m{(?:^|\G|;)\s*use\b\s*([\w:]+)([^:]*)(?:;|\z)}sg) {
+#while ($cnt=~ m{\s*use\b\s*([\w:]+)([^:]*)(?:;|\z)}sg) {
+#while ($cnt=~ m{(?:^|\G|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#warum  häölle habe ich so iel probls lately damit
+#darf kein \G als anfang nehmen.
+#while ($cnt=~ m{(?:^|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#shit. how then.
+#"ahaaa muss pos ans ENDE des matches setzen  eh aber das isches doch scho????"
+#hm  ohne ^|;|  geht es  .
+# ist jetzt das yet another bug?
+#while ($cnt=~ m{\G\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#while ($cnt=~ m{(^|;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+
+if(0) {
+#while ($cnt=~ m{(?:^|;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#und nein in 5.8.x isches auhc noch.nich nur lombi
+#while ($cnt=~ m{(?:;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#^-das loopt ebenfalls.
+
+while ($cnt=~ m{(?:;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+    local our ($package,$args)=($1,$2);
+    push @pa,[$package,$args];
+    #use Chj::repl;repl;
+    use Data::Dumper ; print Dumper \@pa;
+    #pos($cnt)=
+    warn "lengt=".length($cnt).", pos=".pos($cnt);
+    sleep 1;#hsz.
+}
+
+
+# if  ($cnt=~ m{(?:^|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#     {
+# 	local our ($package,$args)=($1,$2);
+# 	push @pa,[$package,$args];
+# 	#use Chj::repl;repl;
+# 	use Data::Dumper ; print Dumper \@pa;
+# 	#pos($cnt)=
+# 	warn "lengt=".length($cnt).", pos=".pos($cnt);
+# 	sleep 1;#hsz.
+#     }
+#     #while ($cnt=~ m{\G\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#     #och und jetzt nur \G spezen  geht natürlich dann nicht  wenn  zwischen zwei use  noch was liegt
+#     #while ($cnt=~ m{(?:\G|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#     #loopt wiedr
+#     #while ($cnt=~ m{(?:;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+#     #das auch.
+# krach
+# 	local our ($package,$args)=($1,$2);
+# 	push @pa,[$package,$args];
+# 	#use Chj::repl;repl;
+# 	use Data::Dumper ; print Dumper \@pa;
+# 	#pos($cnt)=
+# 	warn "lengt=".length($cnt).", pos=".pos($cnt);
+# 	sleep 1;#hsz.
+#     }
+# }
+
+#also halt so
+} else {
+while ($cnt=~ m{\buse\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
+    local our ($package,$args)=($1,$2);
+    push @pa,[$package,$args];
+    #use Chj::repl;repl;
+    #use Data::Dumper ; print Dumper \@pa;
+    #pos($cnt)=
+    #warn "lengt=".length($cnt).", pos=".pos($cnt);
+    #sleep 1;#hsz.
+}
+}
+
+print join " ", (map {
+    my ($package,$rawargs)=@$_;
+    #$rawargs entweder "string","string"  oder qw( ) irgendwas, *üblicherweise*
+    #ah kanns ja evalen?
+    #my @args= defined($rawargs) ? do {my @a=eval $rawargs; die if (ref $@ or $@); @a} : ();
+    #"-M$package=".join(",",@args);
+    my $pre= "-M$package";
+    if (defined $rawargs) { #ah mischt mensch.  aber jodoch   ???
+# 	$pre."=".join(",",
+# 		      do {
+# 			  warn "rawargs='$rawargs'";
+# 			  my @A=eval $rawargs;
+# 			  die if (ref $@ or $@);
+# 			  @A
+# 		      });
+	#use Chj::singlequote; warn "rawargs=".singlequote($rawargs);
+	my @A=eval $rawargs;
+	my $e=$@;
+	#warn Dumper \@A,$e;
+	die if (ref $e or $e);
+#	if (@A and #!!!!das vergass ich noch zu alldem.
+#	    (@A==1 and not defined $A[0])) {
+#GRRRRRRRRRRRRRRRRRRRRRRRRRRR was DA scheiss.
+#	@A=grep {defined and length } @A;
+#	if (!@A) {
+#oh
+	if (!@A or
+	    (@A==1 and not defined $A[0])) {
+	    $pre
+	} else {
+	    my $args=join(",",@A);
+	    $pre."=".$args
+	}
+    } else {
+	$pre
+    }
+} @pa), "\n";#join m zusatz \n ist dann gleich wie ausgabevonmap schon mit spacehintendran zu macha
+
+__END__
+FCK was isch DAS:
+
+chris@lombi chris >  bin/perl-use2M
+use EiD::Search_Query; use Chj::DBI::transaction
+rawargs='' at bin/perl-use2M line 133.
+Use of uninitialized value in join or string at bin/perl-use2M line 132.
+rawargs='
+' at bin/perl-use2M line 133.
+-MEiD::Search_Query= -MChj::DBI::transaction= 
+
+bei diesem code:
+		      do {
+			  warn "rawargs='$rawargs'";
+			  my @a=eval $rawargs;
+			  die if (ref $@ or $@);
+			  @a
+		      });
+
+
+
+use EiD::Search_Query; use Chj::DBI::transaction
+rawargs='' at bin/perl-use2M line 140.
+$VAR1 = [
+          undef
+        ];
+$VAR2 = '';
+Use of uninitialized value in join or string at bin/perl-use2M line 146.
+rawargs='
+' at bin/perl-use2M line 140.
+$VAR1 = [];
+$VAR2 = '';
+-MEiD::Search_Query= -MChj::DBI::transaction= 
+
+
+aha   hss   eval "" gibt (undef) .
+sshshhhh    und eval "\n" nicht mehr.

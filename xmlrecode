@@ -1,0 +1,253 @@
+#!/usr/bin/perl -w
+
+# Fre Okt 10 15:01:17 MEST 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+#use encoding "latin1"; # nötig damit preline-string einfügen nicht alles kaputt macht. ?
+use bytes; # hiermit tut es immer wieder iso machen. bis ich toFile verwendet hab
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -i|-u|-m [--iconv] files
+
+  Try to autodetect the charset encoding in the file, and if needed
+  recode it so to become the desired encoding.
+
+  Available encodings are:
+
+  --utf-8 | --utf | -u
+  --iso-8859-1 | --iso | -i
+  --macintosh | --mac | -m
+
+  Further options:
+  --iconv    use iconv on the plain file instead of parsing/unparsing the xml.
+             does not work in cases where the target encoding can't represent
+             a char present in the source file, and also won't translate
+             entities present in the source to chars even if it would be
+             possible.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_i,$opt_u,$opt_m)=(0,0,0);
+my ($opt_iconv);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?i(so(-8859-1)?)?$/) {
+	$opt_i=1;
+    } elsif (/^--?u(tf(-8)?)?$/) {
+	$opt_u=1;
+    } elsif (/^--?m(ac(intosh)?)?$/) {
+	$opt_m=1;
+    } elsif (/^--?iconv$/) {
+	$opt_iconv=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+if ($opt_u + $opt_i + $opt_m > 1){
+    usage "only one of -u -i -m may be given";
+}
+if ($opt_u + $opt_i + $opt_m < 1) {
+    usage "one of -u -i -m must be given";
+}
+
+#use Chj::fileutils qw(fetchfile writebackfile);
+use Text::Iconv;
+use XML::LibXML;
+use Chj::xtmpfile;
+use Chj::xopen "xopen_read";
+use Chj::xperlfunc;
+
+my $u2u= new Text::Iconv "utf-8","utf-8";
+my $i2u= new Text::Iconv "iso-8859-1","utf-8";
+my $m2u= new Text::Iconv "macintosh","utf-8";
+my $u2i= new Text::Iconv "utf-8","iso-8859-1" if $opt_i;
+my $u2m= new Text::Iconv "utf-8","macintosh" if $opt_m;
+my $m2i= new Text::Iconv "macintosh","iso-8859-1" if $opt_i;
+my $i2m= new Text::Iconv "iso-8859-1","macintosh" if $opt_m;
+# Text::Iconv->raise_error(0);  default.
+
+# my %encodingname= (
+# 		   # i,u,m  als Art zu bestimmen.
+# 		   "1,0,0"=> "iso-8859-1",
+# 		   "0,1,0"=> "utf-8",
+# 		   "0,0,1"=> "macintosh", ## sollte das mac western etwas heissen?
+# 		   );
+# eh, siehe 2 zeilen weiter unten.
+
+# Apache::AxKit::CharsetConv wär ne alternative?  baud erwaehnts in #axk. hat aber keine doku un is xs.
+my $MACCHARS= join("",map{chr hex $_} qw( 8A 9A 9F 80 85 86 8D 8E 8F ));
+
+my $targetencodingname= $opt_u ? "UTF-8" : $opt_i ? "ISO-8859-1" : $opt_m ? "macintosh" : die "??";
+
+my $parser=new XML::LibXML;
+
+for my $file (@args) {
+    #my $content= ${fetchfile $file};
+    my $content= xopen_read ($file)->xsyscontent;
+
+    # is it u or i?
+    my $is_u= defined $u2u->convert($content);
+    my $is_m;
+
+    # detect:
+    if ($is_u) {
+	print STDERR "$file: looks like utf-8";
+    } else {
+	print STDERR "$file: not utf-8";
+	if ($content=~ /[$MACCHARS]/) {
+	    print STDERR ", looks like mac charset";
+	    $is_m=1;
+	} else {
+	    print STDERR ", assuming iso-8859-1";
+	}
+    }
+
+    my $sourceencodingname= $is_u ? "UTF-8" : $is_m ? "macintosh" : "ISO-8859-1";# modulo assumption.
+
+
+#     # recode:
+#     if ($opt_u) {
+# 	if ($is_u) {
+# 	    # no change to encoding
+# 	} else {
+# 	    print STDERR ", recoding"; # i2u
+# 	    if ($is_mac) {
+# 		$content= $m2u->convert($content);
+# 	    } else {
+# 		$content= $i2u->convert($content);
+# 	    }
+# 	}
+#     } elsif ($opt_i) {
+# 	if ($is_u) {
+# 	    print STDERR ", recoding"; # u2i
+# 	    $content= $u2i->convert($content);
+# 	} elsif ($is_mac) {
+# 	    print STDERR ", recoding"; # u2i
+# 	    $content= $m2i->convert($content);
+# 	} else {
+# 	    # no change to encoding
+# 	}
+#     } else { # opt_m
+# 	if ($is_u) {
+# 	    print STDERR ", recoding"; # u2i
+# 	    $content= $u2m->convert($content);
+# 	} elsif ($is_mac) {
+# 	    # no change to encoding
+# 	} else {
+# 	    print STDERR ", recoding"; # u2i
+# 	    $content= $i2m->convert($content);
+# 	}
+#     }
+#     defined $content or die "could not encode\n";
+    
+# Alt: preline so machen wie target encoding es will.
+#     # check preline:
+#     if ($content=~ sé^(\s*<\?xml[^?>]*\?>)é
+# 	my $all= $1;
+# 	if ($all=~ sè(\bencoding\s*=\s*["']([^"']*)["'])è
+# 	    my ($all2,$enc)=($1,$2);
+# 	    if (lc($enc) eq lc($encodingname)) {
+# 		# ok
+# 		$all2
+# 	    } else {
+# 		print STDERR ", changed preline";# (1)";
+# 		"encoding=\"$encodingname\""
+# 	    }
+# 	    èse) {
+# 	    # ok
+# 	} else {
+# 	    # preline without encoding
+# 	    $all=~ s/\s*\?>/ encoding="$encodingname"?>/s or die "???";
+# 	    print STDERR ", added encoding to preline";
+# 	}
+# 	$all
+# 	ése) {
+# 	# ok
+#     } else {
+# 	# no preline
+# 	$content= '<?xml version="1.0" encoding="'.$encodingname.'"?>'."\n".$content;
+# 	print STDERR ", added preline";
+#     }
+
+# Neu: preline wirklich so machen wie encoding ursprunglich ist.
+
+    # check preline:
+    if ($content=~ s!^(\s*<\?xml[^?>]*\?>)!
+	my $all= $1;
+	if ($all=~ s|(\bencoding\s*=\s*["']([^"']*)["'])|
+	    my ($all2,$enc)=($1,$2);
+	    if (lc($enc) eq lc($sourceencodingname)) {
+		# ok
+		$all2  # ?
+	    } else {
+		print STDERR ", changed preline";# (1)";
+		"encoding=\"$sourceencodingname\""
+	    }
+	    |se) {
+	    # ok
+	} else {
+	    # preline without encoding
+	    $all=~ s/\s*\?>/ encoding="$sourceencodingname"?>/s or die "???";
+	    print STDERR ", added encoding to preline";
+	}
+        $all=~ s|^\s+||s; # wow, required, libxml won't parse xml if there's whitespace before the preline.
+	$all
+	!se) {
+	# ok
+    } else {
+	# no preline
+	$content= '<?xml version="1.0" encoding="'.$sourceencodingname.'"?>'."\n".$content;
+	print STDERR ", added preline";
+    }
+#print STDERR "content='$content'";
+    # convert:
+    {
+	#warn "going to parse: '$content'\n";
+	my $doc=$parser->parse_string($content);
+	$doc->setEncoding($targetencodingname);
+	#warn "targetencodingname=$targetencodingname";
+	#$content= $doc->toString(0);
+	#writebackfile $file,$content; shit hat problem, konvertiert unter 5.8 utf8 wieder nach iso.
+	my $tmp= xtmpfile($file);
+	#binmode($tmp);
+	#use bytes;
+# 	my $outstr= $doc->toString(0);
+# 	print "generiert: '$outstr'\n";# es ist wirklich beim schreiben.
+# 	#binmode $tmp,":bytes"; hilft nicht.
+# 	binmode $tmp,":utf8";# half. ?
+# 	$tmp->xsysprint($outstr);
+# 	$tmp->xclose;
+# 	xrename($file,"$file~");
+# 	$tmp->xrename($file);
+	$doc->toFile($file.".tmp~"); #ps ja, croakt bei schreibfehler. (sogar doppelt warn und croak)
+	xrename $file,"$file~";
+	xrename $file.".tmp~",$file;
+    }
+    print STDERR "\n";
+}

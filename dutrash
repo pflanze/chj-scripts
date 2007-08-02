@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+
+my $trash;
+if ($ENV{TRASHCAN}) {
+	$trash= $ENV{TRASHCAN}
+} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
+	$trash=$ENV{HOME}."/Desktop/Trash/";
+} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
+	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} else {
+	die "Konnte Deinen Trashcan nicht finden. ";
+}
+
+exec "/usr/bin/du", $trash;

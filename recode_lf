@@ -1,0 +1,175 @@
+#!/usr/bin/perl -w
+
+# christian.jaeger@sl.ethz.ch 
+# 2000-11-26, 
+# Fri, 10 May 2002: merged recode_* into 1 program. Many fixes + improvements
+# Fri, 6 Sep 2002: use Sys::Mmap if Mmap is not available
+
+use strict;
+use Fcntl;
+BEGIN {
+  eval 'use Mmap';
+  if ($@) {
+    eval 'use Sys::Mmap';
+    if ($@) {
+      die $@
+    }
+  }
+}
+
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+print "
+Usage: $myname [ -B ] file(s)
+   
+   Converts end-of-lines beween Mac, DOS and Unix.
+   recode_lf will convert to unix linefeeds,
+   recode_cr will convert to mac carriage returns,
+   recode_dos will convert to dos crlf pairs.
+   All those three do recognize either line endings
+   in the input.
+   
+   Usually, the old file is kept with a backup suffix.
+   -B: do not make backups
+   The backup suffix is .BAK (on non-linux)
+   or ~ (on linux systems) by default.
+   -b suffix: override default suffix.
+   -p   preserve timestamps
+   
+   Note that the file is recreated as a new inode and
+   so it is possible that the original permissions cannot
+   be recreated.
+   
+   Note also that this program has not been tested under windows.
+";
+exit 1;
+}
+
+my $recreatesetid= 1; # recreate setuid/setgid bits
+
+my $backsuffix= $^O=~ /linux/ ? '~' : '.BAK';
+my ($CR,$LF)=("\015","\012");
+
+my $newlineendings;
+if ($myname=~ /(?:crlf|dos|win)$/s) {
+	$newlineendings= "$CR$LF";
+} elsif ($myname=~ /(?:lf|unix)$/s) {
+	$newlineendings= $LF
+} elsif ($myname=~ /(?:cr|mac)$/s) {
+	$newlineendings= $CR
+} else {
+	die "This program has been called as name '$myname', which is missing the terminating lf|cr|dos part. Seems like it has not been installed correctly.";
+} 
+
+
+my (@files,$backup,  $flag_endparms,$opt_p);
+$backup=1;
+for (my $i=0; $i<= $#ARGV; $i++) {
+	local $_= $ARGV[$i];
+	if ($flag_endparms) {
+		push @files,$_
+	} else {
+		if (/^--?h(elp)?$/s) {
+			usage
+		} elsif ($_ eq '-B') {
+			$backup=0;
+		} elsif ($_ eq '-p') {
+			$opt_p=1;
+		} elsif ($_ eq '-b') {
+			$backsuffix= $ARGV[++$i];
+		} elsif ($_ eq '--') {
+			$flag_endparms=1;
+		} elsif (/^-/) {
+			usage
+		} else {
+			push @files,$_
+		}
+	}
+}
+unless (@files) {
+	warn "Missing filepaths (pipe functionality not (yet?) implemented!). --help for help.\n";
+	exit 1;
+}
+
+
+
+use vars '$in';
+
+foreach my $file (@files) {
+	if (-d $file) {
+		warn "`$file' is a directory\n";
+		next;
+	}
+	if (sysopen IN, $file, O_RDONLY) {
+		if (sysopen OUT, $file.".new", O_WRONLY|O_CREAT|O_EXCL, 0200) {
+			if (mmap ($in, 0, PROT_READ, MAP_SHARED, IN)) {
+				my $oldpos=0; 
+				my $pos;
+				if ($in=~ /$CR$LF/so) {
+					# Convert from DOS
+					print "'$file' has DOS newlines\n";
+					while ($in=~ /$CR$LF/sog) {
+						$pos= pos($in);
+						print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings;
+						$oldpos= $pos;
+					}
+
+				} else {
+					# Mac or Unix?
+					my $mac=0; while ($in=~ /$CR/sog) {$mac++};
+					my $unix=0; while ($in=~ /$LF/sog) {$unix++};
+					print "'$file' has $mac Macnewlines, $unix Unixnewlines\n";
+					if ($mac>$unix) {
+						pos($in)=0;
+						while ($in=~ /$CR/sog) {
+							$pos= pos($in);
+							print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings;
+							$oldpos= $pos;
+						}
+					} else {
+						pos($in)=0;
+						while ($in=~ /$LF/sog) {
+							$pos= pos($in);
+							print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings;
+							$oldpos= $pos;
+						}
+					}
+				}
+				print OUT substr($in, $oldpos);
+				close OUT;
+				munmap($in) or die "munmap: $!";
+				undef $in;
+				close IN;
+				
+				my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
+				if (chown $uid,$gid,$file.".new") {
+					chmod $oldmode & ($recreatesetid ? 07777 : 01777), $file.".new"
+						or warn "Could not recreate permissions on '$file.new': $!\n";
+				} else {
+					warn "Could not recreate owner/group on '$file.new' (will not recreate setuid/setgid bits): $!\n";
+					chmod $oldmode & 01777, $file.".new"
+						or warn "Could not recreate permissions on '$file.new': $!\n";
+				    }
+				if ($opt_p){
+				    if (!utime $atime,$mtime,$file.".new"){
+					warn "Could not copy mtime/atime to '$file.new': $!";
+				    }
+				}
+				rename $file,$file.$backsuffix 
+					or warn "Could not rename '$file' to '$file$backsuffix': $!\n"
+					if $backup;
+				rename $file.".new", $file 
+					or warn "Could not rename '$file.new' to '$file': $!\n";
+
+			} else {
+				die "Could not mmap?: $!";
+			}
+		} else {
+			warn "Could not create '$file.new': $!\n";
+		}
+	} else {
+		warn "Could not open '$file': $!\n";
+	}
+}

@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Son Aug  8 02:26:58 CEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+
+my @files;
+for (@args) {
+    s/\.rej$// or m|\.[ch]$| or do {
+	warn "warning: file '$_' is not a .rej or .c or .h file; adding .rej variant all the same\n";
+    };
+    push @files,$_;
+    push @files,$_.".rej";
+}
+
+xexec "e",@files;

@@ -1,0 +1,168 @@
+#!/usr/bin/perl -w
+
+# Don Nov 11 22:09:16 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $pageviewexclre= qr/\.(?:gif|jpe?g|js|css|xbm)\b/i;
+my $clustersize= 10;
+my $digits=1; # digits after decimal point.
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname logfile(s)
+
+  Parse apache log(s), build clusters and calculate hits / sec in each cluster.
+  The printed time is the *end* time of the respective cluster.
+
+  Options:
+  --pageviews-only  do not count paths matching $pageviewexclre
+  --cluster-size n  in seconds, default: $clustersize
+  --no-div          do not divide the clustered request-totel by the cluster-size.
+  --xls             output dates in Excel format
+  --supercluster-size n   output only the *max* value of n clusters in a row.
+                          0 means do not supercluster (=default).
+                          The printed time is the end time of the last cluster.
+
+  Todo:
+  option for only counting requests with 200 responses?
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_pageviewsonly);
+my $opt_div=1;
+my $opt_xls;
+my $opt_supercluster;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?xls$/) {
+	$opt_xls=1;
+    } elsif (/^--?p(?:ageviews-only)?$/) {
+	$opt_pageviewsonly=1
+    } elsif (/^--?(no-)?div$/) {
+	$opt_div= ! $1;
+    } elsif (/^--?c(?:luster-size(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $clustersize=$1
+        } else {
+            $clustersize=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?s(?:upercluster(?:-size)?(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_supercluster=$1
+        } else {
+            defined($opt_supercluster=$ARGV[++$i]) or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+if ($DEBUG) {
+    if ($opt_pageviewsonly) {
+	warn "count pageviews only\n";
+    } else {
+	warn "count *all* hits\n";
+    }
+}
+
+use Chj::xopen 'xopen_read';
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL";
+use Chj::Excel::GenCSV qw(excel_unix2datetime);
+
+my $parser= new Chj::Parse::Apache::Accesslog;
+
+$|++;
+sub c_formatdate {
+    $opt_xls ? excel_unix2datetime(shift) : localtime(shift)
+}
+sub c_printframe( $ $ ) {
+    my ($t,$hits)=@_;
+    #print localtime($t),"\t",int($hits/$clustersize * $roundsize)/$roundsize,"\n";
+    if ($opt_div) {
+	printf "%s\t%0.${digits}f\n", "".c_formatdate($t),($hits/$clustersize);
+    } else {
+	printf "%s\t%0i\n", "".c_formatdate($t),$hits;
+    }
+}
+
+sub parse {
+    my ($in)=@_;
+    my $c_tot=0;
+    my $c_tnext;
+    my $printframe;
+    if ($opt_supercluster) {
+	my $max=0;
+	my $framecount=0;
+	$printframe= sub {
+	    my ($t,$hits)=@_;
+	    if ($hits > $max) {
+		$max=$hits;
+	    }
+	    if (++$framecount > $opt_supercluster) {
+		c_printframe($t,$max);
+		# reset $printframe. hm, dest or how rec??
+		$max=0;
+		$framecount=0;
+	    }
+	};
+    } else {
+	$printframe= \&c_printframe;
+    }
+    while(<$in>) {
+	unless ($parser->parseline($_)) {
+	    warn "error parsing: ".$parser->errmsg.": $_";
+	} else {
+	    if (!$opt_pageviewsonly
+		or
+		do {
+		    my $loc=$parser->location;
+		    defined($loc) ? $loc !~ $pageviewexclre : 0
+		}
+	       ) {
+		my $t= $parser->unixtime;
+		warn "unixtime: $t\n" if $DEBUG;
+		if (!defined $c_tnext) {
+		    $c_tnext= $t;
+		} else {
+		    warn "counting: ".localtime($t)." $$parser[ALRequeststr] ($$parser[ALHost])\n" if $DEBUG;
+		    # och ich kenne das: schon mal gemacht. klusteraufholung.
+		    if ($t>=$c_tnext) {
+			warn "end-of-frame $c_tnext\n" if $DEBUG;
+			$printframe->($c_tnext,$c_tot);
+			$c_tot=0;
+			$c_tnext+= $clustersize;
+			while ($t>=$c_tnext) {
+			    $printframe->($c_tnext,0);
+			    $c_tnext+= $clustersize;
+			}
+		    }
+		    $c_tot++;
+		}
+	    }
+	}
+    }
+}
+
+for my $logfile (@args) {
+    parse xopen_read $logfile
+}
+

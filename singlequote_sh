@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# Son Jun 25 23:52:42 MEST 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Quotes the stream (yes) given on stdin to stdout so that one level
+  of evaluation/parsing in the bourne shell recreates the original exactly.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+my $use_lib=0;
+
+if ($use_lib) {
+    eval q{
+	   use Chj::singlequote 'singlequote_sh';
+	   local $/;
+	   my $cnt= <STDIN>;
+	   close STDIN or die $!;
+	   print singlequote_sh($cnt);
+	   close STDOUT or die $!;
+	  };
+    die if $@;
+} else {
+    # stream
+    my $bufsiz=4096;
+    print "'" or die $!;
+    my $str;
+    #do { while 1  nein  dann kann man nicht last machen mesch
+    while(1) {
+	my $r= read STDIN,$str,$bufsiz;
+	if (defined $r) {
+	    if ($r) {
+		$str=~ s/\'/'\\\''/sg;
+		print $str or die $!;
+	    } else {
+		print "'" or die $!;
+		close STDIN or die $!;
+		close STDOUT or die $!;
+		last;
+	    }
+	} else {
+	    die "error reading: $!";
+	}
+    }
+}
+

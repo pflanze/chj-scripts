@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+# Die Sep 14 21:48:22 CEST 2004
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+my $attempts=10;
+my $sleep=5;
+
+sub usage {
+    print "Usage: $0 cmd arguments
+  or:  $0 'cmd arguments'
+  $email
+";
+    exit 1;
+}
+usage unless @ARGV;
+
+while(1) {
+    system @ARGV;
+    if ($?==0) {
+	exit
+    }
+    $attempts--;
+    print STDERR "$0: subcommand '@ARGV' gave exit code $?; ";
+    if ($attempts>0) {
+	print STDERR "$attempts attempts left, trying again in $sleep seconds\n";
+	sleep $sleep;
+    }
+    else{
+	print STDERR "no attempts left, exiting\n";
+	exit 1
+    }
+}

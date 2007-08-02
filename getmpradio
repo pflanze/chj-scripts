@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+# christian jaeger pflanze@gmx.ch 2001/03/05, 2001/03/24
+
+use strict;
+use Socket;
+use Fcntl;
+ 
+
+sub anleitung {
+	$0=~ m|([^/]*)$|;
+	die "$1 [-i] playlistfilename.pls
+  - or -
+$1 [-i] 1.2.3.4 5678
+  - or -
+$1 http://foo.bar.net/some/thing
+
+Writes the returned data (mp3) stream to STDOUT. Assumes / as location (GET /)
+in the first two syntaxes.
+In case of a playlist simply the first found http url is taken :-/
+The -i option requests song meta info. Xmms 0.9.1 can't handle this if playing
+a local file.
+";
+}
+
+my $specialua=" (no really it is a perl script of course)";
+my ($remote,$port,$loc, $iaddr, $paddr, $proto, $line, $opt_i);
+my $file=shift;
+if (! $file or $file=~/^--?h(elp)?/) { 
+    &anleitung;
+} elsif ($file =~/^-i$/) { 
+    $opt_i=1;
+    $file=shift;
+}
+if (-f $file) {
+    sysopen F, $file, O_RDONLY or die "Could not open '$file': $!\n";
+    {
+	local $/=undef;
+	my $f=<F>;
+	$f=~ m|http\://([\w\d.]+)\:(\d+)([^\s"]*)|s or die "Could not find http address in file '$file'\n";#"
+        ($remote,$port,$loc)=($1,$2,$3);
+    }
+} elsif ($port=shift) {
+    $remote=$file;
+} elsif ($file=~ m{^http://([^/]+?)(?::(\d+))?(?:(/.*))?$}) {
+    ($remote,$port,$loc)=($1,$2,$3);
+    if (!$port) {
+	warn "Missing port, using 80 as default\n";
+	$port=80;
+    }
+} else {
+    &anleitung
+}
+
+
+$loc="/" unless $loc;
+if ($port =~ /\D/) { $port = getservbyname($port, 'tcp') }
+die "No port" unless $port;
+$iaddr   = inet_aton($remote)               || die "no host: $remote";
+$paddr   = sockaddr_in($port, $iaddr);# ist pack_sockaddr_in=sockaddr_in?
+
+$proto   = getprotobyname('tcp');
+#warn "AF_INET='".AF_INET."', PF_INET='".PF_INET."'\n"; => beide 2
+socket(SOCK, AF_INET, SOCK_STREAM, $proto)  || die "socket: $!";
+connect(SOCK, $paddr)    || die "connect: $!";
+
+my($oldfh) = select(SOCK); $| = 1; select($oldfh);# wichtig! sonst kommt print nicht durch
+
+print SOCK "GET $loc HTTP/1.1\r\n";
+#print SOCK "GET $loc HTTP/1.0\r\n";
+print SOCK "Icy-MetaData:1\r\n" if $opt_i;
+##print SOCK "Icy-MetaData:0\r\n" unless $opt_i; eh nein das war wohl nur weil ich versehentlich -i angegeben hatte
+print SOCK "Host:$remote\r\n";
+#print SOCK "User-Agent: Perl script\r\n\r\n";# letztes \r\n muss im selben Paket kommen gr
+print SOCK "User-Agent: xmms/1.2.5$specialua\r\n\r\n";# letztes \r\n muss im selben Paket kommen gr
+	# ganz ganz lame he. /home/chris/XMMS/dub-beautiful.org.pls gibt sonst forbidden.
+	# Mon, 21 Jan 2002 16:29:20 +0100
+
+
+my $buff;
+read SOCK,$buff,1000 or die "read: $!";# nochn timeout programmieren? oder wie fängt man netzwerkunterbrüche ab?
+if ($buff=~ /^(.*?)\r\n\r\n/s) {
+    my $head=$1;
+    if ($head=~/\nLocation:\s*(\S+)/s){
+        warn "Redirect to '$1'\n";
+        exec $0,$1;
+    }
+}
+
+while (1) {
+    my $res= read SOCK,$buff,1024*4;
+    defined $res or die "read: $!";# nochn timeout programmieren? oder wie fängt man netzwerkunterbrüche ab?
+    $res or die "read 0 bytes, i.e. finished?!\n";
+    print $buff or die "write: $!";
+}
+

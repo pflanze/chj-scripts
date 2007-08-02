@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#apt-get update "$@" || if [ $# -eq 0 ]; then echo 'If you are using apt secure, try aptupdate -o Debug::Acquire::gpgv=yes for finding out more about the error.'; fi
+# MANNN ist ja unglaublich. apt-get update gibt zwar bei fehler lapidare message aus dass man vielleicht apt-get update aufrufen möchte, aber liefert exit code 0
+
+apt-get update "$@"

@@ -1,0 +1,210 @@
+#!/usr/bin/perl -w
+
+# Die Apr 13 09:52:42 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+    unshift @INC,"$mydir/lib";
+}
+use Chj::IO::Command;
+use Chj::xperlfunc;
+use Chj::Unix::Daemonizer;
+use Chj::xsysopen qw(xsysopen_append );
+
+my $logturnperiod=60*60*4;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname host
+
+  About the 'opposite' of ping: uses ping, but only shows *lost* packets.
+
+  Options:
+  -d dirpath   If given, the script runs as a daemon and logs the output
+               to files in the given directory, opening a new log every
+               $logturnperiod seconds.
+  -k dirpath   kill a running daemon.
+  --logturnperiod seconds   override default of $logturnperiod
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+
+my @args;
+my $dirpath;
+my $killdirpath;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(?:irpath(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $dirpath=$1
+        } else {
+            $dirpath=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?k(?:ill(?:dirpath)?(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $killdirpath=$1
+        } else {
+            $killdirpath=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?l(?:ogturnperiod(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $logturnperiod=$1
+        } else {
+            $logturnperiod=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1 or $killdirpath;
+
+my ($ip)=@args;
+
+
+sub suchluecken {
+
+    my $cmd= Chj::IO::Command->new_sender( "ping",$ip);
+
+    # vergangene pakete aufsprn  aufbehalten
+
+    #my $lastseenno=0;
+    my $biggestseenno=0;
+    my %notyetseenno;
+    # und wie krieg ich zeitpunkte? evtl. einfach von start her rechnen und assumen dass ping wirklich genau alle 1 sek eines schickt? oder: zeitpunkt des letzten relies mitaufzeichnen   oder irgendwasmitteln
+
+    $SIG{INT}=$SIG{TERM}= $SIG{ALRM}=$SIG{HUP}= sub {
+	#warn "signal";
+	#print "user stop.\n";
+	print "stop because of SIG@_\n";
+	for (sort { $a <=> $b } keys %notyetseenno) {
+	    my $t= $notyetseenno{$_};
+	    print "lost packet $_ which was expected at about ".localtime($t)."\n";
+	}
+	#warn "eh?"; hängt bei sigalrm. aha, wohl will destructor von command ein wait machen vielleicht? todo schauen.
+	kill 9,$cmd->pid;
+	print "$myname ended at ".localtime()."\n";
+	exit;
+    };
+
+    alarm 10;
+
+    print "$myname started at ".localtime()."\n";
+    {
+	my $firstline= <$cmd>;
+	$firstline=~ s/^PING /pinging: / or die "strange reply, terminating: $firstline";
+	print $firstline;
+    }
+
+    my $starttime=time;
+    my $nimmererwartet=-1;
+
+    $|=1;
+
+
+    alarm 10;# to stop if no returns are coming at all.
+    my $alarmoff;
+    while (<$cmd>) {
+	unless ($alarmoff) { alarm 0; $alarmoff=1 };
+	#print "reply: $_";
+	#64 bytes from 129.132.19.75: icmp_seq=0 ttl=246 time=11.4 ms
+	/^\d+ bytes from \S+: icmp_seq=(\d+)/ or die "$myname: strange reply: $_";
+	my $newseenno=$1;
+	my $time=time;
+	if ($newseenno > $biggestseenno) {
+	    if ($newseenno == $biggestseenno+1) {
+		# all ok
+	    } else {
+		for ($biggestseenno+1 .. $newseenno-1) {
+		    $notyetseenno{$_}=   # und nun, zurückrechnen?
+		      $time - ($newseenno - $_)
+    ;#		    unless exists $notyetseenno{$_}; # exists brauchts weil die nachher gekommenen  sollen nicht erneut wieder als fehlend markiert werden.
+		    # AH well, doof, ich geh eh nur immer EINMAL über jede zahl?
+		}
+	    }
+	    $biggestseenno=$newseenno;
+	} else {
+	    # nachzügler
+	    #	undef $notyetseenno{$newseenno};
+	    if ($newseenno <= $nimmererwartet) {
+		print "nachzügler $newseenno doch noch gekommen.\n";
+	    }
+	}
+	# aufräum.
+	for (sort { $a <=> $b } keys %notyetseenno) { # kleinste zuerst
+	    #warn "aufräum $_..\n";
+	    do{$nimmererwartet=$_; last} if ($biggestseenno - $_)<10; # auf die letzten soviele pakete warten.
+    #	if (my $t= $notyetseenno{$_}) {
+	    my $t= $notyetseenno{$_};
+		print "lost packet $_ which was expected at about ".localtime($t)."\n";
+    #	}
+	    delete $notyetseenno{$_};
+	}
+    }
+
+}
+
+sub fullsleep {
+    my ($span)=@_;
+    my $now=time;
+    my $endtime=$now+$span;
+    do {
+	sleep $endtime-$now;
+	$now=time;
+    } until ($now>=$endtime);
+}
+
+if ($dirpath) {
+    usage "both -d and -k given" if $killdirpath;
+    my $daemon= Chj::Unix::Daemonizer->default->clone;
+    $daemon->set_runpath("$dirpath/.run");
+    $daemon->set_outputs(xsysopen_append "$dirpath/.errlog");
+    if (my $pid= $daemon->fork) {
+	print "started daemon with pid $pid, see files in $dirpath;\n";
+	print "to kill the daemon, type 'kill $pid' or '$myname -k $dirpath'.\n";##
+	exit;
+    } else {
+	# sigproxy again, sigh
+	$SIG{INT}=$SIG{TERM}= $SIG{ALRM}=$SIG{HUP}= sub {
+	    kill "HUP",$pid if $pid;
+	    exit 3;#whatever
+	};
+	while(1) {
+	    if ($pid= xfork) {
+		fullsleep $logturnperiod;
+		kill "HUP",$pid;
+		wait;
+	    } else {
+		my $logname= localtime(); $logname=~ tr/ /_/; $logname=~ s/://sg;
+		my $logfile= "$dirpath/$logname.log";
+		open STDOUT, ">>$logfile" or die "error creating/opening '$logfile': $!";
+		open STDERR,">&STDOUT" or die "dup: $!";
+		suchluecken;
+		exit;
+	    }
+	}
+    }
+} elsif ($killdirpath) {
+    usage "both -d and -k given" if $dirpath;
+    my ($user,$hostname,$ip,$pid)=
+      Chj::Unix::DaemonRunfile->new("$killdirpath/.run")->readfile;
+    die "$killdirpath/.run does not contain a pid" unless $pid and $pid=~ /^\d+$/; ##uuugly
+    xkill "HUP",$pid;
+    print "stopped daemon.\n";
+} else {
+    suchluecken;
+}

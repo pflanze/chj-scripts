@@ -1,0 +1,18 @@
+#!/bin/sh
+# cj Mon,  9 Feb 2004 20:36:32 +0100
+# ein FILTER   sollt ich den nun auch filter_... nennen?
+
+
+usage () {
+    echo "$0 fieldno"
+    echo "  filters stdin to stdout, outputting only filed no. filedno, like"
+    echo "  awk \"{print \\\$\$fieldno}\""
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+fieldno="$1"
+
+awk "{print \$$fieldno}"

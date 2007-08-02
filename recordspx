@@ -1,0 +1,63 @@
+#!/bin/sh
+
+if [ $EUID -gt 0 ]; then
+	echo "Bitte als root laufen lassen"
+else 
+	if [ "$1" ]; then
+		tmpfile="`tempfile`"
+		aumix -S -f "$tmpfile"
+		sighandler() {
+		    #( sleep 3; aumix -L "$tmpfile" )&
+		    # gar ned nötig zu forken. signals gelangen offenbar doch zu subprozessen(?).
+		    aumix -L "$tmpfile" > /dev/null
+		    rm -f "$tmpfile"
+		    exit 0
+		}
+		trap sighandler 1 2 3 15
+		aumix -v 0
+		aumix -p 0
+		#aumix -m 100 # strangely isches eben NICHT microphone setting das sich auswirkt
+		# und auch nicht -i  line in.  sondern:  line
+		aumix -l 100
+		# und seit alsa muss ich machen:
+		aumix -l R
+		brec -d /dev/sound/dsp -s 22050 -b 16 -r \
+		| nice --18 bfr --minimum 0 \
+		| nice --16 sox -t raw -r 22050 -s -w -c 1 -x - -t wav -r 22050 - \
+		| nice --16 speexenc --vbr --dtx - "$1"
+		# vad isch eh schon drin mit vbr.
+		# (siehe notizen in TODO von 29.2.04)
+		# --vbr , quality 3, ist das einzige brauchbare/sinnvolle.
+		# ohne vbr ist zwar wunderbar stabil, aber 100%cpu (kommt nicht nach?),
+		# und braucht dann auch mehr platz als recordogg.
+		# quality1+vbr ist zu schlecht und spart gar nicht viel (nur etwa 30%)
+		# vad ist in vbr eh schon drin. (und vad alleine macht wie funkgeräte, etwas deutlicher noch als mit vbr glaubs; hintergrundsound wird offensichtlich künstlich reingemacht in pausen.)
+		# nun: der witz von spx IST eigentlich das vad (in vbr eh drin). sonst wär ogg die Wahl.
+		# leider leidet qualität halt schon einfach. Für Vorträge also doch eher recordogg nehmen. Jedenfalls wenn ich sie online/andern anbieten will.
+		# und insbesondere: wenn dauernd was gesagt, spart spx gegenüber ogg auch fast nix mehr ein. Noch Faktor 1.59 (1.5 wenn ich pause weggelassen hätte?) bloss.
+		
+	else
+		echo "Bitte filename angeben. Ist für Mac Powerbook G3 gemacht, möglicherweise ist endianness auf PC falsch."
+	fi
+
+fi
+
+
+
+exit
+
+__END__
+
+echo "ZWEI RIESENGROSSE PROBLEME:  1. huere sounddevice oder was faucht alle paar sekunden vollaut drein. 2. speexenc scheint nicht nachzukommen auf lombi"
+
+if [ $EUID -gt 0 ]; then
+	echo "Bitte als root laufen lassen"
+else 
+
+	if [ "$1" ]; then
+		brec -d /dev/sound/dsp -s 22050 -b 16 -r | nice --17 sox -t raw -r 22050 -s -w -c 1 -x - -t wav -r 22050 -|nice --16 speexenc --vbr - "$1"
+	else
+		echo "Bitte filename angeben"
+	fi
+
+fi

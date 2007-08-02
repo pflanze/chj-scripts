@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec sux - root bash -c "export SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AUTH_SOCK=$SSH_AUTH_SOCK; exec bash"
+

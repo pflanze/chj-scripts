@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+# Sam Aug 23 14:14:47 MEST 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+  Put '> ' at the beginning of each line,
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+usage if @ARGV;
+
+while(<STDIN>) {
+    print "> $_";
+}
+
+

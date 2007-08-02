@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+unless (@ARGV==2) {
+	die "Usage:
+	printpretty sourcefile targetfile
+	
+	targetfile may be '-'.
+";
+}
+
+my ($src, $tgt)= @ARGV;
+
+##exec qw"enscript -E -2r -T4 -MA4 -p", $tgt, $src
+##komisch, -MA4 geht auf lombi nicht.
+exec qw"enscript -E -2r -T4 -p", $tgt, $src
+#  -E, --pretty-print[=LANG]  pretty-print source code
+#  -2                         same as --columns=2
+#  -r, --landscape            print in landscape mode
+#  -T, --tabsize=NUM          set tabulator size to NUM
+#  -M, --media=NAME           use output media NAME
+#  -p, --output=FILE          leave output to file FILE.  If FILE is `-',
+#                             leave output to stdout.
+

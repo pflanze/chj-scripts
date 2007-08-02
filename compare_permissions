@@ -1,0 +1,81 @@
+#!/usr/bin/perl -w
+# Fri, 17 May 2002 00:24:11 +0200
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname [options] apath bpath
+  compare two file trees (may be remote, using host.domain:some/path syntax, in 
+  which case ssh is used) for differences in permissions.
+  
+  Options:
+  -t --terse    do not show/compare file owners, only group (and permission bits)
+";
+exit;
+}
+
+use backtick qw(xbacktick);
+use Text::Diff;
+
+usage unless @ARGV;
+
+my $withuser=1;
+my @paths;
+for (my $i=0; $i<@ARGV; $i++) {
+	if ($ARGV[$i]=~ /^--?h(elp)?$/) {
+		usage 
+	} elsif ($ARGV[$i]=~ /^--?t(erse)?$/) {
+		$withuser=0; 
+	} elsif ($ARGV[$i]=~ /^--$/) {
+		push @paths,@ARGV[$i..$#ARGV]; # splice machts kaputt. -1 wär das letzte el, aber brauche ..;
+		last;
+	} elsif ($ARGV[$i]=~ /^-/) {
+		usage
+	} else {
+		push @paths, $ARGV[$i];
+	}
+}
+
+usage unless @paths==2;
+
+
+my @LSCMD= qw(ls -l -R);
+
+sub getlisting {
+	my ($path)=@_;
+	my $res;
+	if ($path=~ m|^([^/:]+):(.+)|) { #remote	
+		my ($host,$path)=($1,$2);
+		#$res= xbacktick("ssh",$host,"perl","-e",'$ENV{LANG}="C";exec @ARGV',@LSCMD,$path);
+		# MANN ist das schade und mühsam, wieder mal KEIN richtig parm passing.
+		# und weiss der deibel wieso die folgeargs dann doch kommen.
+		# scheint das erste wird mit der sh ausgeführt, die folgenden dann sind args der sh
+		# ODER des prgs's das exec't wird?
+		$res= xbacktick("ssh",$host,'perl -e \'$ENV{LANG}="C";exec @ARGV\'',@LSCMD,$path);
+	} else {
+		$ENV{LANG}="C";
+		$res= xbacktick(@LSCMD,$path);
+	}
+	$res
+}
+
+sub strip {
+	my ($s,$withuser)=@_;
+	$s=~ s/^(.[r-][w-][xsS-][r-][w-][xsS-][r-][w-][xt-]) +\d+ (\w+) +(\w+) +\d+ .{12} (.*)/
+		$withuser ? 
+			sprintf(" %s %-10s %-10s %s",$1,$2,$3,$4)
+		:	sprintf(" %s %-10s %s",$1,$3,$4)
+	/mge;
+	$s;
+}
+		
+print diff( \ strip(getlisting($paths[0]),$withuser),
+			\ strip(getlisting($paths[1]),$withuser)  )||""; 	# ||"" weil diff 0 gibt wenn gleich. Hmm.
+
+__END__
+Fri, 17 May 2002 00:33:52 +0200
+Hm scheisse:
+- diff gruppiert zeilen immer, das ist u.U wäre das weniger konfus wenn 1zeile à zeile.
+- weiss nicht mehr WO man ist. da das verzeichnis abgehauen wird.  ......

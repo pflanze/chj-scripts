@@ -1,0 +1,173 @@
+#!/usr/bin/perl -w
+
+# Son Mär 18 18:10:25 CET 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname fn cont file(s)
+
+  fn: a program to be called with stdin tied to one opened input file and
+    stdout to an output stream (which is given to cont)
+
+  cont: a continuation program: receives the list of outputs
+
+  file(s): input files (could be streams (from dev,ehproc, named redirectstufthing da  named open fds) of course)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args >= 2;
+
+my $fn=[shift @args];
+my $cont=[shift @args];
+
+#use Chj::  pipeline stuff ?
+
+#sub forkfn {
+#}
+
+use Chj::singlequote;
+use Data::Dumper;
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+use Chj::xperlfunc;
+use Chj::xpipe;
+
+sub Fileno ($ ) {#das hatt ich  auch schon doch
+    my ($fd_or_fh)=@_;
+    if (ref $fd_or_fh) {
+	my $fd= fileno ($fd_or_fh);
+	defined $fd or die "Fileno: no fileno for '$fd_or_fh': $!";
+	$fd
+    } elsif ($fd_or_fh=~ /^\d+\z/) {
+	$fd_or_fh
+    } else {
+	die "Fileno: invalid value: '$fd_or_fh'";
+    }
+}
+sub Procfile ($ ) {
+    my ($fd_or_fh)=@_;
+    my $fd= Fileno $fd_or_fh;
+    "/proc/self/fd/$fd"
+}
+
+
+sub xxRun ($ $ $ ; $ ) { # den Namen hab ich doch schon X mal verwendet. todo klear/klean up
+    #my ($cmd, $read,$write)=@_;
+    #my ($cmd, $input,$output)=@_;
+    my ($cmd, $stdin,$stdout, $stderr)=@_;
+    if (my $pid= xfork) {
+	xxwaitpid $pid;
+    } else {
+	open STDIN,"<&".Fileno($stdin) or die "redirecting stdin to $stdin: $!";
+	open STDOUT,">&".Fileno($stdout) or die "redirecting stdout to $stdout: $!";
+	(open STDERR,">&".Fileno($stderr) or die "redirecting stderr to $stderr: $!")
+	  if defined $stderr;
+	xexec @$cmd;
+    }
+}
+
+sub Map_tmpfile ($ $ ) { # "strict"
+    my ($fn,$infile)=@_;
+    my $f= xopen_read $infile;
+    my $o= do { local $^F=100000; xtmpfile}; # $^F= $SYSTEM_FD_MAX
+    xxRun ($fn, $f,$o);
+    $f->xclose; #wir sind im parent da war das garantiert noch offen.
+    #$o->xclose; #dito. gell?. ah nein, wollen wir ja lesen davon ?
+    $o->xrewind; #actually würde flush reichen theoretisch--NEIN! denn child wirkt sich auch auf parent aus. in-kernel structure.niduserspace.
+    $o
+}
+
+our $streampids={};
+sub Map_stream ($ $ ) { # "lazy" or "parallel"/xx  concurrent; do not wait for exits.?. or only later.
+    my ($fn,$infile)=@_;
+    my $f= xopen_read $infile;
+    my ($read,$write)=xpipe;
+    if (my $pid= xfork) {
+	close $write or die "closing write fh $write: $!";
+	$$streampids{$pid}= $read;
+	$read
+    } else {
+	close $read or die "closing read fh $read: $!";
+	open STDIN,"<&".Fileno($f) or die "redirecting stdin to $f: $!";
+	open STDOUT,">&".Fileno($write) or die "redirecting stdout to $write: $!";
+	xexec @$fn
+    }
+}
+#sub Map_stream_wait () { # to be called after running 'cont' ehr after forking off cont. (threading of the $streampids through app would be "waiting")
+
+sub Waitpids ($ ) { # dies when any child doesn't succeed.
+    my ($pids)=@_;#a collection (based on a hash)
+    #warn Dumper $pids;
+    while (keys %$pids) {
+	my $kid= xwaitpid -1;
+	die "missing some kids?!" if $kid < 0; #
+	my $status= $?;
+	#defined delete $$pids{$kid}  och mit undef values eben nid gut.
+	exists $$pids{$kid}
+	  or warn "what ehr where the 'hell' is this kid from?: $kid"; #ah well from previous cont prinzip vielleicht!
+	my $val= delete $$pids{$kid};
+	$status==0 or die "kid $kid ($val) gave status $status";
+    }
+}
+
+
+sub Map ($ $ ) {
+    my ($fn,$ary)=@_;
+    [
+     map {
+	 $fn->($_)
+     } @$ary
+    ]
+}
+
+#use Chj::repl;repl;
+
+
+our $outfhs= do {
+    if (1) {
+	Map sub { my ($v)=@_; Map_tmpfile $fn, $v}, \@args;
+    } else {
+	[ map { Map_stream $fn, $_} @args];
+    }
+};
+
+if (my $contpid=xfork) {
+    # canabalize $streampids for also the non-stream case:
+    $$streampids{$contpid}= "cont: ".singlequote($$cont[0]);#(hacky: omit arguments here)
+    Waitpids $streampids;
+} else {
+    xexec @$cont, @{ Map \&Procfile, $outfhs };
+}
+#use Chj::repl;repl;
+

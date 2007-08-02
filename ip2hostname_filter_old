@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname
+  Reads lines from stdin, expecting ip at beginning of line.
+  Outputs lines again with \\thostname or \\t- appended.
+";
+exit @_;
+}
+
+usage if @ARGV;
+
+while (<STDIN>) {
+	if (/^(\d+\.\d+\.\d+\.\d+)\s/) { #///
+		my $n=`host $1`; 
+		chomp;
+		if ($n=~/^Name:\s*([^\s]+)/m) {
+			print "$_\t$1\n" 
+		} else { 
+			print "$_\t-\n"
+		}
+	} else {
+		print
+	}
+}
+
+

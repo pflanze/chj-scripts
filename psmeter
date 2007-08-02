@@ -1,0 +1,149 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  8 15:49:52 CET 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname 'regex'  [ 'regex2', ...]
+
+  Does 'ps auxww' in a loop, and adds the process running times of
+  all processes whose line in the ps output matches the given regex(es).
+
+  kind of like 'time' (but we can't get the different times of other processes, can we?)
+
+  collect times of multiple processes if given.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+my @re= map { qr/$_/ or die "invalid regex?" } @args;
+my @timetotals= (0)x@re;
+my $oldseen; # before vanishing.  for kleanupping.
+
+sub hms2sec ( $ $ $ ) {
+    die "invalid seconds value '$_[2]'" if $_[2]>59;##or allow it?
+    $_[0]*3600 + $_[1]*60 + $_[2]
+}
+
+sub runps {
+    #my ($oldseen)=@_;
+    my @output= `ps auxww` or die "could not start ps?";
+    #my @pids; # [pid,cputime]
+    #map { m/$re/ ?
+    #
+    #  } @out;
+    my $newseen; # pid->time
+    for (@output) {
+	next if /^USER\s+PID/;
+	my $i=-1;
+	for my $re (@re) {
+	    $i++;
+	    m/$re/ or next;
+	    # ps kann sein dass wir folgendes mehrmals rechnen, aber so be it.
+	    m| (\d+) (?:\s+\S+){7} \s+ (\d+):(\d+) |x or die "$myname: invalid ps output line: $_";
+	    my ($pid,$min,$sec)=($1,$2,$3);
+	    my $time= hms2sec(0,$min,$sec);
+	    $newseen->[$i]->{$pid}=$time;
+	}
+    }
+    #$newseen; # & have to throw oldseen to the müll gegen wiederverwendeteipspids
+    for (my $i=0; $i<=$#re; $i++) {
+	# find out which prossesses died
+	for (keys %{$oldseen->[$i]}) {
+	    if (exists $newseen->[$i]{$_}) {
+		delete $oldseen->[$i]{$_};
+	    }
+	}
+    }
+    cleanup();
+    for (my $i=0; $i<=$#re; $i++) {
+	$oldseen->[$i]= $newseen->[$i];
+    }
+}
+
+sub cleanup {
+    for (my $i=0; $i<=$#re; $i++) {
+	# now add oldseen to totals
+	for (values %{$oldseen->[$i]}) {
+	    $timetotals[$i]+=$_;
+	}
+    }
+}
+
+
+#my $seen={};
+
+
+$SIG{INT}= sub {
+    die "INT\n";
+};
+
+eval {
+    while(1) {
+	#my $newseen= runps($seen);
+	runps;
+	for (my $i=0; $i<=$#re; $i++) {
+	    my $tot= $timetotals[$i] + do {
+		my $tot=0;
+		for (values %{$oldseen->[$i]} ) {
+		    $tot+=$_
+		}
+		$tot
+	    };
+	    print "$tot\t";
+	}
+	print "\n";
+	sleep 3;
+    }
+};
+if ($@) {
+    if ($@ eq "INT\n") {
+	cleanup;
+	print "\n";
+	print "rule\tseconds\n";
+	for (my $i=0; $i<=$#re; $i++) {
+	    print "$i\t$timetotals[$i]\n";
+	}
+    }
+    else {
+	die
+    }
+} else {
+    die "??"
+}
+
+
+
+

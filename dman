@@ -1,0 +1,4 @@
+#!/bin/sh
+
+#LANG sein lassen
+exec /usr/bin/man "$@"

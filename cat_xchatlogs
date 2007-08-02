@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Mon Dez  9 16:15:49 MET 2002
+# Thu,  9 Jan 2003 02:21:19 +0100 bug fixed. (vergass das Endteil bei fehlend END auch auf zunehmen)
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname files
+  Print the logging entries in the files reordered after time.
+";
+exit @_;
+}
+
+my @files;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+	usage
+    } elsif ($_ eq '--') {
+	push @files, @ARGV[$i+1..$#ARGV];
+	last;
+    } elsif (/^-/) {
+	warn "Unknown option '$_'\n";
+	usage(1)
+    } else {
+	push @files, $_
+    }
+}
+usage unless @files;
+
+
+use Date::Parse;
+
+sub mydie {
+    print "\nERROR\n"; # so I'll see it for sure in less
+    #die $@;
+    die @_
+}
+sub mywarn {
+    print STDERR "WARNING: ",@_;
+    print "WARNING: ",@_;
+}
+
+my %sections; # timestamp->string.
+
+for my $file (@files) {
+    open IN,"<$file" or mydie "$myname: could not open '$file': $!\n";
+    local $_;
+    my ($time_begin,@lines);
+    while (<IN>) {
+	if (my ($time)=/^\s*\*\*\*\*.*BEGIN.*AT\s+(.*)/m) {
+	    $time= str2time($time)
+	      or mydie "$myname: timestamp '$time' in file '$file' is unparseable. Bailing out.\n";
+	    ##mywarn("Found timestamp: ".localtime($time)."\n");
+	    if ($time_begin) {
+		mywarn "Another BEGIN ('$_') before END reached - probably xchat unusually terminated\n";
+		$sections{$time_begin}= join("",@lines);
+		@lines=();
+		#undef $time_begin;
+	    }
+	    $time_begin= $time;
+	    push @lines,"File: $file\n",$_;
+	} elsif (($time)=/^\s*\*\*\*\*.*END.*AT\s+(.*)/m) {
+	    my $endtime= str2time($time)
+	      or mydie "$myname: timestamp '$time' in file '$file' is unparseable. Bailing out.\n";
+	    # (für was parse ich den überhaupt??)
+	    #push @lines,$_;
+	    if ($time_begin) {
+		$sections{$time_begin}= join("",@lines,$_,"\n");
+		@lines=();
+		undef $time_begin;
+	    } else {
+		mywarn "**ERROR** in file '$file': END without a begin, don't know the time, throwing away text part!\n";
+		@lines=();
+		undef $time_begin;
+	    }
+	} else {
+	    if ($time_begin) {
+		push @lines,$_;
+	    }
+	}
+    }
+    if (@lines) {
+	if ($time_begin) {
+	    $sections{$time_begin}= join("",@lines,"\n");
+	    @lines=();
+	    undef $time_begin;
+	} else {
+	    mywarn "**ERROR (can this happen?) ** in file '$file': end of file without a begin, don't know the time, throwing away text part!\n";
+	    @lines=();
+	    undef $time_begin;
+	}
+    }
+}
+
+for (sort keys %sections) {
+    print $sections{$_};
+}
+
+__END__
+
+Idee?: nur pointers speichern. Das eigentliche Textholen erst am Schluss aus den Files. Dadurch praktisch kein Memorygebrauch.

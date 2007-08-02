@@ -1,0 +1,81 @@
+#!/usr/bin/perl -w
+
+# Mit Aug 18 11:44:27 CEST 2004
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+my $AlphaUtilsEtcDir= "/etc/vservers";# well, is this standard enough?
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ context id(s) ]
+
+  maps the given context id(s) on cmdline or stdin back to the name.
+  returns the name(s) one per line.
+
+  NOTES:
+  - this works with the alpha utils and their new config format, only.
+  - there are official alternatives:
+     vserver-info \$(vserver-info \$XID ID) NAME
+       (works with kernel 2.4)
+     vuname --xid \$XID context
+       (works with kernel 2.6 only)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+sub oerr($ $ ) {
+    defined $_[0] ? $_[0] : $_[1]
+}
+
+sub ctx2name {
+    my ($ctx)=@_;
+    $ctx=~ /^\d+$/ or die "ctx2name: '$ctx' is not a number";
+    for my $path (glob "$AlphaUtilsEtcDir/*/run") {
+	if (open IN,"<",$path) {
+	    my $v=<IN>;
+	    chomp $v;
+	    close IN or do{warn "closing '$path', ignoring: $!"; next};
+	    if ($v == $ctx) {
+		$path=~ m|/([^/]+)/+[^/]+\z| or die "?? '$path'";
+		return $1
+	    }
+	}  else {
+	    warn "could not open '$path' for reading, ignoring: $!";
+	}
+    }
+    undef
+}
+
+if (@args) {
+    for(@args){
+	print oerr(ctx2name($_),""),"\n";
+    }
+} else {
+    while(<STDIN>){
+	print oerr(ctx2name($_),""),"\n";
+    }
+}

@@ -1,0 +1,91 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Fcntl;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname file1.gz file2 file3.gz
+  cat's both gzipped and uncompressed files.
+
+  Options:
+  -s|--sort  sort given arguments ascending on file mtime
+
+  cj Sun, 19 May 2002 21:32:32 +0200
+";
+exit @_;
+}
+
+my @files;
+my $opt_sort;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+	usage
+    } elsif ($_ eq '--') {
+	push @files, @ARGV[$i+1..$#ARGV];
+	last;
+    } elsif (/^--?s(ort)?/) {
+	$opt_sort=1;
+    } elsif (/^-/) {
+	warn "Unknown option '$_'\n";
+	usage(1)
+    } else {
+	push @files, $_
+    }
+}
+usage unless @files;
+
+sub xdefined {
+    defined $_[0] ? $_[0] : die $_[1];
+}
+if ($opt_sort) {
+    @files= map {
+	$_->[1]
+    } sort {
+	$a->[0] <=> $b->[0]
+    } map {
+	[ xdefined((stat $_)[9],"stat '$_': $!"), $_ ]
+    } @files;
+}
+
+for (@files) {
+	if (sysopen STDIN,$_,O_RDONLY) {
+		my $buf;
+		my $len= sysread (STDIN,$buf,128);
+		if ($len > 0) {
+			my $maybe_zipped= do{
+				if ($len<16) { # 21 seems minimal possible length using gzip; 
+					0;
+				} else {
+					my $nhigh=$buf=~ tr/\x80-\xff//;
+					#warn "NHIGH=$nhigh\n";
+					if ($nhigh / $len > 10/128) {
+						#warn "RATIO=".$nhigh / $len."\n";
+						1;
+					} else {
+						if ($buf=~ /^\x1f/) { # *still* try it on magic (general?) number
+							1;
+						} else {
+							0;
+						}
+					}
+				}
+			};
+			#system "gzip","-d","-c",$_;
+			if ($maybe_zipped) {
+				defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
+				system "gunzip";
+			}
+			if (!$maybe_zipped or $? != 0) {
+				defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
+				system "cat";
+			}
+		} else {
+			warn "Ignoring empty file '$_'\n"
+		}
+	} else {
+		warn "Could not open '$_': $!\n";
+	}
+}

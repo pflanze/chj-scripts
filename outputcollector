@@ -1,0 +1,149 @@
+#!/usr/bin/perl -w
+
+# Mon Apr 19 14:02:26 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd arguments
+
+  Executes given command, and collects it's stdout and stderr; if the
+  command finishes with exit code 0, the output is discarded,
+  otherwise it is displayed in an xmessage window.
+
+  Options:
+  -a  show output always, not only on errors.
+  -c  copy through output to stdout (note that stderr is proxied to stdout!)
+  -s  shut down one second after the exit of the cmd process
+      even if the pipe is still in use.
+      WARNING: note that this will lead to SIGPIPE when deamons try to
+      write to the closed stdout/err!!  only alternative would prolly
+      be to directly hand over the tmpfile handle to child. (Which
+      then means open neverending file on filesystem.)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_a;
+my $opt_c;
+my $opt_s;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?c(opy)?$/) {
+	$opt_c=1;
+    } elsif (/^--?a(lways)?$/) {
+	$opt_a=1;
+    } elsif (/^--?s(top)?$/) {
+	$opt_s=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	#push @args, $_
+    	push @args, @ARGV[$i..$#ARGV];
+    	last;
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+use Chj::xpipe;
+use Chj::xtmpfile;
+use Chj::IO::Command;
+
+my ($read,$write)=xpipe;
+
+# wann beenden? wenn filehandle zugeht natürli, klar. aber (für fall dass er fh weitergibt?) auch signal betrachten? aber oh, doch nah.
+
+if ($opt_s) {
+    $SIG{CHLD}= sub { ### possibly only works up to perl 5.6 because of 5.8 safe signals?
+	$SIG{ALRM}= sub {
+	    die "ALRM\n";
+	};
+	alarm 1;
+	#undef $SIG{CHLD};
+    };
+}
+
+if (xfork) {
+    $write->xclose;
+    my $output=xtmpfile;
+    eval {
+	while(defined(my$line=$read->xreadline)) {
+	    $output->xprint($line);
+	    print $line if $opt_c;
+	}
+    };
+    if ($@) {
+	if ($@ eq "ALRM\n") {
+	    my $msg= "$myname: 1 second after child termination pipe is still open, closing.\n";
+	    warn $msg;
+	    $output->xprint("\n\n$msg");
+	} else {
+	    die
+	}
+    }
+    $output->xflush;
+    wait;
+    my ($exitcode,$signals)=($?>>8, $?&255);
+    if (not($opt_a) and $?==0) {
+	if ($DEBUG) {
+	    print STDERR "$myname: cmd <@args> was successful, output was:\n\n";
+	    $output->xrewind;
+	    while(<$output>){
+		print;
+	    }
+	}
+    } else {
+	if ($DEBUG) {
+	    print STDERR "$myname: cmd <@args> terminated with exit code $exitcode, signals $signals, output:\n\n";
+	    $output->xrewind;
+	    while(<$output>){
+		print;
+	    }
+	}
+	#xxsystem "xmessage",#"<$args[0]> returned with status $exitcode, signals $signals",
+	#  "-file",$output->path;
+	# sigh, kann erst das xfree 4.3 oder so xmessage den titel setzen ???
+	$output->xrewind;
+	my $xm= Chj::IO::Command->new_receiver("xmessage", "-file","-");
+	$xm->xprint("<@args> returned with status $exitcode, signals $signals, output:\n\n");
+	#$xm->xsendfile($output); aheh
+	$xm->xflush;
+	$output->xsendfile_to($xm);
+	$output->xclose;
+	$xm->xxfinish;
+    }
+
+} else {
+    $read->xclose;
+    close STDOUT;
+    $write->dup2(0);
+    close STDERR;
+    $write->dup2(1);
+    $write->xclose;
+    # tja und nun wieder exec fehler handling? aber nein isch ja egal ob ich unterscheide.
+    exec @args;
+    exit 127;
+}
+

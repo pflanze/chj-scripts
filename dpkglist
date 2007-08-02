@@ -1,0 +1,72 @@
+#!/usr/bin/perl -w
+
+BEGIN {
+  eval 'use Mmap';
+  if ($@) {
+    eval 'use Sys::Mmap';
+    if ($@) {
+      die $@
+    }
+  }
+}
+
+
+if (@ARGV) {
+	if ($ARGV[0]=~ /^--?a(?:ll)?$/) {
+		$what= "a";
+	} elsif ($ARGV[0]=~ /^--?i(?:nstalled)?$/) {
+		$what= "i";
+	}
+	if (@ARGV>1 or not $what) {
+		print "dpkglist [-a[ll] ¦ -i[nstalled]]
+
+List packages in /var/lib/dpkg/status. -a means all, -i only installed
+packages. Per default, -i is assumed. 
+cj 20.6.01
+";
+		exit(0);
+	}
+} else {
+	$what= "i";
+}
+
+open IN,"</var/lib/dpkg/status" or die $!;
+mmap ($in,0, PROT_READ, MAP_SHARED, IN) or die $!;
+
+my $pos0=undef;
+my $pos1=undef;
+while ($in=~ /^Package:/mg) {
+	if (! defined($pos0)) {
+		$pos0=pos($in);
+	} else {
+		$pos1=pos($in);
+		analyze($pos0,$pos1);
+		$pos0=$pos1;
+	}
+}
+analyze($pos1,length($in));
+
+sub analyze {
+	my ($p0,$p1)=@_;
+	substr($in,$p0,$p1-$p0)=~ /^\s*([^\s]+)/s or die;
+	my $name=$1;
+	substr($in,$p0,$p1-$p0)=~ /\nStatus:\s*([^\n]+)/s or die;
+	my $status=$1;
+	print $name."\n" if $what eq 'a' or $status=~ /\sinstalled/;
+}
+
+munmap($in) or die $!;
+close IN;
+
+__END__
+
+Bessermachen:
+- Priority: 
+- Section:
+	anzeigen und danach filtern oder auswählen/sortieren können.
+Weil dann z.B. section tex angezeigt.
+
+Section libs ist auch interessant, z.B. regexp libs. Insbesondere die perl compatible: libpcre2
+
+
+PS. comm ist sowas wie diff?

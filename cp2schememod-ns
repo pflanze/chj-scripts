@@ -1,0 +1,139 @@
+#!/usr/bin/perl -w
+
+# Fre Apr 22 09:50:16 CEST 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $base= "/home/chris/schemedevelopment/gambit/mod";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [namespaceprefix] file
+
+copies to 'dir/[namespaceprefix:]filename'
+
+options:
+--to dir        overrides the default
+                ($base)
+-s|--show-only  only show created modules file contents, do not write anything to disk.
+                 (now the default)
+-S              old behaviour
+
+  (Christian J. <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_showonly=1;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(how-only)?$/) {
+	$opt_showonly=1;
+    } elsif (/^--?S(how-only)?$/) {
+	$opt_showonly=0;
+    } elsif (/^--?t(?:o(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $base=$1
+        } else {
+            $base=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1 or @args==2;
+
+my $file= pop @args;
+my $ns= pop @args;
+
+#use Chj::xperlfunc;
+use Carp;
+sub xsystem {
+    @_>0 or croak "xsystem: missing arguments";
+    (system @_)>=0
+      or croak "xsystem: could not start command '$_[0]': $!";
+    $?
+}
+
+#use Chj::xopen;
+sub content_of {
+    my $fn=shift;
+    open IN,"<",$fn or die "open '$fn': $!";
+    local $/;
+    my $cnt= <IN>;
+    close IN or die "close '$fn': $!";
+    $cnt
+}
+sub write_to{
+    my ($fn,$what)=@_;
+    open OUT,">",$fn or die "open '$fn' for writing: $!";
+    print OUT $what or die "write to '$fn': $!";
+    close OUT or die "close '$fn': $!";
+}
+
+if ($ns) {
+    $ns="$ns:";
+} else {
+    $ns="";
+}
+
+my $filename= $file; $filename=~ s|.*/||s;
+
+unless ($opt_showonly) {
+    xsystem "cp","-i","-v", $file, "$base/$ns$filename";
+}
+
+my $modname= $filename; $modname=~ s|\.scm$||s;
+
+my $modfile=  "$base/$ns$modname-module.scm";
+
+my $cnt= content_of($file); #xopen ($file)->xcontent;
+my %defs;
+#while ($cnt=~ /^\(define(?:-([^\s()]+))? *(?:\( *)?([^\s()]+)/mg){
+while ($cnt=~ /\n\(define(?:-([^\s()]+))?\s+(?:\( *)?([^\s()]+)/mg){
+    my ($defkind, $name)=($1,$2);
+    push @{ $defs{$defkind||""} },$name;
+}
+
+my $functionlist= (%defs) ?
+  join( "\n\n",
+ 	map {
+ 	my $list=$defs{$_};
+ 	";; $_: \n "
+ 	  .join("\n ",sort @$list)
+      } keys %defs)
+ : "";
+
+my $modtext= "(requires
+ ;;gambit-interpreter-env
+ )
+
+(exports
+ $functionlist
+ )
+
+(exports-on-request
+ )
+";
+
+if($opt_showonly) {
+    print $modtext;
+} else {
+    if (!( -e $modfile)) {
+	write_to($modfile,$modtext);
+    }
+}

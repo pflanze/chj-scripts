@@ -1,0 +1,177 @@
+#!/usr/bin/perl -w
+
+# Mon Mär  8 14:59:54 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname < filelist > filelist_expanded
+
+  For e.g. rsync-excludelist to tar includelist transformation
+
+  NOTE: this program does not output paths that lie below another path
+  that has already been output (if e.g. /etc has been output, /etc/somewhere/file~
+  will be suppressed).
+  (Note 2: The program internally always uses find -print0, regardless of whether
+  the output option -0 has been given)
+
+  Options:
+  -l|-x  stay on one filesystem
+  -0     terminate output with nulls
+  
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_null,$opt_stay);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-[lx]$/) {
+	$opt_stay=1;
+    } elsif (/^-0$/) {
+	$opt_null=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args>1;
+
+my ($base)=@args;
+$base||="/";
+
+use Chj::IO::File;
+use Chj::IO::Command;
+use Chj::xperlfunc;
+
+my $in= bless *STDIN{IO},"Chj::IO::File";
+my $out= bless *STDOUT{IO},"Chj::IO::File";
+
+my (@absolute,@relative);
+while (defined($_=$in->xreadline)) {
+    next if /^\s*#/s or /^\s*\z/s;
+    s/\s*\z//s;
+    s|/\z||;
+    s/^\s*//s;
+    if (m|^/|) {
+	push @absolute,glob $_;
+    } else {
+	if (m|/|) {
+	    warn "$myname: input file entry '$_' is invalid, it contains a slash but does not start with one; ignoring it\n";
+	    next;
+	}
+	push @relative,$_;
+    }
+}
+
+sub listyjoin {
+    my $with=shift;
+    my @out=shift;
+    while(@_){
+	push @out,$with,shift;
+    }
+    @out
+}
+sub flattenlist {
+    map { ref( $_)? @$_ : $_ } @_
+}
+
+my %seenitem; # file oder dir (isch ja unbekannt) rein
+
+#$out->xprint(   $opt_null ? (map { "$_\0" } @absolute) : (map { "$_\n" } @absolute,$DEBUG ? "END_ABSOLUTE" : () )   );
+
+sub frissncheckok {
+    my $item=shift;
+    my $origitem=$item;
+    warn "frissncheckok '$item'\n";
+    do {
+	return if exists $seenitem{$item};
+    } while ($item=~ s|/[^/]+\z||s);
+    $seenitem{$origitem}=undef;
+    1
+}
+
+for my $item (@absolute) {
+    if (frissncheckok($item)) {
+	$out->xprint($item,  $opt_null ? "\0" : "\n");
+    }
+}
+
+
+sub myxsystem{
+    if ($DEBUG) {
+	print "'",join( "' ||| '",@_),"'\n"
+    } else {
+	#xxsystem @_
+	my $cmd= Chj::IO::Command->new_sender(@_);
+	while(defined(my$item=$cmd->xreadline0)) {
+	    if (frissncheckok($item)) {
+		$out->xprint($item,  $opt_null ? "\0" : "\n");
+	    }
+	}
+	$cmd->xxfinish;
+    }
+}
+
+if (@relative) {
+    myxsystem ("find",
+	       $base,
+	       $opt_stay ? "-xdev" : (),
+	       "(",
+	       flattenlist listyjoin("-o",
+				     map { ["-name",$_] } @relative
+				    ),
+	       ")",
+	       #$opt_null ? "-print0": (),
+	       "-print0"
+	      );
+}
+
+
+__END__
+
+  fast wunderbar bis auf zwei punkte:
+- -print0 macht kaputt das isch ein scheiss find  aha  ( ) um die -name 's
+  - output hat sowohl dirs als auch files innendrin  und das 
+
+$out->xprint(   $opt_null ? (map { "$_\0" } @absolute) : (map { "$_\n" } @absolute,$DEBUG ? "END_ABSOLUTE" : () )   );
+$out->xflush;
+#$out->xclose;
+sub myxsystem{
+    if ($DEBUG) {
+	print "'",join( "' ||| '",@_),"'\n"
+    } else {
+	xxsystem @_
+    }
+}
+if (@relative) {
+    myxsystem "find",$base,
+      flattenlist (
+			    $opt_stay ? "-xdev" : (),
+			    [flattenlist listyjoin("-o",
+				     map { ["-name",$_] } @relative
+				    )],
+			    $opt_null ? "-print0": (),
+			    );
+}

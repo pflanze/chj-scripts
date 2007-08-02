@@ -1,0 +1,213 @@
+#!/usr/bin/perl -w
+
+# Fre Feb  2 21:53:16 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+$|++;
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+our $patchdir;
+our @patch= qw(patch);
+our $configname="$myname-options.pl";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname patchesdir
+
+  Expects an '$configname' file in the patchesdir returning a hash
+  with patchnam=>[patch options] data.
+
+  Options:
+  --recurse     apply itself to subdirectories contained in patchesdir (default)
+  --no-recurse  do not enter subdirectories of patchesdir
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+our $DEBUG=0;
+our $verbose; *verbose=*DEBUG;
+our $opt_recurse=1;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?(no-)?recurse$/) {
+	$opt_recurse= ! $1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+
+use Chj::xpipeline
+  (#'xreceiverpipeline'
+   'xreceiverpipeline_with_out_to');
+
+use Chj::xopen 'xopen_read';
+sub xsystem_with_stdin_to ($ $ ) {
+    my ($fh,$cmd)=@_;
+    my $pid=fork;
+    defined $pid or die "fork: $!";
+    if ($pid) {
+	waitpid ($pid,0);
+	$?
+    } else {
+	open STDIN,"<&",$fh or die "could not redirect '$fh' to stdin: $!";
+	exec @$cmd or die "could not exec '$$cmd[0]': $!";
+    }
+}
+use Chj::singlequote;
+#sub fh_or_file_to_fh ($ ) {
+#    my ($fh_or_file)=@_;
+#	{
+{
+    package _Fh_or_file; #und JA will man das lokal haben.
+    use Class::Array -fields=> -publica=>
+      (
+       'path',
+       'fh',
+      );
+    sub new {
+	my $cl=shift;
+	my ($fh_or_path)=@_;
+	if (UNIVERSAL::isa($fh_or_path,$cl)) {
+	    $fh_or_path
+	} else {
+	    my $s= bless[],$cl;
+	    if (ref(\$fh_or_path) eq "SCALAR") {
+		$$s[Path]= $fh_or_path;
+	    } else {
+		$$s[Fh]= $fh_or_path;
+	    }
+	}
+    }
+    sub fh {
+	my $s=shift;
+	$$s[Fh]||=do {
+	    xopen_read ($$s[Path]);  # mir kommt in sinn dass die ja eh pfad speichern.
+	}
+    }
+    end Class::Array;
+}
+
+sub Dumpcmd {
+    my ($Fh,$cmd)=@_;
+    my $p= $Fh->path;
+    join (", ",map{Chj::singlequote$_} @$cmd)
+      . ($p ? " < '$p'" :"");
+}
+
+sub Our_die ($ $ $ ){
+    my ($status,$Fh,$cmd)=@_;
+    my $p= $Fh->path;
+    #print "\n";#HACK  noch sowas interdis eh dependentielles
+    die "command exited with status $status: ". #ewig auch da
+      Dumpcmd ($Fh,$cmd);
+}
+
+sub xxsystem_with_stdin_to ( $ $ ){
+    my ($fh_or_file,$cmd)=@_;
+    my $Fh= new _Fh_or_file($fh_or_file);
+    my $status= xsystem_with_stdin_to ($Fh,$cmd);
+    $status==0 or Our_die ($status,$Fh,$cmd);
+}
+
+
+use Chj::Util::AskYN;
+
+
+sub Filename ($ ) {
+    my ($path)=@_;
+    $path=~ s|.*/||s;
+    $path
+}
+
+use Chj::Util::Interprocess 'In_subprocess';
+
+sub run_on_dir {
+    my ($patchesdir)=@_;
+
+    local our @allitems= glob "$patchesdir/*";
+    local our @files= grep { -f $_ } @allitems;
+    local our @dirs= grep  { -d $_ } @allitems;
+
+    my $errors=0;
+    #(run_on_dir($_) for @dirs) if $opt_recurse;
+    if ($opt_recurse) {
+	#(run_on_dir($_) for @dirs)
+	$errors+= run_on_dir($_) for @dirs;
+	#UNGLAUBLICH
+    }
+
+    # keep parent clean so that we don't run into problems of multiple config loading
+    $errors+= In_subprocess sub {
+	local our $config= require "$patchesdir/$configname";
+
+	my $errors=0;
+	for my $file (sort @files) {
+	    next if $file=~ /~\z/;
+	    my $itemname=Filename ($file);
+	    next if $itemname eq $configname;
+	    if (my $additionalargs= $config->{$itemname}) {
+		print "* applying patch '$itemname':\n";
+		#my $p= $item;#xopen_read ($item); #FUN, forgetting to change her were saver that made path method exist.
+		my $p= xopen_read ($file);
+		my $cmd= [@patch,@$additionalargs];
+		if ($verbose) {
+		    print "  calling: ".Dumpcmd($p,$cmd)."\n";
+		}
+		my $status= xsystem_with_stdin_to ($p, $cmd);# mch ich mir mühe oben dann doch so.
+		if ($status) {
+		    $errors++;
+		    print "\n";
+		    if (!askyn "($myname) got errors, do you want to continue anyway? ") {
+			exit 1;
+		    }
+		}
+		#print "done.\n";
+	    } else {
+		#warn "ignoring un-mentioned file '$itemname'";
+		if (not exists $config->{$itemname}) {
+		    print "($myname) ignoring un-mentioned file '$itemname'\n";#eben schon schöner weil langer pfad zuskriptnicht. so passts auf eine zeile.
+		}
+	    }
+	}
+	#print "\n";
+	$errors
+    };
+    $errors
+}
+
+our ($patchesdir)=@args; # nicht @_ bitte
+
+my $errors= run_on_dir ($patchesdir);
+
+print "\n";
+print "finished".($errors? "":" successfully").".\n";
+
+__END__
+
+ideen / "not done":
+  - reihenfolge bzgl rekursion und auch überhaupt (in configfiles arrays verwenden wäre das eine, aber eben, rekursion first or not  oder wie soll das sein, "kreuz weise noch?")
+  - was wenn  im Falle von den qmail-mime patches,  verschiedene sets *aus* den files eines dirs genommen werden sollen?  name des option files eben wählbar machen wohl?.

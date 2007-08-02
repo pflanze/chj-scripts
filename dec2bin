@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Mon, 11 Nov 2002 00:47:07 +0100
+# nach Tip von #linux
+
+if [ "$1" ]; then
+    echo -e "obase=2\n$1"|bc
+else
+    echo "$0 decimalnumber
+  Returns binary representation";
+fi
+

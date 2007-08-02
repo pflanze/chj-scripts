@@ -1,0 +1,116 @@
+#!/usr/bin/perl -wT
+
+delete $ENV{PATH};
+delete $ENV{BASH_ENV};
+delete $ENV{ENV};
+
+# cat's only a defined number of bytes from a cdrom.
+# (ps. scsi cdrom = /dev/scd0)
+# This is hack to prevent crash of some linux/PPC 2.2.(15pre4 etc) kernels 
+# when normal 'cat' is used (/dev/cdrom read bug),
+# It uses 'dd' cause I thought it would be more secure with reading (buffer
+# sizes) than reading from perl.
+
+$bigbufsize = 2048*1024; # 2MB
+$sectorsize = 2048;
+
+foreach (@ARGV) {
+	if (/^(\d+)(?:\@(\d+))?$/) {
+		if($length_bytes){
+			&usage;
+		}else{
+			$length_bytes=$1; $start_bytes=$2;
+		}
+	}elsif (m|^(/dev/\w+)$|) {
+		if($dev){&usage;
+		}else{$dev=$1}
+	}else{
+		&usage;
+	}
+}
+sub usage{
+	die "usage:
+	catcdbytes bytes[\@bytestart] [/dev/...]
+	
+	Reads a defined number of bytes [from a defined
+	position] from [the first track of] a cdrom.
+	This is useful to reconstruct partitions
+	saved using my 'rawpartitionburner' script.
+	\n";
+}
+&usage unless $length_bytes;
+$start_bytes=0 unless $start_bytes;
+$dev="/dev/cdrom" unless $dev;
+# Alternative: /dev/scd0
+
+use integer;
+
+# first step: read bigbufsize pieces
+{ 
+	local $start= $start_bytes/$bigbufsize;
+	local $startskip = $start_bytes - $start*$bigbufsize;
+	local $end  = ($start_bytes+$length_bytes)/$bigbufsize;
+	local $cnt = $end-$start;
+	if ($cnt) {
+		$secend = $end*$bigbufsize/$sectorsize; # for step 2
+		print STDERR "Reading $cnt big chunks...\n";
+		open IN, "/bin/dd bs=$bigbufsize skip=$start count=$cnt if=$dev|" or die $!;
+		read IN,$buf,$bigbufsize; 
+		print substr($buf,$startskip);
+		while (read IN,$buf,$bigbufsize) { print $buf };
+		close IN;
+	}
+}
+
+# second step: read rest in sectors
+{
+	local($start,$startskip);
+	
+	if ($secend) {
+		$start= $secend;
+		$startskip=0;
+		
+	}else {
+		# nothing has been read so far:
+		$start= $start_bytes/$sectorsize;
+		$startskip= $start_bytes - $start*$sectorsize;
+	}	
+	local $end= ($start_bytes+$length_bytes)/$sectorsize;
+	local $cnt = $end-$start;
+	if ($cnt) {
+		$secend= $end;
+		print STDERR "Reading $cnt sectors...\n";
+		open IN, "/bin/dd bs=$sectorsize skip=$start count=$cnt if=$dev|" or die $!;
+		read IN,$buf,$bigbufsize; # bufsize doesn't matter as long as it matches boundaries
+		print substr($buf,$startskip);
+		while (read IN,$buf,$bigbufsize) { print $buf };
+		close IN;
+	}else {
+		undef $secend;
+	}
+}
+
+# third step: read remaining bytes (from last sector)
+{
+	local($start,$startskip);
+	
+	if ($secend) {
+		$start= $secend;
+		$startskip=0;
+	
+	}else {
+		# nothing has been read so far:
+		$start= $start_bytes/$sectorsize;
+		$startskip= $start_bytes - $start*$sectorsize;
+	}	
+	local $rest = $start_bytes+$length_bytes - $start*$sectorsize;
+	local $len = $rest-$startskip;
+	
+	if ($rest) {
+		print STDERR "Reading last sector ($len bytes)...\n";
+		open IN, "/bin/dd bs=$sectorsize skip=$start count=1 if=$dev |" or die $!;
+		read IN,$buf,$rest;
+		print substr($buf,$startskip);
+		close IN;
+	}
+}

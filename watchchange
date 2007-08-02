@@ -1,0 +1,101 @@
+#!/usr/bin/perl -w
+
+# Sam Nov 23 11:14:17 MET 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname [ options ] file
+  Watch the given file and report changes in it's size.
+  Options:
+  -l  output new line for each time frame instead of overwriting
+      existing line
+";
+exit @_;
+}
+
+my @files;
+my $opt_l;
+for (my $i=0; $i<=$#ARGV; $i++) {
+  local $_=$ARGV[$i];
+  if (/^--?h(elp)?$/) {
+    usage
+  } elsif ($_ eq '--') {
+    push @files, @ARGV[$i+1..$#ARGV];
+    last;
+  } elsif ($_ eq '-l') {
+    $opt_l=1;
+  } elsif (/^-/) {
+    warn "Unknown option '$_'\n";
+    usage(1)
+  } else {
+    push @files, $_
+  }
+}
+usage unless @files ==1;
+
+my ($file)=@files;
+
+use Time::HiRes 'time';
+
+my ($starttime,$lasttime,$startsize,$lastsize);
+$starttime= $lasttime= time;
+-f $file or die "No such file '$file'\n";
+$startsize= $lastsize= (stat _) [7];
+
+sub pad {
+  my ($num,$divisor)=@_;
+  $divisor|=1;
+  my $str=
+    $num == 0 ?
+      "   0   " :
+      #-900.11
+      #-1.123
+      sprintf("% 7.2f",$num/$divisor);
+  wantarray ? ($str,length($str)>7) : $str
+}
+
+my %range=(
+	   0=> "bytes",
+	   1=> "KB",
+	   2=> "MB"
+	  );
+
+my $base=1024;
+
+$|=1;
+
+while (1) {
+  sleep 1;
+  -f $file or die "No such file '$file'\n";
+  my $time= time();
+  my $size= (stat _) [7];
+  my $diff1= ($size-$lastsize)/($time-$lasttime);
+  my $diffs= ($size-$startsize)/($time-$starttime);
+  my ($d1,$over1)= pad($diff1);
+  my $range=0; # 0= bytes, 1= kbyte, 2= mbyte
+  if ($over1) {
+    $range++;
+    ($d1,$over1)= pad($diff1,$base**$range);
+    if ($over1) {
+      $range++;
+      ($d1,$over1)= pad($diff1,$base**$range);
+    }
+  }
+  my ($ds,$overs)= pad($diffs, $base**$range);
+  while ($overs and $range<2) {
+    $range++;
+    ($ds,$overs)= pad($diffs, $base**$range);
+    $d1= pad($diff1, $base**$range);
+  }
+  if ($opt_l) {
+    print " $d1  $ds  $range{$range}/s\n";
+  } else {
+    print chr(27)."M\n $d1  $ds  $range{$range}/s".chr(27)."[K";
+  }
+  $lasttime=$time;
+  $lastsize= $size;
+}

@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Mit Dez 28 04:26:31 CET 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname package-name
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+my @apt_cmd=( "apt-get","source");
+
+sub source_and_check {
+    my ($package_name)=@_;
+    # muss rausfinden wie das file das es holt genau heisst.
+    # tja, dafür muss ich pipe machen und mit lesen, right ?
+    # 'dpkg-source: extracting curl in curl-7.15.1'
+    todo mal fertig machen  oderso  well schau in td file  ich nach schem versuch
+}
+
+
+source_and_check $_ for @args;

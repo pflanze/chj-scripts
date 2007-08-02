@@ -1,0 +1,112 @@
+#!/usr/bin/perl -w
+
+# Frontend für xmms: macht aus Argumenten, welche mp2-Dateien sind ohne
+# Anhängsel, einen temp link und übergibts erst dann an xmms. Offenbar kann
+# man xmms nur so mitteilen was für data es ist?$
+
+# Anfang von mp2-Dateien: fffd 9004
+
+##print pack "X","ab";#"c","d"; ACH wie 
+
+=pod 
+
+PS. endlich Hexkonversionen verstehen grrrrrrrrr
+
+- pack: versteh ich nicht. Nimmt eine LISTE, nicht einen String/Konstante.
+- hex: vor einen String vorangestellt "bewirkt das dass der String" als Zahl
+  verstanden wird. OK. Meist will ich allerdings einen Binarystring
+  mit einem Hexzahlstring vergleichen. D.h. BEIDE müssen in eine Zahl
+  konvertiert werden. Problematisch ist noch, dass ich nur vielleicht 1-4 bytes
+  so vergleichen kann, sonst wirddie Zahl zu gross.
+- sprintf: will doch das Umgekehrte: IRGENDWAS jeweils als Ascii readable dar-
+  stellen.
+- 0xffff einfach so geschrieben wird von Perl auch schon als Zahl verstanden.
+- AHA: zusammen mit Pack kann man dann vielleicht was machen?
+YEAH!:
+print pack( "SS",0xffff, 0x0480);
+==>  ./xmmsplay|xxd
+0000000: ffff 0480                                .... 
+
+=cut
+
+use File::Path;# mkpath
+use Fcntl;# O_RDONLY
+
+$name= "xmmsplay (cj)";
+$debug=0;
+$tmptopdir= "/tmp/$ENV{USER}";
+$tmptopdir=~ /^(.*)$/; $tmptopdir= $1; # simple detaint, since it will be used under user's id anyway
+$tmpdir= "$tmptopdir/xmmsplay/";
+
+delete $ENV{PATH};
+delete $ENV{BASH_ENV};
+
+
+my $userid= $<;
+$< =0; # keep root rights in the back.. (this is possible if $> is root);
+
+$> =$userid; # change back to user rights for filehandling
+
+unless (-d $tmptopdir) {
+	mkdir $tmptopdir, 0700 or die "Could not create dir '$tmptopdir': $!";
+}
+unless (-d $tmpdir) {
+	mkdir $tmpdir, 0700 or die "Could not create dir '$tmptopdir': $!";
+}
+foreach $file (@ARGV) {
+	$file=~ /^(.*)$/s; $file=$1;
+	if ($file=~ /\.\w{3,5}$/) {
+		#OK, file has already it's extension
+	}else {
+		if (-f $file) {
+			sysopen FL, $file, O_RDONLY  or die "$name: Could not open '$file' for reading: $!\n";
+			read FL,$begin,2;
+			seek FL,0,0;
+			read FL,$beginlong,250;
+			close FL;
+			#if ($begin eq pack("SS",0xfffd ,0x9004)) {
+			if ($begin eq pack("S",0xfffd)) {
+				&makelink($file, ".mp2");
+			#} elsif ($begin eq pack("SS",0xfffb,0x9044)) { #ps. ist 9044 ev bloss bitrate oder so?  JA: fffb 9200 ist auch MP3
+			} elsif (
+				$begin eq pack("CC", 0xff, 0xfb) or  # argh, "S",0xfffb geht nicht auf i386
+				$begin eq pack("CC", 0xff, 0xfa) or
+				$beginlong=~ /^ID3/s or
+				$beginlong=~ /Macromedia/ #whatever strange file this was
+			) {
+				&makelink($file, ".mp3");
+			} else {
+				warn "$name: File '$file' is in an unknown Format.".unpack("H*",$begin);
+			}
+		}else{
+			warn "$name: '$file' is not an existing file!\n";
+		}
+	}
+}
+
+sub makelink {
+	#my $name;
+	#$_[0]=~|[^/]*$|;
+	#$name = $& or do { warn "Filename $_[0] is strange!\n"; return};
+	#print "NAME: $name\n";
+	
+	my ($target,$tdir);
+	
+	$target= $tmpdir.$_[0].$_[1];
+		$target=~ s|\.\.\/||sg;##HMMMMMMM, sollte natürlich korrekte Pfadeumsetzung machen!!!
+		$target=~ s|/{2,}|/|sg;#ja he, nicht einfach // durch / ersetzen sondern /+
+	print "TARGET: $target\n" if $debug;
+	$tdir=$target; 
+		$tdir=~ s|[^/]*$||;
+	mkpath ($tdir);
+	symlink $file,$target;# or warn "$name: could not make symlink: $!\n";
+						# ist wohl Fehler wenn schon existiert. Einfach ignorieren
+	$_[0]=$target;#v funktionniert! Ueber die Zwei Schritte Array-foreachvariable, und sub
+}
+
+$> =0;
+setpriority (0,$$,-16) or die $!;
+$> = $userid;
+$< = $userid;
+
+exec "/usr/bin/xmms", @ARGV;

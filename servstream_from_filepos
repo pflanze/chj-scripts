@@ -1,0 +1,59 @@
+#!/bin/sh
+# cj Thu, 15 Jan 2004 21:14:30 +0100
+
+if [ -z "$PORT" ]; then
+    PORT=1112
+fi
+
+
+if [ $# -ne 2 -o "H$1" == "H-h" ]; then
+    echo "Usage: $0 filename bytes|percent%"
+    cat <<EOF
+  Bitte filename angeben des files das tail'ed und served werden soll, 
+  sowie position in bytes oder prozent mit %
+  Das ist ein quickhack eines streaming servers.
+EOF
+    exit 1
+fi
+
+file="$1"
+pos="$2"
+
+
+{
+{
+# hier cat, nicht echo, hey gopf.
+cat <<END
+ICY 200 OK
+icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+icy-notice2: SHOUTcast Distributed Network Audio Server/SolarisSparc v1.9.2<BR>
+icy-name: $@
+icy-genre: Trance Techno Dance
+icy-url: http://www.di.fm
+icy-pub: 1
+icy-metaint: 0
+icy-br: 96
+icy-irc: #shoutcast
+icy-icq: 0
+icy-aim: N/A
+
+END
+} | perl -wne 'chomp; print "$_\r\n"'
+
+perl -we '
+    open F,$ARGV[0] or die "$ARGV[0]: $!"; 
+    $pos= $ARGV[1]; 
+    if ($pos=~ /(\d+(?:\.\d*)?) *\%/) {  # na, schön wäre noch wenn die genaue position, möglichst in minuten, im songtitel geschickt würde.
+	$p=$1;
+	$l=(stat $ARGV[0])[7];
+	$pos= $l*$p/100;
+    }
+    seek F,$pos,0 or die "seek: $!";
+    do { 
+	$res=read F,$buf,4096*16; defined $res or die "read: $!"; 
+	exit unless $res; 
+	print $buf or die "print: $!"; 
+    } while 1
+    ' -- "$file" "$pos"
+
+} | netcat -q 1 -l -p $PORT

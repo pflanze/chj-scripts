@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Sun,  2 Mar 2003 19:29:24 +0100
+
+if [ $# -ne 2 ]; then
+    {
+    echo "Usage: `basename $0` host port > file"
+    echo "  connected und holt daten ab."
+    echo "  (macht keine md5 summe)"
+    } >&2
+    exit 1
+fi
+
+host="$1"
+port="$2"
+
+exec netcat "$host" "$port"

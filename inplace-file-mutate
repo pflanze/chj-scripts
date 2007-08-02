@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+# Die Dez 20 06:58:28 MET 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+# possible names: inlinereplacer, my-inplace-sed, inplace-edit, inplace-mutate, ..-of-files,..
+# inplace-file-mutate, na, inplace-mutate-files? oder doch vorheriges.
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname 'code to run on \$_' file(s)
+
+  Reads the contents of each of the given file(s) into \$_,
+  runs the given code (which is supposed to mutate \$_), then
+  iff the code returns true (actually expected to be the number of
+  mutations), truncates the file and writes \$_ back to it.
+
+  Does **not** keep backups of the files!!
+  Moreover, if an error happens during writeback, the file is toast.
+  (But because of the inplace workings, doesn't change the permissions
+  or inode number of the files.)
+
+  (Gemacht um in qmail queue files die ziel ip auszutauschen.)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $verbose;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif (/^--?v(erbose)?$/) {
+    	$verbose=1;
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args > 1;
+my $mogrifycode= shift @args;
+
+use Chj::xopen qw(xopen_update); # qw(xopen_read xopen_write);
+use Chj::singlequote;
+
+my $mogrifyit= do {
+    my $code= "sub { $mogrifycode }";
+    my $lam= eval $code;
+    die if $@;
+    $lam;
+};
+
+sub mogrify {
+    my ($filepath)=@_;
+    my $f= xopen_update($filepath);
+    local $/;
+    local $_= $f->xcontent;
+    if (my $n= &$mogrifyit) {
+	print "$n mutations in ".singlequote($filepath)."\n"
+	  if $verbose;
+	$f->xrewind;
+	$f->xtruncate;
+	$f->xprint($_);
+    }
+    $f->xclose;
+}
+
+mogrify($_) for @args;

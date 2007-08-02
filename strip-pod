@@ -1,0 +1,58 @@
+#!/usr/bin/perl -w
+
+# Son Mai 25 11:49:44 MEST 2003
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+#usage unless @files;
+
+use Chj::xopen;
+use Fcntl;
+
+sub work {
+    my ($i,$o)=@_;
+    my $c= $i->xcontent;
+    $c=~ s/(?:^|(?<=\n))=(?:pod|head|item|over|back|cut|for|begin|end).*?\n(?:=cut[^\n]*\n|\z)//sg;
+    $o->xprint($c);
+}
+
+
+if (@files) {
+    for (@files) {
+	my $i= xopen $_;
+	my $o= xopen ">$_.$myname"; #xsysopen "$_.out",O_EXCL|O_CREAT;
+	work($i,$o)
+    }
+}
+else {
+    my $i= bless *STDIN{IO}, "Chj::IO::File";
+    my $o= bless *STDOUT{IO}, "Chj::IO::File";
+    work($i,$o)
+}
+

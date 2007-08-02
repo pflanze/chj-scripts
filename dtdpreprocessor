@@ -1,0 +1,84 @@
+#!/usr/bin/perl -w
+
+# (Sam Mär  1 10:32:03 MET 2003 |) Sat,  1 Mar 2003 11:53:29 +0100
+# - Sat,  1 Mar 2003 13:16:24 +0100
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file.pdtd file.dtd
+(or maybe something like: $myname file.pdtd - | dtdcheck - xmlfile(s)
+     but note that dtdcheck will continue even in case of error in $myname)
+  Expand entities used in the .pdtd file, so that it becomes
+  a valid dtd. (sigh)
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files==0 or @files==2;
+
+if (@files){
+    my ($in,$out)=@files;
+    open STDIN,"<$in" or die "$myname: could not open $in: $!\n";
+    open STDOUT,">$out" or die "$myname: could not open $out: $!\n";
+}
+
+local $/;
+my $c=<STDIN>;#still, how do you error checking?
+close STDIN or die "error closing input: $!";
+
+my %entity;
+$c=~ s/<!--.*?-->|<!ENTITY\s+\%\s*(\w+)\s*"(.*?)"\s*>/
+  if (substr($&,0,4) eq '<!--') {
+      warn "ignoring comment '$&'\n" if $DEBUG;
+      $&
+  } else {
+      my ($e,$v,$all)=($1,$2,$&);
+      $v=~ s|\%(\w+);|
+	warn "replacing entity '$&' in entity '$e'\n" if $DEBUG;
+	$entity{$1} or die "$myname: entity '$&' is not defined while expanding entity '$e'\n";
+      |seg;
+      warn "recording entity '$e' as '$v'\n" if $DEBUG;
+      $entity{$e}=$v;
+      "<!-- commented out by $myname: $all -->"
+  }
+/sieg;
+
+$c=~ s/<!--.*?-->|<!((?:ELEMENT|ATTLIST)\s+\w+).*?>/
+  if (substr($&,0,4) eq '<!--') {
+      #warn "ignoring comment '$&'\n" if $DEBUG;
+      $&
+  } else {
+      my ($d,$h)=($&,$1);
+      $d=~ s|\%(\w+);|
+	warn "replacing entity '$&' in $h\n" if $DEBUG;
+	$entity{$1};
+      |seg;
+      $d
+  }
+/sieg;
+
+print $c or die "$myname: could not write contents out: $!\n";
+close STDOUT or die "$myname: error closing output: $!\n";

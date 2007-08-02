@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+use strict;
+
+use constant PRIO_PROCESS=> 0; #ç wo könnt ich das holen?
+
+# increase priority
+setpriority PRIO_PROCESS,$$,-20 or die $!;
+
+# drop priviledges?
+# nee gar nicht nötig, fork (resp. exec?) übernimmts nicht wenn ich nicht realuserid ändere.
+
+
+my @cdda2wav= qw(/usr/bin/cdda2wav -D/dev/cdrom -Icooked_ioctl -q  -e  -d0 -N);
+#														quiet,echo,duration,no_output
+
+sub usage {
+	my $arg=shift;
+	if ($arg) {
+		print "Ungültiges Argument `$arg'.\n\n";
+	}
+	print "$0 [tracknummern]
+
+cj
+";	exit(1);
+}
+
+sub call {
+	my $pid=fork();
+	die unless defined $pid;
+	if ($pid) { #parent
+		wait;
+	} else {
+		exec @_;
+	}
+}
+
+if (@ARGV) {
+	for my $track (@ARGV) {
+		$track=~ /^(\d+)$/ or usage($track);
+		call( @cdda2wav, "-t$1");
+	}
+} else {
+	exec @cdda2wav;
+}

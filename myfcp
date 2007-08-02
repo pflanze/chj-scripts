@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+
+# Son Nov 30 03:19:45 MET 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+use Chj::xopen qw(xopen_read xopen_write);
+use Chj::IO::Command;
+
+my $SERVERPATH= "/root/sbin/myfcp.server";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname sourcefile [user\@]host:targetfile
+ -or-
+$myname [user\@]host:sourcefile targetfile
+
+  Uses fsh and cat/perl behind the scenes. Very efficient for small
+  files, especially for gprs. BUT requires to give full paths for the target
+  as well, and does only work for one file at a time.  For upload,
+  requires that $myname.server is installed on the server (by default
+  at $SERVERPATH).
+
+  ps. sollte ich nonblocking io verwenden um paketgrössen optimal auszunutzen?
+
+  todo:
+  - check targetpath for -d first.
+  - umstellen down auf ebenfalls $myname.server. hmm, bidirektional nötig wenn filename per pipe rüber soll. IO::Command eben doch um was bidirektionales erweitern?.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $verbose;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^--?(v+)(?:erbose)?$/) {
+	$verbose+=length $1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+my $mode; # up down
+my ($remotehostspec,$remotefile);
+
+if ($args[0]=~ /(.*?):(.*)/s) {
+    $mode="down";
+    $remotehostspec=$1;
+    $remotefile=$2;
+}
+if ($args[1]=~ /(.*?):(.*)/s) {
+    if ($mode) {
+	usage "both arguments contain a : (colon)";
+    } else {
+	$mode="up";
+	$remotehostspec=$1;
+	$remotefile=$2;
+    }
+}
+
+usage "missing remotefile" unless length $remotefile;
+
+if ($mode eq "down") {
+    my $to= xopen_write $args[1];
+    my $from= Chj::IO::Command->new_read("fsh",$remotehostspec,"cat",$remotefile);
+    $from->xsendfile_to($to);
+}
+elsif ($mode eq 'up') {
+    my $from= xopen_read $args[0];
+    my $mode=(stat $args[0])[2];
+    warn "mode=$mode" if $DEBUG;
+    my $to= Chj::IO::Command->new_write("fsh",$remotehostspec,
+					#"--", does not help.
+					#"perl","-e",
+					#'\'use strict; use Chj::xtmpfile; my $file=shift;my $to=xtmpfile $file; my $from=bless *STDIN{IO},"Chj::IO::File"; $from->xsendfile_to($to); $to->xclose; $to->xreplace_or_withmode($file,shift);\'',# MANN! fcp ist so scheisse oder irgendeins, dass es ohne ' den string dann doch wieder zerlegt. MANNNNNNNN.
+					#$remotefile,  und NATUERLICH hat es sein muessen dass dies fur den filenamen ebenfalls gilt. KATZ.
+					#$mode
+					$SERVERPATH,
+					"r"
+				       );
+    # buffered io will ich hier.
+    # wie krieg ich das. mit xprint?
+    # aber sendfile dann ist ja nonbuffered.
+    #   If you plan to use sendfile for sending files to a TCP socket,  but  need  to  send
+    #   some  header  data in front of the file contents, please see the TCP_CORK option in
+    #   tcp(7) to minimize the number of packets and to tune performance.
+    # Das müsste aber von ssh gesetzt werden. hum.
+    # $from->xsendfile_to($to);
+    # also selber implementieren .
+    my $starttime;
+    if ($verbose) {
+	require Time::HiRes;
+	$starttime= Time::HiRes::time();
+    }
+    $to->xprint("$remotefile\0$mode\0\1\0");
+    if ($verbose) {
+	warn "$myname (".(Time::HiRes::time()-$starttime)."): wrote header\n";
+    }
+    my $buf; my $bufsiz= $verbose ? 4096 : 4096*32;
+    while(my $len= $from->xsysread($buf,$bufsiz)) {
+	$to->xprint($buf);
+	if ($verbose) {
+	    warn "$myname (".(Time::HiRes::time()-$starttime)."): wrote $len bytes\n";
+        }
+    }
+}
+else {
+    usage "none of the two file are remote";
+}
+

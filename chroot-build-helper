@@ -1,0 +1,122 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 14 03:32:41 CET 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+# btw HATTE ich nicht schon mal sowas gemacht."?".
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname < rawfilelist > completelist
+
+ v.a. nur ein link resolver momentan
+
+ rawfilelist muss bestehen aus:
+ - strace -o out -fF, dann sowas wie grep '6725  open' out |grep -v ENOENT|perl -wne '/\"(.*?)\"/ and print \"\$1\\n\"'
+ - ldd des main binaries, wenn der nicht im strace gelandet ist; manuell pfade rausholen.
+
+ danach:
+ - prüfen dass alles absolute pfade sind: grep -v ^/ completelist
+ - tar -cz --no-recursion --files-from completelist  -f pack.tgz
+ - cdnewdir t; tar xzf ../pack.tgz; ANALYSIEREN ob nichts drin gelandet ist was nicht darf (etc/shadow, gpg/ssl keys,..)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+use Chj::xperlfunc;
+use Chj::repl;
+
+sub allestufen ($ ) {
+    my ($l)=@_;
+    my @out= $l;
+    my $p=$l;
+    while (1) {
+	my $new= readlink $p;
+	if ($new=~ m|^/|) {
+	    $p= $new;
+	} elsif ($new=~ m|/|) {
+	    #$p= $p."/".$new; ehr that's wrong,right?
+	    $p=~ s|/[^/]*\z||; #hm assuming that no endinginslash/ dir paths are inthe input! todo fix that everywhere
+	    $p.= "/".$new;#luschtig dass copy nun in allenplazen.    UNTESTED
+	} else {
+	    $p=~ s|/[^/]*\z||;
+	    $p .= "/".$new;
+	}
+	push @out,$p;
+	if (-l $p){
+	    #cont
+	} else {
+	    last;
+	}
+    }
+    @out
+}
+
+while (<STDIN>) {
+    chomp;
+    local our $s=xlstat $_;
+    repl if $DEBUG;
+    if ($s->is_link) {
+	if($DEBUG) {
+	    print map { "|| $_\n"} allestufen($_);
+	} else {
+	    print map { "$_\n"} allestufen($_);
+	}
+    }
+    print "$_\n";
+    if ($s->is_dir) {
+	#nüt
+    } else {
+	my $f= $_;
+	$f=~ s|/[^/]+$||;
+	print "$f\n";
+    }
+}
+
+#todo diesen gleichnoch machen ?:
+#root@elvis root# less richlis |grep -v ^/
+#root@elvis root#
+__END__
+
+root@elvis root# tar -cz --no-follow --files-from richlis  -f ntpdpack.tgz
+tar: Unbekannte Option »--no-follow«
+,tar --help' zeigt weitere Informationen.
+grr
+eh no-recurse
+root@elvis root# tar -cz --no-recurse --files-from richlis  -f ntpdpack.tgz
+tar: Unbekannte Option »--no-recurse«
+,tar --help' zeigt weitere Informationen.
+root@elvis root# tar -cz --no-recursion --files-from richlis  -f ntpdpack.tgz
+tar: Removing leading `/' from member names
+
+ACHTUNG VORSICHT  Files manuell auch kontrollieren dass nid irgend shadow drin ist oder sonst was heikles.

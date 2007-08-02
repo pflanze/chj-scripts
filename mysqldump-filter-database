@@ -1,0 +1,91 @@
+#!/usr/bin/perl -w
+
+# Fre Jun  9 20:35:57 CEST 2006
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname databasename(s)
+
+  Filters a mysqldump --all-databases dump, so that only the part of
+  \$databasename is let through.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+my %databases= map { $_=>1 } @args;
+
+my $before_any_database=1;
+while(<STDIN>) {
+#     #if (/^\/\*\!/) {#eigentlich unsinn.
+#     if ($before_any_database) {
+# 	#warn "printing through /*! line" if $DEBUG;
+# 	    print;
+# 	#}
+#     } elsif (/^CREATE DATABASE /) {
+# 	# do not print
+    #if (/^\/\*\!/) {#eigentlich unsinn.
+    if (/^CREATE DATABASE /) {
+	# do not print
+    } elsif (/^USE `(\w+)`;/) {
+	my $database=$1;
+	$before_any_database=0;#wenn supergenau sein wollen  würd man  bei ende von teil  wieder einschalten  aber es gibt glaub kein klares ende eines teils
+      quer:
+	if ($databases{$database}) {
+	    warn "entered section of database '$database'" if $DEBUG;
+	    $databases{$database}=0;
+	    while (<STDIN>) {
+		if (/^USE `(\w+)`;/) {
+		    warn "end of section '$database' reached" if $DEBUG;
+		    my $database=$1;
+		    goto quer;
+		} elsif (/^CREATE DATABASE /) {
+		    # do not print   (should be followed by next section (USE) quickly).
+		} else {
+		    print
+		}
+	    }
+	    last;
+	}
+	#else {
+	    # do not print
+	#}
+    } elsif ($before_any_database) {
+	print;
+    }
+    #else {
+    # do not print
+    #}
+}
+

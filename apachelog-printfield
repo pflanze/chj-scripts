@@ -1,0 +1,115 @@
+#!/usr/bin/perl -w
+
+# Fre Sep 30 22:09:41 MEST 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+# Fri, 30 Sep 2005 22:40:27 +0200
+# wow it's fully finished now.:)
+
+use strict;
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname field(s)
+
+  fields can be any of the Chj::Parse::Apache::Accesslog fields.
+  like e.g. 'Mday','Monname','Year','Hour','Min','Sec','TZone',
+  'Mon',
+  #'Method', 'Location', nope, done as method call.
+  'Unixtime',
+  'Host','Unknown1','Unknown2',
+  'Requeststr','Status','Bytes','Referrer','Useragent'
+
+  The fieldnames can be given in lowercase, an ucfirst is done for you.
+
+  Also accessor method names can be given:
+   location, method, [unixtime -> done as above]
+  If such a method exists, it has precedence over the field access, except unixtime.
+
+  Options:
+  --undef | --undef-value foo   use foo instead of the empty string where the
+                                log's field value is 'absent'.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $undefvalue="";
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?undef(?:-value)?(?:=(.*))?$/) {
+        if (defined $1) {
+            $undefvalue=$1
+        } else {
+            $undefvalue=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::Parse::Apache::Accesslog -importprefix=>"HEnoIdontwantitbutsobeit";
+
+# now produce code for it.
+my @code;
+my $flag_unixtime;
+for my $field(@args) {
+    $field=~ /^\w+\z/s or usage "invalid field syntax '$field'";
+    my $method_exists = sub {
+	#Chj::Parse::Apache::Accesslog->has($field); hei. tooviel oo prog?
+	Chj::Parse::Apache::Accesslog->can($field);
+    };
+    my $methodaccess= sub {
+	"\$parser->$field"
+    };
+    my $fieldaccess= sub {
+	my $ucfield= ucfirst $field;
+	eval "Chj::Parse::Apache::Accesslog::$ucfield";
+	if ($@) {usage "no such (method '$field' or) field '$ucfield'";}
+	"\$parser->[Chj::Parse::Apache::Accesslog::$ucfield]"
+    };
+    push @code, & {
+	if ($field=~ /^[A-Z]/) {
+	    $fieldaccess
+	} elsif (lc($field) eq 'unixtime') {
+	    $flag_unixtime=1;
+	    $fieldaccess
+	} elsif (&$method_exists) {
+	    $methodaccess
+	} else {
+	    $fieldaccess
+	}
+    }
+}
+#my $code= join(',"\t",',map{'($tmp='.$_.'; defined($tmp) ? $tmp : $undefvalue)'} @code);
+my $code= join(',"\t",',map{'(defined($tmp='.$_.') ? $tmp : $undefvalue)'} @code);
+$code= '{my $tmp; sub run {
+    my $parser= new Chj::Parse::Apache::Accesslog;
+    while(<STDIN>){
+	unless ($parser->'.($flag_unixtime? 'parseline_time' : 'parseline').'($_)) {
+	    warn "error parsing: ".$parser->errmsg.": $_";
+	} else {
+	    print( '.$code.',"\n") or die "printing to stdout: $!"
+	}
+    }
+}}
+';
+print "code: $code\n" if $DEBUG;
+eval $code;
+die if $@;
+&run;

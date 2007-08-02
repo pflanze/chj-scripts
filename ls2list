@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Sam Mär 15 23:21:53 MET 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+  Takes stream from input which could be part of a *long* ls listing
+  (ls -l), and emits the item names cleaned from rest of stuff.
+
+  Vorerst wirklich bloss mal abschneiden vorne.
+  Könnte:  checken obs die files wirklich gibt, und ob datum und so stimmt.
+  heuristik um kaputte pastings trotzdem zu matchen.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage if @files;
+
+while (<STDIN>){
+    if (m/^[-dpsrwsxtSTcb]{10}\s+\d+\s+\w+\s+\w+\s+\d+
+	#17. Feb 02:05
+	# 1. Jan 1970
+	.{15}\d*\s+   # cj 1.9.04: von 13 auf 15 hochgesetzt. elvis-15
+	(.+)
+	/sx){
+	my $fn=$1;
+	chomp $fn;
+	$fn=~ s|/$||s or $fn=~ s|\*$||s ; # or ..
+	if (length($fn)>0){
+	    if ($fn eq '.' or $fn eq '..') {
+		warn "$myname: ignoring '$fn' item.\n"; # well, manchmal will man diese ja, z.b. für chown oder so?
+	    } else {
+		print "$fn\n"
+	    }
+	} else {
+	    warn "$myname: line gives empty filename: $_";
+	}
+    } else {
+	warn "$myname: line does not match: $_";
+    }
+}

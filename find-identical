@@ -1,0 +1,217 @@
+#!/usr/bin/perl -w
+
+# Fre Mär  2 09:49:02 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir
+
+  find fails ehr files which have identical contents (but not
+  necessarily identical permissions or times).
+
+
+  run 'maildirunify \$_ for listthem' in the repl for maildir temporary stuff doubles elimination.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+our @args;
+our $DEBUG=0;
+our $opt_dry_run;
+our $verbose;#our, nicht my !!!
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1; $verbose=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif (/^--?dry(-run)?$/) {
+	$opt_dry_run=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xopendir;
+use Chj::xperlfunc;
+use Chj::xopen 'xopen_read';
+use Digest::MD5;
+
+local our $bysizestamp={}; # size -> [ stamps ] -> [ paths ]
+local our $firstsize={}; # size -> path   for firstones.
+
+my $file_stamp= sub{
+    my ($path)=@_;
+    my $ctx= new Digest::MD5;
+    $ctx->addfile (xopen_read $path); # error checking? manpage says it will croak.
+    $ctx->hexdigest
+};
+
+sub scandir ($ );
+sub scandir ($ ) {
+    my ($dirpath)=@_;
+    my $d=xopendir $dirpath;
+    while (defined (my $item= $d->xnread)){
+	my $path= "$dirpath/$item";
+	my $ls= xlstat $path;
+	if ($ls->is_file) {
+	    my $sz= $ls->size;
+	    if (my $c= $$bysizestamp{$sz}) {
+		my $stamp= $file_stamp->($path);
+		# hash of hash  wiesch. 'but yeah'~
+		push @{$$c{$stamp}},$path
+	    } elsif (defined (my $oldpath= $$firstsize{$sz})) {
+		# move zu den andern also  altes ebenfalls stamp rechnen
+		my $oldstamp= $file_stamp->($oldpath);
+		push @{$$c{$oldstamp}},$oldpath;
+		delete $$firstsize{$sz};
+		my $stamp= $file_stamp->($path);
+		push @{$$c{$stamp}},$path;
+		# UND!!!:
+		$$bysizestamp{$sz}=$c;
+	    } else {
+		$$firstsize{$sz}=$path;
+	    }
+	} elsif ($ls->is_dir) {
+	    scandir ($path)
+	}
+    }
+}
+
+scandir $_ for @args;
+
+sub listthem {
+    #for my $sz (keys %$bysizestamp) {  well isch mir eigentlich schnurz oder? aber okay wissen wir sie gleich
+    my @tounify;
+    for my $sz (keys %$bysizestamp) {
+	my $c= $$bysizestamp{$sz};
+	for my $stamp (keys %$c) {
+	    my $paths= $$c{$stamp};
+	    if (@$paths > 1) {
+		push @tounify,$paths;
+	    }
+	}
+    }
+    @tounify
+}
+
+# now how do we unify them? in the case of maildir files.
+# keep the oldest file?  or/but keep all msg flags ?
+
+sub maildir_collectflags ($ ) {
+    my ($paths)=@_;
+    my %flags;
+    for (@$paths) {
+	if (/,(\S+)\z/) {
+	    my $flgs= $1;
+	    for (split //,$flgs) {
+		$flags{$_}++
+	    }
+	}
+    }
+    my $allflags= join "", sort keys %flags;
+}
+
+sub Filename ($ ) {
+    my ($path)=@_;
+    $path=~ s|.*/||s;
+    $path
+}
+
+sub Path_same ($ $ ) {
+    my @cleaned= map {
+	my $s=$_;
+	$s=~ s|/+|/|sg;
+	$s
+    } @_; # that should be enough *for here*   for my purposeshere. should it be perfectly korekt
+    $cleaned[0] eq $cleaned[1]
+}
+
+require Data::Dumper; # :d in repl is too late hehe
+
+#sub find ($ ) { nein
+sub member ($ $ ; $ ) { # und JA todo das soll in collection rein
+    my ($val, $arry, $cmp)= @_;
+    if ($cmp) {
+	for (@$arry) {
+	    if ($cmp->($val,$_)) {
+		return 1
+	    }
+	}
+    } else {
+	for (@$arry) {
+	    if ($val eq $_) {
+		return 1
+	    }
+	}
+    }
+    return
+}
+
+#sub Act ( & $ ) {  isch einfachkackkke. schit sunytaxk.das.
+sub Act ( $ $ ) {
+    my ($thunk,$msg)=@_;
+    $msg.="\n" unless $msg=~ /\n\z/;
+    if ($opt_dry_run) {
+	print STDERR "would do: $msg";
+    } else {
+	print STDERR "$msg" if $verbose;
+	&$thunk
+    }
+}
+
+sub maildirunify ($ ) {
+    my ($paths)=@_;
+    # hm what if the paths are from different dirs ?     !!! then don't unlink them, of course!
+    # then create a new path ?
+    # so sort off in[to] dirs first.
+    my $bydir={};
+    for my $path (@$paths) {
+	my $dir=$path; $dir=~ s|/+[^/]+\z|| or die "ends in slash or does not contain dir: '$path'";
+	push @{$$bydir{$dir}},$path
+    }
+    for my $dir (keys %$bydir) {
+	my $paths= $$bydir{$dir};
+	if (@$paths > 1) {
+	    my $flags= maildir_collectflags $paths;
+	    my $oldestfilename= (sort map { Filename $_ } @$paths)[0];
+	    my $newpath= $oldestfilename;
+	    if ($newpath=~ s/,.*// or length $flags) {
+		$newpath.= ",$flags";
+	    }
+	    $newpath= "$dir/$newpath";
+	    print STDERR "paths: ",Data::Dumper::Dumper ($paths), " -> '$newpath'\n" if $verbose;
+	    # now this path could already exist: be one of the looked-at paths. check:
+	    if (!member $newpath,$paths, \&Path_same) {
+		# create the new path
+		Act sub { xlink $$paths[0],$newpath },"link '$$paths[0]','$newpath'";
+	    }
+	    for my $path (@$paths) {
+		Act sub { xunlink $path }, "unlink '$path'" unless Path_same($path,$newpath)
+	    }
+	}#hehe  "eigenartig aber warum wenn oben schon check  hierdanndoch nochmal." nein eben nicht, dirsplittet nun. genau richtig.
+    }
+}
+
+use Chj::repl;repl;

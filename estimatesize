@@ -1,0 +1,212 @@
+#!/usr/bin/perl -w
+
+# Mit Jun 11 18:12:40 MEST 2003
+
+# oooooooh: du kann auch exclude-file.
+
+# Naa: sollte auch eher echte size zählen und n bissel für per-item overhead,
+# statt blocks! !!
+
+# -2140 naja
+
+use strict;
+use Chj::xopendir;
+use Chj::xperlfunc; # including xstat
+use Chj::xopen;
+use Chj::Filetype::Compressionrate::LZO;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ options ] path(s)
+  Searches filesystem starting at path(s). Sums all
+  file and folder blocks gibt summe aus.
+  Options:
+  --exclude-from file  exclude those paths. - may be given.
+  -l      stay on same filesystem.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;my $verbose;
+my @excludefrom;
+my $opt_l;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif ($_ eq '-l') {
+	$opt_l=1;
+    } elsif (/^--exclude-from(?:=(.*))?$/) {
+	push @excludefrom, defined $1 ? $1 : $ARGV[++$i];
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files>=1;
+
+$verbose|=$DEBUG;
+
+sub correctpath {
+    my ($path)=@_;
+    $path=~ s/\/*$//s; # no trailing slashes.;/;
+    $path=~ s|/+|/|sg;
+    # do not resolve ../ stuff yet
+    $path=~ s|^\s*||s; $path=~ s|\s*\z||s; # gobble whitespace  /;
+    $path
+}
+
+# fetch excludes:
+my (%excludepath,%excludeitem);
+for my $path (@excludefrom){
+    my $f=xopen $path;
+    while(defined(my$line=$f->xreadline)){
+	chomp $line;
+	next if $line=~ /^\s*\#/ or $line=~ /^\s*\z/s;
+	$line= correctpath($line);
+	if ($line=~ /\//) {
+	    $excludepath{$line}++;
+	} else {
+	    $excludeitem{$line}++;
+	}
+    }
+}
+
+if ($DEBUG){
+    warn "excludepath:\n".join("\n",keys %excludepath)."\n\n";
+    warn "excludeitem:\n".join("\n",keys %excludeitem)."\n\n";
+}
+
+my $stay_device;
+
+my %tot_suffix_size;
+#my %tot_suffix_sizecomp;## dies ist eine unsinnige zahl da aus totalen rückrechenbar  und auch ohnehin rückrechenbar.
+my %tot_suffix_count;
+my $tot_unknown_size;
+my $tot_unknown_count;
+
+sub scandir {
+    my ($dir)=@_;
+    $dir.="/";
+    warn "scanning '$dir'..\n" if $DEBUG; # mit dem / am ende damit das root dir gut kommt...
+    my $sumblocks=0;
+    my $sumplain=0;
+    my $sumcompressed=0;
+    my $sumoverhead=0;
+    eval {
+	my $d= xopendir $dir;
+	while(defined(my$item=$d->xnread)){
+	    my $path= "$dir$item";
+	    # exclude it?
+	    if ($excludepath{$path}) {
+		warn "excluding '$path' (path)\n" if $verbose;
+	    }
+	    elsif ($excludeitem{$item}) {
+		warn "excluding '$path' (item)\n" if $verbose;
+	    }
+	    else {
+		eval {
+		    my $s= xlstat $path;
+		    #$sum+= $s->blocks; # well, der Fall wo er ignoriert wird wegen not om same fs müsste man nicht zählen.
+		    if (-d _) {
+			if (!$opt_l or $s->dev == $stay_device) {
+			    $sumblocks+= $s->blocks;
+			    my ($a,$b,$c,$d)= scandir($path);
+			    $sumblocks+=$a;
+			    $sumplain+=$b;
+			    $sumcompressed+=$c;
+			    $sumoverhead+=$d;
+			} else {
+			    warn "ignoring '$path' since it's not on the same filesystem\n" if $verbose;
+			}
+		    } else {
+			$sumblocks+= $s->blocks;
+			if (-f _) {
+			    $sumplain+= $s->size;
+			    my $o= new Chj::Filetype::Compressionrate::LZO $path;
+			    #$sumcompressed+= $s->size * $o->estimated_compressionrate;
+			    if (defined(my $rate=$o->compressionrate)){
+				$tot_suffix_size{$$o[Chj::Filetype::Compressionrate::LZO::Suffix]}
+				  += $s->size;
+				$tot_suffix_count{$$o[Chj::Filetype::Compressionrate::LZO::Suffix]}++;
+				$sumcompressed+= $rate * $s->size;
+				#$tot_suffix_sizecomp{$$o[Chj::Filetype::Compressionrate::LZO::Suffix]}
+				#  +=$rate * $s->size;
+			    } else {
+				$tot_unknown_size+= $s->size;
+				$tot_unknown_count++;
+				#$sumcompressed+= $s->size + $Chj::Filetype::Compressionrate::LZO::DEFAULTRATE;  unsinnig. besser am schluss.
+			    }
+			}
+		    }
+		    $sumoverhead+= 100; # bytes or so for (compressed) item header in tar format.
+		};
+		if ($@) {
+		    print STDERR $@;
+		}
+	    }
+	}
+    };
+    if ($@) {
+	print STDERR $@;
+    }
+    ($sumblocks,$sumplain,$sumcompressed,$sumoverhead)
+}
+
+for (@files) {
+    my $s= xstat $_;
+    $stay_device= $s->dev;
+    my $path= correctpath($_);
+    my ($sumblocks,$sumplain,$sumcompressed,$sumoverhead)= scandir ($path eq '/' ? '' : $path);
+    $sumblocks+= $s->blocks;
+    my $superguesssaving= int($tot_unknown_size * (1- $Chj::Filetype::Compressionrate::LZO::DEFAULTRATE));
+    print "$_: $sumblocks filesystem blocks (probably ".($sumblocks/2)." KiB)\n";
+    print "  $sumplain bytes raw (only files)\n";
+#    print "  ".(" "x length($_))."  ".int($sumcompressed)." bytes lzo compressed (estimated, without item overhead)\n";
+    print "  ".int($sumcompressed+$sumoverhead+$tot_unknown_size-$superguesssaving)
+      ." bytes compressed total (estimation).\n";
+    print "  (This includes $tot_unknown_count files with a total of ",int$tot_unknown_size," bytes uncompressed,\n";
+    print "  whose suffix is not known, and thus just guessed as being compressable by\n";
+    print "  $superguesssaving bytes.)\n",
+}
+
+if ($verbose) {
+    print "\nStatistics:\n";
+    print "Filetype\tn files\ttot bytes uncompressed\n";
+    print map { "$_\t$tot_suffix_count{$_}\t$tot_suffix_size{$_}\n" }
+      sort { $tot_suffix_size{$a} <=> $tot_suffix_size{$b} }
+	keys %tot_suffix_size;
+    #my $unsum+= $_ for values %tot_suffix_size;
+    my $unsum;
+    $unsum+= $_ for values %tot_suffix_size;
+    print "uncompressed size of all files with known rates: ",int $unsum,"\n";
+    #my $compsum;
+    #$compsum+= $_ for values %tot_suffix_sizecomp;
+    #print "compressed size of all files with known rates: ",int $compsum,"\n";
+    #print "  tot_unknown_size: $tot_unknown_size\n";
+    #print "  tot_unknown_count: $tot_unknown_count\n";
+}
+
+__END__
+
+ .: 176848 filesystem blocks (probably 88424 KiB)
+    86430346 bytes uncompressed (only files)
+    72591382 bytes compressed total estimation.
+(This includes 1318 files with a total of 41174998 bytes uncompressed,
+ whose suffix is not known, and thus just guessed as being compressable by
+ 12352499 bytes.)
+
+tar cf - . |lzop | wc -c
+  72393236
+yeah.

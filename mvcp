@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+sub usage {
+$0=~ /[^\/]*$/;
+print "$& originalfilepath splitoldfilepath
+
+Renames originalfilepath to splitoldfilepath, then copies
+splitoldfilepath to originalfilepath, with the effect that
+the original inode (with all it's stat info) is kept under
+another name, and you can continue to edit the file under
+the same name.
+
+pflanze\@gmx.ch
+";
+exit;
+}
+
+usage unless @ARGV == 2;
+
+my ($orig,$split)=@ARGV;
+die "File $split already exists\n" if -e $split;
+rename $orig,$split or die "Could not rename $orig to $split: $!\n";
+system "/bin/cp","-p", $split,$orig;

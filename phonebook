@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# cj 13.9.2000
+# INput: Namensargumente (Input im Formularfeld)
+
+# Tue,  7 May 2002 15:14:44 +0200 hacked to warn about secretary phone no's
+
+use lib "/root/extlib";
+use backtick 'xbacktick';
+
+# Build a char->hex map
+for (0..255) {
+    $escapes{chr($_)} = sprintf("%%%02X", $_);
+}
+sub uri_escape { # this receives full urls. In file-urls also url-meta-chars (?,:) will be escaped
+    my($text) = @_;
+	$text =~ s/([^;\/&=+\$A-Za-z0-9\-_.!~*'(])/$escapes{$1}/g;  
+			## ')' and ',' have been removed, have to be converted too, cause else netscape gets confused with openurl()  !
+   			# Removed '?',';','@' and ':' here, too. Have to be escaped too.
+	$text;
+}
+
+my @sucharg;
+foreach (@ARGV) {
+	if (/^--?h(?:elp)?$/) {
+		print "  phonebook namensargumente
+
+Sucht in phonebook.ethz.ch nach Person mit angegebenen 
+Namensargumenten (Eingaben im Suchfeld).
+";
+		exit;
+	}
+	push @sucharg, uri_escape($_);
+}
+
+#warn join("+",@sucharg)."\n";
+
+my $result= xbacktick( "/usr/bin/lynx", "-dump", "http://phonebook.ethz.ch/cgi-bin/ethtel?N=".join("+",@sucharg));
+
+$result=~ s/^(\s*)(Tel.*?)(\s*)$/-> $2   <----------$3/mg;
+$result=~ s/^(\s*)(Secretary\b.*?)(\s*)$/$1($2) VORSICHT SEKRETARIAT!!!$3/mg;
+print $result;

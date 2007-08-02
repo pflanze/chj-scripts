@@ -1,0 +1,142 @@
+#!/usr/bin/perl -w
+
+# Son Nov 28 20:42:05 MET 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+use Digest::MD5 'md5_hex';
+use POSIX qw(EEXIST ENOENT);
+use Chj::xopen qw(xopen xopen_read xopen_write);
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+my $datadir="$ENV{HOME}/.$myname";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname 'file' -or- 'process|' -or- [options]
+
+  Options:
+  -r|--remove   remove old datafiles for given argument, do not run argument.
+  --showlast    show last output.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_remove,$opt_showlast);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?r(emove)?$/) {
+	$opt_remove=1;
+    } elsif (/^--?s(how(-?last)?)?$/) {
+	$opt_showlast=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+my ($feed)=@args;
+
+mkdir $datadir,0700;
+
+my $datakey= md5_hex $feed;
+my $datakeydir= "$datadir/$datakey";
+mkdir $datakeydir or do {
+    if ($! != EEXIST) {
+	die "mkdir '$datakeydir': $!";
+    }
+};# funny mayberemoved again right afterwards
+
+sub remove {
+    unlink "$datakeydir/feed"
+      or do{ die "unlink '$datakeydir/feed': $!" unless $!==ENOENT };
+    unlink "$datakeydir/lastdata"
+      or do{ die "unlink '$datakeydir/lastdata': $!" unless $!==ENOENT };
+    rmdir "$datakeydir"
+      or do{ die "rmdir '$datakeydir': $!" unless $!==ENOENT };
+}
+sub lastcontent {
+    #print "ENOENT=",ENOENT,"\n";
+    my $lastcontent= eval {
+	xopen_read("$datakeydir/lastdata")->xcontent;
+    };
+    if (ref $@ or $@) {
+	#print "error: \$!=$!\n";
+	#if ($!==ENOENT) {
+	# suck, isch leer??
+	#if ($@=~ /(nicht gefunden|not found)/) {##########URGH!!!todo.
+	if ($@=~ /(nicht gefunden|no such)/) {##########URGH!!!todo.!!!!!!!!!!!
+	    # our first run.
+	} else {
+	    die
+	}
+    }
+    $lastcontent
+}
+
+sub did_change {
+
+    xopen_write("$datakeydir/feed")->xprint($feed);# just for reference by user.
+
+    my $in= xopen $feed;#tja, still dangerous if anyone puts > in there but why should he.
+    my $content= $in->xcontent;
+    $in->xclose;
+
+    my $storeit= sub {
+	my $stor= xopen_write("$datakeydir/lastdata");
+	$stor->xprint($content);
+	$stor->xclose;
+    };
+
+    my $lastcontent= lastcontent;
+    if (defined $lastcontent) {
+	if ($lastcontent eq $content) {
+	    # ok.
+	    warn "same content" if $DEBUG;
+	    return 0
+	} else {
+	    warn "new content" if $DEBUG;
+	    &$storeit;
+	    return 1
+	}
+    } else {
+	warn "first-time content" if $DEBUG;
+	&$storeit;
+	return
+    }
+}
+
+
+if ($opt_remove) {
+    remove
+} elsif ($opt_showlast) {
+    print lastcontent;
+} else {
+    if ($feed) {
+	did_change() ? exit( 1 ) : exit( 0 )  # mannn brauchgt () nach did_change
+    }
+    else {
+	usage "not yet fini"  ##  na habe options oben nun schon vorher wegoperiert
+    }
+}

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# cj Mon, 29 Aug 2005 14:15:49 +0200
+# für alte eid nedit files nach emacs zu konversen
+
+set -e
+
+if [ -n "$TAB_EXPAND_N" ]; then 
+    N=$TAB_EXPAND_N  # w/o quotes so code can be given ok?
+else
+    N=4
+fi
+
+if [ $# -gt 0 ]; then
+    for file in "$@"; do
+	#tmp="`tempfile -n "$file"`"
+	#<<so ein scheiss programm>>
+	#tmp="`tempfile -d "`dirname "$file"`"`"
+	#und shell auch gleich fuc
+	tmp="$(tempfile -d "$(dirname "$file")")"
+	expand --tabs=$N < "$file" > "$tmp"  ## no quotes around $N?
+	PERMS="`perms-of "$file"`"
+	mvnumber -a "_vor_tab-expand" "$file"
+	mv -i "$tmp" "$file" # should rather throw an error immediately.
+	#perms-set "$file" "$PERMS"
+	chmod "$PERMS" "$file"
+    done
+else
+    echo "usage: $0 file(s)"
+    echo "  expands file(s)'s tabs to spaces using tabstops $N,"
+    echo "  keeping old version using mvnumber."
+    echo "  tabstops can be overridden by the env var TAB_EXPAND_N."
+fi
+
+
+####OOOOOCH TODOOOOO: permissions sind immer private nun.  uraltfrage: copyperms tool fehlt.  und tempfile nimmt nur mode.  wie krieg ich den von nem file? -> neues tüüleli.

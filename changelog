@@ -1,0 +1,24 @@
+#!/bin/sh
+
+function usage {
+	echo "$0 packagename"
+	echo "  show changelog of an installed package"
+	echo "  by cj"
+	exit
+}
+	
+if [ $# -ne 1 ]; then 
+	usage
+fi
+
+
+
+if [ -f /usr/share/doc/"$1"/changelog.Debian.gz ]; then
+	zless /usr/share/doc/"$1"/changelog.Debian.gz
+else if [ -f /usr/share/doc/"$1"/changelog.gz ]; then
+	zless /usr/share/doc/"$1"/changelog.gz
+else 
+	echo "no changelog file found for package $1 - is it installed?"
+	exit 1
+fi
+fi

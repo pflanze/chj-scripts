@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# cj Wed, 19 Feb 2003 16:12:42 +0100
+
+# 2003-02-20 02:22
+# Fri, 09 Jun 2006 21:25:39 +0200: added bfr and set -e
+
+set -e
+
+if [ $# -ne 1 ]; then
+    {
+    echo "Usage: `basename $0` port > outfile"
+    echo "  empfängt (möglicherweise chiffriertes) zeugs, und berechnet"
+    echo "  gleichzeitig md5 summe des outputs und schreibt ihn raus."
+    } >&2
+    exit 1
+fi
+
+port="$1"
+
+echo "(Bitte nun sendekommando starten)" >&2
+
+#netcat -l -p "$port" | multifeed '|' sh -c 'exec md5sum >&2' '&' cat
+
+netcat -l -p "$port" | bfr | multifeed '|' sh -c 'bfr | md5sum >&2' '&' bfr

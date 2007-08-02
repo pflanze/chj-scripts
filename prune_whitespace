@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+
+# Die Mär  4 15:36:07 MET 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ file(s) ]
+  Cuts off whitespace at the end of each line.
+  Renames the original to .bck.
+  Can act as filter.
+  Expects unix lineendings.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+
+
+
+sub slurpnclose{
+    local $/;
+    my $buf=<STDIN>;
+    close STDIN or die "$myname: $_: error reading: $!\n";
+    $buf
+}
+
+sub convnprintnclose {
+    my $cr=\ slurpnclose;
+    #$$cr=~ s/\s+$//mg; nimmt auch das eol!
+    $$cr=~ s/[ \t]+(\n?)$/$1/mg; # gibt dasselbe wie s/[ \t]+$//mg
+    print $$cr or die "$myname: $_: error printing: $!\n";
+    close STDOUT or die "$myname: $_: error closing output: $!\n";
+}
+
+if (@files){
+    for (@files){
+	open STDIN,"<$_" or die "$myname: $_: error opening '$_' for reading: $!\n";
+	#if (-e $_){
+	rename $_,"$_.bck" or die "$myname: could not rename existing $_ to $_.bck\n";
+	# eh MUSS ja existieren denn woher hab ichs denn.    pot gefahrlich?.weilwesisdortschon?
+	#}
+	open STDOUT, ">>$_" or die "$myname: could not open '$_' for writing: $_\n";
+	convnprintnclose;
+    }
+}
+else {
+    convnprintnclose;
+}

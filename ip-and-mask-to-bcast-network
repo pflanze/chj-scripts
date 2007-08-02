@@ -1,0 +1,124 @@
+#!/usr/bin/perl -w
+
+# Sam Dez 17 01:24:11 MET 2005
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ip/mask
+  or
+$myname ip mask
+
+  For mask, instead of dotted notation the number of non-local bits can be given.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+use Chj::BinHexOctDec;
+use Chj::Net::Ipv4a qw(ipv4str2ui ui2ipv4str);
+use Chj::singlequote;
+
+my ($ipstr,$maskstr);
+if (@args==1) {
+    my ($ipmaskstr)=@args;
+    my @spl= split /\//, $ipmaskstr,-1;
+    @spl==2 or usage "the single argument ".singlequote($ipmaskstr)." does not contain one slash";
+    ($ipstr,$maskstr)=@spl
+} elsif (@args==2) {
+    ($ipstr,$maskstr)=@args
+} else {
+    usage
+}
+
+
+sub mydie { die "$myname: @_\n" }
+# eigentlich lame, sollte xipv4str2ui bieten, oder/und errno artige rückgabe o.ä
+defined(my $ip= ipv4str2ui $ipstr) or mydie "ip ".singlequote($ipstr)." is not in ipv4 dotted format";
+#defined(my $mask= ipv4str2ui $maskstr) or mydie "mask ".singlequote($maskstr)." is not in ipv4 dotted format";
+
+my $mask= do {
+    if ($maskstr=~ /^[0-9]+\z/) {
+	# number of bits.
+	if (#$maskstr >= 0 and # well
+	    $maskstr < 33) {
+	    (2**32-1) - (2**(32-$maskstr) - 1)
+	    #(2**32) - (2**(32-$maskstr))  you never know whether constant folding in the above case wouldn't work better and might prove to be more surely sure.
+	} else {
+	    mydie "mask number of bits out of range: '$maskstr'";
+	}
+    } else {
+	defined(my $m= ipv4str2ui $maskstr) or mydie "mask ".singlequote($maskstr)." is not in ipv4 dotted format";
+	$m
+    }
+};
+
+
+
+my $strwidth=10;
+print " "x$strwidth,"  ","/......\\"x4,"\n";
+sub po {
+    my ($str,$val,$maybe_check)=@_;
+    my $bin= Chj::BinHexOctDec->dec($val)->bin;
+    printf "\%${strwidth}s: \%32s  \%s\%s\n",
+      $str, $bin, ui2ipv4str($val),
+	($maybe_check ? do {
+	    #local $_=$bin; nein mach es lambda
+	    if ($maybe_check->($bin)) {
+		# ok
+	    } else {
+		"  WARNING: looks bad"
+	    }
+	} : "");
+}
+
+po "ip",$ip;
+po "mask",$mask,sub{my($bin)=@_; $bin=~/^1+0+\z/ };
+
+# herausfinden  wo das letzte bit ist in mask.
+# damit dort dann alles füllen für broadcast.
+
+# aber: evtl ist dies sogar korrekter? konvalent (ehr?wiesgm) nehmen
+
+my $inversemask= ~ $mask;
+
+po "(invmask)",$inversemask;
+
+my $broadcast= $ip | $inversemask;
+po "broadcast",$broadcast;
+
+my $network= $ip & $mask;
+po "network",$network;
+
+my $router= $network + 1;
+po "router",$router;
+

@@ -1,0 +1,17 @@
+
+
+# cj Thu, 12 Aug 2004 16:36:24 +0200 // Mon, 16 Aug 2004 16:24:36 +0200
+# billig lösung damit nicht auf allen maschinen /usr/bin/chase vorhanden sein muss
+
+
+if [ $# -eq 1 ]; then
+	if [ -e "$1" ]; then
+		readlink -f "$@"
+	else
+		echo "$0: $1: does not exist"
+		exit 1
+	fi
+else
+	/usr/bin/chase "$@"
+fi
+

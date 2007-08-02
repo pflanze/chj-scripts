@@ -1,0 +1,197 @@
+#!/usr/bin/perl -w
+
+# Fre Okt 22 19:38:33 MEST 2004
+(my $authormail='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ...
+
+  Checks if some time is reached soon, and sends warning emails.
+
+  Options:
+  --check 'perlcode'  some perl code that must return an integer
+                      representing the unix time of the time point to
+                      warn about. undef if everything's fine. 0 if an
+                      alarm should be sent immediately.
+  --days num,num,..   List of days, on which it should send warnings.
+  --to someaddress(es)  Address(es comma separated) to send warnmail to.
+  --from address      Address to send from.
+  --store path        folder or file; a touch is done for each warning sent.
+                      prevents new warnings to be sent unless a nearer time
+                      point has been reached.
+  --msg 'message'     textual description of what happens when the time given
+                      by the 'check' is reached.
+
+  Example:
+
+  Check if a certificate file which is valid one year soon will expire
+  (assuming that the mtime of the file is when it's validity started):
+
+    $myname --check '((stat \"/etc/httpd/certs/xx.crt\")[9]||die \$!) + 365*24*60*60' \\
+      --days 14,7,2 --to '$authormail' --store /etc/httpd/certs/xx.crt_warnstamp \\
+      --msg 'the ssl-certificate expires'
+
+  NOTE:
+  If something fails, the script just dies, so you'll probably also want to
+  append || alarm \"$myname failed\" or something.
+
+  (Christian Jaeger <$authormail>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($to,$from,$check,$days,$store,$msg);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?check(?:=(.*))?$/) {
+        if (defined $1) {
+            $check=$1
+        } else {
+            $check=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?to(?:=(.*))?$/) {
+        if (defined $1) {
+            $to=$1
+        } else {
+            $to=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?from(?:=(.*))?$/) {
+        if (defined $1) {
+            $from=$1
+        } else {
+            $from=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?days(?:=(.*))?$/) {
+        if (defined $1) {
+            $days=$1
+        } else {
+            $days=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?store(?:=(.*))?$/) {
+        if (defined $1) {
+            $store=$1
+        } else {
+            $store=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?msg(?:=(.*))?$/) {
+        if (defined $1) {
+            $msg=$1
+        } else {
+            $msg=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+usage "need --check option" unless $check;
+usage "need --to option" unless $to;
+# unless(defined $from) {
+#     if ($from=$ENV{EMAIL}) {
+# 	#ok
+#     } else {
+# 	usage "need either --from option or \$EMAIL env var"
+#     }
+# }
+use Chj::Mailfrom 'mailfrom';
+unless(defined $from) {
+    $from= mailfrom;
+    unless($from) {#well, kann (fast? oder gar?) nicht mehr geschehen mit mailfrom routine.
+	usage "need either --from option or \$EMAIL env var"
+    }
+}
+
+usage "need --days option" unless $days;
+usage "currently the --store option is mandatory" unless $store;##
+usage "need --msg option" unless defined $msg;
+
+use Chj::chompspace;
+use Chj::FileStore::Stamp;
+use Data::Dumper;
+use Chj::xoutpipe;
+use Text::Wrap;
+sub mywrap {
+    wrap "","",@_
+}
+use Chj::Hostname;
+use Chj::username;
+
+sub sendmail {##yet again.
+    my %args=@_;
+    if ($DEBUG) {
+	warn "sendmail would send email: ".Dumper(\%args);
+	return
+    }
+    my $txt= "To: $args{To}\nFrom: $args{From}\nSubject: $args{Subject}\n\n$args{Data}\n";
+    my $p=xoutpipe "sendmail","-t";
+    $p->xprint($txt);
+    $p->xxfinish;
+}
+
+my @days= sort { - ($a <=> $b) } map {
+    /^\d*(?:\.\d+)?$/ or usage "--days value '$_' is not a (positive) number";
+    $_
+} map { s/_//sg; $_ } map { chompspace $_ } split /,/,$days;
+
+warn "given days on commandline (sorted): ". Dumper \@days if $DEBUG;
+
+my $now=time;
+
+my $targettime= eval $check;
+die "$myname: --check code gave error: $@" if ref $@ or $@;
+
+$targettime=~ /^\d*(?:\.\d+)?$/ or die "$myname: --check code didn't return a (positive) number: '$targettime'\n";#hmm, gefährlich?. todo gopf so fundamental.  string->number ehr sogar einfach number?
+
+my $stamp= new Chj::FileStore::Stamp $store;
+my $oldstamp= $stamp->mtime;
+
+warn "targettime is: ".localtime($targettime) if $DEBUG;
+warn "oldstamp is ".(defined($oldstamp)? localtime($oldstamp) : "undef") if $DEBUG;
+
+
+my @daytimestowarn; # isch das nöd ugly?
+for my $t (@days) {
+    my $point= $targettime - $t * 24*60*60;
+    warn "in loop: $t days before targettime is ".localtime($point) if $DEBUG;
+    if (defined $oldstamp and $point <= $oldstamp) {
+	warn "       : ignore day since it's before the oldstamp" if $DEBUG;
+	next;
+    }
+    if ($point > $now) {
+	warn "       : ignore day since it is not yet reached; ending loop" if $DEBUG;
+	last;
+    }
+
+    warn "       : actually add this day to daytimestowarn" if $DEBUG;
+    # else do warn:
+    #last; eh nein, sondern die restlichen  auch gleich nachholen.
+    push @daytimestowarn,$t;
+}
+
+
+if (@daytimestowarn) {
+    $stamp->xtouch;
+    my $username= username;
+    sendmail To=>$to,From=>$from,
+      Subject=> "$daytimestowarn[-1] days left till $msg",
+	Data=> mywrap (  "This is the $myname script. I have been set up by $username on ".Chj::Hostname::checked_ip_hostname." to warn you about this:\n\nThere are $daytimestowarn[-1] days left until $msg.\n".(@daytimestowarn > 1 ? "\n(Actually, the warnings for days ".join(" and ",@daytimestowarn[0..$#daytimestowarn-1])." have not been sent, so consider this to be a multi-warning.)\n" : "") );
+}
+
+

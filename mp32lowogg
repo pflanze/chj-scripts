@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+
+# Fre Jul 30 20:10:40 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ infile outfile ]
+
+Frage: soll man wirklich in alle programme eine map/batch funktion einbauen?
+In perl zu funktionen hab ich gesagt: nein.
+foreach * do fun -f ...
+a la myxargs.eh eben nöd.
+(Vorteil von in skripte einbauen isch no dass errors automatisch abbruch, bei shell wrappers a la for f in *; do  muss man nicht vergessen set -e zu machen vorher)
+
+  NA aber hey: basically isches immer wie mv,cp etc.: also auch verzeichnis ziel angeben können.
+  also eben doch legaler eh generaler wrapper besser. mal tun. optional perllib einbaubar in skripte.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_f,$opt_q);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?f(orce)?$/) {
+	$opt_f=1;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_q=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args==0 or @args==2;
+usage unless @args <=2;
+
+
+#use Chj::oerr 'oerrset';
+use Chj::xperlfunc;
+
+my ($infile,$outfile)=@args;
+#oerrset($infile,"-");
+#oerrset($outfile,"-");
+if (defined $outfile){
+    #erledigt
+} elsif (defined $infile) {
+    $outfile=$infile; $outfile=~ s/\.mp3\z/.ogg/s or $outfile.=".ogg";
+    die "outfile '$outfile' already exists, give -f option to override\n"
+      if -e $outfile and not $opt_f;
+} else {
+    $infile=$outfile="-";
+}
+
+# mpg123 -w - \(tv\ schauen\ katastrophenfilm\ \ gleich\ zwei\ katastrophen\ auf\ einmal\ \ voice005.mp3 |bfr --minimum 0| oggenc -q 0 - -o file4.ogg
+
+# frage: bei pipelines:  wenn subprozess A failed, soll ich dann noch wait auf B machen? soll ich B killen?
+
+
+use Chj::xpipeline 'xxpipeline';
+
+# # mann so ein seich: mpg321 kann nicht von - lesen. tut zwar so als könnte er, produziert aber keinen output. mannstoll.
+# my $flag_unlinkfifo;
+# if ($infile eq '-') {
+#     my $fifo="/tmp/fifo.$>.$$.".int(rand(100000)).".mp3";
+#     #xxsystem "mkfifo", $fifo  #mannnn  mktempfifo  mannnnnnn. "unix" isch so ein seich  ah voll, mkfifo(3) kennt kein excl.  aber well müsste das denn sein?
+#     use POSIX 'mkfifo';
+#     mkfifo $fifo,0700;
+#     if (xfork){
+# 	$infile=$fifo;$flag_unlinkfifo=1;
+#     } else {
+# 	my $in=bless *STDIN{IO},"Chj::IO::File";
+# 	use Chj::xopen "xopen_write";
+# 	my $out= xopen_write $fifo;
+# 	$in->xsendfile_to($out);
+# 	exit 0;
+#     }
+#     warn "created fifo $infile";
+# }
+# END {
+#     unlink $infile if $flag_unlinkfifo;
+# }
+
+# # fuck so ein IDIOT.  nicht mal fifo versuch hat geholfen.
+# #file /tmp/fifo.1001.6571.78784.mp3 is not a regular file!
+# # der kann also partout nicht streamen.
+#todo schauen ob sid geht
+
+xxpipeline
+  #[qw(mpg321 -w - --),$infile ],
+  [qw(mpg123-oss), $opt_q ? '-q' : () ,qw(-w - --),$infile ],# ok mpg123-oss geht im gegensatz zu mpg321 auch mit pipes.
+  [qw(bfr --minimum 0)],
+  [qw(oggenc), $opt_q ? '-Q' : (),qw(-q 0 - -o),$outfile],
+  ;
+
+
+
+
+__END__
+pipe READ,WRITE or die $!;
+
+if (xfork){
+    xexec qw(mpg123 -w - --),$infile;
+} else {
+    pipe READ2,WRITE2 or die $!;
+    if (xfork){
+	xexec qw(bfr --minimum 0);
+    }else {
+	xexec qw(oggenc -q 0 - -o),$outfile;
+    }
+}

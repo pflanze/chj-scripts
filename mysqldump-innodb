@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Fre Sep 30 12:46:38 MEST 2005
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $slave_socket= "--socket=/var/run/mysqld/mysqld_safe.sock";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [${myname}_options] -- additional_mysqldump_options
+
+  call mysqldump with options to safely backup innodb databases.
+  warning: does not handle myisam tables safely!
+
+  options: only one:
+   --access-slave   access socket '$slave_socket'
+
+  (Christian T+J <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_access_slave);
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--access-slave$/) {
+	$opt_access_slave=1;
+	
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+if ($opt_access_slave) {
+    unshift @args, $slave_socket;
+}
+
+sub xexec {
+    if ($DEBUG) {
+	print join (" ¦ ",@_),"\n"
+    } else {
+	exec @_ or exit 127;
+    }
+}
+xexec
+  #  qw(mysqldump -O single-transaction=TRUE --add-drop-table --all  --extended-insert  --quick),@args;
+  #cj Mon, 03 Oct 2005 19:47:52 +0200:
+  #qw(mysqldump -O single-transaction=TRUE --add-drop-table --all  --extended-insert --quick --skip-add-locks ),@args;
+  #hehhh nicht mal so, noch mehr:
+  qw(mysqldump -O single-transaction=TRUE --skip-lock-tables --add-drop-table --all  --extended-insert --quick --skip-add-locks ),@args;
+
+#JA das skip-lock-tables ist nötig damit er keine locks macht während backuppen (sichtbar dass bei mir auf elvis-5 "Access denied for user .. to database .. when using LOCK TABLES" kam).
+
+# Nun, evtl stören die locks ja eine innodb-verwendende applikation gar nicht beim backuppen, weil diese eh keine lock statements benützen?. und für andere (wie horde) wäre es still safe. --safe option machen?
+
+
+#(alt cj: oder (mit mysql 4.1 gemacht)  --add-drop-table --all --extended-insert --quick --skip-add-locks --single-transaction ? )

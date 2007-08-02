@@ -1,0 +1,110 @@
+#!/usr/bin/perl -w
+
+# Mon Dez 29 17:28:23 MET 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ object1.o object2  .. ]
+  Create a Makefile in the current directory, for a wxWindows project.
+  Linux/unix only currently.
+  Give initial list of object files it should generate.
+  If you give .o and non-.o files in this order, it will also generate
+  targets correct dependencies for you:
+    targ1dep1.o targ1dep2.o targ1 targ2dep1.o targ2 ...
+  You can list the same .o object file multiple times.
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+
+my $objs;#= join (" ",@args);
+# {
+#     my %seen;
+#     $objs= join(" ",
+# 		map { $seen{$_}=1; $_ }
+# 		grep { ! $seen{$_} }
+# 		@args);
+#     use Data::Dumper;
+#     warn Dumper(\%seen);
+# }
+# Hmmmmmm, scheint dass die listen zuerst gebaut werden dann weiter gereicht, nicht eins nach dem andern, schhhhhhad.
+
+{
+    my %seen;
+    $objs= join(" ",
+		map { $seen{$_} ? () : do{ $seen{$_}=1; $_} }
+		@args);
+}
+
+my @targets;
+{
+    my $deps;
+    for (@args) {
+	if (/\.o$/) {
+	    push @$deps,$_
+	} else {
+	    push @targets, [$_,$deps];
+	    undef $deps;
+	    # na, sollt ich jeweils immer *alle* angeben? na immer noch copypastebar.
+	}
+    }
+    warn "notice: last object was a .o file, dunno from which target the last .o files are a dependency.\n"
+      if $deps;
+}
+
+my $targets= @targets ? join("\n",
+			     map { "$$_[0]: ".
+				     ($$_[1] ? join(" ",@{$$_[1]}) : "")
+				 }
+			     @targets
+			     ) : '# foo: bar.o baz.o ...';
+
+use Chj::xsysopen; use Fcntl;
+
+my $f= xsysopen "Makefile",O_EXCL|O_CREAT|O_WRONLY;
+
+$f->xprint(<<"END");
+OBJS=$objs
+
+CXXFLAGS=-g -Wall -O `wx-config --cxxflags`
+LDFLAGS=`wx-config --libs`
+
+all: \$(OBJS)
+
+$targets
+
+clean:
+\trm -f \$(OBJS)
+END
+
+$f->xclose;
+
+__END__
+
+  Auch noch .h files reinnehmen?
+  Heh, make dep wird das nächste sein das ich wohl mache?..

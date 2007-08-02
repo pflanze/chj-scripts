@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+use strict;
+use lib "/root/local/etc/";
+our $which;
+require "ppponoff.pl";
+
+%ENV=();
+
+$<=0;
+
+if(is_if_up("ppp0")){warn "ppp0 is already up\n"; exit 0};
+
+## ACHTUNG vor Missbrauch um eth0 firewalling auszuschalten!
+system "/root/sbin/setupfirewall-pre", "ppp0"
+	and die;
+
+system "/usr/bin/pon", $which  
+	and die; # siehe perldevelopmemnt/system.pl lombi
+
+$|=1;
+
+for (1..60) {
+	if (is_if_up("ppp0")) {
+		print "ok\n";
+system "/root/sbin/setupfirewall-post", "ppp0"
+	and die;
+		exit 0;
+	} else {
+		print ".";
+	}
+	sleep 1;
+}
+
+print "Timeout\n";
+exit 1;

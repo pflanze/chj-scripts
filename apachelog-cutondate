@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+
+# Fre Mär  5 16:16:44 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($opt_t,$opt_h)=(0,0);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--help$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?t(ail)?$/) {
+	$opt_t=1;
+    } elsif (/^--head$/) {
+	$opt_h=1;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+($opt_t+$opt_h) == 1 or usage "please give exactly one of --tail/--head!";
+usage "missing date" unless @args == 1;
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL_";
+use elcms_general_settings;
+use EL::Util::Date;
+
+my $cuttime = EL::Util::Date::parsePublicationDatetime $args[0];
+my $parser= new Chj::Parse::Apache::Accesslog;
+my $linenumber = 0;
+
+M:{
+    while(<STDIN>){
+	$linenumber++;
+	$parser->parseline_time($_)
+	  or do { warn "error parsing: ".$parser->errmsg.": $_"; next };
+	if ($parser->[AL_Unixtime] > $cuttime) {
+	    warn "reached given time at line $linenumber\n";
+	    if ($opt_t) {
+		print $_ or die "write error: $!";
+		while (<STDIN>) {
+		    print or die "write error: $!";
+		}
+	    }
+	    last M;
+	}
+	print $_ or die "write error: $!" if $opt_h;
+    }
+    warn "reached eof without having seen given time\n";
+}

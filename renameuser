@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+
+# Don Feb 13 14:16:31 MET 2003
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname oldusername newusername
+  Renames username and it's associated primary group entry in:
+   /etc/passwd
+   /etc/group
+   /etc/shadow
+  and renames the /home/\$user folder.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files ==2;
+my ($old,$new)=@files;
+
+use lib "/root/extlib";
+use fileutils qw(fetchfile writebackfile);
+
+my $PWFILE= "/etc/passwd";
+my $SHFILE= "/etc/shadow";
+my $GRFILE= "/etc/group";
+
+
+sub checkuname{
+    my $un=shift;
+    $un=~ /^[\w.-]+$/s or die "$myname: invalid username '$un'\n";
+    # kein :, kein komma!
+}
+
+checkuname $old;
+checkuname $new;
+
+# rename user's home folder:
+rename "/home/$old","/home/$new"
+  or die "$myname: could not rename folder /home/$old to /home/$new: $!. Terminating.\n";
+
+
+{
+    my $sh= fetchfile $SHFILE;
+    $$sh=~ s/^\Q$old\E:/$new:/m or die "$myname: username '$old' not found in $SHFILE. Terminating. ATTENTION: /home/$old has already been renamed to /home/$new!\n";
+    writebackfile $SHFILE,$sh, checkperms=>1,strictperms=>1,symlinks=>'deny';
+}
+{
+    my $pw= fetchfile($PWFILE);
+    $$pw=~ s/^\Q$old\E:/$new:/m or die "$myname: username '$old' not found in $PWFILE. Terminating. ATTENTION: $SHFILE has already been changed, you should manually recover (see backup file)!  /home/$old has already been renamed to /home/$new!\n";
+    # change homedir:
+    $$pw=~ s{^(\Q$new\E:[^:]*:[^:]*:[^:]*:[^:]*):/home/$old:}{$1:/home/$new:}m
+      or warn "$myname: warning: could not change the home dir entry, did not find /home/$new in $PWFILE.\n";
+    writebackfile $PWFILE,$pw, checkperms=>1,strictperms=>1,symlinks=>'deny';
+}
+
+{
+    my $gr= fetchfile $GRFILE;
+    
+    # change group name:
+    $$gr=~ s/^\Q$old\E:/$new:/m or warn "$myname: warning: group name '$old' not found in $GRFILE. Not changing any group name.\n";
+
+    # change username in group assignments:
+    my $num= $$gr=~ s/^([^:]*:[^:]*:[^:]*:(?:|.*,))\Q$old\E(,|$|\s)/$1$new$2/mg ||0;
+    print "$myname: changed username in $num secondary group allocations.\n";
+
+    ##WELL: was wenn writeback fehlschlägt? sollte dann auch gesammelte Meldung bringen. @liste machen eben.
+    writebackfile $GRFILE,$gr, checkperms=>1,strictperms=>1,symlinks=>'deny';
+}
+
+
+## lazy way:
+system "/bin/chmod", "g-r", "/etc/shadow.bck";
+

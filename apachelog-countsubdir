@@ -1,0 +1,112 @@
+#!/usr/bin/perl -w
+
+# Don Nov 18 00:15:33 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname /string
+  count all requests (get and post and others [which are successful?])
+  to /string.*
+
+  half fertig.
+
+
+  Options:
+  -i  case insensitive
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_i;
+my ($opt_host,$opt_loc);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?i(nsensitive)?$/) {
+	$opt_i=1;
+    } elsif (/^--?ho(st)?$/) {
+	$opt_host=1;
+    } elsif (/^--?loc(ation)?$/) {
+	$opt_loc=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+
+my ($location)=@args;
+my $loclen= length $location;
+if ($opt_i) {
+    $location=lc $location;
+}
+
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL";
+
+my $parser= new Chj::Parse::Apache::Accesslog;
+
+
+my $hits=0;
+my %hosthits;
+my %locationhits;
+while(<STDIN>){
+    unless ($parser->parseline($_)) {
+	warn "error parsing: ".$parser->errmsg.": $_";
+    } else {
+	if (my $loc= $parser->location) {
+	    my $a= substr $loc,0,$loclen;
+	    if ($opt_i) {
+		$a=lc $a;
+	    }
+	    if ($a eq $location) {
+		$hits++;
+		$hosthits{$parser->[ALHost]}++ if $opt_host;
+		$locationhits{$loc}++ if $opt_loc;
+	    }
+	}# else weird request?.
+    }
+}
+
+print "$hits\n";
+
+if ($opt_host) {
+    print "\n";
+    for (sort {
+	$hosthits{$b} <=> $hosthits{$a}
+    } keys %hosthits) {
+	print "$_\t$hosthits{$_}\n";
+    }
+}
+
+if ($opt_loc) {
+    print "\n";
+    for (sort {
+	$locationhits{$b} <=> $locationhits{$a}
+    } keys %locationhits) {
+	print "$_\t$locationhits{$_}\n";
+    }
+}
+

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+usage() {
+    echo "$0 [-z] files_to_offer"
+    echo "  tars them up and offers them on some port"
+    exit 1
+}
+
+if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+z=""
+if [ "$1" = "-z" ]; then
+    z="-z "; shift
+elif [ "$1" = "--" ]; then
+    shift
+fi
+
+if [ ! "$PORT" ]; then
+    PORT=$((14123+$UID))
+fi
+
+echo "Offering on port $PORT.. please start  netfetch $z`publicip -f` $PORT"
+
+tar c ${z}-f - "$@" | multifeed --delayed '|' md5sum '&' netcat -q 1 -l -p "$PORT" 
+

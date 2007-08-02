@@ -1,0 +1,153 @@
+#!/usr/bin/perl -w
+
+# Sam Jun 12 15:57:35 CEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ user ]
+
+  Changes the password of the given user or \$USER.
+
+  todo:
+  - filelesen
+  - fileschreiben korrekt
+  - wenn als root operieren, hmm, wie das,  rootpw von mysql erhalten reicht, aber das krieg ich meist ja eben nur wenn ich ~root/.my.cnf krieg
+  dann soll es auch neusetzen von passwords von andernen usern erlauben.
+  
+ - change meldung wenn user nicht existiert so dass man draus kommt
+
+ (Christian Jaeger <$email>)
+";
+    exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args >1;
+
+my ($user)=@args;
+my $flag_gaveuser= defined $user;
+$user=$ENV{USER} unless defined $user;
+
+use DBI;
+use Chj::Util::AskPassword;
+use Chj::Util::AskYN;
+use Chj::xopen qw(xopen_read);
+use Chj::xtmpfile;
+
+my $cnffilepath=do{
+    my $home;
+  IF:{
+	if (!$flag_gaveuser){
+	    last IF;#well, do not even look at pw database
+	}
+	# try to find out which home could be meant?
+	#if (-d "/home/$user") {##well....
+	if (my @p=getpwnam $user) {
+	    $home=$p[7]; #(hm kann kein return machen hm. also doch sowas von var checking dann)
+	}
+    }
+    $home= $ENV{HOME} unless defined $home and length $home;
+    "$home/.my.cnf"
+};
+
+## try to read user+password from existing cnffile   wie genau, huere sektionen.
+my $cnf; # hash
+
+if (-f $cnffilepath) {
+    eval {
+	require MySQL::Config;
+	#require Getopt::Long;
+	#my $argc=0;
+	#my @argv;
+	#MySQL::Config::load_defaults "my", ["client", "myclient"], \$argc, \@argv;
+	$cnf= MySQL::Config::parse_defaults "my", ["client" #, "myclient"
+						  ];## wasch myclient?
+    };
+}
+
+
+print "connecting as user '$user'..\n";
+
+my $db;
+eval {
+    $db= DBI->connect ("DBI:mysql(RaiseError=>1):",$user,"");
+};
+if ($db) {
+    # ok.
+} else {
+    if (not $@) {
+	die "some error occured, dbi did not throw an exception but we still didn't get a handle";
+    }
+    if (not $@ =~ /Access denied for user/i) {
+	die $@;
+    }
+    my $old= askpassword "Please enter old password: ";
+    $db= DBI->connect ("DBI:mysql(RaiseError=>1):",$user,$old);
+}
+
+#$db->  grant on *.*
+# AH:  Passwords can also be set with the SET PASSWORD command. See section 5.5.6 SET Syntax.
+
+DO:{
+    my $new= askpassword "Please enter new password: ";
+    my $new2= askpassword "Please reenter new password: ";
+    #redo DO unless length $new;
+    do{ print "entries don't match, redo\n" ; redo DO}  unless $new eq $new2;
+    print "***You're setting to the empty password!***\n" unless length $new;
+
+    my $st= $db->prepare("set password=password(?)");
+    $st->execute($new);
+}
+
+
+WRITECNF: {
+    my $cnfstr;
+    if (-e $cnffilepath) {
+	if (askyn "Do you want me to update the file '$cnffilepath'? ") {
+	    $cnfstr="HOLENZUERST dann updaten ç";
+	} else {
+	    last WRITECNF;
+	}
+    } elsif (askyn "Do you want me to create the file '$cnffilepath'? ") {
+	$cnfstr=".....ç";
+    } else {
+	last WRITECNF;
+    }
+    my $t= xtmpfile $cnffilepath;
+    $t->xprint($cnfstr);
+    $t->xclose;
+    $t->xrename($cnffilepath);
+    # ps ja ich habe doch ein full replacementframework gemacht aber hier isch tmpfile auch ok da ich ja nonworldreadable will.
+    ###hingegen sollte ownership wohl rekreiert werden oder an den user angepasst werden.
+}
+
+print "Done.\n";
+
+__END__

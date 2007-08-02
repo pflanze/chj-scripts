@@ -1,0 +1,5 @@
+#!/bin/sh
+
+#exec date|tr ' :' '_-'
+date|perl -wne 's/://sg; s/ /_/sg; print'
+

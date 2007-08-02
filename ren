@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+
+# Fre Nov 19 21:59:21 MET 2004
+(my $email='jaeger%ethlife,ethz,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname item(s)
+
+  this is rene, your file/folder renaming tool. it has lost it's trailing e
+  becaus it was deamed to loong.
+  interactively asks for the new name of each of them.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc qw(xrename xlinkunlink);
+use Term::ReadLine;
+my $rl= Term::ReadLine->new("rename");
+
+$rl->ornaments(0);
+
+sub ren {
+    my ($path)=@_;
+
+    lstat $path or die "'$path': $!";
+    my $path_is_d= -d _;
+
+    $path=~ s|/+\z||s; # + ist wichtig!
+    my ($folder,$filename)= $path=~ m|(.*?)([^/]+)\z|s or die "given empty path";
+    #print "fol=$folder, fn=$filename\n";
+    #(# well, . und .. wär noch eventualkritisch.  ?)
+
+    if (defined(my $to= $rl->readline("rename: ",$filename))){
+	if (length($to)) {
+	    if ($to ne $filename) {
+		my $newpath= "$folder$to";
+		#print "newpath='$newpath'\n";
+		if (lstat $newpath) {
+		    die "target exists - unfinished, ask user here";###unfini
+		    if(!1){
+			return
+		    }
+		}
+		if ($path_is_d) {
+		    xrename $path,$newpath;
+		} else {
+		    # be unrisky to race conds
+		    xlinkunlink $path,$newpath;
+		}
+	    }
+	}
+    }
+}
+
+sub _ren {
+    eval {
+	&ren
+    };
+    if ($@) {
+	my $e=$@;
+	$e=~ s/ at \S.* line \d+.{1,2}$//s;#warum geht $ aber nicht \z ah logo.
+	chomp $e;
+	print STDERR "$e\n";
+    }
+}
+
+_ren $_ for @args;
+

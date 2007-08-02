@@ -1,0 +1,214 @@
+#!/usr/bin/perl -w
+
+# Sam Nov 29 18:25:11 MET 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname program [arguments]
+  Creates new standard pipe filehandles for stdin, stdout and stderr,
+  sets up a proxy that copies them to the current stdin/out/err, then
+  executes the given program.
+  Options:
+  -d      give debug info
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my $DEBUG;
+my $BUFSIZ=4096*16;
+my @args;
+for (my $i=0; $i<@ARGV; $i++){
+    local $_= $ARGV[$i];
+    if ($_ eq '--') {
+	@args= splice @ARGV,$i+1;
+	last;
+    } elsif (/^-/) {
+	if (/^--?h/) {
+	    usage
+	} elsif (/^--?d/) {
+	    $DEBUG=1
+	} else {
+	    usage "unknown option '$_'";
+	}
+    } else {
+	@args= splice @ARGV,$i;
+	last;
+    }
+}
+usage unless @args;
+
+# @args ist kommando.
+
+##ich hab noch nix für pipes oo mässig handhaben!!!
+pipe READ0,WRITE0;# f. stdin
+pipe READ1,WRITE1;# f. stdout
+pipe READ2,WRITE2;# f. stderr
+
+# nun kopien forken für jedes von denen. dann eine kopie fürs child.?.
+
+##note: copy in allocpty script.
+use Carp;
+sub xfork { my $pid=fork ; defined($pid) or croak "fork: $!"; $pid}
+
+sub xsysread(*$$) {
+    my $rv= sysread $_[0],$_[1],$_[2];
+    defined $rv or croak "sysread: $!";
+    ## noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+    $rv
+}
+sub xsyswriteall(*$) {
+    my $written=0;
+    my $rv;
+    my $len= length $_[1];
+    do {
+	if ($written==0) {
+	    $rv=syswrite $_[0],$_[1];
+	} else {
+	    $rv=syswrite $_[0],substr($_[1],$written);# oder wär abschneiden nach getan effizienter? Na in C wärs klar wie machen.   Wann habe ich die Nase voll von syswriteall routinen schreiben?
+	}
+	defined $rv or croak "syswrite: $!";
+	## TODO noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+	$written+=$rv;
+    } until ($written==$len);
+}
+
+# make the parent proxy signals.   Das wär ein grund, gleich im parent exec zu machen. Aber child signals? Well sollte nie geschehen. Umschreiben? Hm, stdin lesendes child wird halt dann nie enden solang stdin da ist; das ist in notty ein problem. Müsste halt auch umschreiben dass stdin lesendes child merkt wenn der output weg ist, d.h. nonblocking io.
+
+for my $sig (qw(QUIT TERM USR1 STOP CONT HUP INT)) {
+    $SIG{$sig}= sub {
+	warn $myname,": SIG",$sig," catched\n" if $DEBUG;
+    };
+}
+
+##/copy
+
+#$SIG{CHLD} = sub {
+#    warn "SIGCHILD catched;\n";
+#};
+
+my (%pid,$pid);
+## {my $oldfh= select    oder eben sysread und so.
+$pid=xfork;
+if ($pid==0) {
+    #child f. stdin des childs
+    close STDOUT or die $!;
+    #close STDERR or die $!;
+    close READ0;
+    close READ1; close WRITE1;
+    close READ2; close WRITE2;
+    #while (<STDIN>) {
+    #print WRITE0 or die $!;
+    #}
+    my $buf;
+    while (1){
+	exit unless xsysread STDIN,$buf,$BUFSIZ;
+	xsyswriteall WRITE0,$buf;
+    }
+}
+$pid{$pid}="stdin";
+my $pid_stdin= $pid; # weil der später extra gekillt werden muss.
+
+$pid=xfork;
+if ($pid==0) {
+    #child f. stdout des childs
+    close STDIN or die $!;
+    #close STDERR or die $!;
+    close READ0; close WRITE0;
+    close WRITE1;
+    close READ2; close WRITE2;
+    #while (<READ1>) {
+    #print STDOUT or die $!;
+    #}
+    my $buf;
+    while (1){
+	exit unless xsysread READ1,$buf,$BUFSIZ;
+	xsyswriteall STDOUT,$buf;
+    }
+    exit;
+}
+$pid{$pid}="stdout";
+
+$pid=xfork;
+if ($pid==0) {
+    #child f. stderr des childs
+    #close STDERR or die $!;
+    #close STDERR or die $!;
+    close READ0; close WRITE0;
+    close READ1; close WRITE1;
+    close WRITE2;
+    #while (<READ2>) {
+    #print STDERR or die $!;
+    #}
+    my $buf;
+    while (1){
+	exit unless xsysread READ2,$buf,$BUFSIZ;
+	xsyswriteall STDERR,$buf;
+    }
+    exit;
+}
+$pid{$pid}="stderr";
+
+if (($pid=xfork)==0) {
+    # child f. exec:
+    close STDIN;
+    close STDOUT;
+    #close STDERR;
+    open STDIN,"<&READ0" or die $!;
+    open STDOUT,">&WRITE1" or die $!;
+    open STDERR,">&WRITE2" or die $!;
+    close WRITE0 or die $!;
+    close READ1 or die $!;
+    close READ2 or die $!;
+    warn "$myname: will exec '$args[0]' now\n" if $DEBUG;
+    exec @args;
+    #die "exec failed: $!";
+    exit 127;
+}
+$pid{$pid}="cmd";
+
+close READ0 or die $!;
+close WRITE0 or die $!;
+close READ1 or die $!;
+close WRITE1 or die $!;
+close READ2 or die $!;
+close WRITE2 or die $!;
+
+##note: copy in allocpty script.
+
+my $exitcode;
+while (%pid) {
+    $pid=waitpid(-1,0);
+    defined $pid or do { warn "?? waidpid: $!"; sleep 1; redo};
+    if (my $what= $pid{$pid}) {
+	if ($? == 0) {
+	    warn "$myname: child for $what has exited successfully\n" if $DEBUG;
+	} else {
+	    warn "$myname: child for $what has exited with exit code $?\n" if $DEBUG;
+	}
+	if ($what eq 'cmd') {
+	    $exitcode=$? if $?;
+	    kill 9, $pid_stdin or warn "kill: $!"
+	      if $pid{$pid_stdin};
+	} else {
+	    $exitcode||=$?;
+	}
+	delete $pid{$pid};
+    } else {
+	warn "?? reaped child not created by me";
+    }
+}
+
+if ($exitcode > 255) {
+    exit ($exitcode >> 8);
+} elsif ($exitcode) {
+    kill $exitcode,$$;
+    sleep 1;
+    exit 1;# to make sure that if we should block that signal we return an error nonetheless.
+}
+# ps obiges if ist ganz essentiell!  propagation nicht nur von exit codes sondern auch von abnormal exits eben.

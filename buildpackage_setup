@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+
+# Fre Dez 13 14:57:56 CET 2002
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname
+  Setzt den usernamen und email und so ins debian/changelog rein.
+  Geht zurzeit nur fuer chris
+";
+exit @_;
+}
+
+my @files;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @files, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @files, $_
+	}
+}
+usage if @files;
+
+use lib "/root/extlib";
+use fileutils qw(fetchfile writebackfile);
+
+
+my %mapping= (# Note: & will be replaced by @; this is a precaution against spam robots
+	      # reading this script from my homepage
+	      chris=>["cj",'jaeger&ethlife.ethz.ch'],
+	      christian=>["ct",'tarnutzer&ethlife.ethz.ch'],
+	      chriscompile=>["cj",'jaeger&ethlife.ethz.ch'],
+	     );
+
+$_= $mapping{$ENV{USER}} or die "Kenne User '$ENV{USER}' nicht, bitte in $0 nachtragen.\n";
+my ($initials,$email)= @$_;
+$email=~ tr/&/@/;
+
+my $a= fetchfile "debian/changelog";
+
+$$a=~ /^(.*)(?:\n\S|$)/s or die "Strange format in changelog";
+
+my $first=$1;
+
+$first=~ /\n -- ([^\n]*)/ or die "invalid format";
+my $firstuser=$1;
+if ($firstuser=~ /$ENV{USER}/) {
+  die "Scheint bereits angepasst worden zu sein. Breche ab.\n";
+}
+
+$$a=~ /^([^\n]+)/s or die "invalid format";
+
+my $firstline= $1;
+
+$firstline=~ s/^([^()]*\([^()]*)\)/$1.$initials\)/ or die "invalid format: vermisse versionsangabe in klammern";
+
+my $date= `date -R`;
+
+$$a= "$firstline
+
+  * recompiled from XXX
+
+ -- $ENV{USER} <$email>  $date
+$$a";
+
+writebackfile("debian/changelog",$a);
+

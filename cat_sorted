@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ls -rt -- "$@"|tr '\012' '\0'| xargs -0 cat

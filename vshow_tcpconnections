@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+#root@elvis root#  ncontext --nid 1005 --migrate chcontext --ctx 1005 show_tcpconnections
+#is the only thing that works. so..:
+
+# Don Feb  8 15:26:03 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+use Chj::IO::Command;
+use Chj::xperlfunc;
+
+my $stat= Chj::IO::Command->new_sender ("vserver-stat");
+
+$stat->xreadline =~ /^CTX/ or die "invalid output";
+
+my $width= $ENV{COLUMNS}||100;
+
+while (<$stat>) {
+    chomp;
+    if (my ($ctx,$name)= /^(\d+)\s+.*?(\w+)$/) {
+	next if $ctx == 0;
+	print "-- $name: ".("-"x($width-4-3-length($name)))."\n";
+	xxsystem "ncontext --nid $ctx --migrate chcontext --ctx $ctx show_tcpconnections";
+	#print "\n";
+    } else {
+	die "invalid output '$_'";
+    }
+}

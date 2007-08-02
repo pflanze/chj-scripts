@@ -1,0 +1,109 @@
+#!/usr/bin/perl -w
+
+# Son Aug 24 00:56:12 CEST 2003
+# Fri, 10 Oct 2003 14:34:33 +0200 ergänzt mit _Mon_Sep_15_18-36-30_MEST_2003 format
+
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+use Date::Parse;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  sort the given arguments, or stdin lines, and output them on stdout as
+  lines sorted nach enthaltenem datum of the form YYYY[^\\d].*\\d
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+my @items;
+
+sub appenditem {
+    my ($line)=@_;
+    my $file=$line;
+    $file=~ s{^.*/}{}s;
+    if (# Mon_Sep__8_12-38-17_MEST_2003
+	     #$file=~ /([a-zA-Zäöü]{3}[_ ][a-zA-Zäöü]{3}[_ ]+\d+[_ ]+\d+[-:]\d+[-:]\d+[_ ]MEST[_ ]\d{4})/
+	     $file=~ /(([a-zA-Zäöü]{3})[_ ]([a-zA-Zäöü]{3})[_ ]+(\d+)[_ ]+(\d+)[-:](\d+)[-:](\d+)[_ ]MEST[_ ](\d{4}))/
+	    ) {
+	#my $str=$1;
+	#$str=~ tr/_-/ :/;
+	#my $time= str2time $str; ## aaaaach, der versteht das nicht.
+	my ($str,$dayname,$monname,$day,$h,$min,$sec,$year)=($1,$2,$3,$4,$5,$6,$7,$8);
+	$str=~ tr/_-/ :/;
+	use elcms_general_settings;
+	use EL::Util::Date;
+	#my $time= EL::Util::Date::parse($str,1,0,0,0,0);  geht auch nicht
+	defined(my $m= EL::Util::Date::parseMonth($monname)) or die "unknown month '$monname'";
+	defined(my $d= EL::Util::Date::parseWeekday($dayname)) or die "unknown weekday '$dayname'";
+	
+	my $time= EL::Util::Date::checkdate($year,$m,$d,$h,$min,$sec);
+	if ($time){
+	    push @items,[$time,$line];
+	} else {
+	    die "could not find date in '$line' (2) ('$str')\n";
+	}
+    } elsif ($file=~ /(\d{4}.*\d)/ ) {
+	my $time= str2time $1;
+	if ($time){
+	    push @items,[$time,$line];
+	} else {
+	    die "could not find date in '$line' (1)\n";
+	}
+    } else {
+	die "could not find date in '$line'\n";
+    }
+}
+
+if (@args) {
+    for(@args){
+	appenditem $_
+    }
+}
+else {
+    while(<STDIN>){
+	chomp;
+	appenditem $_
+    }
+}
+
+for (
+     map { $_->[1] }
+     sort { $a->[0] <=> $b->[0] }
+     @items
+    ) {
+    print $_,"\n"
+      or die "could not print: $!";
+}
+

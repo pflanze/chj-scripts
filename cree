@@ -1,0 +1,47 @@
+#!/usr/bin/perl -w
+
+# Mit Okt 23 15:20:57 MEST 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+  print "$myname [ options ] file(s)
+  Creates the listed files, puts in the current datetime,
+  and opens them in the \$EDITOR.
+  Options are passed on to the editor unchanged.
+";
+exit @_;
+}
+
+my (@files,@options);
+for (my $i=0; $i<=$#ARGV; $i++) {
+  local $_=$ARGV[$i];
+  if (/^--?h(elp)?$/) {
+    usage
+  } elsif ($_ eq '--') {
+    push @options,"--";
+    push @files, @ARGV[$i+1..$#ARGV];
+    last;
+  } elsif (/^-/) {
+    push @options,$_;
+  } else {
+    push @files, $_
+  }
+}
+usage unless @files;
+unless ($ENV{EDITOR}){ 
+  warn "Environmental variable \$EDITOR is not set.\n";
+  usage;
+}
+
+use lib "/root/extlib"; ## (gar nicht nötig auf lombi)
+use fileutils "createfile";
+
+my $datetime= `date -R`; #`date`;? hm. -R gibts nur in Englisch offenbar.
+for (@files) {
+  createfile $_,0666, $datetime;
+}
+exec $ENV{EDITOR},@options,@files;

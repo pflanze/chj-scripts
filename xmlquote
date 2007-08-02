@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Mit Sep 22 16:18:22 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+use XML::LibXML;
+use Chj::Encode::Permissive 'encode_permissive';
+
+local $/;
+my $content= <STDIN>;
+
+my $doc= new XML::LibXML::Document;
+my $topel= new XML::LibXML::Element "foo";
+$doc->setDocumentElement($topel);
+$topel->appendText(encode_permissive $content,'latin1','utf-8');
+
+my $res= $doc->toString(1);
+print encode_permissive $res,'utf-8','latin1';

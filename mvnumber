@@ -1,0 +1,125 @@
+#!/usr/bin/perl -w
+
+# Mit Jun  2 17:47:41 MEST 2004
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname item(s)
+
+  Append a number to the name of the listed files or dirs, where
+  the number is automatically determined from existing items (see
+  also the similar 'keep' command).
+
+  Options:
+  -r --rotate  Rotate item numbers instead of sequential, so that
+               the oldest one always has the highest number.
+  -a appendix  Append this to each itemname (after the number)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_r;
+my $opt_append="";
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?r(otate)?$/) {
+	$opt_r=1;
+    } elsif (/^--?a(ppend)?$/) {
+	$opt_append= $ARGV[++$i] or usage("--append option requires argument");
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+use lib "/root/extlib";
+use Filepaths;
+
+my $inbetween=".";
+
+sub xrename($$) {
+    my ($a,$b)=@_;
+    -e $b and die "target '$b' exists, will not overwrite!\n";
+    # obiges is zwar raceconditionprone aber easier als mit temporary hardlinks, weil sons gehts nich mit directories, right?.
+    rename $a,$b or die "could not rename '$a' to '$b': $!\n";
+}
+
+sub _cleaneditem {
+    my ($item)=@_; # might also be a dir
+    $item=~ s|/+$||s; # strip ending slash
+    $item= "./$item" unless $item=~ m|/|; ###soviel zu portabilität.
+    -e $item or die "item '$item' does not exist\n";
+    $item
+}
+
+
+sub rotate($) {
+    my $item= _cleaneditem(@_);
+    my $dir=FolderOfThisFile($item); ###btw should be called FolderOfThisItem !!!!
+    ###und filename auch gleich liefern ey.
+    my $itemname= Filename($item); ### sollte Itemname heissen!!!
+    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    my %takennumbers;
+    while (defined (local $_=readdir DIR)){
+	if (/^\Q$itemname\E\.(\d+)/s) {
+	    # found a (probable) backup item.
+	    if (exists $takennumbers{$1}) {
+		die "Problem: '$_' uses same backup number as '$takennumbers{$1}'. Terminating.\n";
+	    }
+	    $takennumbers{$1}= $_;
+	}
+    }
+    closedir DIR or die "error closing dir: $!";
+    for (sort {$b<=>$a} keys %takennumbers) {
+	my ($newname,$oldname);
+	$oldname=$newname=$takennumbers{$_};
+	my $newnumber= $_+1;
+	$newname=~ s/(\Q$itemname\E\.)\d+(.*)/$1$newnumber$2/s or die "BUG";
+	#xrename "$item.$_","$item.".($_+1);
+	xrename $oldname,$newname;
+    }
+    #xrename $item, "$item.1"; ## well, sollte ich null verwenden?
+    #xcopy "$item.1",$item;
+    xrename $item,"$item.1$opt_append";
+}
+
+sub move($) {
+    my $item= _cleaneditem(@_);
+    my $dir=FolderOfThisFile($item);
+    my $itemname= Filename($item);
+    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    my $usenumber=1;
+    while (defined (local $_=readdir DIR)){
+	#if (/^\Q$itemname\E\.(\d)(?:[_ :-]|$)/s) { ## auch fortführung möglich
+	if (/^\Q$itemname\E\.(\d+)/s) { ## auch fortführung möglich
+	    # found a backup item.
+	    if ($1 >= $usenumber){
+		$usenumber= $1+1;
+	    }
+	}
+    }
+    xrename $item,"$item.$usenumber$opt_append";
+}
+
+for(@files){
+    $opt_r ? rotate($_) : move($_);
+}

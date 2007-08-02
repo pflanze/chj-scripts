@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Mit Feb  9 18:51:59 MET 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (gemacht um url's aus .galeon/session_crashed.xml files verwenden zu können)
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+
+# "http://www.google.de/search?hl=de&amp;q=karte+der+stadtkreise+z%C3%BCrich&amp;meta="
+
+use HTML::Entities;
+
+if (@args) {
+    for(@args){
+	print HTML::Entities::decode $_;
+	print "\n";
+    }
+} else {
+    while(<STDIN>) {
+	print HTML::Entities::decode $_
+    }
+}
+

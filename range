@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+# Sam Mai  3 23:24:40 MEST 2003
+
+use strict;
+use lib "/root/extlib";
+use Chj::IO::File;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to
+  Reads stdin and writes bytes at positions from..to-1 to stdout.
+  It exits as soon as the 'to' position has been reached.
+  The first byte in the input stream is numbered 0.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $VERBOSE=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$VERBOSE=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage("wrong number of arguments") unless @files==2;
+
+my ($start,$afterend)=@files;
+
+
+bless *STDIN{IO}, "Chj::IO::File";
+
+my $bufsiz= 16384;
+my $buf;
+
+my $pos=0;
+
+# Konzept :
+# Grösse des nächsten zu lesenden Blocks *beschränken* wenn er das Ende des dokus
+# erreichen wird//*kann*. Natürlich dann nochmals checken - eben immer beschrankt
+# bis Ende.
+# *Nicht* beschränken bezüglich Erreichen des starts. Sondern drüberhinaus, dann
+# schneiden bei diesem ersten (ausser wenn zufällig grad auf Grenze d.h. substr 0 naja egal).
+
+
+my $flag_approaching_end;
+$|=1;
+
+while(1) {
+    $bufsiz= $afterend-$pos if ($pos+$bufsiz)>$afterend;
+warn "bufsiz=$bufsiz\n" if $DEBUG;
+    my $rv= STDIN->xread($buf,$bufsiz) or last;
+    my $nextpos= $pos+$rv;
+warn "nextpos=$nextpos\n" if $DEBUG;
+    if (($nextpos - $start)>=0) {
+warn "entered range\n" if $DEBUG;
+	print STDOUT substr $buf, $start-$pos;
+	$pos=$nextpos;
+	while(1) {
+	    $bufsiz= $afterend - $nextpos if $afterend - $nextpos < $bufsiz;
+warn "bufsiz=$bufsiz\n" if $DEBUG;
+	    $rv= STDIN->xread($buf,$bufsiz) or exit;
+	    $nextpos= $pos+$rv;
+warn "nextpos=$nextpos\n" if $DEBUG;
+	    print STDOUT $buf;
+	    $pos=$nextpos;
+	}
+    }
+    $pos=$nextpos;
+}
+
+warn "never entered range.\n" if $DEBUG || $VERBOSE;
+##btw another warning in case of VERBOSE would be needed, when the input streams ends before range finished.

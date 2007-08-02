@@ -1,0 +1,43 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use Date::Parse;
+
+if (@ARGV) {
+	my ($printarg,$unix);
+	for (@ARGV) {
+	  if ($_ eq '-u') {
+	    $unix=1;
+	    undef $_;
+	  }
+	}
+	if ((grep {defined} @ARGV)>1) { 
+		$printarg=1;
+	}
+	for (@ARGV) {
+	        next unless defined;
+		next unless length( $_);
+		my $d= str2time($_);
+		print "$_: " if $printarg;
+		print "$d " if $unix;
+		if (defined $d) {
+			print localtime($d)."\n";
+		} else {
+			print "$_: " unless $printarg;
+			print "invalid format\n";
+		}
+	}
+}
+else {
+	$0=~ /[^\/]*$/;
+	die "Usage:
+    $& [-u] datestring [, datestring, ..]
+
+    Parses the datestring and converts it into local time if possible.
+    Don't forget to put quotes around the strings.
+    Prints the unixtime value as well if option -u is given.
+";
+}
+
+# cj 10\09\2001

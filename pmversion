@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+
+# <2004-03-20 13:02
+# cj Mon, 12 Jun 2006 01:26:40 +0200: adding -M option.
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname [-I path] Module::Name
+  Tries to load the given module and prints it's ::VERSION variable.
+  -I prepends path to \@INC
+  -Mmodule[=function,function]  same as perl option of the same name
+";
+exit;
+}
+
+
+my @modules;
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_= $ARGV[$i];
+    if (/^-I$/) {
+        unshift @INC, $ARGV[++$i];
+    }
+    elsif (/^-M(.*)/s) {
+	my ($val)=$1;
+	if (length $val) {
+	    my ($module, $imports)= split /=/,$val,2;
+	    my @imports= split /,/,$imports if $imports;
+	    eval 'use '.$module.' '.
+	      join(", ",map{my $s=$_; $s=~ s/\'/\\\'/sg; "'$s'"} @imports).";";
+	    die $@ if $@;
+	}
+    }
+    elsif ($_ eq '--') {
+        push @modules, $ARGV[$i..$#ARGV];
+    }
+    elsif (/^-/) {
+        usage
+    }
+    else {
+        push @modules, $_
+    }
+}
+
+usage unless @modules;
+
+for (@modules) {
+    #eval 'use '.$_;
+    #eval 'require '.$_;
+    #eval { require $_ }; ##hmm, doesn't work, have to give AxKit.pm instead of AxKit.
+    my $class= $_;
+    s/::/\//sg;
+    $_.=".pm";# unless /\.p[ml]$/s;  no we are *pm*version hey
+    eval { local $_=$_;require $_ }; #grr, local $_=$_ needed since some modules, like Psh, clobber $_
+    if (ref $@ or $@) {
+        print "$class: $@\n";
+    } else {
+        print "$class: ";
+        s/::/\//sg;
+        print exists $INC{$_} ?
+                "'$INC{$_}', "
+            :   "unknown file?, ";
+        no strict 'refs';
+        if (defined (my $v= ${$class."::VERSION"})) {
+            print "VERSION $v\n";
+        } else {
+            print "no version information available\n";
+        }
+    }
+}
+__END__
+  Ah:
+    perl -MModule::Name -le 'print Module::Name->VERSION';
+http://www.panix.com/~comdog/brian's_guide.pod

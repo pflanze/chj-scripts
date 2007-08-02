@@ -1,0 +1,4 @@
+#!/bin/sh
+
+chpax -z "$@"
+# falls das so wirklich defaults meint, scheint aber schon so zu sein.

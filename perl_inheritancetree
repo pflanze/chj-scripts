@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Die Mär  2 02:37:35 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ -n Name::Space ] Module::One ...
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $opt_namespace="";
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?n(?:amespace(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_namespace=$1
+        } else {
+            $opt_namespace=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::Introspection::Inheritancetree 'inheritancetree';
+for (@args) {
+    my $pack=$_;
+    $pack=~ s|::|/|sg;
+    $pack.=".pm";
+    require $pack;
+    $_->import;
+}
+
+use Data::Dumper;
+$Data::Dumper::Sortkeys=1;$Data::Dumper::Sortkeys=1;# against dumb warning.
+print Dumper(inheritancetree $opt_namespace);

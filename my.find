@@ -1,0 +1,126 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 26 22:57:26 MET 2003
+
+# cj Sun,  5 Sep 2004 21:52:15 +0200:
+# added 'options' section to options. Amazing, seems those have been forgotten.
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname options path(s)
+  I sometimes find find's syntax to require the path(s) given first
+  awkward so I did write this which will turn those arguments
+  around.
+  NOTE: to make sure it never risks to interfere with normal usage,
+  it will directly call find if the first argument is not a known option.
+  or even: if the first argument does not start with a dash.
+";
+exit @_ ? 1 : 0;
+}
+
+#usage if $myname ne 'find' and grep { $_ eq '-h' or $_ eq '--help' } @ARGV;
+# geht nicht, alias macht den pfad bereits verloren. bloss links gehen.
+
+#exec "find",@ARGV unless @ARGV and $ARGV[0]=~/^-/; falsch! neu siehe unten
+
+# options and the number of subsequent arguments they take. -1=any number
+my %options= (
+	      # options
+	      -xdev=>0,
+	      -mount=>0,
+	      -noleaf=>0,
+	      -maxdepth=>1,
+	      -mindepth=>1,
+	      -follow=>0,
+	      -depth=>0,
+	      -daystart=>0,
+	      # actions
+	      -print0=>0,
+	      -fprint0=>1,
+	      -print=>0,
+	      -fprint=>1,
+	      -printf=>1,
+	      -fprintf=>2,
+	      -ok=>-1,
+	      -fls=>1,
+	      -exec=>-1,
+	      -prune=>0,
+	      -ls=>0,
+	      # "operators"
+	      '('=>0,
+	      ')'=>0,
+	      '!'=>0,
+	      -not=>0,
+	      -a=>0,
+	      -and=>0,
+	      -o=>0,
+	      -or=>0,
+	      ','=>0,
+	      # tests
+	      -amin=>1,
+	      -anewer=>1,
+	      -atime=>1,
+	      -cmin=>1,
+	      -cnewer=>1,
+	      -ctime=>1,
+	      -empty=>0,
+	      -false=>0,
+	      -fstype=>1,
+	      -gid=>1,
+	      -group=>1,
+	      -ilname=>1,
+	      -iname=>1,
+	      -inum=>1,
+	      -ipath=>1,
+	      -iregex=>1,
+	      -links=>1,
+	      -lname=>1,
+	      -mmin=>1,
+	      -mtime=>1,
+	      -name=>1,
+	      -newer=>1,
+	      -nouser=>0,
+	      -nogroup=>0,
+	      -path=>1,
+	      -perm=>1,
+	      -regex=>1,
+	      -size=>1,
+	      -true=>0,
+	      -type=>1,
+	      -uid=>1,
+	      -used=>1,
+	      -user=>1,
+	      -xtype=>1,
+	      # end tests
+	      );
+
+exec "find",@ARGV unless @ARGV and exists $options{$ARGV[0]};# (macht das überhaupt noch sinn? Ziel ist dass man per normale Reihenfolge allfälligen Bugs hier ausweichen kann. Also ja, glaub isch immer noch sinnvoll handausf)
+
+my (@paths,@args);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local *_=\ $ARGV[$i];
+    if (exists $options{$_}){
+	my $n=$options{$_};
+	#warn "n=$n";##
+	if ($n<0) {
+	    # slurps all remaining arguments, so path(s) cannot come anymore
+	    push @args, @ARGV[$i..$#ARGV];
+	    last;
+	} elsif ($n>0) {
+	    push @args, @ARGV[$i..($i+$n)];
+	    $i+=$n;
+	} else {
+	    push @args, $_;
+	}
+    } else {
+	push @paths,$_;
+    }
+}
+
+#die "Aufruf: \n---paths:\n".join("\n",@paths)."\n----args:\n".join("\n",@args)."\n";
+
+exec "find",@paths,@args;

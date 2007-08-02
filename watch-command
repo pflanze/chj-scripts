@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w
+
+# Fre Mär  2 13:01:51 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $interval=1.0;# seconds
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname command [args]
+
+  Run command every $interval seconds, suppress it's output if unchanged.
+
+  Options:
+  --interval seconds   sleep the given number of seconds instead of $interval (can be float)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+our @args;
+our $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?i(?:nterval(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $interval=$1
+        } else {
+            defined($interval=$ARGV[++$i]) or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::IO::Command;
+use Time::HiRes 'sleep';
+
+my $prevcnt;
+while (1) {
+    my $cmd= Chj::IO::Command->new_sender(@args);
+    my $cnt= $cmd->xcontent;
+    $cmd->xxfinish;
+    if (!defined $prevcnt or $prevcnt ne $cnt) {
+	print "-- ". localtime().":\n$cnt\n";
+	$prevcnt= $cnt;
+    }
+    sleep $interval;
+}
+

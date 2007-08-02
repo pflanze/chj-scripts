@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ $# -gt 0 ]; then
+    echo "$0"
+    echo " Converts CD_DA stream on stdin to wav stream on stdout"
+    echo " (cj)"
+    exit
+fi
+
+exec sox -t raw -r 44100 -c 2 -s -w - -t wav -

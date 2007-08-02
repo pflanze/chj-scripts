@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname 101001010
+  Convert binary values to decimals.
+  (Well, it uses perl's builtin decimals so it's not unlimited precision:/)
+";
+exit @_;
+}
+
+my @values;
+for (my $i=0; $i<=$#ARGV; $i++) {
+	local $_=$ARGV[$i];
+	if (/^--?h(elp)?$/) {
+		usage
+	} elsif ($_ eq '--') {
+		push @values, @ARGV[$i+1..$#ARGV];
+		last;
+	} elsif (/^-/) {
+		warn "Unknown option '$_'\n";
+		usage(1)
+	} else {
+		push @values, $_
+	}
+}
+usage unless @values;
+
+my $res=0;
+number: for (@values) {
+	my $t=0;
+	my $w=1;
+	for (my $i=length($_)-1; $i>=0; $i--) {
+		if (substr($_,$i,1) eq '1') {
+			$t+= $w;
+		} elsif (substr($_,$i,1) ne '0') {
+			warn "String '$_' is not a binary number, ignoring.\n";
+			$res=1;
+			next number;
+		}
+		$w*=2;
+	}
+	print $t."\n";
+}
+exit($res);

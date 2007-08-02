@@ -1,0 +1,123 @@
+#!/usr/bin/perl -w
+
+# Mon Dez  6 19:32:06 MET 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --from-dir path --to-dir path
+
+  (actually not to-dir but anyway)
+  look up the messageid's in the emails in from-dir, then
+  find the same mails in to-dir anhand dieser messageids.
+
+  So it is a mapper  'find the same emails' from -> to.
+  I use it to find spams I aussortiert manually and then want to report on server
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my ($fromdir,$todir);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?from(?:-?dir(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $fromdir=$1
+        } else {
+            $fromdir=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?to(?:-?dir(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $todir=$1
+        } else {
+            $todir=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+use Chj::xopendir;
+use Chj::xopen qw(xopen_read);
+
+sub get_messageid {
+    my ($f)=@_;
+    my $buf;
+    $f->xread($buf,8192);
+    if ($buf=~ /(?:^|\n)message-id:(.*?)\n\S/si) {
+	my $val= $1;
+	$val=~ s/\s+//sg;
+	$val=~ s/^<//;
+	$val=~ s/>\z//;
+	$val
+    }
+    else {
+	undef
+    }
+}
+
+my %ids; # id->numberofoccurences
+my %filesofid; # id->[listoffilenames or paths?.]
+{
+    my $d= xopendir $fromdir;
+    while(defined(my$item=$d->xnread)){
+	eval {
+	    my $f=xopen_read "$fromdir/$item";
+	    if (my $msgid= get_messageid($f)) {
+		print "$item: $msgid\n" if $DEBUG;
+		$ids{$msgid}++;
+		#push @{$filesofid{$msgid}},$item;
+		push @{$filesofid{$msgid}},"$fromdir/$item";
+	    } else {
+		print "$item: none!\n" if $DEBUG;
+	    }
+	};
+	if (ref$@ or $@) {
+	    print STDERR $@;
+	}
+    }
+}
+
+if (defined $todir) {
+    my %idsfound;
+    my $d= xopendir $todir;
+    while(defined(my$item=$d->xnread)){
+	eval {
+	    my $f=xopen_read "$todir/$item";
+	    if (my $msgid= get_messageid($f)) {
+		print "to: $item: $msgid\n" if $DEBUG;
+		if (exists $ids{$msgid}) {
+		    print "$todir/$item\n";
+		    $idsfound{$msgid}++;
+		}
+	    } else {
+		print "to: $item: none!\n" if $DEBUG;
+	    }
+	};
+	if (ref$@ or $@) {
+	    print STDERR $@;
+	}
+    }
+    print "... so I actually found:\n";
+    for (keys %idsfound) {
+	print join("\n",@{$filesofid{$_}})," ($_)\n";
+    }
+}

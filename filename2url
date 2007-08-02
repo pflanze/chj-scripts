@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+
+# Mit Nov  5 06:29:02 MET 2003
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+if (@ARGV and $ARGV[0]=~ /^-/) {
+	usage
+}
+
+if (@ARGV) {
+	for (@ARGV) {
+		print unescapeline($_),"\n"
+	}
+} else {
+	while (<STDIN>) {
+		print unescapeline($_),"\n"
+	}
+}
+
+# ./'EEeendlich, uclinux+gameboy, gibts was: jemand der will. mailman.uclinux.org--pipermail--uclinux-dev--2003-January--013810.html'
+
+sub pushmark {
+    if ($_[1] > $_[0]) {
+	$_[0]=$_[1];
+    }
+}
+
+sub unescapeurl {
+    my $v=shift;
+    my $nmax=0;
+    while ($v=~ /(-+)/sg) {
+	pushmark($nmax,length $1);
+    }
+    return $v unless $nmax;
+    $v=~ s/-{$nmax}/\//sg;
+    return $v;
+}
+
+
+sub unescapeline {
+    my $v=shift;
+    $v=~ s{^.*/}{}s;
+    $v=~ s{^.* }{}s; # bissel gefährlich?
+    my $proto;
+    if ($v=~ s{^.*\b(\w{3,6}:/*)}{}) {  ## eh, / sind eh nicht drin.  Hmm, eh mist. detection von multi slashes geht falsch, nmax wird einfach auf doppelzahl gesetzt. todo.
+	$proto=$1;
+    } else {
+	$proto="http://";
+    }
+    if ($v=~ s{^\(}{}) {
+	if ($v=~ m{^(.+)\)}) {
+	    return $proto.unescapeurl $1;
+	}
+    }
+    return $proto.unescapeurl $v
+}

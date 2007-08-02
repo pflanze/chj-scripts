@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#und cat, nicht echo, jajajajaja
+cat <<EOF
+ JAADAS HEISS NICHT FAKE.
+ sondern:   eeequivs
+EOF

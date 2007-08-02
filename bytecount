@@ -1,0 +1,33 @@
+#!/usr/bin/perl -wT
+
+# usage: ... | bytecount [marker] | ...
+# pipes byte stream from STDIN to STDOUT and counts transferred bytes.
+# cj 9.2.2000 christian.jaeger@sl.ethz.ch
+
+$marker = $ARGV[0];
+
+$bufsize = 1024*512; #0.5MB
+$out="bytecount";
+$out.=" [$marker]" if $marker;
+
+sub sigtrap {
+	my $signame = shift;
+	print STDERR $out." got a SIG".$signame.". Piped $total bytes so far.\n";
+	exit(0);
+}
+
+$SIG{PIPE}= \&sigtrap;
+$SIG{HUP}= \&sigtrap;
+$SIG{ABRT}= \&sigtrap;
+$SIG{TERM}= \&sigtrap;
+$SIG{QUIT}= \&sigtrap;
+$SIG{ABRT}= \&sigtrap;
+
+$total=0;
+
+while ($bytes=read STDIN,$buf,$bufsize) {
+	$total+=$bytes;
+	print $buf;
+}
+
+print STDERR $out.": $total bytes.\n";

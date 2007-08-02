@@ -1,0 +1,91 @@
+#!/usr/bin/perl -w
+
+# Mit Jan  8 15:51:37 CET 2003
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname options dtdfile(s)
+  Options:
+  -d|--dump
+      dump dtd object
+  -p|--print element depth
+      print_tree, from given element and depth
+
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my ($cmd,$print_element,$print_depth);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ump)?$/) {
+        $cmd=\&dump;
+    } elsif (/^--?p(rint)?$/) {
+	$cmd=\&print_tree;
+	$print_element= $ARGV[++$i] or usage "print: missing element";
+	$print_element=~ /^[\w-]+$/s or usage "print: invalid element name";
+	$print_depth= $ARGV[++$i] or usage "print: missing depth";
+	$print_depth=~/^\d+$/ or usage "print: depth is not a number";
+    } elsif (/^--?d(ump)?$/) {
+    } elsif (/^--?v(erbose)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+unless ($cmd){
+    warn "Please give a command.\n";
+    usage;
+}
+
+
+{my $oldW;
+ BEGIN { $oldW=$^W; $^W=0 } # WOWW, gibt sonst massig output das Modul!!
+ use SGML::DTD; # fuer Doku lies /usr/share/doc/perlsgml/html/SGML..DTD.htmluse elcms_general_settings;
+ BEGIN { $^W=$oldW }
+}
+use lib "/root/extlib";
+use fileutils 'fetchfile';
+use Data::Dumper;
+
+
+sub dump {
+    my $dtd=shift;
+    print Dumper $dtd;
+}
+sub print_tree{
+    my $dtd=shift;
+    local $^W=0; #grr
+    $dtd->print_tree($print_element, $print_depth, \*STDOUT);
+}
+
+
+for (@files){
+    open IN,"<$_" or die "could not open '$_' for reading: $!";
+    my $dtd= new SGML::DTD \*IN, ;
+    close IN or die "error on close: $!";
+    if (@files>1) {
+	print "$_: \n";
+	$cmd->($dtd);
+	print "\n";
+    } else {
+	$cmd->($dtd);
+    }
+}
+

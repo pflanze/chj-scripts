@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+
+my $query= join(" ",@ARGV);
+
+$query=~ s/ /%20/sg; # + geht still nicht, aber issja egal.
+exec "links", "http://www.google.ch/search?q=$query";
+
+__END__
+#!/bin/sh
+query="$@"
+query="$(echo "$query"|tr ' ' '%20')" 
+	# tr nach '+' ging nicht bei "RFC 1430! ?!
+#echo links "http://www.google.ch/search?q=$query"
+exec links "http://www.google.ch/search?q=$query"

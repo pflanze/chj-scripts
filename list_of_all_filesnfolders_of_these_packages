@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# $#@  $# #$    na $# glaubs.         jup.
+
+if [ $# -gt 0 ]; then
+    cat <<EOF
+  Bitte keine Argumente angeben. Nimmt liste von paketen von stdin.
+  ACHTUNG: gibt alle *existierenden* *Items* aus. D.h. muss bei
+  tar angeben dass nicht recurse. Und auch -h.
+  tar -chz --no-recursion -T - -f file.tgz
+EOF
+    exit 1
+fi
+
+(
+    while read packages; do
+	dpkg -L $packages
+    done
+) | sort | uniq | grep -v '^/\.$' | grep -v '^$' | ( 
+    while read item; do
+	if [ -e "$item" ]; then
+# 	    if [ -f "$item" ]; then 
+# 		echo DIR\  $item
+# 	    else 
+# 		echo NONDIR $item;
+# 	    fi
+	    echo $item
+	else 
+	    echo "Item does not exist: '$item'" >&2
+	fi
+    done
+)
+
+

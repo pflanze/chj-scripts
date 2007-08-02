@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Die Jan  7 21:06:25 MET 2003
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname [ options ] command [ arguments ]
+  When given multiple arguments, the command is given the
+  given arguments, when not, then the command is probably
+  given to a subshell so allows for metacharacters and
+  redirections. (You know, perl is perl)
+  Options:
+  -n seconds   interval (default 1)
+  -t           print timestamps
+";
+exit @_;
+}
+
+my @files;
+my $DEBUG=0;
+my $n=1;
+my $opt_t;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^-n$/) {
+	$n= $ARGV[++$i];
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?t(imestamps)?$/) {
+	$opt_t=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+while(1) {
+    if ($opt_t) {
+	$|=1;
+	print scalar localtime(),"\t";
+    }
+    system @files;
+    sleep $n;
+}

@@ -1,0 +1,20 @@
+#!/usr/bin/perl 
+# KEIN warn weil sonst wegen Komma Reklamation
+ 
+unless (@ARGV==2) {
+        die "Usage:
+        print2auf1 sourcefile targetfile
+ 
+        targetfile might be '-' (?)
+";
+}
+ 
+my ($src, $tgt)= @ARGV;
+ 
+exec qw'pstops 2:0L@.7(21cm,0)+1L@.7(21cm,14.85cm)', $src, $tgt;
+
+
+__END__
+
+WIE kann ich Seitennummern vergeben lassen? Kann das nur enscript? (Son Header 
+mit Filename etc).

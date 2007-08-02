@@ -1,0 +1,260 @@
+#!/usr/bin/perl -w
+
+# Sam Mär  1 13:27:54 MET 2003
+# pflanze@gmx.ch
+
+use strict;
+
+my $periode=2;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --glob 'directory/file*glob.suffix' --newfile 's/\.suffix\$/.newsuff/' --exec command arguments
+  Checks given files regularly. Converts them to the newfile which is
+  taken from \$_ then looks if newfile is newer than original file,
+  if it isn't, run command with arguments.
+  Give '\$IN' for old filepath and '\$OUT' for new filepath if you want
+  the subprocess to give paths instead of stdin/stdout.
+
+  Further options:
+   --sleep seconds   override the default of $periode seconds.
+   --logfile 'perlcode'  similar to newfile, for directing stderr.
+   --logcrlf    if given, stderr will be converted to crlf lineendings
+   --crlf       [both] stdout [and stderr] will be converted to crlf.
+   --ignoreerrors    will make the .new file be renamed regardless of
+                     the command's exit status (see notes)
+   --addfile  file   also observe this file and call command whenever
+                     file is younger than an out file. This option
+                     can be given multiple times.
+
+  Notes:
+  - the --exec argument slurps all following arguments so must be the last
+  - if no command arguments are given the exec command is
+    handed over to a shell.
+  - if stdout is used (not '\$OUT'), the actual new file is named with .new
+    appendix and only moved to the new filename after *successful* comletion of
+    the command.
+    The old output file is still renamed to the backup immediately, so in
+    case of error *no* file is left with the new output name.
+    ** This means that the command will be executed forever** until it
+    does not give an error anymore.
+  - if --logfile is specified but does not change \$_, stderr and stdout are
+    merged together. In this case, no .new file is created but instead
+    directly the file determined by --newfile.
+    TODO: this is only correct if --crlf is given?
+    TODO: this is only correct if both stderr and stdout are piped? ?!
+ps.todo sollt ich nicht EH mergen  wenn nicht explizit err file angegeben ist?
+";
+exit @_ ? 1 : 0;
+}
+
+usage unless @ARGV;
+
+my @files;
+my $DEBUG=0;
+my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors);
+my @addfiles;
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	#push @files, @ARGV[$i+1..$#ARGV];
+    	#last;
+	usage("$_: argument too early, --exec option not yet encountered");
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif ($_ eq '--glob'){
+	$opt_glob= $ARGV[++$i] or usage("$_ parameter has no argument");
+    } elsif ($_ eq '--newfile'){
+	$opt_newfile= $ARGV[++$i] or usage("$_ parameter has no argument");
+    } elsif ($_ eq '--logfile'){
+	defined($opt_logfile= $ARGV[++$i]) or usage("$_ parameter has no argument");
+    } elsif ($_ eq '--logcrlf'){
+	$opt_logcrlf=1;
+    } elsif ($_ eq '--crlf'){
+	$opt_crlf=1;
+    } elsif ($_ eq '--ignoreerrors'){
+	$opt_ignoreerrors=1;
+    } elsif ($_ eq '--addfile'){
+	push @addfiles,$ARGV[++$i] or usage("$_ parameter without argument");
+    } elsif ($_ eq '--exec'){
+	$opt_exec= $ARGV[++$i] or usage("$_ parameter has no argument");
+	push @files, @ARGV[$i+1..$#ARGV]; ## wirklich?
+    	last;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	#push @files, $_
+	usage("$_: argument too early, --exec option not yet encountered");
+    }
+}
+#usage unless @files;
+# @files are exec arguments.
+
+usage("missing --exec") unless $opt_exec;
+usage("missing --newfile") unless $opt_newfile;
+usage("missing --glob") unless $opt_glob;
+
+usage("option --logcrlf not allowed without option --logfile") if $opt_logcrlf and !$opt_logfile;
+
+eval "sub newfile { $opt_newfile }";
+die "$myname: --newfile option '$opt_newfile' gave error while compiling: $@\n"
+  if $@;
+
+if ($opt_logfile){
+    eval "sub logfile { $opt_logfile }";
+    die "$myname: --logfile option '$opt_logfile' gave error while compiling: $@\n"
+      if $@;
+}
+
+
+my $redirstdin=( ! grep{$_ eq '$IN'} @files and $opt_exec!~ /\$IN\b/);
+my $redirstdout=( ! grep{$_ eq '$OUT'} @files and $opt_exec!~ /\$OUT\b/);
+
+usage("option --crlf may not be used since stdout is not redirected") if $opt_crlf and !$redirstdout;
+
+warn "redirstdin=$redirstdin\n" if $DEBUG;
+warn "redirstdout=$redirstdout\n" if $DEBUG;
+
+while(1){
+    my @addtimes= map { (stat $_)[9] or die "$myname: stat '$_': $!\n" } @addfiles;
+    #warn "addtimes: ".join(", ",@addtimes);##
+
+    my @items= glob $opt_glob;
+    for(@items){
+	my $in=$_;
+	newfile();
+	my $out=$_;
+	#warn "gegreppt: ".(scalar grep{ (stat "/home/jakob/share/auto/Test.xml")[9] > $_ } @addtimes);##
+	#warn "gegreppt: ".(scalar (grep { 1 > 2 } @addtimes));##geht
+	#warn "gegreppt: ".join(", ",grep { 1 < 2 } @addtimes);##geht
+	#warn "gegreppt: ".join(", ",grep {
+	#    $_ } @addtimes);##ich  haararsch.
+	my $mtime;
+	if (! -f $out or (($mtime=(stat _)[9]) < (stat $in)[9])
+	    or (grep{ $mtime < $_ } @addtimes) ) {
+	    # have to convert it
+	    rename $out,"$out~" or warn "$myname: could not rename '$out' to '$out~': $!\n" if -e $out;
+	    my $merge_outerr;
+	    if ($opt_logfile){
+		logfile();
+		my $log=$_;
+		$merge_outerr= $log eq $out;
+		open KEEPSTDERR,">&STDERR" or die "$myname: could not keep old stderr: $!\n";#wherever that goes
+		rename $log,"$log~" or warn "$myname: could not rename '$log' to '$log~': $!\n" if -e $log;
+		open STDERR,">$log" or warn "$myname: could not redirect stderr to '$log': $!\n";
+		if ($opt_logcrlf or $opt_crlf){
+		    pipe READ,WRITE;
+		    my $pid=fork;
+		    defined $pid or die "could not fork: $!";
+		    if ($pid){
+			close READ;
+			open STDERR,">&WRITE" or die $!;  # instead of having sterr open to $log directly
+			close WRITE
+			  unless $merge_outerr and $opt_crlf;
+		    } else {
+			close WRITE;
+			while(defined($_=<READ>)){
+			    chomp;
+			    print STDERR "$_\r\n";
+			}
+			close STDERR;
+			exit;
+		    }
+		}
+	    }
+	    if ($redirstdin){
+		open KEEPSTDIN,"<&STDIN" or die "could not keep stdin: $!";
+		open STDIN,"<$in" or die "could not redir stdin from $in: $!";
+	    }
+	    if ($redirstdout){
+		open KEEPSTDOUT,">&STDOUT" or die "could not keep stdout: $!";
+		if ($merge_outerr) { # reuse filehandle
+		    open STDOUT,">&WRITE" or die $!;
+		    close WRITE;
+		} else {
+		    open STDOUT,">$out.new" or die "could not redir stdout to '$out.new': $!";
+		    if ($opt_crlf){
+			warn "opt_crlf is set\n";##
+			pipe READ,WRITE;
+			my $pid=fork;
+			defined $pid or die "could not fork: $!";
+			if ($pid){
+			    close READ;
+			    open STDOUT,">&WRITE" or die $!;  # instead of having it open to .. directly
+			    close WRITE;
+			} else {
+			    close WRITE;
+			    while(defined($_=<READ>)){
+				chomp;
+				print STDOUT "$_\r\n";
+			    }
+			    close STDERR;
+			    exit;
+			}
+			warn "does it still work?, now with conversion?\n";##
+		    }
+		}
+	    }
+	    my $ex= $opt_exec;
+	    $ex=~ s/\$IN\b/$in/sg unless $redirstdin;
+	    $ex=~ s/\$OUT\b/$out/sg unless $redirstdout;
+
+	    system $ex, map { $_ eq '$IN' ? $in : $_ eq '$OUT' ? $out : $_ } @files;
+
+	    if ($redirstdout){
+		close STDOUT or die "error closing redirected stdout: $!";
+		open STDOUT,">&KEEPSTDOUT" or die $!;
+		close KEEPSTDOUT;
+		if (!$merge_outerr){
+		    if ($opt_ignoreerrors or $?==0) {
+			rename "$out.new",$out
+			  or warn "$myname: could not rename '$out.new' to '$out': $!\n";
+		    }
+		    if ($opt_crlf){
+			wait;
+		    }
+		}
+	    }
+	    if ($redirstdin){
+		close STDIN or die "error closing redirected stdin: $!";
+		open STDIN,">&KEEPSTDIN" or die $!;
+		close KEEPSTDIN;
+	    }
+	    if ($opt_logfile){
+		close STDERR or die "error closing redirected stderr: $!";
+		open STDERR,">&KEEPSTDERR" or die "$myname: could not restore old stderr: $!\n";#wherever that goes
+		close KEEPSTDERR;
+		if ($opt_logcrlf or $opt_crlf){
+		    wait;
+		}
+	    }
+	    warn "processed '$in' to '$out'\n" if $DEBUG;
+	}
+    }
+    sleep $periode;
+}
+__END__
+
+  TODO:
+sollte die copypaste teile von crlf bei stdout und stderr konsolidieren
+
+  und.. ist es sicher vor blocking?
+
+
+ und: testen mit $IN $OUT
+  
+
+  ps multi eingabefiles kann er naturlich nicht  so wie das make koennte
+
+ cleaner way?
+  done.
+
+ todo:  ich sollte timestamps absolut behalten  und auf anderung schaun nicht nur neuer?
+
+  
+  

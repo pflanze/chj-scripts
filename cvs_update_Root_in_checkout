@@ -1,0 +1,25 @@
+#!/bin/bash
+
+base="$1"
+newroot="$2"
+if [ -x "$base" ]; then
+	if [ "$newroot" ]; then
+		#mysed 's|^.*:.*$|'$newroot'|m' "$base" '.*CVS/Root$'
+		echo -n '' # fake sch*t  sonst reklamiert sogar bash; und ein ; allein ist auch nicht genehm.
+	else 
+		#newroot="`pfla`:/home/cvs"
+		newroot="pflanze.mine.nu:/home/cvs"
+		echo "Changing to $newroot"
+		#count=`mysed 's|\d+.\d+.\d+.\d+:/home/cvs|'$root':/home/cvs|' "$base" '.*CVS/Root$'`
+		#echo "Made $count replacements"
+		#mysed 's|\d+.\d+.\d+.\d+:/home/cvs|'$root':/home/cvs|' "$base" '.*CVS/Root$'
+	fi
+	#mysed 's|^.*:.*$|'"$newroot"'|m' "$base" '.*CVS/Root$'
+	mysed 's|^.*:.*$|'"$newroot"'|m or s|^.*$|'"$newroot"'|m' "$base" '.*CVS/Root$'
+else
+	echo "$0 basedirofthecheckout [newroot:/with/directory]"
+	echo 
+	echo "Changes all */CVS/Root files to the given new root in the"
+	echo "form 'some.server:/some/dir', or to the current 'pfla' ip"
+	echo "if no second argument is given."
+fi

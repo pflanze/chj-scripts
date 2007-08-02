@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ "$1" ]; then
+    e "$@" &   # '--' schon von wmaker übergeben
+else
+    unset DIR
+    DIR="$HOME/scratch"
+    
+    if [ ! -e "$DIR" ]; then
+	umask 077;
+	mkdir -p "$DIR"
+    fi
+
+    e -- "$DIR/`date|tr ' ' '_'|sed 's/://g'`" &
+fi

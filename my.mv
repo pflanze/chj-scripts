@@ -1,0 +1,335 @@
+#!/usr/bin/perl -w
+
+# Don Mär 18 14:20:56 MET 2004
+(my $email='jaeger%ethlife,ethz,ch')=~ tr/%,/@./;
+
+use strict;
+
+
+my @binmv=qw(/bin/mv -f --);
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  See man mv; the difference is that this one does not try
+  to copy-&unlink stuff unless confirmed by the user, and
+  even then only does it when it sees that it should be able to
+  sucessfully unlink the stuff at the old place.
+
+  Options:
+  -i -f    interactive and force flags. Gegengesetzt. Das letzte
+           Auftreten bestimmt den Wert. Wenn weder noch angegeben wird,
+           ist es undef, was der dritte mögliche Wert ist: weder nachfragen
+           noch forcieren, d.h. in solchen Fällen abbrechen.
+           interactive= nachfragen
+           force= einfach machen
+  If move across filesystem boundaries is confirmed or forced,
+  @binmv will be invoked for each such movement.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $verbose=0;
+my $interactive;
+my ($opt_targetdir);
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif (/^--?f(orce)?$/) {
+	$interactive=0;
+    } elsif (/^--?i(nteractive)?$/) {
+	$interactive=1;
+    } elsif (/^--target-directory(?:=(.*))?$/) {
+        if (defined $1) {
+            $opt_targetdir=$1
+        } else {
+            $opt_targetdir=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+#use Chj::Util::AskYN; -> load on demand, see below
+use Chj::Cwd::realpath 'xrealpath';
+use POSIX 'EXDEV';
+use Chj::xopendir;
+
+my $target= do{
+    if ($opt_targetdir) {
+	$opt_targetdir
+    } else {
+	pop @args;
+    }
+};
+
+my $targetpath= -d $target ? undef : $target;
+
+if ($targetpath) {
+    if (@args>1){
+	usage "last argument must be a dir in multi-move mode"
+    }
+}
+
+usage "need at least 2 arguments" unless @args;
+
+my $uid=$>;
+my $gids= [ split / /,$) ];
+
+sub xcheckperms {
+    my ($path,$parents)=@_; # path may be both dir or file. parents is stat object of parent dir.
+    my $s=xlstat $path;
+    if (not(-l _) and -d _) { # ist der linkcheck nötig? ist wegen lstat -d wirklich durchscheinend?
+	my $d=xopendir $path;
+	while(defined(my$item=$d->xnread)){
+	    xcheckperms( "$path/$item",$s);
+	}
+    }
+    else {
+	if ($parents->uid == $uid) {
+	    # yes always allowed except when I exclude myself. at least, the sticky flag is ignored.
+	    if ($parents->writable_by_uid_gids($uid,$gids)) {
+		# yes
+	    } else {
+		# no
+		die "will not be able to unlink '$path': no write permission to parent folder";
+	    }
+	} else {
+	    if ($parents->writable_by_uid_gids($uid,$gids)) {
+		if ($parents->sticky) {##cachen des Wertes? tjatjatja. calc and cache
+		    #cachesoso
+		    #cachch
+		    # we must own the file
+		    $s->uid == $uid
+		      or die "will not be able to unlink '$path': we don't own item and parent folder is sticky";
+		}
+	    } else {
+		die "will not be able to unlink '$path': no write permission to parent folder.2";##todo: sollte if zweige umstrukturieren.
+	    }
+	}
+    }
+}
+
+# alt und falsch:
+# sub xcheckperms { # dies if it sees impossible unlinks for this user, warns if it sees files not owned by current user
+#     my ($dir,$parents)=@_;# WRONG: dir can be both a dir or file!!
+#     my $d=xopendir $dir;
+#     while(defined(my$item=$d->xnread)){
+# 	my $path="$dir/$item";
+# 	my $s=xlstat $path;
+# 	if (not(-l _) and -d _) { # ist der linkcheck nötig? ist wegen lstat -d wirklich durchscheinend?
+# 	    #if (! $s->writable_by_uid_gids($uid,$gids)) {
+# 	    #die "will not be able to move  eh unlink?
+# 	    # nein wär falsch: kann zwar solchen Ordner nicht moven, aber unlinken schon wenn er leer ist (oder?).
+# 	    xcheckperms($path,$s);
+# 	} else {
+# 	    if ($parents->uid == $uid) {
+# 		# yes always allowed except when I exclude myself. at least, the sticky flag is ignored.
+# 		if ($parents->writable_by_uid_gids($uid,$gids)) {
+# 		    # yes
+# 		} else {
+# 		    # no
+# 		    die "will not be able to unlink '$path': no write permission to parent folder";
+# 		}
+# 	    } else {
+# 		if ($parents->writable_by($uid,$gids)) {
+# 		    if ($parents->sticky) {##cachen des Wertes? tjatjatja. calc and cache
+# 			#cachesoso
+# 			#cachch
+# 			# we must own the file
+# 			$s->uid == $uid
+# 			  or die "will not be able to unlink '$path': we don't own item and parent folder is sticky";
+# 		    }
+# 		} else {
+# 		    die "will not be able to unlink '$path': no write permission to parent folder.2";##todo: sollte if zweige umstrukturieren.
+# 		}
+# 	    }
+# 	}
+#     }
+# }
+
+sub xparent_of {
+    my $path=shift;
+    my $abspath= xrealpath $path;
+    die "no parent for '/'" if $abspath eq '/';
+    $abspath=~ s|/[^/]+\z||s or die "??";
+    $abspath
+}
+
+
+sub xmove { # does xrename and if it's a cross boundary, asksetc and checks and invokes binmv
+    my ($from,$to)=@_; # from may be both a dir or a file !!  (to likewise, but it's already a full path, right?.)
+    return if rename $from,$to;
+    if ($! == EXDEV) {
+	require Chj::Util::AskYN;
+	if ($interactive) {
+	    return unless Chj::Util::AskYN::askyn("$myname: verschieben von »$from« nach »$to« über Dateisystemgrenzen hinweg forcieren? ");##ps bei undef returnwert abbrechen? oder gibt das eine exception?
+	} elsif (! defined $interactive) {
+	    die "xmove: won't move across filesystem boundaries without -f flag or interactive confirmation";
+	}
+	if ($uid!=0) {
+	    xcheckperms($from,scalar xstat(xparent_of($from)));
+	}
+	xxsystem @binmv,$from,$to;
+    } else {
+	die "xmove: rename('$from','$to'): $!";#ps auch wenns wie ein perfekter doppelpunktbacktrace ausschaut, isches ja gar keiner hehehehe. aber das isch dem user ja auch gleich. ablauflogik isch dieselbe ob mit oder ohne exceptionschicht dazwischen.
+    }
+}
+
+
+sub move {
+    my ($from,$to)=@_;
+    # get realpaths of the *parent directories*
+    my $getparentdirandname=sub {
+	my $path=shift;
+	if ($path=~ s|/([^/]+)/?\z||s) {
+	    ($path,$1)
+	} else {
+	    (".",$path) #stimmts immer?
+	}
+    };
+    my @from=$getparentdirandname->($from);
+    my @to=$getparentdirandname->($to);
+    if ($from[1] eq $to[1]) {
+	# gleiche filenamen. check das parentdir
+	my $realfromparent= xrealpath $from[0];## naja, fehlermeldung wird etwas doof sein.
+	my $realtoparent= xrealpath $to[0];# zumindest das dir muss ja existieren.
+	die "»»$from«« und »»$to«« sind die gleiche Datei" if $realfromparent eq $realtoparent;
+    }
+    if ($interactive and lstat($to)) { # könnt auch ein ln machen, aber nur bei files, nicht bei dirs.
+	require Chj::Util::AskYN;
+	#return unless (askyn("$myname: overwrite '$to'? "));
+	return unless (Chj::Util::AskYN::askyn("$myname: »$to« überschreiben? "));
+    }
+    xmove $from,$to;
+    print "»$from« -> »$to«\n" if $verbose;
+}
+
+
+eval {
+    if ($targetpath) {
+	## hier noch source prüfen auf end-/ wie unten?
+	move($args[0],$targetpath);
+    } else {
+	for my $source (@args) {
+	    my $origsource=$source;
+	    if ($source=~ s|/+\z||s) {
+		-d $source or die "source path '$origsource' is not a directory";
+		##hm, -d tut symlinks dereferenzieren; aber das isch doch wohl auch ok; ich verschiebe dann doch den symlink selber.
+	    }
+	    my $filename=$source; $filename=~ s|.*/||s;
+	    #move $source,"$target/$filename";
+	    my $targetpath= $target;
+	    if (substr($target,-1,1) ne '/') {
+		$targetpath.="/";
+	    }
+	    $targetpath.=$filename;
+	    move $source,$targetpath;
+	}
+    }
+};
+if ($@) {
+    $@=~ s| at \S+ line \d+\.?||; # lustig, bei XS carp wird . angefügt, sonst nicht.
+    # kooomisch, neuerdings krieg ich: my.mv: xmove: rename(chris,c): Datei oder Verzeichnis nicht gefunden, <STDIN> line 1.
+    $@=~ s|, <STDIN> line \d+||;# . bleibt drin  well isch doch ok
+    die "$myname: $@";
+}
+
+
+__END__
+
+differences there are still compared with gnu mv:
+
+lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fox -> fun
+lrwxrwxr-x    1 chris    chris           7 21. Mär 23:10 fox2 -> dfsdfdf
+
+chris@lombi chris > mv -i  fox fox2
+my.mv: »fox2« überschreiben? 
+chris@lombi chris > /bin/mv -i  fox fox2
+/bin/mv: Überschreiben von »fox2«, über Modus 0775 hinwegsetzen? 
+
+  komischerweise scheint mv bissel zu spinnen wegen fehlendem link target.
+
+lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fun2 -> fun
+-r--r--r--    1 chris    chris           0 21. Mär 23:13 fun
+chris@lombi chris > mv -i fun2 fun
+my.mv: »fun« überschreiben? 
+chris@lombi chris > /bin/mv -i fun2 fun
+/bin/mv: »»fun2«« und »»fun«« sind die gleiche Datei
+
+  so heiss, grad nochmals ein echter bug diesmal. denn es täte ja doch nur symlink verschieben.
+
+lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fun2 -> fun
+-r--r--r--    1 chris    chris           0 21. Mär 23:13 fox
+
+chris@lombi chris > mv fun2 fox
+my.mv: »fox« überschreiben? 
+chris@lombi chris > /bin/mv -i fun2 fox
+/bin/mv: Überschreiben von »fox«, über Modus 0444 hinwegsetzen? 
+
+über modus hinwegsetzen - wirklich spezialmeldung bringen, bringt das was?
+
+chris@lombi chris > /bin/mv fun2 fox
+chris@lombi chris > 
+
+weil es bringt sie ja doch bloss wenn -i gegeben.
+
+
+lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 chris/strou -> fun
+
+chris@lombi tmp > mv chris///strou /tmp/chris/strou/
+my.mv: »»chris///strou«« und »»/tmp/chris/strou/«« sind die gleiche Datei
+chris@lombi tmp > /bin/mv -i chris///strou /tmp/chris/strou/
+/bin/mv: Erzeugen der symbolischen Verknüpfung »/tmp/chris/strou/strou« nicht möglich: Datei oder Verzeichnis nicht gefunden
+
+  dumme meldung, "erzeugen" einer symbolischen verknüpfung.
+  aber ok isch wohl ein bug meinerseits.
+
+  mit slash am ende  nimmt gnu mv an dass ein dir gemeint ist und appended namen anyway
+  ich hingegen kuck ob es ein dir isch und wenn nicht tu ich nix appenden - einfach noch meldung bringen dann wenn ich seh dass auf / endet? aber was wenn ich wirklich ein dir verschieben will? also nur dann meckern wenn sourcepfad-lstat kein dir isch?
+
+
+
+hmm, noch die tricks mit / am ende um symlink zu dereferenzieren (wie ls sie hat) ein bauen? hat die gnu mv überhaupt?
+sinn find ich zweifelhaft. lasse es mal.
+
+
+chris@lombi t > mv /tmp/chris/t/. ../u/fa
+my.mv: xrename(/tmp/chris/t/., ../u/fa): Das Gerät oder die Ressource ist belegt at /root/bin/my.mv line 99
+chris@lombi t > mv /tmp/chris/t ../u/fa
+hat funktionniert.
+chris@lombi t > mv -i /tmp/chris/t/ ../u/fa
+auch.
+hmm. bissel komisch.
+ vergleiche:
+chris@lombi t > /bin/mv -i /tmp/chris/t/. ../u/fa
+/bin/mv: Weder ».« noch »..« kann gelöscht werden
+/bin/mv: Entfernen von »/tmp/chris/t/.« nicht möglich
+#und dann hats DOCH wieder mal ne kopie gemacht das tubelteil
+
+
+Thu,  1 Apr 2004 21:16:35 +0200
+  wegen $binmv invoke idee:
+immerhin checken ob es gehen KANN?
+  wann geht es? bei root immer. ansonsten: wenn unlinked werden kann  (warnung geben wenn uid's nicht behalten werden können!)
+Rekursiv, warnung aufzeichnen oder gleich ausgeben.  Abbruch wenn ein unmöglich detected wird.
+unmöglichkeit  wird nur an folder angesehen oder? ausser grsec. und immutable.
+na an folder und file wenn sticky.
+
+

@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+	print "$myname [-p] item1 [item2 ...] newdir
+  Creates 'newdir' and moves the items there.
+  -p  no error if dir is existing, make parent directories as needed
+";
+exit @_;
+}
+
+my @files;
+my ($opt_p);
+for (my $i=0; $i<=$#ARGV; $i++) {
+  local $_=$ARGV[$i];
+  if (/^--?h(elp)?$/) {
+    usage
+  } elsif ($_ eq '--') {
+    push @files, @ARGV[$i+1..$#ARGV];
+    last;
+  } elsif ($_ eq '-p') {
+    $opt_p=1;
+  } elsif (/^-/) {
+    warn "Unknown option '$_'\n";
+    usage(1)
+  } else {
+    push @files, $_
+  }
+}
+usage unless @files;
+
+if ($opt_p) {
+  require File::Path;
+  File::Path::mkpath($files[-1], 1, 0777);
+} else {
+  mkdir $files[-1],0777 or die "$myname: could not create directory '$files[-1]': $!\n";
+}
+exec "mv","--",@files;

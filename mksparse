@@ -1,0 +1,104 @@
+#!/usr/bin/perl -w
+
+# Fre Jun  6 22:39:05 CEST 2003
+
+use strict;
+use Chj::xsysopen;
+use Fcntl;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname size file(s)
+  Create sparse files (i.e. of the given size but without contents)
+  for use as loop back images or the like. Attention: linux 2.2(.20) has
+  a problem with loop back devices on sparse files, don't try it or
+  you'll end up rebooting and e2fscking your host partition (and loose
+  the sparse image).
+  Options:
+  --non-sparse   fill the file with real zeroes (for linux 2.2)
+  --truncate     reuse an existing file: truncate it and rebuild it.
+                 Which means this option is dangerous!..
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_nonsparse;
+my $opt_trunc;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--non-sparse$/) {
+	$opt_nonsparse=1;
+    } elsif (/^--truncate$/) {
+	$opt_trunc=1;
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files>1;
+
+my $size=shift @files;
+
+my $sizebytes= do {
+    my ($s,$u)= $size=~ /^\s*(\d+(?:_\d{3})*(?:\.\d+)?)\s*(\w?)b?\s*\z/i or usage "invalid size specification '$size'";
+    $s=~ s/_//sg;
+    if (length $u) {
+	$u=lc($u);
+	$u eq 'k' ? $s*1024 :
+	  $u eq 'm' ? $s*1024**2 :
+	    $u eq 'g' ? $s*1024**3 :
+	      $u eq 't' ? $s*1024**4 :
+		usage "invalid size unit '$u'";
+    } else {
+	$s
+    }
+};
+
+print "creating files of $sizebytes bytes\n" if $DEBUG;
+
+for (@files) {
+    my $f;#= xsysopen $_,O_CREAT|O_EXCL|O_WRONLY;
+    eval {
+	$f= xsysopen $_,O_CREAT|O_EXCL|O_WRONLY;
+    };
+    if ($@) {
+	if ($@=~ /exist/i) { ##huuh
+	    if ($opt_trunc) {
+		$f= xsysopen $_,O_TRUNC|O_WRONLY;
+	    } else {
+		die "File '$_' already exists ($@); give the --truncate option if you want to rebuild it.\n";
+	    }
+	} else {
+	    die $@;
+	}
+    }
+    
+    if ($opt_nonsparse) {
+	my $blocksize= 1024*64;
+	my $blocks= do{ use integer; $sizebytes / $blocksize};
+	my $lastbytes= $sizebytes % $blocksize;
+	my $block= "\0"x$blocksize;
+	for (1..$blocks) {
+	    $f->xsyswrite($block);
+	}
+	$f->xsyswrite("\0"x$lastbytes);
+    } else {
+	sysseek $f, $sizebytes-1, 0
+	  or die "$myname: sysseek on $_: $!\n";
+	$f->xsyswrite("\0");
+    }
+    $f->xclose;
+}
+

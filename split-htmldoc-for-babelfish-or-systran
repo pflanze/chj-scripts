@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+# Son Jan  9 01:57:41 MET 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname bigpage.html dir/
+
+  Split bigpage.html into chunks of at max $maxchars chars at a
+  time between two tags which have only whitespace inbetween. Dies if
+  no such split position can be found within that limit.
+  Writes out the chunks as dir/bigpage-N.html files where N is the number
+  of the chunk.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+my ($infile,$outdir)=@args;
+
+use Chj::xopen qw(xopen_read xopen_write);
+
+
+my $cnt= xopen_read($infile)->xcontent;
+
+#my ($infiledir,$infilename)= $infile=~ m|^(.*)([^/]+)\z|s;
+my ($infiledir,$infilename)= $infile=~ m|^(.*?)([^/]+)\z|s; #GRRRR.
+
+my $i=0;
+
+#while ($cnt=~ s#^(.{30000}.*</?\w+[^<>]*>)##s) {
+while (length($cnt) and $cnt=~ s#^(.{0,30000})##s) {
+    # echt schwierig ist, dass ich sowohl auf 30000 begrenzen will als aber auch sicherstellen dass da drin dann noch ein Tag ist   .
+    # hm, auf < 30000 schauen?  aber was wenn das huere teil über 30'000 whitespaces hat vor dem ersten Tag?. NA dann isches eh ein PROBLEM.
+    my ($blub)= $1;
+    if (length($blub) == 30000) { # more to come.
+        my $rb=reverse $blub;
+        # go back before a tag
+        if ($rb=~ s#^(.*?>[^<>]*\w+/?<)(\s*>[^<>]*\w+/?<)#$2#s) {
+            # ok.
+            my $addback= reverse $1;
+            $cnt= $addback.$cnt;
+            $blub= reverse $rb;
+        } else {
+            die "chunk has no Tag in it";
+        }
+    } else {
+        # ok, output the full blub, then let it end (cnt is empty at that point)
+    }
+    $i++;
+    my $fn= $infilename;
+    $fn=~ s/(\.[a-z]{2,5}|)\z/-$i$1/s or die "bug";
+    my $out= xopen_write("$outdir/$fn");
+    $out->xprint($blub);
+    $out->xclose;
+}
+
+#print "Done.\n";

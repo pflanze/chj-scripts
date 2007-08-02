@@ -1,0 +1,138 @@
+#!/usr/bin/perl -w
+
+# Don Feb 20 17:05:12 MET 2003
+# pflanze@gmx.ch
+# Mon, 19 May 2003 15:07:07 +0200 mit tar zusammen erweitert so dass filenamen im tmp namen
+#   ratbar sind.  maxdashes() und so sollte mal in ne lib (todo).
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ options ] file1 file2
+  Reformat the two given html/xml files so that only 'real'
+  differences show up in diff, and call tkdiff on them.
+  Options:
+  -c | --clean  not only make new linebreaks but also make
+                tags lowercase and reorder attributes alphabetically.
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $opt_clean;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?c(lean)?$/) {
+	$opt_clean=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files==2;
+
+# alle umbruche entfernen.
+# vor und nach jedem tag einen umbruch.
+# whitespace uniformieren.
+# ". " umwandeln in ".\n"
+
+sub tagcleanup {
+    my ($s)=@_;
+    return $s unless $opt_clean;
+    if ($s=~ s/^<(\/?[\w:-]+)//) {
+	my $tagname= lc($1); # tagname includes / for end tags
+	$s=~ s/(\/?>)$//s or die;
+	my $closure= $1;
+	my %attr;
+	$s=~ s/([\w:-]+)\s*=\s*"([^"]*)"/$attr{lc($1)}=$2;""/sge;  #"
+	$s=~ s/([\w:-]+)\s*=\s*'([^']*)'/$attr{lc($1)}=$2;""/sge;  #'
+	$s=~ s/([\w:-]+)\s*=\s*(\S*)/$attr{lc($1)}=$2;""/sge;  #"'/"'/dsfsd; #
+	my @flags= split /\s+/,$s; #$s=~ /([\w:-]+)/g;
+	if (@flags or %attr){
+	    "<$tagname ".join(" ",map{my $a=$attr{$_};
+				      $a=~ s/"/\&quot;/sg; #"
+				      "$_=\"$a\""} sort keys %attr)
+	      .join(" ",@flags)
+	      .$closure
+	} else {
+	    "<$tagname$closure"
+	}
+    } else {
+        $s
+    }
+}
+
+
+sub diffprepare {
+    my ($sr)= \ (@_);
+    $$sr=~ s/\s+/ /sg;
+    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".tagcleanup($1)."\n"/sge;
+    $$sr=~ s/\. /.\n/sg;
+    $$sr=~ s/\n\n/\n/sg; # warum eigtl is das notig?
+    $$sr=~ s/^\n//s; # und warum das?
+}
+
+use File::Temp qw(tempfile unlink0);
+use IO::File;
+
+my @tmpfiles;
+
+
+my @tmpnames;
+TRY: {
+    for my $n (1..10) {
+	@tmpnames = map {
+	    m|((?:/?[^/]+){$n})\z|s ? $1 : $_
+	} @files;
+	last TRY if $tmpnames[0] ne $tmpnames[1];
+    }
+    die "the two paths are the same!";
+}
+
+sub maxdashes {
+    my ($str)=@_;
+    my $max=0;
+    $str=~ s/(-+)/
+      if (length($1)>$max) { $max= length($1) }
+    /sge;
+    $max
+}
+
+my $ndashes= maxdashes($tmpnames[0]);
+my $ndashes1= maxdashes($tmpnames[1]);
+if($ndashes1 > $ndashes){ $ndashes=$ndashes1}
+
+for(0..1){
+    my $name= $tmpnames[$_];
+    $name =~ s|/|"-"x($ndashes+1)|sge;
+    my ($fh, $filename) = tempfile "${name}.XXXX", DIR=>"/tmp";
+    #my $inr= fetchfile($files[$_]);
+    my $fhin = new IO::File $files[$_],O_RDONLY or die "öffnen von '$files[$_]': $!";
+    my $in;
+    #$fhin->read($in,100) or die "reading from '$files[$_]': $!";
+    #read $fhin,$in,1e6 or die "reading from '$files[$_]': $!";  1e9->out of memory
+    local $/;
+    $in= <$fhin>; # und fehler abfangen?
+    $fhin->close or die "error reading/closing file '$files[$_]': $!";
+    diffprepare($in);
+    $fh->autoflush(1);
+    print $fh $in or die "writing to tempfile: $!";
+    $tmpfiles[$_]= [$fh,$filename];
+}
+
+system "tkdiff", map {$_->[1]} @tmpfiles;
+
+unlink0(@$_) for @tmpfiles;

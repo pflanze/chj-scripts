@@ -1,0 +1,354 @@
+#!/usr/bin/perl -w
+
+# Fre Mär  7 13:35:51 MET 2003
+
+# Tue, 16 Dec 2003 01:05:58 +0100
+# hm, reinhacken von cache. sigh?.
+# neue sub, so ziemlich genau vor waitchildevaluate. lieber als dort reinhacken.
+# aber???   prinzip : ips an children nur dann geben wenn sie nich bekannt sind. auch nicht waitchildevaluate dann danach?(??).  sonst shortcuttig wie bei waitchild in die datenstruktur einfüllen?. na, datenstruktur könnt ich gleich bei deren kreierung einfüllen.
+## my $listent= [ undef, $line, $ip ];
+## $listindex{$ip}{$listent}= $listent;
+# hm, noch einen schritt weiter gehen, und nicht erst wenn parent die antwort hat sondern bereits beim rausschicken vermerken was bereits geschickt wurde? aber dann müsst ich wirklich  noch schräg? na antwort brauch ich ja keine mehr.   ab nE eben:  antwort hab ich noch ned.  aber  ja  ein child das antwortet sollte reichen.   exists aber undef als marker?
+# was ist der wert für "gibts nicht"? ah "-".
+# hm  nie weg von on the way.  nie eingetragen.  nur ein listent aufgelöst. der erste offenbar. aha, müsste multiple   logo, also eintragen muss ma ihn schohn  oder so. nur in dem waiting case.
+# listindex{resip}  für alle diese   wird listent->[3] auf resname gesetzt.  warum 3  und nicht 0 ?????
+# oh shit das iss der list knopf?.
+# och, warum kommt nun immer noch 
+#listent ARRAY(0x8171564) is for ip 80.218.18.160, already on the way
+#listent ARRAY(0x81715a0) is for ip 80.218.18.160, already on the way
+# obwohl das ding im cache ist nun? wurde es nicht in ipcache geschrieben? aber das wirds doch gleich bei resp= ausgabe.
+# komisch: wenn schon bisher alle ausgefüllt wurden, warum  was wurde dann mit den uberflussigen kids gemacht?.
+
+# Sun, 28 Dec 2003 00:53:32 +0100
+# grr, added or die to all print statements. grrr.
+# fix bug with -r mode in first outputtet line.
+
+use strict;
+use Socket;
+
+my $MAXCHILDS= 15;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    my $txt=shift;
+    if ($txt){
+	warn "$myname: $txt\n";
+    }
+    print "$myname [ options ]
+  Reads lines from stdin, expecting ip at beginning of line.
+  Outputs lines again with \\thostname or \\t- appended.
+  Options:
+   -m, --max   Max number of parallel queries (which means as many
+               child processes) (default: $MAXCHILDS)
+   -c, --cache cache the resolved ips, so that they are not resolved
+               again for each subsequent appearance
+     ----> hmm, is *always* on now because of some bug thats otherwise showing up.
+   -r --replace  replace mode, the ip is replaced with the name 
+               instead of output after tab. if an ip could not
+               be resolved, it is output again instead.
+";
+    exit( $txt ? 1 : 0);
+}
+
+my @files;
+my $DEBUG=0;
+my ($opt_cache,$opt_replace);
+$opt_cache=1; ### workaround against bug.
+
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+        usage
+    } elsif ($_ eq '--') {
+        push @files, @ARGV[$i+1..$#ARGV];
+        last;
+    } elsif (/^--?c(ache)?$/) {
+        $opt_cache=1;
+    } elsif (/^--?r(eplace)?$/) {
+        $opt_replace=1;
+    } elsif (/^--?(d+)(ebug)?$/) {
+        $DEBUG+=length($1);
+    } elsif (/^--?m(ax)?$/) {
+        $MAXCHILDS= $ARGV[++$i] or usage "missing argument to $_";
+    } elsif (/^-/) {
+        usage "Unknown option '$_'\n";
+    } else {
+        push @files, $_
+    }
+}
+usage if @files;
+
+pipe READ,WRITE;
+# {
+#     # dummy work so that the libs are loaded for sure before forking
+#     my $name= gethostbyaddr(inet_aton("129.132.200.35"
+# 				      #"127.0.0.1"
+# 				     ),AF_INET);
+# }
+# now done on real ip below.
+
+my $numchilds=0;
+
+sub ip2name {
+    my ($ip)=@_;
+    my $name=scalar gethostbyaddr(inet_aton($ip),AF_INET);
+    $name ? $name : "-"
+}
+
+my %ipcache; # ip -> name
+
+sub forkwork {
+    my ($ip)=@_;
+    my $pid=fork;
+    defined $pid or do {
+	if ($MAXCHILDS > 1) {
+	    $MAXCHILDS--;
+	    warn "$myname: could not fork: $!. Reduced --max to $MAXCHILDS.\n";
+	    return 0;
+	} else {
+	    die "$myname: could not even fork one child so terminating now.\n";
+	}
+    };
+    if ($pid){
+	if ($opt_cache) {
+	    # mark work as 'on the way'
+	    $ipcache{$ip}=undef;
+	}
+	return 1;
+    } else {
+	sleep (1+rand(3)) if $DEBUG;
+	warn "kid $$ now starting work..\n" if $DEBUG;
+	my $name= ip2name($ip);
+	print WRITE "$ip\t$name\n" or die $!;
+	exit;
+    }
+}
+
+#my @stacked;
+#my %indexstacked;
+# schiebende indexes?  ?
+# linked lists!!
+# [ nextp, line, ip, resultname ]
+my ($listhead,$listtail);
+my %listindex;  # {ip}->{referencevalue}=referencevalue   (eine collection du merkst schon)
+
+sub debugwalklist {
+    my $l=$listhead;
+    my $i=0;
+    do {
+	warn "debugwalklist: $i $l ",join(", ",map{defined $_ ? $_ : "undef"}@$l[0, 2,3]),"\n";
+	$i++;
+	$l= $l->[0];
+    } while $l;
+}
+
+sub cleanprintlist {
+    debugwalklist if $DEBUG >=2;
+    # list MUST have an entry when called here
+    while ($listhead->[3]) {
+	my ($line,$ip,$name)= @{$listhead}[1,2,3]; #@$listhead[1,2,3];  ginge das nun auhc oder nicht
+	warn "cleanprintlist: ip=$ip,name=$name\n" if $DEBUG;
+	if ($opt_replace) {
+	    if ($name eq '-') {
+		print "$line\n" or die $!; # unchanged with ip.
+	    } else {
+		$line=~ s/^\Q$ip/$name/ or warn "???";
+		print "$line\n" or die $!;
+	    }
+	} else {
+	    print "$line\t$name\n" or die $!;
+	}
+	delete $listindex{$ip}{$listhead};
+	delete $listindex{$ip} unless keys %{$listindex{$ip}}; ## sollte eigentlich ein "aufräume $hashref" sein!!
+	$listhead= $listhead->[0];
+        last unless defined $listhead;
+    }
+}
+
+sub waitchildevaluate {
+    warn "going to wait..\n" if $DEBUG;
+    wait;
+    $numchilds--;
+    $?==0 or die "A child exited abnormally with exit code $?"; # (and -1 would mean there is no child, but a bug. well its a borderbordercase if there has never been a child and it cant fork it will try to wait and that will fail too. but thats almost perfectly fine either so im leaving it as is.)
+    my $resp= <READ>; chomp $resp;
+    warn "resp='$resp'\n" if $DEBUG;
+    my ($resip,$resname)= split /\t/,$resp;
+    if ($opt_cache) {
+	$ipcache{$resip}= $resname;
+    }
+    for my $listent (values %{$listindex{$resip}}) {
+	warn "value from listindex for '$resip': $listent\n" if $DEBUG;
+	$listent->[3]=$resname;
+    }
+    cleanprintlist();
+}
+
+my $flag_didfirst;
+while (defined (my $line=<STDIN>)) {
+    if ($line=~ /^(\d+\.\d+\.\d+\.\d+)\s/) { #///
+	my $ip=$1;
+	chomp $line;
+	
+	unless ($flag_didfirst){
+	    # do first lookup in parent process so that all libraries and files are mapped/loaded first
+	    $flag_didfirst=1;
+	    my $name=ip2name($ip);
+	    #print "$line\t$name\n" or die $!;
+	    if ($opt_replace) {
+		if ($name eq '-') {
+		    print "$line\n" or die $!; # unchanged with ip.
+		} else {
+		    $line=~ s/^\Q$ip/$name/ or warn "???";
+		    print "$line\n" or die $!;
+		}
+	    } else {
+		print "$line\t$name\n" or die $!;
+	    }
+	} else {
+	    if ($numchilds>=$MAXCHILDS){
+		# *FIRST* wait for some childs before doing more work
+		waitchildevaluate;
+	    }
+	    my $name;
+	    #my $flag_done; # on the way or known.
+	    my $flag_onthewayorknown;
+	    my $listent;
+	    #if ($opt_cache and defined ($name=$ipcache{$ip})) {
+	    if ($opt_cache and exists $ipcache{$ip}) {
+		$name= $ipcache{$ip};
+		#$flag_done=1; # may still be on the way, though, i.e. name=undef.
+		$flag_onthewayorknown=1;
+		$listent= [ undef, $line, $ip, $name ];
+		if ($DEBUG) {
+		    if (defined $name) {
+			warn "listent $listent is for ip $ip, already resolved to '$name'\n";
+		    } else {
+			warn "listent $listent is for ip $ip, already on the way\n";
+		    }
+		}
+	    } else {
+		$listent= [ undef, $line, $ip ];
+		warn "listent $listent is for ip $ip\n" if $DEBUG;
+	    }
+	    if ($listtail){
+		$listtail->[0]= $listent;
+	    } else {
+		$listhead=$listent;
+	    }
+	    $listtail=$listent;
+	    unless (defined $name) {
+		#push @{ $listindex{$ip}{$listent} }, $listent;
+		# eh, dös isch n verschachtelter hash bereits.  (funny, weiss sinn nich mehr)
+		$listindex{$ip}{$listent}= $listent;
+	    }
+	    unless ($flag_onthewayorknown) {
+		while (!forkwork($ip)){
+		    # clean more children up. (forkwork will die if none left)
+		    waitchildevaluate;
+		}
+		$numchilds++;
+	    }
+	}
+    } else {
+	print $line or die $!
+    }
+}
+
+#fuck cleanprintlist();
+while ($numchilds>0){
+    waitchildevaluate;
+}
+
+
+__END__
+
+
+  Some data:
+
+chris@lombi chris > time ip2hostname_filter_neu -m 30 <robots.list.evaled  > out30
+
+real	0m53.307s
+user	0m9.880s
+sys	0m16.710s
+chris@lombi chris > time ip2hostname_filter_neu -m 10 <robots.list.evaled  > out10
+
+real	1m5.307s
+user	0m8.910s
+sys	0m16.460s
+
+(for 993 ips, of which 235 have no dns entry)
+
+
+  Some more data, concerning 'dummy work before fork':
+
+  (time ip2hostname_filter -m 30 <robots.list.evaled  > out
+   on ethlife-b which had ~load 0.2 before. executed in ~randomized order.)
+
+no dummy work:
+-------
+real	0m25.040s
+user	0m2.850s
+sys	0m3.040s
+
+real	0m25.083s
+user	0m2.740s
+sys	0m3.400s
+
+127.0.0.1 localhost:
+-------
+real	0m24.467s
+user	0m2.250s
+sys	0m3.110s
+
+real	0m24.364s
+user	0m2.020s
+sys	0m3.290s
+
+129.132.200.35 www.ethz.ch:
+-------
+real	0m23.991s
+user	0m1.890s
+sys	0m2.780s
+
+real	0m23.976s
+user	0m1.800s
+sys	0m2.860s
+
+  -> so we will really do it and resolve the first ip in parent process (blocking).
+
+  With firstipinparentlookup:
+
+real	0m24.047s
+user	0m1.860s
+sys	0m2.900s
+
+  BTW purely serial:
+
+real	5m3.688s
+user	0m0.160s
+sys	0m0.110s
+real	5m12.396s
+user	0m0.190s
+sys	0m0.100s
+
+  with -m 60:
+
+real	0m24.167s
+user	0m1.810s
+sys	0m3.090s
+real	0m24.370s
+user	0m2.010s
+sys	0m2.820s
+
+----
+new version with (always-enabled) cache:
+
+chris@theaterblut ip > time ip2hostname_filter -r < /var/log/httpd-accel/access.log > access.log
+    real3m1.552s
+    user0m15.020s
+    sys0m40.200s
+
+56170 /var/log/httpd-accel/access.log
+56170 access.log
+310.3 zeilen pro sekunde.

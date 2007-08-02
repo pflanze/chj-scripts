@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+
+# Fre Aug 20 16:43:23 MEST 2004
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $sshhost="ethlife.ethz.ch";## vorsicht: ethlife-live ginge nicht weil sich die maschinen ethlife-a/b nennen
+my $sshhost_hostname= $sshhost; $sshhost_hostname=~ s/\..*//s; die unless length $sshhost_hostname;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname listsubscriptionadress [ listname ]
+
+  Send subscriptionmail for a mailinglist.
+  Transparently logs into $sshhost to do it.
+
+  Options:
+  --from address   use this instead of \$EMAIL env var.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $frommail= $ENV{EMAIL};
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?f(?:rom(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $frommail=$1
+        } else {
+            $frommail=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+usage("\$EMAIL env var is not set") unless $frommail;
+
+my ($listsubscriptionadress,$listname)=@args;
+
+use Chj::IO::Command;
+use Chj::Hostname 'hostname';
+use Chj::xperlfunc;
+
+my $hostname=hostname; #warn "hostname=$hostname";
+if ($hostname =~ /\Q$sshhost_hostname\E/) {
+    #warn "doit";
+    #my $send= Chj::IO::Command->new_receiver("sendmail","-t");
+    my $send= Chj::IO::Command->new_receiver("/usr/sbin/sendmail","-t");
+    $send->xprint("To: $listsubscriptionadress\nFrom: $frommail\n\nsubscribe".($listname ? " $listname": "")."\n");
+    $send->xxfinish;
+
+} else {
+    # proxy request
+    #warn "proxy";
+    xxsystem
+      #print map{"$_\n"}
+	#"ssh",$sshhost,"sh","-c"," export EMAIL=".quotemeta($ENV{EMAIL})."; ".join(" ",map{quotemeta $_} $0,@ARGV);
+	"ssh",$sshhost,"export EMAIL=".quotemeta($ENV{EMAIL})."; ".join(" ",map{quotemeta $_} $0,@ARGV);
+}
+

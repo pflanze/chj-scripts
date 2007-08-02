@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+
+# Mit Mai  4 04:45:20 CEST 2005
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
+my ($mydir, $myname)=($1,$2); 
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname < ...rej | less
+
+  Aus einem patch reject file, das aus dem applien eines diff diffs
+  hervorgegangen ist, nur diejenigen rejects anzeigen, welche \"substanz\"
+  haben, also nicht zeilennummern von diff hunks(?) und timestamps von
+  files bezeichnen.
+
+  ALLERDINGS: vergiss es, man kann eh nicht einen diff diff auf einen
+  nichtidentischen diff applien, der diff ist danach malformed.
+  Es sei denn du bearbeitest sie mit rediff vom patchutils Paket oder so nach.
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage if @args;
+
+my $cnt= do {
+    local $/;
+    <STDIN>
+};
+
+my $separator= "***************\n";
+
+my @rejs= split /\Q$separator\E/,$cnt;
+
+for my $rej (@rejs) {
+    # look if any line is something else than a diff on   diff / --- / +++ lines.
+    if ($rej=~ /^[-+] (?!(?:diff|\+\+\+|---|\@\@))/m) {
+	print $rej, $separator;
+    }
+}
+
