@@ -237,6 +237,7 @@ sub fork {
 
     use Sys::Hostname ();
     use Chj::Net::Publicip;
+    use Chj::username ();
 
     use Class::Array -fields=> (
 				"User",
@@ -247,7 +248,7 @@ sub fork {
 
     sub user {
 	my $s=shift;
-	$$s[User] ||= $ENV{USER}
+	$$s[User] ||= Chj::username::username;
     }
     sub hostname {
 	my $s=shift;
