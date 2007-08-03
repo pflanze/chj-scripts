@@ -53,6 +53,7 @@ usage unless @args==2;
 our ($socketpath,$statedir)=@args;
 
 use Chj::Unix::Authenticate;
+use POSIX 'EINTR';
 
 our $auth= Chj::Unix::Authenticate->new(service=>"login");#(the sole service supportded by that module)
 
@@ -94,9 +95,12 @@ sub parse_singlequote_from_buf {
 
 
 sub handle_conn {
-    my ($conn)=@_;
+    local our ($conn)=@_;
+    #$conn->timeout(1); #ok?  grrr warum nützt das nichts?????. weder auf senden noch lesen!!
+    #use Chj::repl;repl;
+
     my $buf;
-    $conn->recv($buf,1024) ; # or die "recv: $!";  no that's broken. for whateverweirdreason. (already in msgserver)
+    defined ($conn->recv($buf,1024)) or die "recv: $!"; # the defined is relevant! (man perlfunc)
     # assume that the whole message has fit into the buffer.
     $buf=~ s/^check // or die "invalid query, does not start with 'check '";
     my $error=sub {
@@ -130,14 +134,52 @@ sub handle_conn {
     }
 }
 
-while (local our $conn= $sock->accept) {
-    eval {
-	handle_conn($conn);
-    };
-    if (ref $@ or $@) {
-	warn "got exception: $@";
+our $do_alarm=0;
+#$SIG{ALRM}= sub { die "ALRM\n" if $do_alarm };
+$SIG{ALRM}= sub {
+    if ($do_alarm) {
+	warn "sending aralm";
+	die "ALRM\n"
     }
-    $conn->close
-      or warn "close: $!";
-    #use Chj::repl;repl;
+};
+
+loop: {
+    while (local our $conn= $sock->accept) {
+	eval {
+	    {
+		local $do_alarm=1;# is this better against races? (than switching alarm off or removing signal handler)
+		alarm 3;
+		handle_conn($conn);
+		# have to take close also under timeout control,right?
+		#$conn->close
+		#  or die "close: $!";
+		#ACH: aber muss auch bei exn close machen.   am ende isch es einfach broken. xnzeu
+	    }
+	};
+	if (ref $@ or $@) {
+	    warn "got exception: $@";
+	}
+	eval {
+	    {
+		alarm 3;
+		local $do_alarm=1;
+		$conn->close
+		  or die "close: $!";
+	    }
+	};
+	if (ref $@ or $@) {
+	    warn "got exception in closing stage: $@";
+	}
+    }
+    #warn "no more connections? or what is broken?"; tritt wirklich auf: dann wenn client sleep 30000 vor seinem recv hat.  komisch aber dass hier kein exception vermelden passiert.
+    # ah: weil  zwar kein die aber eben  unterbruch von betriebssys call. mensch. so was doofes.
+    #warn "got here: $!";
+    # perl tut also NICHT take care of hier.
+    if ($! == EINTR) {
+	warn "accept: got EINTR";
+	redo loop;
+    } else {
+	die "accept: $!"
+    }
 }
+

@@ -56,18 +56,20 @@ sub checkauth ($ $ ) {
     local our $sock= IO::Socket::UNIX->new(
 					   #Remote=> $socketpath,
 					   Peer=> $socketpath,#ACH!! das wars. Remote nix gut grr.
+					   #Timeout => 1, hiflt nicht
 					  )
       or die "new/connect: $!";
+    #$sock->timeout(1); #auch hier bei sender nützt das NICHTS. wahnsinn.
 
     #$sock->connect; nicht nötig. oben mit drin?
-
     $sock->send ("check ".singlequote($user)." ".singlequote($pass)."\n")
       or die "send: $!";
+sleep 30000;
     my $buf;
     $sock->recv($buf,1024)
       or die "recv: $!";
-    # $buf should be just 0 or 1
-    $buf
+    # $buf is 0 or 1, or an error message
+    $buf=~ /^[01]\z/ ? $buf : die "checkauth: $buf";
 }
 
 use Chj::repl;repl;
