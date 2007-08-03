@@ -1,0 +1,75 @@
+#!/usr/bin/perl -w
+
+# Don Aug  2 20:39:27 CEST 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname socketpath
+
+only for testing. will be used from a qpsmtpd module. by placing code into a Chj module.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+our ($socketpath)=@args;
+
+use IO::Socket::UNIX;
+use Chj::singlequote;
+
+#$SIG{PIPE}= ''; nein geht nid
+$SIG{PIPE}= sub { };
+
+sub checkauth ($ $ ) {
+    my ($user,$pass)=@_;
+    local our $sock= IO::Socket::UNIX->new(
+					   #Remote=> $socketpath,
+					   Peer=> $socketpath,#ACH!! das wars. Remote nix gut grr.
+					   #Timeout => 1, hiflt nicht
+					  )
+      or die "new/connect: $!";
+    #$sock->timeout(1); #auch hier bei sender nützt das NICHTS. wahnsinn.
+
+    #$sock->connect; nicht nötig. oben mit drin?
+    $sock->send ("check ".singlequote($user)." ".singlequote($pass)."\n")
+      or die "send: $!";
+    #sleep 30000;
+    my $buf;
+    $sock->recv($buf,1024)
+      or die "recv: $!";
+    # $buf is 0 or 1, or an error message
+    $buf=~ /^[01]\z/ ? $buf : die "checkauth: $buf";
+}
+
+use Chj::repl;repl;
