@@ -64,7 +64,7 @@ sub checkauth ($ $ ) {
     #$sock->connect; nicht nötig. oben mit drin?
     $sock->send ("check ".singlequote($user)." ".singlequote($pass)."\n")
       or die "send: $!";
-sleep 30000;
+    #sleep 30000;
     my $buf;
     $sock->recv($buf,1024)
       or die "recv: $!";
