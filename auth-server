@@ -77,13 +77,14 @@ sub lastfailed_get {
 sub lastfailed_clear {
     my ($user)=@_;
     if (my ($numfails,$lastfail)= lastfailed_get($user)) {
-	$state->set($user,"0 $lastfail");  ##ehr was wollte ich ?   ich mein   bei erstem wiederfailure gleich wieder oder ehr  fck was wollte ich.  muss  damit ok durchkommt  ja eh warten. --sollte ich numfails lassen und lastfail auf 0 ??
+	$state->set($user,"0 $lastfail");  ##ehr was wollte ich ?   ich mein   bei erstem wiederfailure gleich wieder oder ehr  was wollte ich.  muss  damit ok durchkommt  ja eh warten. --sollte ich numfails lassen und lastfail auf 0 ??
 	# ps. parallelität? luckily bin ich singly hier.
     }
 }
-#our $basewait= 0 weil eh sleep.
+
 our $failsleep= 3;
-our $basewait= 1; # weils einen wert braucht.   und der verdoplet sich on each?
+our $basewait= 1; # weils einen wert braucht.   und der verdoplet sich on each.
+
 sub lastfailed_check { # false if it's ok, error string otherwise.
     my ($user)=@_;
     if (my ($numfails,$lastfail)= lastfailed_get($user)) {
@@ -200,25 +201,17 @@ sub handle_conn {
 our $timeout= $failsleep + 2; # seconds
 
 our $do_alarm=0;
-#$SIG{ALRM}= sub { die "ALRM\n" if $do_alarm };
-$SIG{ALRM}= sub {
-    if ($do_alarm) {
-	warn "sending aralm";
-	die "ALRM\n"
-    }
-};
+$SIG{ALRM}= sub { die "ALRM\n" if $do_alarm };
 
 loop: {
     while (local our $conn= $sock->accept) {
 	eval {
 	    {
-		local $do_alarm=1;# is this better against races? (than switching alarm off or removing signal handler)
+		local $do_alarm=1;# is this better against races?
+                                  # (than switching alarm off or
+                                  # removing signal handler)
 		alarm $timeout;
 		handle_conn($conn);
-		# have to take close also under timeout control,right?
-		#$conn->close
-		#  or die "close: $!";
-		#ACH: aber muss auch bei exn close machen.   am ende isch es einfach broken. xnzeu
 	    }
 	};
 	if (ref $@ or $@) {
@@ -236,12 +229,8 @@ loop: {
 	    warn "got exception in closing stage: $@";
 	}
     }
-    #warn "no more connections? or what is broken?"; tritt wirklich auf: dann wenn client sleep 30000 vor seinem recv hat.  komisch aber dass hier kein exception vermelden passiert.
-    # ah: weil  zwar kein die aber eben  unterbruch von betriebssys call. mensch. so was doofes.
-    #warn "got here: $!";
-    # perl tut also NICHT take care of hier.
     if ($! == EINTR) {
-	warn "accept: got EINTR";
+	#warn "accept: got EINTR";
 	redo loop;
     } else {
 	die "accept: $!"
