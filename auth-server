@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname socketpath statedir
+    print "$myname socketpath statedir [logfile]
 
   Opens the unix socket at the given path, listens for connections,
   writes into statedir the last attempt(s) for a particular user
@@ -48,13 +48,15 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args==2;
+usage unless (@args==2 or @args==3);
 
-our ($socketpath,$statedir)=@args;
+our ($socketpath,$statedir,$maybe_logfile)=@args;
 
 use Chj::Unix::Authenticate;
 use POSIX 'EINTR';
 use Chj::FileStore::PIndex;
+use Chj::Log ':all';
+use Chj::singlequote;
 
 our $auth= Chj::Unix::Authenticate->new(service=>"login");#(the sole service supportded by that module)
 
@@ -114,20 +116,16 @@ sub lastfailed_fail {
 
 use IO::Socket::UNIX;
 
-$SIG{PIPE}= sub { }; #!! auch im server naturli.
+$SIG{PIPE}= sub { };
 
 unlink $socketpath;
 our $sock= IO::Socket::UNIX->new(
 				 Type=> SOCK_STREAM,
 				 Local=> $socketpath,
 				 Listen=> 10, # not a boolean, but a queue length right?.
-				 #ReuseAddr=> 1, huh doesn't help. thus unlink above.
+				 #ReuseAddr=> 1, doesn't help. thus unlink above.
 				)
-  or die $!;#!
-
-our $childcount=0;
-
-#$sock->bind or die $!; not needed  andwrong as such.
+  or die "new: $!";#!
 
 sub parse_singlequote_from_buf {
     my ($bufrf,$startpos)=@_;
@@ -158,14 +156,17 @@ sub handle_conn {
     # assume that the whole message has fit into the buffer.
     $buf=~ s/^check // or die "invalid query, does not start with 'check '";
     my $error=sub {
-	$conn->send(join " ",@_)
-	  or die "error send (@_): $!";
+	my $msg= join " ",@_;
+	warn "sending error reply ".singlequote($msg)."\n";
+	$conn->send($msg)
+	  or die "error send ($msg): $!";
     };
     if (my ($user,$pos)= parse_singlequote_from_buf(\$buf,0)) {
 	if (my ($pass,$pos)= parse_singlequote_from_buf (\$buf,$pos)) {
 	    if (parse_singlequote_from_buf (\$buf,$pos)) {
 		&$error ("superfluous string");
 	    } else {
+		warn "user ".singlequote($user)."\n";
 		if (my $errmsg= lastfailed_check($user)) {
 		    &$error ($errmsg);
 		} else {
@@ -181,8 +182,10 @@ sub handle_conn {
 			}
 		    };
 		    if ($reply) {
+			warn "ok\n";
 			lastfailed_clear($user)
 		    } else {
+			warn "invalid\n";# a message has already been logged from $auth, though.
 			lastfailed_fail($user);
 			sleep $failsleep;
 		    }
@@ -203,37 +206,45 @@ our $timeout= $failsleep + 2; # seconds
 our $do_alarm=0;
 $SIG{ALRM}= sub { die "ALRM\n" if $do_alarm };
 
-loop: {
-    while (local our $conn= $sock->accept) {
-	eval {
-	    {
-		local $do_alarm=1;# is this better against races?
-                                  # (than switching alarm off or
-                                  # removing signal handler)
-		alarm $timeout;
-		handle_conn($conn);
+sub main {
+    warn "accepting connections\n";
+  loop: {
+	while (local our $conn= $sock->accept) {
+	    eval {
+		{
+		    local $do_alarm=1;# is this better against races?
+				      # (than switching alarm off or
+				      # removing signal handler)
+		    alarm $timeout;
+		    handle_conn($conn);
+		}
+	    };
+	    if (ref $@ or $@) {
+		warn "got exception: $@";
 	    }
-	};
-	if (ref $@ or $@) {
-	    warn "got exception: $@";
-	}
-	eval {
-	    {
-		alarm $timeout;
-		local $do_alarm=1;
-		$conn->close
-		  or die "close: $!";
+	    eval {
+		{
+		    alarm $timeout;
+		    local $do_alarm=1;
+		    $conn->close
+		      or die "close: $!";
+		}
+	    };
+	    if (ref $@ or $@) {
+		warn "got exception in closing stage: $@";
 	    }
-	};
-	if (ref $@ or $@) {
-	    warn "got exception in closing stage: $@";
 	}
-    }
-    if ($! == EINTR) {
-	#warn "accept: got EINTR";
-	redo loop;
-    } else {
-	die "accept: $!"
+	if ($! == EINTR) {
+	    #warn "accept: got EINTR";
+	    redo loop;
+	} else {
+	    die "accept: $!"
+	}
     }
 }
 
+if ($maybe_logfile) {
+    timedlogging_to $maybe_logfile, \&main;
+} else {
+    &main;
+}
