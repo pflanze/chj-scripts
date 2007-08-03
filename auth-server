@@ -1,0 +1,143 @@
+#!/usr/bin/perl -w
+
+# Don Aug  2 20:26:53 CEST 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname socketpath statedir
+
+  Opens the unix socket at the given path, listens for connections,
+  writes into statedir the last attempt(s) for a particular user
+  to prevent dictionary attacks, returns whether the password is
+  valid.
+
+  Only checks /etc/{passwd,shadow}.
+
+  Prevents authentification queries for users resolving to the uid 0.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+our ($socketpath,$statedir)=@args;
+
+use Chj::Unix::Authenticate;
+
+our $auth= Chj::Unix::Authenticate->new(service=>"login");#(the sole service supportded by that module)
+
+
+use IO::Socket::UNIX;
+
+$SIG{PIPE}= sub { }; #!! auch im server naturli.
+
+unlink $socketpath;
+our $sock= IO::Socket::UNIX->new(
+				 Type=> SOCK_STREAM,
+				 Local=> $socketpath,
+				 Listen=> 10, # not a boolean, but a queue length right?.
+				 #ReuseAddr=> 1, huh doesn't help. thus unlink above.
+				)
+  or die $!;#!
+
+our $childcount=0;
+
+#$sock->bind or die $!; not needed  andwrong as such.
+
+sub parse_singlequote_from_buf {
+    my ($bufrf,$startpos)=@_;
+    pos($$bufrf)=$startpos;
+    #while ($$bufrf=~ m/(?!<\\)\'/sg) {  und PROMPT veergessen anzupasen.  Langs welche costly fn calls haben sucken.
+    while ($$bufrf=~ m/(?<!\\)\'/sg) {
+	my $pos0=pos ($$bufrf);
+	while ($$bufrf=~ m/(?<!\\)\'/sg) {
+	    my $pos1= pos ($$bufrf);
+	    my $substr= substr ($$bufrf,$pos0,$pos1-$pos0-1);
+	    $substr=~ s/\\(.)/$1/sg;
+	    #return wantarray ? ($substr,$pos1) : $substr
+	    return ($substr,$pos1)
+	}
+	die "missing end of string";
+    }
+    return
+}
+
+
+sub handle_conn {
+    my ($conn)=@_;
+    my $buf;
+    $conn->recv($buf,1024) ; # or die "recv: $!";  no that's broken. for whateverweirdreason. (already in msgserver)
+    # assume that the whole message has fit into the buffer.
+    $buf=~ s/^check // or die "invalid query, does not start with 'check '";
+    my $error=sub {
+	$conn->send(join " ",@_)
+	  or die "error send (@_): $!";
+    };
+    if (my ($user,$pos)= parse_singlequote_from_buf(\$buf,0)) {
+	if (my ($pass,$pos)= parse_singlequote_from_buf (\$buf,$pos)) {
+	    if (parse_singlequote_from_buf (\$buf,$pos)) {
+		&$error ("superfluous string");
+	    } else {
+		my $reply= do {
+		    if (my $u= $auth->authenticate ($user,$pass)) {
+			if ($u->uid != 0) {
+			    "1"
+			} else {
+			    "0"
+			}
+		    } else {
+			"0"
+		    }
+		};
+		$conn->send($reply)
+		  or die "send: $!";
+	    }
+	} else {
+	    &$error ("missing pass");
+	}
+    } else {
+	&$error ("missing user and pass");
+    }
+}
+
+while (local our $conn= $sock->accept) {
+    eval {
+	handle_conn($conn);
+    };
+    if (ref $@ or $@) {
+	warn "got exception: $@";
+    }
+    $conn->close
+      or warn "close: $!";
+    #use Chj::repl;repl;
+}
