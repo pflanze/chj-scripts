@@ -54,9 +54,62 @@ our ($socketpath,$statedir)=@args;
 
 use Chj::Unix::Authenticate;
 use POSIX 'EINTR';
+use Chj::FileStore::PIndex;
 
 our $auth= Chj::Unix::Authenticate->new(service=>"login");#(the sole service supportded by that module)
 
+our $state= new Chj::FileStore::PIndex $statedir;
+# wenn successful, zwar numfails rücksetzen aber zeitpunkt der letzten failure nicht?
+# ps. für multiuser so  doch auch noch sleepen besser wohl.
+# also wenn mal n ok kommt, wieder zulassen .
+# hm number of failures isch egal?nein. nur wenn time kurz ist UND numfailures >= 3 ist, abblocken.
+
+sub lastfailed_get {
+    my ($user)=@_;
+    if (defined(my $val= $state->get($user))) {
+	my ($numfails,$lastfail)=split " ",$val;
+	($numfails,$lastfail)
+    } else {
+	return
+    }
+}
+
+sub lastfailed_clear {
+    my ($user)=@_;
+    if (my ($numfails,$lastfail)= lastfailed_get($user)) {
+	$state->set($user,"0 $lastfail");  ##ehr was wollte ich ?   ich mein   bei erstem wiederfailure gleich wieder oder ehr  fck was wollte ich.  muss  damit ok durchkommt  ja eh warten. --sollte ich numfails lassen und lastfail auf 0 ??
+	# ps. parallelität? luckily bin ich singly hier.
+    }
+}
+#our $basewait= 0 weil eh sleep.
+our $failsleep= 3;
+our $basewait= 1; # weils einen wert braucht.   und der verdoplet sich on each?
+sub lastfailed_check { # false if it's ok, error string otherwise.
+    my ($user)=@_;
+    if (my ($numfails,$lastfail)= lastfailed_get($user)) {
+	my $t=time;
+	# "nun, exponentialoderso?"
+	my $waittime= $basewait * 2**$numfails;
+	my $oktime= $lastfail + $waittime;
+	if ($t >= $oktime) {
+	    return   #  '()  vs #f eben.
+	} else {
+	    "failed authentification $numfails times; please wait until ".localtime($oktime) # well non localtime "would be better"..
+	}
+    } else {
+	return
+    }
+}
+
+sub lastfailed_fail {
+    my ($user)=@_;
+    my $t=time;
+    if (my ($numfails,$lastfail)= lastfailed_get($user)) {
+	$state->set($user,($numfails+1)." $t");
+    } else {
+	$state->set($user,"1 $t");
+    }
+}
 
 use IO::Socket::UNIX;
 
@@ -112,19 +165,29 @@ sub handle_conn {
 	    if (parse_singlequote_from_buf (\$buf,$pos)) {
 		&$error ("superfluous string");
 	    } else {
-		my $reply= do {
-		    if (my $u= $auth->authenticate ($user,$pass)) {
-			if ($u->uid != 0) {
-			    "1"
+		if (my $errmsg= lastfailed_check($user)) {
+		    &$error ($errmsg);
+		} else {
+		    my $reply= do {
+			if (my $u= $auth->authenticate ($user,$pass)) {
+			    if ($u->uid != 0) {
+				"1"
+			    } else {
+				"0"
+			    }
 			} else {
 			    "0"
 			}
+		    };
+		    if ($reply) {
+			lastfailed_clear($user)
 		    } else {
-			"0"
+			lastfailed_fail($user);
+			sleep $failsleep;
 		    }
-		};
-		$conn->send($reply)
-		  or die "send: $!";
+		    $conn->send($reply)
+		      or die "send: $!";
+		}
 	    }
 	} else {
 	    &$error ("missing pass");
@@ -133,6 +196,8 @@ sub handle_conn {
 	&$error ("missing user and pass");
     }
 }
+
+our $timeout= $failsleep + 2; # seconds
 
 our $do_alarm=0;
 #$SIG{ALRM}= sub { die "ALRM\n" if $do_alarm };
@@ -148,7 +213,7 @@ loop: {
 	eval {
 	    {
 		local $do_alarm=1;# is this better against races? (than switching alarm off or removing signal handler)
-		alarm 3;
+		alarm $timeout;
 		handle_conn($conn);
 		# have to take close also under timeout control,right?
 		#$conn->close
@@ -161,7 +226,7 @@ loop: {
 	}
 	eval {
 	    {
-		alarm 3;
+		alarm $timeout;
 		local $do_alarm=1;
 		$conn->close
 		  or die "close: $!";
