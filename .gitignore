@@ -16,7 +16,6 @@ Chj/FileStore/MIndex/Iterator.pm
 Chj/Format/Squirrelmailabook.pm
 Chj/Mailfilter.pm
 Chj/Parse/Braceexpand.pm
-Chj/Unix/Authenticate.pm
 Chj/Unix/DaemonFactory.pm
 Chj/Unix/File.pm
 Chj/Unix/Interfaces.pm
