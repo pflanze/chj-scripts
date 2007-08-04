@@ -52,27 +52,37 @@ use Chj::IO::Command;
 sub files {
     my $g= Chj::IO::Command->new_sender("git-status");
 
-    my @files;
+    my %files;
     while (<$g>) {
 	last if /^# Untracked files/;
 	chomp;
 	if (/^#\s+(modified|deleted|added):\s+(.*)/) {
 	    my ($what,$path)=($1,$2);
-	    push @files,$path; # not interested in $what.right?.
+	    $files{$path}=$what;
 	}
     }
     my $rv= $g->xfinish;
     $rv==0 or $rv==1<<8 or die "git-status exited with an error it seems ($rv)"; # (1 is when nothing's ready to commit)
-    @files
+    \%files
 }
 
+my $modmap= {
+	     modified=>"M",
+	     deleted=> "D",
+	     added=> "A"
+	    };
 sub main {
-    my $l= Chj::IO::Command->new_sender ("l", files);
+    my $files= files;
+    my $l= Chj::IO::Command->new_sender ("l", keys %$files);
     while (<$l>) {
 	chomp;
 	# chop off '-rw-r--r-- 1 clamavbuild clamavbuild 4119'
 	s/^[-l][-rwSstx]{9} +\d+ +\S+ +\S+ +\d+ +// or die "line dos not match: '$_'";
-	print " ",$_,"\n" or die "printing to stdout: $!";
+	/^\S+ +\S+ +(.*)/ or die "line (date part) does not match: '$_'";
+	my $file=$1;
+	my $kind= $$files{$file} or die "bug";
+	$kind= $$modmap{$kind} or die "bug '$kind'";
+	print "$kind ",$_,"\n" or die "printing to stdout: $!";
     }
 }
 
