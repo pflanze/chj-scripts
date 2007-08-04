@@ -73,6 +73,7 @@ my $modmap= {
 	    };
 sub main {
     my $files= files;
+    return unless keys %$files;
     my $l= Chj::IO::Command->new_sender ("l", keys %$files);
     while (<$l>) {
 	chomp;
