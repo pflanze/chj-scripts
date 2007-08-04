@@ -2,4 +2,4 @@
 
 mvnumber nohup.out
 ulimit -S -v unlimited
-LANG=C daemonize make
+LANG=C daemonize make "$@"
