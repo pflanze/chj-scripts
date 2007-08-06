@@ -72,28 +72,41 @@ for my $to (@files) {
 	my $newto= "$user-request\@$host";
 	if (askyn "address '$to' doesn't look like a subscription address. should I change it to '$newto' instead? ") {
 	    $to=$newto;
+	} else {
+	    if (askyn "So I will send your subscription mail to '$to'. Are you sure I should do that? ") {
+		# so be it
+	    } else {
+		print "cancelled.\n";
+		exit 1;
+	    }
 	}
     }
-	
+
     # do the work
     my $subscribeline= do {
 	$opt_listname ? "subscribe $opt_listname\n" :
 	  $to=~ /subscribe/i ? undef : "subscribe\n";
     }||"";
     my $date= `date -R`; chomp $date;
-    open OUT,"|sendmail -t" or die "could not open pie to sendmail: $!";
 my $mail=<<"END";
 Date: $date
 To: $to
 From: $from
+Subject: 
 User-Agent: $myname
 
 $subscribeline
 END
     ;
     chop $mail;
-    print OUT $mail or die "err piping: $!";
-    close OUT or die "error sending mail, $!";
-    print "sent mail from $from to $to\n";
+    if ($DEBUG) {
+	print "mail='$mail'\n";
+	print "did not send mail because of debug option.\n";
+    } else {
+	open OUT,"|sendmail -t" or die "could not open pie to sendmail: $!";
+	print OUT $mail or die "err piping: $!";
+	close OUT or die "error sending mail, $!";
+	print "sent mail from $from to $to\n";
+    }
 }
 
