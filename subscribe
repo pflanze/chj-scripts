@@ -103,7 +103,7 @@ END
 	print "mail='$mail'\n";
 	print "did not send mail because of debug option.\n";
     } else {
-	open OUT,"|sendmail -t" or die "could not open pie to sendmail: $!";
+	open OUT,"|sendmail -t -f".quotemeta($from) or die "could not open pipe to sendmail: $!";
 	print OUT $mail or die "err piping: $!";
 	close OUT or die "error sending mail, $!";
 	print "sent mail from $from to $to\n";
