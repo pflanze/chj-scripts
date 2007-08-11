@@ -1,0 +1,531 @@
+#!/usr/bin/perl -w
+
+# Sam Nov 29 23:17:06 MET 2003
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+use Chj::xopendir;
+use Chj::xopen qw(xopen_read);
+use Chj::xperlfunc;
+use Chj::FileStore::MIndex;
+#use Chj::FileStore::MIndex::NonsortedIterator; well den brauch ich gar ned.
+# wann will ich eigentlich msgid recorden wirklich?, wann will ich double elimination/checks? normalerweise ja nicht?. (doubleelim bloss wenn sie im gleichen folder landen)
+
+# ach und wegen f* "too late to run CHECK block" auch diese unnütz-immer-laden:
+use elcms_general_settings;
+use EL::Util::Date;
+use EL::Util::Sendmail;
+
+#####these here are shared with the 'x-sms-sendpending' script !!!.
+my $xsms_base="$ENV{HOME}/.mailmover_x-sms";
+my $msgid_base="$ENV{HOME}/.mailmover_msgids";# msgid->filenames.
+####/shared
+mkdir $msgid_base,0700;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -d sourcedir | -f sourcefile(s)  targetbase
+
+  (Christian Jaeger <$email>)
+";
+exit @_ ? 1 : 0;
+}
+
+my @args;
+my $DEBUG=0;
+my $verbose=0;
+my ($sourcedir);
+my $opt_leaveinbox;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(?:dir(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $sourcedir=$1
+        } else {
+            $sourcedir=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--leave-inbox$/) {
+	$opt_leaveinbox=1;
+    } elsif (/^--?(v+)(?:erbose)?$/) {
+	$verbose+=length($1);
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+
+{
+    package MailUtil;
+    our @EXPORT_OK=qw(pick_out_of_anglebrackets);
+    use base "Exporter";
+    use Carp;
+    our ($verbose,$raiseerrors)=(1,0);#  (sowieso: wohl doch besser mit x-versionen der funktionen.!)
+    sub pick_out_of_anglebrackets {
+	my ($str)=@_;
+	my @res= $str=~ /<([^>]*)>/g;
+	if (wantarray){
+	    @res
+	} elsif (@res>1) {
+	    my $msg= "multiple angle brackets found but only one expected";
+	    if ($verbose) {
+		warn $msg
+	    }#naja, DBI like doppelwarn behaviour. is this liked?
+	    if ($raiseerrors){
+		croak $msg
+	    } else {
+		$res[0]
+	    }
+	} else {
+	    $res[0]
+	}
+    }
+}
+#*pick_out_of_anglebrackets= \&MailUtil::pick_out_of_anglebrackets;
+import MailUtil 'pick_out_of_anglebrackets';
+
+{
+    package MailHead;
+    use Class::Array -fields=>(
+			       # ps warum's Inmail class gibt in elcms: weil es inder db es ja auch so gross will wie es eben ist i.e. ram grösse.  (chunking?)
+			       # enum? wie schon machte ich jenes, zahlen versus db.
+			       'Errors', #arrayrf
+			       'Warnings', #arrayrf
+			       'HeadersHash', #hashref, only single headers
+			       'HeadersArray', #arrayref, all headers
+			      );
+
+    sub new_from_fh {
+	my $class=shift;
+	my ($fh)=@_; # assume this is blessed to Chj::IO::File? or do it now?
+	# assume it is rewinded.!
+	my $self= $class->SUPER::new;
+	@{$self}[Errors,Warnings]= ([],[]);
+
+	my (%header,@headers,@errors);
+	my ($lastheaderkey);
+      HEADER:{
+	    local $_;
+	    while (defined($_=$fh->xreadline)) {
+		chomp;# is this safe enough (i.e. does it strip both cr and lf?)
+		if (length) {
+		    if (/^(\w[\w.-]+): *(.*)/) {
+			$lastheaderkey=lc($1);
+			push @headers,$_;
+			if (exists $header{$lastheaderkey}) {
+			    #push @errors,"encountered header '$lastheaderkey' multiple times, now with '$_'";
+			    undef $header{$lastheaderkey};
+			} else {
+			    $header{$lastheaderkey}=[$#headers,$1,$2];
+			}
+		    } elsif (/^\s+(.*)/) {  #(naja, ist das alles so wirklich korrekt?)
+			if ($lastheaderkey) {
+			    $headers[-1].="\n\t$1";
+			    $header{$lastheaderkey}[2].="\n\t$1" if defined $header{$lastheaderkey};
+			    #warn "(DEBUG: multiline header)";
+			} else {
+			    push @errors, "First header does not start with a key: '$_'";
+			}
+		    } else {
+			push @errors, "Header of unknown format: '$_'";
+		    }
+		} else {
+		    last HEADER;
+		}
+	    }
+	    # ran out of data before finishing headers? Well there is no guarantee that a mail has a body at all (not even the empty line inbetween), so it's not an error.
+	}
+	@{$self}[HeadersHash,HeadersArray]= (\%header,\@headers);
+	$self->[Errors]= \@errors;
+	$self
+    }
+
+    sub header {
+	my $self=shift;
+	my ($key)=@_;
+	if (my $h=$$self[HeadersHash]{lc($key)}) {
+	    $h->[2]
+	} else {
+	    undef
+	}
+    }
+
+    # gehört nicht mehr ins base package:
+    my %known_list_precedences= map {$_=>undef} qw( bulk list );
+    sub mailinglist_id {
+	my $self=shift;
+	my ($value,$id);
+      SEARCH:{
+	    # prioritize list-post over list-id since it contains the @ char?
+	    if ($value= $self->header("List-Post")) {
+		if ($value=~ /<([^<>]{3,})>/) { # just in case
+		    $id=$1;# hier ist dann bei ssh list noch mailto: dabei
+		    last SEARCH;
+		} elsif (length $value > 3) {
+		    warn "even if ssh mailinglist did put List-Post value into <>, this one did not ('$value')";
+		    $id=$value;
+		    last SEARCH;
+		} else {
+		    warn "(almost-)empty List-Post header '$value'";
+		}
+	    }
+	    if ($value= $self->header("List-Id")) {
+		if ($value=~ /<([^<>]{3,})>/) {
+		    $id=$1;
+		    last SEARCH;
+		} else {
+		    warn "invalid list-id format '$value'";
+		}
+	    } #els
+	    if ($value= $self->header("x-mailing-list")) {
+		if ($value=~ /<([^<>]{3,})>/) {
+		    $id=$1;
+		    last SEARCH;
+		} else {
+		    warn "invalid x-mailing-list format '$value'";
+		}
+	    }
+	    # Qmail list ist so: Mailing-List: contact qmail-help@list.cr.yp.to; run by ezmlm
+	    if ($value= $self->header("Mailing-List")) {
+		if ($value=~ /<([^<>]{3,})>/) {
+		    warn "even if Qmail (yet another ezmlm based, right??) mailing list didn't use <..> format, this list does ('$value')";
+		    $id=$1;
+		    last SEARCH;
+		} elsif($value=~ /([^\s\@;:,?]+\@[^\s\@;:,?]+[a-z])/) {
+		    $id= $1;
+		    last SEARCH;
+		} else {
+		    warn "invalid x-mailing-list format '$value'";
+		}
+	    }
+	    if (my $precedence= $self->header("precedence")) {
+		$precedence= lc($precedence);
+		$precedence=~ s/^\s+//s;
+		$precedence=~ s/\s+\z//s;
+		if (exists $known_list_precedences{$precedence}) {
+		    if ($value= $self->header("Resent-From")) {
+			if ($value=~ /<([^<>]{3,})>/) { # just in case
+			    warn "note: even if debian mailinglists do not put resent-from into <>, this mail did it ('$value')";
+			    $id=$1;
+			    last SEARCH;
+			} elsif (length $value > 3) {
+			    $id=$value;
+			    last SEARCH;
+			} else {
+			    warn "(almost-)empty Resent-From '$value'";
+			}
+		    }
+		    if ($value= $self->header("Resent-From")) {
+			if ($value=~ /<([^<>]{3,})>/) { # just in case
+			    warn "note: even if debian mailinglists do not put resent-from into <>, this mail did it ('$value')";
+			    $id=$1;
+			    last SEARCH;
+			} elsif (length $value > 3) {
+			    $id=$value;
+			    last SEARCH;
+			} else {
+			    warn "(almost-)empty Resent-From '$value'";
+			}
+		    }
+		    # lugs: (mail alt dings)
+		    if ($value= $self->header("sender")
+			and $value=~ /^owner-(.*)/si) {
+			$id=$1;
+			last SEARCH;
+		    }
+		}
+	    }
+	    #warn "not a list mail";
+	    return;
+	}
+	#warn "listmail: $id\n";
+	$id=~ s/^mailto:\s*//si;
+	return $id;
+    }
+
+    sub is_spam {
+	my $self=shift;
+	if (my $status=$self->header("X-Spam-Status")) {
+	    if ($status=~ /^\s*yes\b/si) {
+		return 1;
+	    } else {
+		return 0;
+	    }
+	} else {
+	    return undef
+	}
+    }
+
+}
+
+sub conditional_move_file($ $ ) {
+    my ($filepath,$targetbase)=@_;
+    my $filename=$filepath; $filename=~ s{^.*/}{}s;
+    my $f= xopen_read $filepath;
+    my $head= MailHead->new_from_fh($f);
+
+    my $foldername;
+
+    my $is_spam= $head->is_spam;
+    if ($is_spam) {
+	warn "'$filename' is spam\n" if $DEBUG;
+	$foldername="spam";
+    } elsif (! defined $is_spam) {
+	warn "'$filename' is_spam: not scanned\n" if $verbose;
+    }
+    if (!$foldername) {
+	my $list= $head->mailinglist_id;
+	if (defined $list) {
+	    warn "'$filename': mailinglist $list\n" if $DEBUG;
+	} else {
+	    warn "'$filename': not a list mail\n" if $DEBUG;
+	}
+	#if (!$list and 0) {
+	#use Data::Dumper;
+	#print "head for $filepath:",Dumper($head);
+	#}
+	if ($list and not $list=~ /debian-security-announce/i) {
+	    $foldername=$list;
+	    $foldername=~ s{/}{--}sg; # well, wird nun eh unten nochmals gemacht.
+	}
+    }
+
+    my $from;my $content;
+    my $messageid;
+    $messageid=do {
+	#my $_messageid;
+	sub {
+	    my $_messageid= pick_out_of_anglebrackets($head->header("message-id"));
+	    $messageid=sub {$_messageid};# mich selber eliminieren. harakiri. kamikaze. damit wegen undef von pick dings nicht jedesmal dochneuausgewertet wird.   Und das alles statt einer Methode im head objekt. (Die das Resultat ins objekt speichert, das head objekt.). "wow" (kreuzfeld jakob)
+	    $_messageid
+	}
+    };
+
+    # noch gemäss subject einiges filtern:
+    if (!$foldername) {
+	if (my $subject= $head->header("subject")) {
+	    # system mails
+	    if ($subject=~ /^([a-zA-Z][\w-]+)\s+\d+.*\d system check\s*\z/) {
+		$foldername="systemcheck-$1";
+		##ps.punkte dürfen in maildir foldernamen dann nicht vorkommen. weils separatoren sind. quoting möglich? in meiner library dann.
+	    } elsif ($subject eq 'DEBUG') {
+		$foldername= "DEBUG";
+	    } else {
+		$from= $head->header("from");
+		if ($subject=~ /^\[LifeCMS\]/
+		    and ( $from eq 'alias@ethlife.ethz.ch'
+			  or $from eq 'newsletter@ethlife.ethz.ch') ) {
+		    $foldername= $subject;#gefährlich? jaaaa war es!!! jetzt hab ich unten geflickt.
+		} elsif ($subject=~ /^Cron/ and $from=~ /Cron Daemon/) {
+		    $foldername= $subject;
+		} elsif ($subject=~ /out of office autoreply/i
+			 #or
+			) {
+		    $foldername= "AUTOREPLY";
+		} elsif ($subject=~ /^Delivery Status Notification/
+			 and $from=~ /^postmaster/) {
+		    $foldername= "BOUNCE";
+		} elsif (#$subject=~ /failure notice/ and
+			 ($from=~ /\bMAILER[_-]DAEMON\@/i
+			  or
+			  $from=~ /\bpostmaster\@/i
+			 )
+			 #and $content=~ /ETH Life Newsletter/
+			 #and $messageid=~ /\@ethlife.ethz.ch/  # dann kam sie von hier. ; eh1: ist im content. eh2: muss auch lifecms enthalten. aber alte nl tun dies nicht.
+			) {
+		    $f->xread($content,5000);
+		    if ($content=~ /From: ETH Life/) {
+			$foldername= "newslettermanuell..$from";
+		    } elsif ($content=~ /Message-[Ii]d:[^\n]+lifecms/) {
+			$foldername= "lifecms..$from";
+		    }
+		    # else do not filter it.
+		}
+		# VIREN!:
+		elsif ($subject eq 'New Internet Critical Pack'
+		       or $subject=~ /^\!VIRUS:/
+		       or $subject=~ /^virus found in sent message \"/
+		       #or $subject=~ /^ScanMail Message:.*virus/
+		       or $subject=~ /^ScanMail Message:/
+		       or ($subject=~ /^VIRUS \(/
+			   and $from=~/amavis/)
+		       or $subject=~ /^Symantec .*detected.*virus/
+		      ){
+		    $foldername= "VIRUS";
+		}
+		elsif (my $virusscan= $head->header("X-Virus-Scan-Result")){
+		    if ($virusscan=~ /^Repaired/) {
+			$foldername= "VIRUS";
+		    }
+		}
+		elsif (do{ $f->xread($content,5000) unless $content; 1 } and
+		       $content=~ /\"[^\"]+\.exe\"/) {
+		    $foldername="VIRUS";
+		}
+	    }
+	}
+    }
+    if (!$foldername) {
+	if (my $to= $head->header("to")) {
+	    if ($to=~ /^(postmaster\@[^\@;:,\s]+[a-z])/) {
+		$foldername= $1;
+	    }
+	}
+    }
+
+    # nichts matchende sonstwohin:
+    if (!$foldername) {
+	my $s= xstat $filepath;
+	if ($s->size > 15000) {
+	    $foldername="inbox-big";
+	} else {
+	    $foldername="inbox" unless $opt_leaveinbox;
+	}
+	# an mich gerichtete emails checken ob SMS versand gewünscht.
+	#SMS:{
+	eval {
+	    my $sms;
+	    if ($sms= $head->header("x-sms")) {
+		#oky
+	    } else {
+		$f->xread($content,5000) unless $content;
+		if ($content=~ /^\s*x-sms:([^\n]*)/si) {
+		    $sms=$1;
+		}
+	    }
+	    #warn "DAMI0";#
+	    if ($sms) {
+		my $scheduledtime;
+		#warn "DAMI";#
+		#local $SIG{__DIE__}=sub { print STDERR "SIGDIE sieht: @_" };
+		my $is_first;
+		## echt erst hier msgid aufzeichnen?
+		my $msgidtable= Chj::FileStore::MIndex->new($msgid_base);
+		if ($msgidtable->add(&$messageid,$filename)==2) {
+		    # first time occurence of message id.
+		    $is_first=1;
+		}
+		eval {
+		    #enthält allenfalls auch "at " oder "in ", dann datum/uhrzeit.
+		    # eben, todo, die date parser lib erweitern.
+		    require elcms_general_settings;
+		    require EL::Util::Date;
+		    #warn "DAMI2";#
+		    #my $time= eval{ EL::Util::Date::parsePublicationDatetime($sms) };
+		    #if ($@) {
+		    #    warn $@;
+		    #    #todo: mail zurückschicken damit der's erfährt?
+		    #    last SMS;
+		    #}
+		    $scheduledtime=EL::Util::Date::parsePublicationDatetime($sms);#FUCK hatte my zuviel. warum kein warning??????????
+		    #warn "EL::Util::Date::parsePublicationDatetime gab: $scheduledtime";#
+		    # FUCK kommt trotzdem ned hierhin
+		    require Chj::FileStore::MIndex;
+		    require Chj::FileStore::MIndex::NonsortedIterator;
+		    ##ps shit, merkt man eben dann erst wenn mal jemand ein sms schickt. und dann bricht das skript ab tödlich. schlechtschlechtschlecht? lieber compiletime mann. schon wegen den libs.
+		    # daher mal drumherum aussenrum ein eval.
+
+		    # nur aufzeichnen wenn ein anderes mail derselben msgid nicht schon mal added wurde.
+		    if ($is_first) {
+			mkdir $xsms_base,0700;
+			my $smstimetable= Chj::FileStore::MIndex->new($xsms_base);
+			$smstimetable->add($scheduledtime,$filename);
+			#warn "added $scheduledtime";#
+		    } #else {
+			#undef $scheduledtime;#als flag  murks  weil wieder oberhalb exceptionboundary #GAGL isch nüt natürli
+			#warn "doppelmessage, also undef scheduledtime";#
+		    #}
+		};
+		my $E=$@;#JAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+		my $subject=$head->header("subject");#(hatte oben nich sauber getrennt sigh)
+		defined $subject or $subject="";#tja,echt nötig gegen warning auch wenn ich mit eudora mail schicke.
+		my $noticesubject= "SMS für '$subject'";#hrm, das isch ned decoded, wird aber encoded dann. tjatjatja
+		my $noticebody;
+		if (ref $E) {
+		    if ($E->isa("EL::Exception")) {
+			$noticebody="Ihre 'X-SMS:'-Angabe war Fehlerhaft:\n\n".$E->prettytext("de");#hm wenn hier wieder fehler sollte der eben schon n fehler bekommen;  AAABBER HAHAHAHAHA: weil ich hier ein mover bin und ned qmail unterliege macht es gar kein sinn ein fehler exit zu geben, qmail wird ned bouncen.
+		    } else {
+			die $E;
+		    }
+		}elsif($E){die $E};
+		if ($is_first) {
+		    #warn "schicke notice..";#
+		    if (!$noticebody) {
+			$noticebody="Die ersten 160 Zeichen (inkl. Subject und Absender-emailadresse) Ihrer\n".
+				  "Mitteilung werden dem Empfänger zu folgender Zeit per SMS/Alarm\n".
+				  "zugestellt, sofern er bis dahin die Email nicht abgerufen hat:\n\n".
+				    localtime($scheduledtime);####shit: hier weiss ich aber ned ob das klappt, ob denn cronjob für x-sms-sendpending als auch nachfolgender alarmzustellung läuft!!!!
+			if ($scheduledtime < time) {
+			    $noticebody.="\n\n(da dies in der Vergangenheit liegt, heisst dies: sogleich)";
+			}
+		    }
+		    #ps hier noch checken ob bulk message? aber egal, auch über bulkmachende verteiler aktiv lassen?
+		    my $replyaddress=$head->header("from")
+		      or die "no from address found";
+		    EL::Util::Sendmail::sendmail(To=>$replyaddress,
+						 From=>$replyaddress,#keine From? ##
+						 Subject=>$noticesubject,
+						 Data=>$noticebody);####grrrrrrData ned data
+		    #noch schöner wär wenn eben auch beim senden dann eine notiz geschickt würd.
+		} else {
+		    #warn "schicke keine notiz.";#
+		}
+		# evtl mal tun oder so jedenfalls mal notiert hier:
+		# scheiss isch neben dem nicht wissen ob sms dann wirklich geschickt wird,  der fehlenden meldung aktion die dann wirklich geschieht,  auch: wenn time in vergangenheit isch meldung bullshit sollte sein "gleich". tja. kann ich ja hier noch reinflicken.
+		# ah..und was unschön isch: die x-sms zeile falls in body wird mitgeschickt.haha.
+	    }
+	};
+	warn $@ if $@;##tja wer soll das jemals sehen. Eben und oben schon ungültige time isch eben doch ein inner eval ein nötiges damit dem user reply geschickt werden kann.
+	
+    } else {
+	if ($foldername eq "inbox" or $foldername eq "inbox-big") {
+	    die "mail '$filename' somehow managed to get foldername '$foldername'";
+	}
+    }
+
+    if ($foldername) {
+	$foldername=~ s{/}{--}sg;#!wichtig!.. nochmals.
+	my $targetfolder= "$targetbase/$foldername";
+	if (! -d $targetfolder) {
+	    xmkdir $targetfolder;
+	}
+	my $targetpath= "$targetfolder/$filename";
+	$f->xlinkunlink($targetpath);
+	warn "moved '$filename' to '$targetpath'\n" if $verbose;
+    } else {
+	warn "'$filename' not moved\n" if $verbose;
+    }
+}
+
+
+my $targetbase= pop @args;
+
+$|=1;
+
+usage "only one source dir argument allowed" if $sourcedir and @args;
+
+if ($sourcedir) {
+    my $d= xopendir $sourcedir;
+    while(defined(my$item=$d->xnread)){
+	conditional_move_file("$sourcedir/$item",$targetbase);
+    }
+}
+elsif (@args) {
+    for my $filepath (@args) {
+	conditional_move_file($filepath,$targetbase);
+    }
+}
+else {
+    usage "no source dir or files given";
+}
