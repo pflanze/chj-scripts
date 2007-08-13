@@ -31,6 +31,7 @@ use Chj::xsysopen;
 use Chj::xsysopen 'xsysopen_append';
 use Carp;
 use Chj::Lockfile;
+use Chj::Encode::Imap;
 
 use Chj::Maildir -extend=> (
 			    'Parent',
@@ -108,20 +109,15 @@ sub set_truncator {
 sub quotedname {
     my $s=shift;
     my $n= $s->truncator->trunc($$s[Name]);
+    # change the chars which aren't escaped by encode_imap:
     $n=~ s/\./,/sg;##
     $n=~ s|/|--|sg;##  ps kann auf ersetzerei aussenrum ev verzichen dann.?
     $n=~ s/\0/\\0/sg;##  (just to be sure weil weiss nie wie sich das schraeg auswirken kann wenn in c string umgewandelt wird)
-    # begin of a quoting implementation. ((but NOTE: if you take the value of a header in a received email, for finding out the mailboxname the mail should be filtered into, it'll have to be unencoded from mime stuff first))
-    $n=~ s/\&/\&-/sg;
-    $n=~ s/ä/\&AOQ-/sg;
-    $n=~ s/Ä/\&AMQ-/sg;
-    $n=~ s/ü/\&APw-/sg;
-    $n=~ s/Ü/\&ANw-/sg;
-    $n=~ s/ö/\&APY-/sg;
-    $n=~ s/Ö/\&ANY-/sg;
-    $n=~ s|(.)|my $c=$1; if (ord($c)>127) { '0x'.ord($c) } else { $c }|seg;
-    $n=~ m/(.*)/s;
-    $1
+    # Thunderbird and/or Dovecot munge everything starting from and
+    # including any ">" char, so replace that one as well:
+    $n=~ s/>/}/sg;
+
+    Chj::Encode::Imap::encode_imap ($n)
 }
 
 sub imapboxstring {
