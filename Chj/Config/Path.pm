@@ -31,6 +31,9 @@ package Chj::Config::Path;
 use strict;
 use Carp;
 
+# currently only implemented on unix
+use POSIX;
+
 =item max_filename_length ( filepath )
 
 =cut
@@ -45,15 +48,34 @@ use Carp;
     }
 }
 
-sub max_filename_length( $ ) {
-    my ($path)=@_;
-    # currently only implemented on unix
+sub _may_any_length( $ ) {
+    my ($fnname, $constant, $path, $maybe_originalpath)=@_;
+    #warn "_may_any_length $fnname $constant $path";
     __initPOSIX;
-    if (defined (my $rv= POSIX::pathconf($path, &POSIX::_PC_NAME_MAX))) {
+    if (defined (my $rv= POSIX::pathconf($path, $constant))) {
 	$rv
     } else {
-	croak "max_path_length: POSIX::pathconf('$path',..): $!"
+	my $errno= $!+0;
+	my $errstr= "$!";
+	if (!$maybe_originalpath and $errno == ENOENT) {
+	    # try with parent dir:
+	    my $p=$path;
+	    # 3 cases:  foo/  /   /foo   and, which we don't consider?, foo/.. and similar.hm.(todo make a real fix?)
+	    if ($p=~ s|[^/]+/*\z||s) {
+		$p="." unless length $p;
+		@_= ($fnname, $constant, $p, $path);
+		goto \&_may_any_length;
+	    }
+	    # else it's "/" right?
+	}
+	croak "$fnname (".($maybe_originalpath||$path).") : POSIX::pathconf('$path', $constant): $errstr"
     }
+}
+
+sub max_filename_length( $ ) {
+    my ($path)=@_;
+    @_= ("max_filename_length", &POSIX::_PC_NAME_MAX, $path);
+    goto \&_may_any_length;
 }
 
 =item max_path_length ( filepath )
@@ -62,13 +84,8 @@ sub max_filename_length( $ ) {
 
 sub max_path_length( $ ) {
     my ($path)=@_;
-    # currently only implemented on unix
-    require POSIX;
-    if (defined (my $rv= POSIX::pathconf($path, &POSIX::_PC_PATH_MAX))) {
-	$rv
-    } else {
-	croak "max_path_length: POSIX::pathconf('$path',..): $!"
-    }
+    @_= ("max_path_length", &POSIX::_PC_PATH_MAX, $path);
+    goto \&_may_any_length;
 }
 
 
