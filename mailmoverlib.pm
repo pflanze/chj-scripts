@@ -4,13 +4,7 @@ use Chj::xperlfunc;
 use Chj::FileStore::MIndex;
 use Chj::FileStore::PIndex;
 use Chj::oerr;
-#use Chj::FileStore::MIndex::NonsortedIterator; well den brauch ich gar ned.
-# wann will ich eigentlich msgid recorden wirklich?, wann will ich double elimination/checks? normalerweise ja nicht?. (doubleelim bloss wenn sie im gleichen folder landen)
 
-# ach und wegen f* "too late to run CHECK block" auch diese unnütz-immer-laden:
-use elcms_general_settings;
-use EL::Util::Date;
-use EL::Util::Sendmail;
 our ($DEBUG,$verbose);
 
 #####these here are shared with the 'x-sms-sendpending' script !!!.
@@ -18,7 +12,6 @@ my $HOME= do {# untaint it.
     $ENV{HOME}=~ m|^(/.*)|s or die "invalid \$HOME";##Hm, really trust it that far? but should be ok.
     $1
 };
-my $xsms_base="$HOME/.mailmover_x-sms";
 my $msgid_base="$HOME/.mailmover_msgids";# msgid->filenames.
 my $ownmsgid_base="$HOME/.mailmover_ownmsgids";
 my $ownsubjects_base="$HOME/.mailmover_ownsubjects";
@@ -29,41 +22,6 @@ mkdir $ownsubjects_base,0700;
 our $opt_leaveinbox;
 
 my $BUFSIZE=50000;
-
-# virus stuff:
-my $badext = join "|",
-  grep {length and ! /^zip$/i }
-  split /\|/,
-  "386|adt|bat|bin|cbt|cla|com|cpl|dll|drv|eml|exe|hta|htt|js|lnk|mdb|mso|ov.|pif|pot|scr|shs|sys|vbs|zip" # list from http://hico.fphil.uniba.sk/change-attachment-ext, but without zip
-  ;
-$badext= qr/$badext/i;
-my @badsig_re= do {
-    my $f= eval {
-	xopen_read "$HOME/.mailmoverlib_virus_sigs"
-    } || eval {
-	xopen_read "/opt/chj/bin/mailmoverlib_signatures.txt"  ;
-    };
-    if (ref$@ or $@) {
-	warn "could not read virus signatures: $@";#
-	()
-    } else {
-	map {
-	    /(\S+)/ or die;#
-	    qr/$1/
-	} grep {
-	    ! /^\s*#/
-	      and
-		! /^\s*\z/ ;
-	} <$f>
-    }
-};
-sub one_of ( & @ ) {
-    my ($code,@data)=@_; #komisch dass @ nötig.?
-    for (@data) {
-	my $rv= &$code; return $rv if $rv;
-    }
-    return;
-}
 
 
 {
@@ -368,7 +326,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 
     sub is_spam {
 	my $self=shift;
-	if (my $status=$self->header("X-Spam-Status")) {
+	if (my $status=$self->first_header("X-Spam-Status")) {
 	    if ($status=~ /^\s*yes\b/si) {
 		return 1;
 	    } else {
@@ -381,7 +339,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 
     sub spamhits {#ps. ebenso wie is_spam: was wenn multiple spamchecks were done?
 	my $self=shift;
-	if (my $status=$self->header("X-Spam-Status")) {
+	if (my $status=$self->first_header("X-Spam-Status")) {
 	    if ($status=~ /hits=(-?\d+(?:\.\d+)?)/){
 		$1
 	    } else {
@@ -552,47 +510,6 @@ sub analyze_file($ ; $ ) {
 			) {
 		    $foldername= "mailinglistmembershipreminders";#$type="list";oder toplevel
 		}
-		# !SPAM: angabe von dem mailfilter der informatikdienste eth wenn so konfiguriert dass mail nicht gelöscht wird
-		elsif ($subject=~ /^\!SPAM: /
-		       and (!defined($spamhits) or $spamhits > -1)
-		      ) {
-		    $foldername="spam-eth";# $type= ?
-		}
-		
-		# VIREN!:
-		elsif ($subject eq 'New Internet Critical Pack'
-		       or $subject=~ /^\!VIRUS:/
-		       or $subject=~ /^virus found in sent message \"/
-		       #or $subject=~ /^ScanMail Message:.*virus/
-		       or $subject=~ /^ScanMail Message:/
-		       or ($subject=~ /^VIRUS \(/
-			   and $from=~/amavis/)
-		       or $subject=~ /^Symantec .*detected.*virus/
-		      ){
-		    $foldername= "VIRUS";
-		}
-		elsif (my $virusscan= $head->header("X-Virus-Scan-Result")){
-		    if ($virusscan=~ /^Repaired/) {
-			$foldername= "VIRUS";
-		    }
-		}
-		elsif (do{ $f->xread($content,$BUFSIZE) unless $content; 1 }) {# wofür habe ich da noch das if? cj.
-		    if ($content=~ /\"[^\"]+\.exe\"/) {
-			$foldername= "VIRUS-exe";
-		    } elsif (
-		       # cj 3.12.04: (ich kriege solche eigentlich nie direkt sondern immer die failure rückmeldungen wenn einer (virus) ethlife als absenderadresse genommen hat)
-		       $content=~ /\nContent-Disposition: *attachment;\s*filename *=\"[^\"]*\.($badext)\"/si
-		       or
-		       ($content=~ /VIRUS +WARNING/ and
-			$content=~ /file(?:name)?[ \t]*[=:]?[ \t]*[\"\']?[^\"\']*\.($badext)/
-		       )) {
-			$foldername= "VIRUS-badext";
-		    } elsif (
-			     one_of { $content=~ /$_/ } @badsig_re
-			    ) {
-			$foldername= "VIRUS-badsig";
-		    }
-		}
 	    }
 	}
     }
@@ -607,99 +524,11 @@ sub analyze_file($ ; $ ) {
     # nichts matchende sonstwohin:
     if (!$foldername) {
 	my $s= xstat $filepath;
-	if ($s->size > 15000) { #cj: ps. sollte size messung ausserhalb geschehen? weil, wenn per symlink redirected, ja doch wieder die frage ob dann-doch-nicht in die inbox.
+	if ($s->size > 1000000) { #cj: ps. sollte size messung ausserhalb geschehen? weil, wenn per symlink redirected, ja doch wieder die frage ob dann-doch-nicht in die inbox.
 	    $foldername="inbox-big";$type="inbox";$important=1;
 	} else {
 	    $foldername="inbox" unless $opt_leaveinbox;$type="inbox";
 	}
-	# checken ob SMS versand gewünscht.
-	eval {
-	    my $smsdatetime;
-	    if ($smsdatetime= $head->header("x-sms") || $head->header("x-sms-at")) {
-		#oky
-		#warn "oky smsdatetime als header, '$smsdatetime'";
-	    } else {
-		$f->xread($content,$BUFSIZE) unless $content;
-		my $htmlfreecontent= $content;
-		# remove mimepart stuff
-		$htmlfreecontent=~ s%^\s+%%s;
-		$htmlfreecontent=~ s%^[^\n]+\ncontent[^\n]+\n.*?\n\n%%si;
-		# remove html
-		$htmlfreecontent=~ s%<head[^>]*>.*?</head[^>]*>%%sg;
-		$htmlfreecontent=~ s/<!--.*?-->//sg;
-		$htmlfreecontent=~ s|<br\s*/?\s*>|\n|sgi;
-		$htmlfreecontent=~ s|</p>|\n|sgi;
-		$htmlfreecontent=~ s|<p\b[^>]*>|\n|sgi;
-		$htmlfreecontent=~ s/<[^>]*>//sg;
-		#warn "htmlfreecontent= '$htmlfreecontent'";
-		#if ($htmlfreecontent=~ /^\s*x-sms(?:-at)?:?([^\n]*)/si) {
-		if ($htmlfreecontent=~ /^\s*(?:x-)?sms(?:(?:-|\s+)at)?:?([^\n]*)/si) {
-		    $smsdatetime=$1;
-		    #warn "oky smsdatetime von body, '$smsdatetime'";
-		}
-	    }
-	    if ($smsdatetime) {
-		my $scheduledtime;
-		#local $SIG{__DIE__}=sub { print STDERR "SIGDIE sieht: @_" };
-		my $is_first;
-		## echt erst hier msgid aufzeichnen?
-		my $msgidtable= Chj::FileStore::MIndex->new($msgid_base);
-		if ($msgidtable->add(&$messageid,$filename)==2) {
-		    # first time occurence of message id.
-		    $is_first=1;
-		}
-		eval {
-		    #enthält allenfalls auch "at " oder "in ", dann datum/uhrzeit.
-		    # eben, todo, die date parser lib erweitern.
-		    #warn "nun werd ich: $smsdatetime";
-		    $scheduledtime=EL::Util::Date::parsePublicationDatetime($smsdatetime);###echt todo: die isch nicht mal zufrieden mit uhrzeit allein motzt dass datum fehle.
-		    #warn "habe, $scheduledtime";
-		    if ($is_first) {
-			mkdir $xsms_base,0700;#ps. der x-sms-sendpending cronjob croakt wenn das noch ned existirt :~/
-			my $smstimetable= Chj::FileStore::MIndex->new($xsms_base);
-			$smstimetable->add($scheduledtime,$filename);
-			#warn "added $scheduledtime,$filename";#
-		    }
-		};
-		my $E=$@;#"JAAAAAAAAAAAAAA"
-		my $subject=singlequote($head->decodedheader("subject"),"(kein subject)");#(hatte oben nich sauber getrennt sigh)
-		my $noticesubject= "SMS für $subject";#ps dass für'bla' in eudora erscheint isch offenbar ein bug von eudora, nicht der mime lib, denn in squirrel kommts richtig. (mimelib macht wortweise encoding, ev wär das uberflussig)
-		my $noticebody;
-		if (ref $E) {
-		    if ($E->isa("EL::Exception")) {
-			$noticebody="Ihre 'X-SMS:'-Angabe war Fehlerhaft:\n\n".$E->prettytext("de");#hm wenn hier wieder fehler sollte der eben schon n fehler bekommen;  AAABBER HAHAHAHAHA: weil ich hier ein mover bin und ned qmail unterliege macht es gar kein sinn ein fehler exit zu geben, qmail wird ned bouncen.
-		    } else {
-			die $E;
-		    }
-		}elsif($E){die $E};
-		if ($is_first) {
-		    #warn "schicke notice..";#
-		    if (!$noticebody) {
-			$noticebody="Die ersten 160 Zeichen (inkl. Subject und Absender-emailadresse) Ihrer\n".
-				  "Mitteilung werden dem Empfänger zu folgender Zeit per SMS/Alarm\n".
-				  "zugestellt, sofern er bis dahin die Email nicht abgerufen hat:\n\n".
-				    localtime($scheduledtime);####shit: hier weiss ich aber ned ob das klappt, ob denn cronjob für x-sms-sendpending als auch nachfolgender alarmzustellung läuft!!!!
-			if ($scheduledtime < time) {
-			    $noticebody.="\n\n(da dies in der Vergangenheit liegt, heisst dies: sogleich)";
-			}
-		    }
-		    #ps hier noch checken ob bulk message? aber egal, auch über bulkmachende verteiler aktiv lassen?
-		    my $replyaddress=$head->header("from")
-		      or die "no from address found";
-		    EL::Util::Sendmail::sendmail(To=>$replyaddress,
-						 From=>$replyaddress,#keine From? ##
-						 Subject=>$noticesubject,
-						 Data=>$noticebody);####grrrrrrData ned data
-		    #noch schöner wär wenn eben auch beim senden dann eine notiz geschickt würd.
-		} else {
-		    #warn "schicke keine notiz.";#
-		}
-		# evtl mal tun oder so jedenfalls mal notiert hier:
-		# scheiss isch neben dem nicht wissen ob sms dann wirklich geschickt wird,  der fehlenden meldung aktion die dann wirklich geschieht,  auch: wenn time in vergangenheit isch meldung bullshit sollte sein "gleich". tja. kann ich ja hier noch reinflicken.
-		# ah..und was unschön isch: die x-sms zeile falls in body wird mitgeschickt.haha.
-	    }
-	};
-	warn $@ if $@;##tja wer soll das jemals sehen. Eben und oben schon ungültige time isch eben doch ein inner eval ein nötiges damit dem user reply geschickt werden kann.
 	
     } else {
 	if ($foldername eq "inbox" or $foldername eq "inbox-big") {
@@ -719,41 +548,6 @@ sub _einstampfen { # testcase siehe lombi:~/perldevelopment/test/mailmoverlib/t1
     if (defined $str) {
 	#$str=~ s/\s+/ /sg; cj 24.8.04: weil manche mailer wörter in mitte abeinanderbrechen, whitespace ganz raus.
 	$str=~ s/\s+//sg;
-	#$str=~ s/\s+\z//s;
-	#do{} while $str=~ s/^\s*(?:re|aw)\s*://i; cj 24.8.04: auch [vserver] etc weg.
-# 	do{# Die Regel soll sein: alles in [ [ ] ] soll vernichtet werden, ausser es sei die äusserste klammer.  ? und auch nur wenn eben [ am anfang steht.
-# 	    #warn "vorher: '$str'";
-# 	    #$str=~ s/^\[(.*)\]$/$1/s;# inhalt aus drumherumklammern befreien.
-# 	    $str=~ s/^\[([^\[\]]*)\]$/$1/s;# inhalt aus drumherumklammern befreien.
-# 	    #warn "nachher: '$str'";
-# 	} while $str=~ s/^(?:(?:re|aw|fwd):|\[[^\[\]]*\])//i;
-	# Also neuer algo:
-	# wenn [ am anfang, den zugehörigen ] suchen. Wenn der am Ende steht, innendrin rausnehmen. Sonst wegschneiden.
-# 	do {} while $str=~ s/^(?:re|aw|fwd)://i or do {
-# 	    if ($str=~ m|^\[|) {
-# 		my $p=1;
-# 		my $inner=1;
-# 		my $len=length$str;
-# 		while($p<$len) {
-# 		    my $c=substr($str,$p,1);
-# 		    if ($c eq '[') {
-# 			$inner++;
-# 		    }elsif($c eq ']') {
-# 			$inner--;
-# 			if ($inner==0) {
-# 			    if ($p == $len-1) {
-# 				# rausnehmen
-# 				$str= substr($str,1,$len-2);
-# 			    } else {
-# 				# wegschneiden.
-# 				substr($str,0,$p)="";
-# 			    }
-# 			    last;#yep, no special exit needed. SCHIT aber wieder das rückgabewertproblem
-# 			}
-# 		    }
-# 		    $p++;
-# 		}
-# 	    }
 	my $stripprefix=sub {
 	    $str=~ s/^(?:re|aw|fwd)://i
 	};

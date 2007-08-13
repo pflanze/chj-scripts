@@ -216,16 +216,11 @@ sub conditional_move_file($ $ ) {
 	    }
 	}
 	if ($important and !$already_warned){
-	    #if (not ($targetfolder_is_symlink
-	    #and $targetfolder_is_symlink=~ /(?:inbox|new)/)# der witz isch eben, dass nur inbox-big eigentlich der fall isch.  ach und type schliesst das ja eh auss??? also statt type oben
-	    # isch doch eh schnurz. ?
-	    #){
 	    writewarnmail(($foldername=~/inbox-big/ ? "Big":"Wichtig").": $quotedsubject",
 			  "Email mit\n".
 			  "     From $quotedfrom\n".
 			  "  Subject $quotedsubject\n".
 			  "in folder $quotedfoldername eingetroffen.\n");
-	    #}
 	}
 
 	# autoreply senden:
