@@ -8,8 +8,9 @@ use strict;
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 
-use Chj::Mailfrom 'mailfrom';
-my $from= mailfrom;
+use Chj::Mailfrom 'mailfrom','mailfromaddress';
+our $from= mailfrom;
+our $ffrom= mailfromaddress;
 use Chj::singlequote;
 
 sub usage {
@@ -58,7 +59,8 @@ usage unless @files;
 
 use Chj::Util::AskYN;
 
-$from or die "cannot figure out your mail address, please set the \$EMAIL (and \$MAILREALNAME) env var(s) or specify them in another way suitable for Chj::Mailfrom";
+($from and $ffrom)
+  or die "cannot figure out your mail address, please set the \$EMAIL (and \$MAILREALNAME) env var(s) or specify them in another way suitable for Chj::Mailfrom";
 
 for my $to (@files) {
     # analyze to address, hja
@@ -72,28 +74,41 @@ for my $to (@files) {
 	my $newto= "$user-request\@$host";
 	if (askyn "address '$to' doesn't look like a subscription address. should I change it to '$newto' instead? ") {
 	    $to=$newto;
+	} else {
+	    if (askyn "So I will send your subscription mail to '$to'. Are you sure I should do that? ") {
+		# so be it
+	    } else {
+		print "cancelled.\n";
+		exit 1;
+	    }
 	}
     }
-	
+
     # do the work
     my $subscribeline= do {
 	$opt_listname ? "subscribe $opt_listname\n" :
 	  $to=~ /subscribe/i ? undef : "subscribe\n";
     }||"";
     my $date= `date -R`; chomp $date;
-    open OUT,"|sendmail -t" or die "could not open pie to sendmail: $!";
 my $mail=<<"END";
 Date: $date
 To: $to
 From: $from
+Subject: 
 User-Agent: $myname
 
 $subscribeline
 END
     ;
     chop $mail;
-    print OUT $mail or die "err piping: $!";
-    close OUT or die "error sending mail, $!";
-    print "sent mail from $from to $to\n";
+    if ($DEBUG) {
+	print "mail='$mail', ffrom='$ffrom'\n";
+	print "did not send mail because of debug option.\n";
+    } else {
+	open OUT,"|sendmail -t -f".quotemeta($ffrom) or die "could not open pipe to sendmail: $!";
+	print OUT $mail or die "err piping: $!";
+	close OUT or die "error sending mail, $!";
+	print "sent mail from $from to $to\n";
+    }
 }
 

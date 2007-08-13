@@ -3,15 +3,18 @@
 # cj Thu, 12 Aug 2004 16:36:24 +0200 // Mon, 16 Aug 2004 16:24:36 +0200
 # billig lösung damit nicht auf allen maschinen /usr/bin/chase vorhanden sein muss
 
-
-if [ $# -eq 1 ]; then
-	if [ -e "$1" ]; then
-		readlink -f "$@"
-	else
-		echo "$0: $1: does not exist"
-		exit 1
-	fi
-else
+if [ -f /usr/bin/chase ]; then
 	/usr/bin/chase "$@"
+else
+	rv=0
+	for f in "$@"; do
+		if [ -e "$f" ]; then
+			readlink -f "$f"
+		else
+			echo "$0: $f: does not exist" >&2
+			rv=1
+		fi
+	done
+	exit $rv
 fi
 

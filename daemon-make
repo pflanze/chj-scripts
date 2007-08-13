@@ -1,0 +1,5 @@
+#!/bin/bash
+
+mvnumber nohup.out
+ulimit -S -v unlimited
+LANG=C daemonize make "$@"
