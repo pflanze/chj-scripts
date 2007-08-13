@@ -28,6 +28,10 @@ it is silently ignored.
 So be sure to convert slashes (and dots) yourself before using the
 result in filesystem paths!
 
+Additionally, the Thunderbird/Dovecot combination swallow everything
+after and including any ">" char! So be sure to change > to something
+else or so.
+
 =cut
 
 # (Test suite in work:test-cj-encode-imap.scm!)
