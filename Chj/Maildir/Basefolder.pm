@@ -36,6 +36,11 @@ sub new {
     $s
 }
 
+sub basefolder { # get the basefolder (toplevel parent) object (recursively called from Subfolder)
+    my $s=shift;
+    $s
+}
+
 
 # for courier, I returned "INBOX" from both of the following. courier
 # expected subfolders like Maildir/.foo.bar/{new,cur,tmp} to be

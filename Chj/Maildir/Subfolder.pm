@@ -80,6 +80,11 @@ sub set_name {
 
 sub parent {shift->[Parent]}
 
+sub basefolder { # get the basefolder (toplevel parent) object
+    my $s=shift;
+    $$s[Parent]->basefolder
+}
+
 sub _unquotename {
     my $n=shift;
     #$n=~ s|0x  nee, wo ischt ende?
@@ -135,7 +140,12 @@ sub basedirectorypath {
 
 sub lock { # create lock file in basefolder (if not exists) and lock it and return that lock
     my $s=shift;
-    my $lockpath= $s->basedirectorypath . "/chj-maildir.lck";
+    my ($is_allowed_to_create_basedir)=@_;
+    my $basedirectorypath= $s->basedirectorypath;
+    if (! -d $basedirectorypath and $is_allowed_to_create_basedir) {
+	$s->basefolder->create
+    }
+    my $lockpath= $basedirectorypath . "/chj-maildir.lck";
     Chj::Lockfile->get($lockpath)
 }
 
@@ -148,7 +158,7 @@ sub create {
 
     return if $s->exists; # do not take lock and recurse into parents if not necessary.
 
-    my $lock= $maybe_lock || $s->lock;
+    my $lock= $maybe_lock || $s->lock (1);
 
     # first create parents
     $$s[Parent]->create($subscribe, $lock);
