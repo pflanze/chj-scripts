@@ -127,6 +127,8 @@ sub basedirectorypath {
     $$s[Parent]->basedirectorypath
 }
 
+our $subscribedfilename= "subscriptions"; # "subscriptions" for dovecot; "courierimapsubscribed" for courier.
+
 sub create {
     my $s=shift;
     my ($subscribe)=@_;
@@ -149,7 +151,7 @@ sub create {
     if ($subscribe) {
 	my $basedirectorypath= $s->basedirectorypath;
 	my $imapboxstring= $s->imapboxstring;
-	my $append= xsysopen_append "$basedirectorypath/courierimapsubscribed";
+	my $append= xsysopen_append "$basedirectorypath/$subscribedfilename";
 	$append->xprint("$imapboxstring\n");
 	$append->xclose;
     }
