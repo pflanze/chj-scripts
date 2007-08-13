@@ -14,6 +14,13 @@ Chj::Maildir::Subfolder
 =head1 DESCRIPTION
 
 
+=head1 NOTES
+
+The create() method does locking (necessary, right?, to prevent double
+subscriptions) by itself. Everything else should be
+thread/multiprocessing safe anyway (right?).
+
+
 =cut
 
 
@@ -23,6 +30,7 @@ use strict;
 use Chj::xsysopen;
 use Chj::xsysopen 'xsysopen_append';
 use Carp;
+use Chj::Lockfile;
 
 use Chj::Maildir -extend=> (
 			    'Parent',
@@ -127,23 +135,23 @@ sub basedirectorypath {
     $$s[Parent]->basedirectorypath
 }
 
+sub lock { # create lock file in basefolder (if not exists) and lock it and return that lock
+    my $s=shift;
+    my $lockpath= $s->basedirectorypath . "/chj-maildir.lck";
+    Chj::Lockfile->get($lockpath)
+}
+
+
 our $subscribedfilename= "subscriptions"; # "subscriptions" for dovecot; "courierimapsubscribed" for courier.
 
 sub create {
     my $s=shift;
-    my ($subscribe)=@_;
-    #$s->maildirmake or return;# if already exists, not even bother to check if parent subfolders exist as well (not very dangerous since if only we and other well-behaving clients are creating subfolders correctly nothing will go wrong)
-#     if ($$s[Parent]->isa("Chj::Maildir::Basefolder")) {
-# 	$$s[Parent]->create($subscribe);
-# 	$s->maildirmake or return;
-#     } else {
-# 	$s->maildirmake or return;
-# 	$$s[Parent]->create($subscribe);
-#     }	
-# we can only optimize, if we know that the basedirectory already exists.Stophackingaroundnow
+    my ($subscribe, $maybe_lock)=@_;
+
+    my $lock= $maybe_lock || $s->lock;
 
     # first create parents
-    $$s[Parent]->create($subscribe);
+    $$s[Parent]->create($subscribe, $lock);
     $s->maildirmake or return;# we exist already (right?) (ç)
 
     my $basepath= $s->basepath;
