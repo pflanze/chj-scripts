@@ -45,7 +45,7 @@ my $BUFSIZE=50000;
 	    my $msg= "multiple angle brackets found but only one expected";
 	    if ($verbose) {
 		warn $msg
-	    }#naja, DBI like doppelwarn behaviour. is this liked?
+	    }#naja, DBI like doppelwarn behaviour. is this liked?   [todo?]
 	    if ($raiseerrors){
 		croak $msg
 	    } else {
@@ -612,7 +612,7 @@ sub is_reply {
 	return 1 if $ownsubjectstable->exists($subj);
 	# ev. todo: hier auch noch mailingliste berücksichtigen? also subject.liste-kombination soll matchen?.
     }
-    my $in_reply_to = pick_out_of_anglebrackets($mail->header("In-Reply-To"));
+    my $in_reply_to = pick_out_of_anglebrackets($mail->first_header("In-Reply-To")); # many (broken?) clients actually do seem to send multiple such headers
     return unless defined $in_reply_to;
     my $ownmsgidtable= Chj::FileStore::PIndex->new($ownmsgid_base);
 #     return 1 if ($ownmsgidtable->exists($in_reply_to));
