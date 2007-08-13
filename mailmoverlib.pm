@@ -522,7 +522,7 @@ sub analyze_file($ ; $ ) {
     }
 
     if (!$foldername) { # wie oft prüfe ich den noch hehe ?..
-	if ($spamhits > 0) {
+	if (defined($spamhits) and $spamhits > 0) {
 	    $foldername = "möglicher spam";
 	}
     }
@@ -535,7 +535,7 @@ sub analyze_file($ ; $ ) {
 	} else {
 	    $foldername="inbox" unless $opt_leaveinbox;$type="inbox";
 	}
-	
+
     } else {
 	if ($foldername eq "inbox" or $foldername eq "inbox-big") {
 	    die "mail '$filename' somehow managed to get foldername '$foldername'";
