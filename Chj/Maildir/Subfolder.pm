@@ -126,7 +126,9 @@ sub quotedname {
 
 sub imapboxstring {
     my $s=shift;
-    $$s[Parent]->imapboxstring . ".". $s->quotedname # $$s[Name]; ## oder darf hier / vorkommen?
+    my $parent_imapboxstring= $$s[Parent]->imapboxstring;
+    (defined($parent_imapboxstring) ? $parent_imapboxstring."." : "")
+      . $s->quotedname # $$s[Name]; ## oder darf hier / vorkommen?
 }
 
 

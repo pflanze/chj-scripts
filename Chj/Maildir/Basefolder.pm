@@ -37,11 +37,19 @@ sub new {
 }
 
 
+# for courier, I returned "INBOX" from both of the following. courier
+# expected subfolders like Maildir/.foo.bar/{new,cur,tmp} to be
+# recorded in it's subscriptions file as "INBOX.foo.bar\n", whereas
+# dovecot expects them as "foo.bar\n".
+
 sub name {
-    "INBOX"
+    #"INBOX"
+    # hm return undef here as well? Anyone using this method already?
+    undef
 }
 sub imapboxstring {
-    "INBOX"
+    undef # meaning real empty, no dot to append. imapboxstring in
+          # Subfolder.pm checks for undef on each iteration.
 }
 
 #sub add_childfolder {
