@@ -35,6 +35,7 @@ use Class::Array -fields=>
   'fh',
   ;
 
+our $verbose=0;
 
 sub new {
     my $class=shift;
@@ -51,12 +52,22 @@ sub get {
 
 sub lock_ex {
     my $s=shift;
+    print STDERR "getting lock $s (".$$s[Fh]->path.").." if $verbose;
     flock ($$s[Fh], LOCK_EX) or die "can't get lock on ".$$s[Fh]->path.": $!";
+    print STDERR "got it.\n" if $verbose;
     $s
 }
 
 # could add lock_sh and unlock operations if wanted.
 # atm it's unlocked when released (because of closing).
+
+
+sub DESTROY {
+    my $s=shift;
+    if ($verbose) {
+	print STDERR "releasing lock $s (".$$s[Fh]->path.")\n"
+    }
+}
 
 end Class::Array;
 
