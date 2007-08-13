@@ -521,6 +521,12 @@ sub analyze_file($ ; $ ) {
 	}
     }
 
+    if (!$foldername) { # wie oft prüfe ich den noch hehe ?..
+	if ($spamhits > 0) {
+	    $foldername = "möglicher spam";
+	}
+    }
+
     # nichts matchende sonstwohin:
     if (!$foldername) {
 	my $s= xstat $filepath;
