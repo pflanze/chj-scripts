@@ -30,6 +30,7 @@ use Chj::xtmpfile;
 use Chj::singlequote;
 use Chj::chompspace;
 use Chj::Path::Truncator::MD5;
+use Chj::xsysopen 'xsysopen_excl';
 
 # wann will ich eigentlich msgid recorden wirklich?, wann will ich double elimination/checks? normalerweise ja nicht?. (doubleelim bloss wenn sie im gleichen folder landen).(NA oder  wenn notiz und das doppel beide im infolder landen dann auch, oder?, oder notiz unterdrucken dann? eh isch jo eh unterdrückt dann. na, aber dann später wenn die reply aus ml eintrifft, DANN die notiz unterdrücken wär was)
 
@@ -40,7 +41,9 @@ sub usage {
     print "$myname -d sourcedir | -f sourcefile(s)  targetbase
 
   Options:
-  -d|--dir  path      sourcedir
+  -d|--dir  path      take all files inside sourcedir
+  -f|--files  files   take given files
+  --stdin             read mail from stdin
   --leave-inbox       xxx
   -l|--loop-every n   keep running: sleep n seconds then scan again.
   --repeat n          only loop n times, then end. (to prevent memoryleaks from becoming awful, or for test runs with Devel::LeakTrace)
@@ -49,7 +52,6 @@ sub usage {
 
   '/filtered' is appended to targetbase to get the real target
   directory if -m option is not given.
-
 
   (Christian Jaeger <$email>)
 ";
@@ -62,6 +64,7 @@ my $verbose=0;
 my ($sourcedir);
 my ($opt_leaveinbox,$opt_loop,$opt_repeat);
 our $opt_maildirs;
+our ($opt_files, $opt_stdin);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -99,6 +102,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_maildirs=1;
     } elsif (/^--?(v+)(?:erbose)?$/) {
 	$verbose+=length($1);
+    } elsif (/^--files$/) {
+	$opt_files=1;
+    } elsif (/^--stdin$/) {
+	$opt_stdin=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -106,6 +113,18 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 usage unless @args;
+
+usage "give exactly one of --stdin / --files / --dir"
+  unless (($opt_stdin or $opt_files or $sourcedir) and
+	  not (($opt_files and $opt_stdin)
+	       or
+	       ($opt_files and $sourcedir)
+	       or
+	       ($opt_stdin and $sourcedir))); #of course that should be left as an exercise for the reader to clean up into an autocomputable generatable whatever form.
+
+usage "don't give files unless --files is given"
+  if (@args > 1 and not $opt_files);
+
 usage "--repeat requires --loop-every" if $opt_repeat and not $opt_loop;
 
 my $targetbase= do {
@@ -360,11 +379,36 @@ if ($sourcedir) {
 	}
     }
 }
-elsif (@args) {
+elsif ($opt_files) {
     for my $filepath (@args) {
 	conditional_move_file($filepath,$targetbase);
     }
 }
+elsif ($opt_stdin) {
+    if ($opt_maildirs) {
+	my $path= "$targetbase/tmp/".$maildirbasefolder->create_filename;
+	eval {
+	    my $t= xsysopen_excl $path, 0600;
+	    my $in= bless *STDIN{IO},"Chj::IO::File";
+	    $in->xsendfile_to($t);
+	    $in->xclose;
+	    #require IO::Handle; for IO::Handle::sync  uff. and I wanted to avoid the bloat..
+	    #but so be it.
+	    $t->xflush; # must flush before sync.
+	    require IO::Handle;
+	    IO::Handle::sync ($t) or die "IO::Handle::sync: $!";
+	    $t->xclose; # must close *after* sync. of course.
+	    conditional_move_file ($path,$targetbase);
+	};
+	if (ref $@ or $@) {
+	    my $e=$@;
+	    unlink $path; # sort of tmpfile functionality recovery
+	    die $e
+	}
+    } else {
+	die "delivery from stdin only implemented for --maildirs"
+    }
+}
 else {
-    usage "no source dir or files given";
+    die "bug" # should have been trapped earlier
 }
