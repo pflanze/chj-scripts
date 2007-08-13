@@ -10,14 +10,8 @@ use strict;
 use constant catcherrors=>1;# true= exceptions and warnings are catched/collected and delivered by mail -> turn off for debugging.
 # but do this anyway:
 use Carp;
-$SIG{__DIE__}= sub {
-    if (ref($_[0])) {
-	# ok
-	die @_;
-    } else {
-	confess @_;
-    }
-};
+use Chj::Backtrace;
+
 use Scalar::Util 'tainted';
 
 use Chj::xopendir;
@@ -26,12 +20,12 @@ my $do_send_autoreply;
 BEGIN{
     $do_send_autoreply=0;#
 
-    require "/root/bin/mailmoverlib.pm";
-    require "/root/bin/mailmover_autoreply.pm" if $do_send_autoreply;
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    my ($mydir, $myname)=($1,$2);
+    ##is this safe? should bi right?
+    require "$mydir/mailmoverlib.pm";
+    require "$mydir/mailmover_autoreply.pm" if $do_send_autoreply;
 }
-use elcms_general_settings;
-use EL::Util::Sendmail;
-use Chj::Maildir::Basefolder;
 use Chj::xtmpfile;
 use Chj::singlequote;
 use Chj::chompspace;
@@ -51,6 +45,12 @@ sub usage {
   -l|--loop-every n   keep running: sleep n seconds then scan again.
   --repeat n          only loop n times, then end. (to prevent memoryleaks from becoming awful, or for test runs with Devel::LeakTrace)
 
+  -m|--maildir        work with maildirs, not just plain dirs
+
+  '/filtered' is appended to targetbase to get the real target
+  directory if -m option is not given.
+
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
@@ -61,6 +61,7 @@ my $DEBUG=0;
 my $verbose=0;
 my ($sourcedir);
 my ($opt_leaveinbox,$opt_loop,$opt_repeat);
+our $opt_maildirs;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -94,6 +95,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         }
 	$opt_loop+=0;
 	$opt_loop or usage "missing argument for '$_' option";
+    } elsif (/^--maildirs?$/ or /^-m$/) {
+	$opt_maildirs=1;
     } elsif (/^--?(v+)(?:erbose)?$/) {
 	$verbose+=length($1);
     } elsif (/^-./) {
@@ -111,11 +114,22 @@ my $targetbase= do {
     $p=~ m|^([^~].*)|s or die "invalid path starting with a tilde: '$p'";
     $1
 };
+my $targetbase_messages= $targetbase;
+
+our $maildirbasefolder;#only set if in maildir mode
+if ($opt_maildirs) {
+    require Chj::Maildir::Basefolder;
+    require Chj::Maildir::Subfolder;
+    $maildirbasefolder= Chj::Maildir::Basefolder->new ($targetbase);
+    $maildirbasefolder->create (1);
+} else {
+    $targetbase = "$targetbase/filtered"; # Hacky, but documented in the usage
+}
+
 
 my $truncator= Chj::Path::Truncator::MD5->new($targetbase,3);
 
 my @warns;
-#my $warnsubject="warnings"; nein eben doch separate.
 
 if (catcherrors) {
     $SIG{__WARN__}=sub{push @warns,"Warning:\n".(Carp::longmess @_)};
@@ -123,24 +137,37 @@ if (catcherrors) {
 
 {
     # deliver warn mail. one per mailmover call also. im gegensatz zu chris wo eins per email.
+    # {Mon Aug 13 12:07:01 2007} hmm: heisst das  dass eine warnmail delivered wird mit msgs von mehreren in mails ? nein. writewarnmail wird jedesmail sep aufgerufen unten und @warns gelöscht.(wie imperativ)
 
-    #my $base= Chj::Maildir::Basefolder->new($targetbase);#tja
-    #schittttt, stimmt nödmal, Maildir/filtered
-    my $bebebase=$targetbase;
-    $bebebase=~ s|filtered/?$||;
-    my $base= Chj::Maildir::Basefolder->new($bebebase);
+    my $base;
 
     sub writewarnmail {
 	my ($subj,$data)=@_;
-	my $mail = EL::Util::Sendmail::prepare_mailasstring(To=>"you",
-							    From=>"$myname",
-							    Subject=>"$subj",
-							    Data=>"$data");
-	my $warnfile = xtmpfile Chj::IO::Tempfile "$bebebase/tmp/";
+	eval {
+	    require Chj::Sendmail;
+	    require Chj::Maildir::Basefolder;
+	    1
+	} or die "wanted to send mailasstring '$subj' but: $@";
+	$base ||= Chj::Maildir::Basefolder->new($targetbase_messages);
+	my $mail = Chj::Sendmail::prepare_mailasstring(To=>"you",
+						       From=>"$myname",
+						       Subject=>"$subj",
+						       Data=>"$data");
+	my $warnfile = xtmpfile Chj::IO::Tempfile "$targetbase_messages/tmp/"; # Chj::Maildir is still missing 'real' delivery functionality ?  <-{Mon Aug 13 11:55:03 2007}
 	$warnfile->xprint($mail);
 	$warnfile->xclose;
 	$base->deliver_file($warnfile->path);
-	#xlink $warnfile->path,"$targetbase/inbox" AH ich wollte das nöd weil : hrre filename generierung.
+    }
+}
+
+sub Maybe_take_filename ( $ ) { # take filename iff it is looking like a maildir file
+    my ($filepath)=@_;
+    $filepath=~ s|.*/||s;
+    if ($filepath=~ /^\d{9,10}\.[^.]+\./) {
+	$filepath
+    } else {
+	# (otherwise let the caller let generate a new proper one)
+	return
     }
 }
 
@@ -162,32 +189,51 @@ sub conditional_move_file($ $ ) {
     eval {
 	my ($mail,$foldername,$type,$important)= analyze_file $filepath;  #(man sieht es fast nicht..)
 	$quotedsubject= singlequote($mail->decodedheader("subject"),"(kein subject)");
-	#$from=$mail->header("From");
 	$from=$mail->decodedheader("From");
 	$quotedfrom= singlequote $from;
 	$quotedfoldername= singlequote $foldername;
 
 	my $targetfolder_is_symlink;
 	if ($foldername) {
-	    $foldername=~ s{/}{--}sg;#!wichtig!.. nochmals.
-	    $foldername= "dot.$foldername" if $foldername=~ /^\./;#cj 2.8.04, auch noch relevant.
+	    if ($opt_maildirs) {
+		my $sub= do {
+		    if ($foldername eq "inbox") {
+			$maildirbasefolder
+		    } else {
+			my @pathparts= split /\/+/, $foldername; # does it ever happen ?.
+			my $sub= $maildirbasefolder;
+			for (@pathparts) {
+			    next unless length;
+			    $sub= Chj::Maildir::Subfolder->new ($sub,$_);
+			}
+			$sub->create(1);
+			$sub
+		    }
+		};
+		$sub->deliver_file ($filepath, Maybe_take_filename($filepath));
+		# do i have to unlink $filepath afterwards? yes. (unless it will be unlinked anyway of course)
+		xunlink $filepath;
+	    } else {
+		$foldername=~ s{/}{--}sg;#!wichtig!.. nochmals.
+		$foldername= "dot.$foldername" if $foldername=~ /^\./;#cj 2.8.04, auch noch relevant.
 
-	    # und, ganz wichtig ha:
-	    $foldername= $truncator->trunc($foldername);
+		# und, ganz wichtig ha:
+		$foldername= $truncator->trunc($foldername);
 
-	    my $targetfolder= "$targetbase/$foldername";
-	    if (! -d $targetfolder) {
-		xmkdir $targetfolder;
-		warn "created new folder '$targetfolder'\n";# vielleicht in subject schreiben besser!!todo.
-	    }else {
-		$targetfolder_is_symlink= readlink $targetfolder ;# or do{ $!== E.... or..
+		my $targetfolder= "$targetbase/$foldername";
+		if (! -d $targetfolder) {
+		    xmkdir $targetfolder;
+		    warn "created new folder '$targetfolder'\n";# vielleicht in subject schreiben besser!!todo.
+		}else {
+		    $targetfolder_is_symlink= readlink $targetfolder ;# or do{ $!== E.... or..
+		}
+
+		#warn "tainted" if tainted $targetfolder;# is ok
+		warn "tainted" if tainted $filename;
+		my $targetpath= "$targetfolder/$filename";
+		xlinkunlink($filepath,$targetpath);
+		warn "moved '$filename' to '$targetpath'\n" if $verbose;
 	    }
-
-	    #warn "tainted" if tainted $targetfolder;# is ok
-	    warn "tainted" if tainted $filename;
-	    my $targetpath= "$targetfolder/$filename";
-	    xlinkunlink($filepath,$targetpath);
-	    warn "moved '$filename' to '$targetpath'\n" if $verbose;
 	} else {
 	    warn "'$filename' not moved\n" if $verbose;
 	}
@@ -201,7 +247,7 @@ sub conditional_move_file($ $ ) {
 	    #	     and $targetfolder_is_symlink=~ /(?:inbox|new)/) # also wenn ichs eh in die inbox krieg, nix mehr dazu sagen eben. schlau?
 	   ) {
 	    if ($from) {
-		if ($from=~ /christian\.jaeger\@/ or $from=~ /christian\@jaeger\./
+		if ($from=~ /jaeger\@/ or $from=~ /christian\@jaeger\./
 		    or $from=~ /christian.*pflanze/ ) {
 		    save_is_own($mail);
 		}
