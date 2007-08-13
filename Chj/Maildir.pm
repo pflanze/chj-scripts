@@ -17,6 +17,7 @@ Chj::Maildir
 =head1 TODO
 
  - quoting. derzeit darf kein . oder / drin sein in den namen.
+ - not sure about transaction safety (sync), it's definitely unsafe on non-transactional filesystems (and maybe still on those as well)
 
 =cut
 
@@ -63,6 +64,7 @@ sub deliver_file {
     my $targetpath= "$basepath/new/$filename";
     link $path,$targetpath
       or croak "deliver_file: link('$path','$targetpath'): $!";
+    # todo: is this automatically fail save on reiserfs? or do i have to do a dir sync anyway ?
     $targetpath
 }
 
