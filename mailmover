@@ -197,9 +197,16 @@ sub conditional_move_file($ $ ) {
 	if ($foldername) {
 	    if ($opt_maildirs) {
 		my $sub= do {
-		    if ($foldername eq "inbox") {
+		    if ($foldername eq "inbox"
+			#or
+			#$foldername eq "inbox-big"
+		       ) {
 			$maildirbasefolder
 		    } else {
+			# hacky / should be an option?
+			$type="" if $type eq "unbekannt";
+			$foldername= "Moved/$type/$foldername";
+			#/hacky
 			my @pathparts= split /\/+/, $foldername; # does it ever happen ?.
 			my $sub= $maildirbasefolder;
 			for (@pathparts) {
