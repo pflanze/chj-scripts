@@ -16,7 +16,7 @@ Chj::Maildir
 
 =head1 TODO
 
- - quoting. derzeit darf kein . oder / drin sein in den namen.
+ - quoting. derzeit darf kein . oder / drin sein in den namen. -- hm but see Subfolder, ?
  - not sure about transaction safety (sync), it's definitely unsafe on non-transactional filesystems (and maybe still on those as well)
 
 =cut

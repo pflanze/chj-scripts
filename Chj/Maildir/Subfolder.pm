@@ -148,6 +148,8 @@ sub create {
     my $s=shift;
     my ($subscribe, $maybe_lock)=@_;
 
+    return if $s->exists; # do not take lock and recurse into parents if not necessary.
+
     my $lock= $maybe_lock || $s->lock;
 
     # first create parents
@@ -168,6 +170,11 @@ sub create {
 sub basepath {
     my $s=shift;
     $$s[Parent]->basepath . "." . $s->quotedname #  $$s[Name]
+}
+
+sub exists { #note: currently only used internally by Subfolder class (there's no such method in Basefolder class)
+    my $s=shift;
+    -d $s->basepath  # good enough check?
 }
 
 sub basename {# haha, in the shell `basename` sense: the last part of the unix path that's without slashes.
