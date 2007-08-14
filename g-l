@@ -53,9 +53,10 @@ sub files {
     my $g= Chj::IO::Command->new_sender("git-status");
 
     my %files;
+    my $do_accept_pipeerror;
     while (<$g>) {
 	if (/^# Untracked files/) {
-	    while (<$g>) {} # to prevent the subprocess from getting EPIPE!
+	    $do_accept_pipeerror=1;
 	    last;
 	}
 	chomp;
@@ -66,6 +67,7 @@ sub files {
     }
     my $rv= $g->xfinish;
     $rv==0 or $rv==1<<8  # (1 is when nothing's ready to commit)
+      or ($do_accept_pipeerror and $rv == 141<<8) # 141 is the exit code it seems to return in this case
       or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
     \%files
 }
