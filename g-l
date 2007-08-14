@@ -49,11 +49,49 @@ usage if @args;
 use Chj::IO::Command;
 use Chj::Unix::exitcode;
 
+{my $buf=""; sub BUFSIZ () { 4096 }
+ my $got_eof;#from fh
+ my $are_in_eof;
+sub XReadline ( $ ) {
+    my ($fh)=@_;
+    return if $are_in_eof;
+    # wo bringe ich puffer unter aber ? himmel schritt scrhtot.rott.
+    #hack: global buf above
+    if ($buf=~ s/^(.*?\n)//s) {
+	warn "returning part of previously read buffer: '$1'";
+	return $1
+    } else {
+	warn "HELLO?";
+	if ($got_eof) {
+	    warn "nothing more left in buffer and we got eof alrady, so return rest of buffer and end it";
+	    $are_in_eof=1;
+	    return $buf
+	} else {
+	    warn "get new data..";
+	    use Chj::xperlfunc;
+	    my $_buf;
+	    my $n= xsysread ($fh,$_buf,BUFSIZ);
+	    if ($n==0) {
+		warn "got real eof";
+		$got_eof= 1
+	    } else {
+		warn "got new data, adding to buf";
+		$buf.=$_buf;
+	    }
+	    @_=($fh);
+	    goto \&XReadline;
+	}
+    }
+}
+}
+
 sub files {
     my $g= Chj::IO::Command->new_sender("git-status");
 
     my %files;
-    while (<$g>) {
+    #while (<$g>) {
+    #while (defined ($_ = $g->xreadline)) {
+    while (defined ($_ = XReadline ($g))) {
 	last if /^# Untracked files/;
 	chomp;
 	if (/^#\s+(modified|deleted|added|new file):\s+(.*)/) { # hm it seems 'added' isn't used
@@ -61,6 +99,8 @@ sub files {
 	    $files{$path}=$what;
 	}
     }
+    #use Time::HiRes 'sleep';
+    #sleep 0.1; #huh g*d help me why is this needed on elvis-5? or git-status exits with code 141 most of the time. with git version 1.5.2.2
     my $rv= $g->xfinish;
     $rv==0 or $rv==1<<8  # (1 is when nothing's ready to commit)
       or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
