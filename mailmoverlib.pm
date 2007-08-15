@@ -405,29 +405,7 @@ sub analyze_file($ ; $ ) {
 	}
     };
 
-    # mails ohne message-id:
     my $spamhits= $head->spamhits;
-    if (!$foldername) {
-	my $msgid= &$messageid;
-	if (!defined $msgid) {
-	    if (defined($spamhits)) {
-		if ($spamhits > 0) {
-		  T:{
-			if (my $subject= $head->decodedheader("subject")) {
-			    if ($subject=~ /LifeCMS/i) {
-				# do NOT filter it, hack because those mails do not have a msgid ://///
-				last T;
-			    }
-			}
-			$foldername= "spam-nomsgid";
-		    }
-		} # else don't risk to loose the mail.
-	    } else {
-		# still accept it, it might have been injected directly or something
-		# (hmwell: merely impossible since we filter it ourselfes before here?)
-	    }
-	}
-    }
 
     if (!$foldername) {
 	my $list= $head->mailinglist_id;
