@@ -1,0 +1,84 @@
+#!/usr/bin/perl -w
+
+# Don Aug 16 12:02:32 CEST 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -r HEAD..origin/HEAD
+
+  Hacky solution for the problem with git where old files are lieing
+  around locally that have been checked in in the mean time in the
+  (e.g.) origin repository.
+
+  mvnumber'n all diese.
+
+  ah actually just output the file list! ichdep. dann |myxargs mvnumber or whatever
+
+  (hm, can't call mvnumber repeatedly if one of it's dependencies is moved on the way!
+  Should be safe:
+
+  $myname -r HEAD..origin/HEAD > .list ; while read f; do /bin/mv -i \"\$f\" \"\$f\"_AUSWEG; done
+  )
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+# my @args;
+# my $DEBUG=0;
+# for (my $i=0; $i<=$#ARGV; $i++) {
+#     local $_=$ARGV[$i];
+#     if (/^--?h(elp)?$/) {
+#     	usage
+#     } elsif ($_ eq '--') {
+#     	push @args, @ARGV[$i+1..$#ARGV];
+#     	last;
+#     } elsif (/^--?d(ebug)?$/) {
+# 	$DEBUG=1;
+# #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+# #         if (defined $1) {
+# #             $XXX=$1
+# #         } else {
+# #             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+# #         }
+#     } elsif (/^-./) {
+#     	usage("Unknown option '$_'\n");
+#     } else {
+#     	push @args, $_
+#     }
+# }
+our @args=@ARGV;
+usage unless @args;
+
+use Chj::IO::Command;
+
+my $c= Chj::IO::Command->new_sender ("git-diff", @args);
+
+our @files;
+while (<$c>) {
+    chomp;
+    if (/^--- (.+)/) {
+	my $oldfile= $1;
+	defined ($_= <$c>) or die "missing +++ line after --- line";
+	#oder, undef gibts gelll?joglaub.
+	chomp;
+	/^\+\+\+ (.+)/ or die "+++ line doesn't carry a path: '$_'";
+	my $newfile= $1;
+	if ($oldfile eq "/dev/null") {
+	    die "??" if $newfile eq "/dev/null";
+	    #ah dann noch b/ wegmachen
+	    $newfile=~ s|^b/||s or die "file doesn't start with b/ : '$newfile'";
+	    push @files, $newfile;
+	}
+    }
+}
+
+#if ($opt_dry_run) {
+    print map {"$_\n"} @files;
+#}
