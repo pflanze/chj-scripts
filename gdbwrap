@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Don Aug 23 19:52:32 CEST 2007
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='christian%pflanze,mine,nu')=~ tr/%,/@./;
 
 use strict;
 
@@ -16,6 +16,9 @@ sub usage {
   Options:
   --append str    instead of giving cmd, build cmd from    ehr dumm. exec gdbwrap --append .1 -- \"\$\@\"  wollte ich sagen aber dep, 
  nixgeh.
+
+  (Note: there remains a parent waiting for the child for removing the
+  tmp file; if killed, the tmp file will remain.)
 
   (Christian Jaeger <$email>)
 ";
@@ -49,38 +52,18 @@ usage unless @args;
 
 our $program= shift @args;
 
-#our ($r,$w)= pipe or die "pipe: $!";
-#soso. nixisch. so isch perl   nid nur x sondern eben auch das.
-use Chj::xpipe;
-our ($r,$w)= do {
-    local $^F=1000;#und jo. -- och schit doch nid helf ? -- AHH ich dep: muss wohl high numbered sein damit  noch offen isch   nid crumbled vom gdb.  ok unten duppen.
-    xpipe;
-};
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+use Chj::singlequote 'singlequote';#not singlequote_sh ?
 
-my $pid= fork; defined $pid or die "fork: $!";
+my $t= xtmpfile;
+$t->xprint("run ".join(" ", map { singlequote $_ } @args)."\n");
+$t->xclose;
 
-# sub filedevice ($ ) {
-#     my ($fh)=@_;
-#     defined(my $fn= fileno($fh)) or die "filehandle '$fh' has no fileno";
-#     "/dev/fd/$fn"
-# }
-
-if ($pid) {
-    close $w or die "close: $!";
-    #my $r2= $r->xdup2(1000);
-    #my $fdev= $r2->fileno; #filedevice($r2);# warn " ---using  ach sah ich ja eh
-    # nö, mensch, xdup2  gibt nid obj back  .
-    local $^F=1000;#nötig.eh  still not sucess though. ACH. mensch echt.
-    $r->xdup2 (1000);
-    exec "gdb", "-x", "/dev/fd/1000", $program
-      or die "could not exec gdb: $!";
+if (xfork) {
+    xxwait
 } else {
-    close $r or die "close: $!";
-    use Chj::singlequote 'singlequote';#not singlequote_sh ?
-    print $w "run ".join(" ", map { singlequote $_ } @args)."\n"
-      or die "print: $!";
-    close $w or die "close: $!";
-    exit 0;
+    xexec "gdb", "-x", $t->path, $program
 }
 
 __END__
