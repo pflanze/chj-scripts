@@ -1,0 +1,97 @@
+#!/usr/bin/perl -w
+
+# Don Aug 23 19:52:32 CEST 2007
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -- cmd [args]
+
+  Run gdb with cmd and args.
+
+  Options:
+  --append str    instead of giving cmd, build cmd from    ehr dumm. exec gdbwrap --append .1 -- \"\$\@\"  wollte ich sagen aber dep, 
+ nixgeh.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+our $program= shift @args;
+
+#our ($r,$w)= pipe or die "pipe: $!";
+#soso. nixisch. so isch perl   nid nur x sondern eben auch das.
+use Chj::xpipe;
+our ($r,$w)= do {
+    local $^F=1000;#und jo. -- och schit doch nid helf ? -- AHH ich dep: muss wohl high numbered sein damit  noch offen isch   nid crumbled vom gdb.  ok unten duppen.
+    xpipe;
+};
+
+my $pid= fork; defined $pid or die "fork: $!";
+
+# sub filedevice ($ ) {
+#     my ($fh)=@_;
+#     defined(my $fn= fileno($fh)) or die "filehandle '$fh' has no fileno";
+#     "/dev/fd/$fn"
+# }
+
+if ($pid) {
+    close $w or die "close: $!";
+    #my $r2= $r->xdup2(1000);
+    #my $fdev= $r2->fileno; #filedevice($r2);# warn " ---using  ach sah ich ja eh
+    # nö, mensch, xdup2  gibt nid obj back  .
+    local $^F=1000;#nötig.eh  still not sucess though. ACH. mensch echt.
+    $r->xdup2 (1000);
+    exec "gdb", "-x", "/dev/fd/1000", $program
+      or die "could not exec gdb: $!";
+} else {
+    close $r or die "close: $!";
+    use Chj::singlequote 'singlequote';#not singlequote_sh ?
+    print $w "run ".join(" ", map { singlequote $_ } @args)."\n"
+      or die "print: $!";
+    close $w or die "close: $!";
+    exit 0;
+}
+
+__END__
+
+an example:
+
+#!/bin/bash
+
+# ../gsc-comp.1
+
+#exec gdbwrap --append .1 -- "$@"
+
+#klar muss ich von *hier* aus machen:
+exec gdbwrap -- "$0".1 "$@"
