@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Don Aug 23 19:52:32 CEST 2007
+(my $email='christian%pflanze,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -- cmd [args]
+
+  Run gdb with cmd and args.
+
+  Options:
+  --append str    instead of giving cmd, build cmd from    ehr dumm. exec gdbwrap --append .1 -- \"\$\@\"  wollte ich sagen aber dep, 
+ nixgeh.
+
+  (Note: there remains a parent waiting for the child for removing the
+  tmp file; if killed, the tmp file will remain.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+our $program= shift @args;
+
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+use Chj::singlequote 'singlequote';#not singlequote_sh ?
+
+my $t= xtmpfile;
+$t->xprint("run ".join(" ", map { singlequote $_ } @args)."\n");
+$t->xclose;
+
+if (xfork) {
+    xxwait
+} else {
+    xexec "gdb", "-x", $t->path, $program
+}
+
+__END__
+
+an example:
+
+#!/bin/bash
+
+# ../gsc-comp.1
+
+#exec gdbwrap --append .1 -- "$@"
+
+#klar muss ich von *hier* aus machen:
+exec gdbwrap -- "$0".1 "$@"
