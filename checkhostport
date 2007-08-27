@@ -1,0 +1,106 @@
+#!/usr/bin/perl -w
+
+# Mon Jan 27 17:46:01 MET 2003
+# pflanze@gmx.ch
+
+# idee: vrbaufbau auf adresse/port bloss um zu schauen ob wer da ist.
+# statt wget oder telnet und so.
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ options ] address(es)
+  Try to make a tcp connection to the given address(es).
+  Options:
+  -p|--port  Port number (default is 80)
+  -q|--quiet Do not print any messages. Just report
+             success/nonsuccess as exit status.
+             0: all adresses were successful,
+             >0: number of non-successful adresses
+  -t|--timeout  Timeout in seconds (default 10)
+";
+exit @_ ? 1 : 0;
+}
+
+my @files;
+my $DEBUG=0;
+my $port=80;
+my $opt_q;
+my $timeout=10;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @files, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?p(ort)?$/) {
+	$port=$ARGV[++$i] || usage "missing port number";
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_q=1;
+    } elsif (/^--?t(timeout)?$/) {
+	$timeout=$ARGV[++$i] || usage "missing timeout value";
+	$timeout=~ /^\d+$/s or usage "given timeout value is not an integer";
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^-/) {
+    	warn "Unknown option '$_'\n";
+    	usage(1)
+    } else {
+    	push @files, $_
+    }
+}
+usage unless @files;
+
+use IO::Socket::INET;
+my $exitvalue=0;
+for my $remote (@files) {
+    warn "Verwende Port '$port'" if $DEBUG; ## wegen jenseits IO::Socket::INET Bug der fehlermeldung den namen dieses programms ($myname) ausgibt wenn port ein string ist der nicht in etc/services vorkommt. wahnsinn.
+    eval {
+	my $sock= new IO::Socket::INET (PeerAddr=>$remote,
+					PeerPort=>$port,
+					Proto=>"tcp",
+					Timeout=>$timeout,
+				       )
+	  or die "got no io socket: $!\n";
+	$sock->shutdown(2) or die "shutdown: $!\n";
+    };
+    if ($@){
+	print "$remote: $@" unless $opt_q;
+	$exitvalue++;
+    } else {
+	print "$remote: successful connection!\n" unless $opt_q;
+    }
+}
+exit $exitvalue;
+
+__END__
+use Socket;
+
+if ($port =~ /\D/) { $port = getservbyname($port, 'tcp') }
+usage "No port" unless $port;
+
+for my $remote (@files) {
+    eval {
+	#local $SIG{ALRM}=sub{die"ALRM\n"};#probably perl5.8 safesignal problematic
+	my ($iaddr, $paddr, $proto, $line);
+	$iaddr= inet_aton($remote) or  die "no host: $remote";
+	$paddr= sockaddr_in($port, $iaddr);
+	$proto   = getprotobyname('tcp');
+	socket(SOCK, PF_INET, SOCK_STREAM, $proto)  || die "socket: $!";
+	# Use IO::Select since it's not that big and still quite some easier
+	my $sel= new IO::Select *SOCK;
+	if ($sel->can_read($timeout)) {
+	    connect(SOCK, $paddr)    || die "connect: $!";
+	    hmmmmm nein zuerst oder irgend. nonblocking und so, sigh
+	close (SOCK)            || die "close: $!";
+    };
+    if ($@){
+	print "$remote: $@";
+    } else {
+	print "$remote: successful connection!\n";
+    }
+}
