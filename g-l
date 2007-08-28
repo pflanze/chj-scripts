@@ -84,13 +84,20 @@ sub main {
     while (<$l>) {
 	chomp;
 	# chop off '-rw-r--r-- 1 clamavbuild clamavbuild 4119'
-	s/^[-l][-rwSstx]{9} +\d+ +\S+ +\S+ +\d+ +// or die "line dos not match: '$_'";
+	s/^([-l])[-rwSstx]{9} +\d+ +\S+ +\S+ +\d+ +// or die "line dos not match: '$_'";
+	my $type= $1;
 	/^\S+ +\S+ +(.*)/ or die "line (date part) does not match: '$_'";
 	my $file=$1;
-	my $kind= $$files{$file} or die "bug";
+	if ($type eq "l") {
+	    $file=~ s/ -> .*//s;
+	}
+	my $kind= $$files{$file} or die "bug ('$file')";
 	{
 	    my $kind= $$modmap{$kind} or die "bug '$kind'";#need the my. or the die would print the new, undef, value. tja.
 	    print "$kind ",$_,"\n" or die "printing to stdout: $!";
+	    #^- in the case of symlinks, could print $file instead; $_
+	    #will still contain the " -> .." part. But maybe it's good
+	    #for now to visually warn me of this currently.
 	}
     }
 }
