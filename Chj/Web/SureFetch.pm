@@ -58,8 +58,9 @@ sub onlyone(\@) {
 }
 
 sub surefetch {
-    my ($url)=@_;
+    my ($url,$wantarray)=@_; # not rely on wantarray since it might not be backwards compatible. (array contexts dis eh a pointments)
     my $contentref;
+    my $result;
   TRY: {
 	my @error;
 	for (1..3) {
@@ -68,7 +69,7 @@ sub surefetch {
 	    my $req = new HTTP::Request GET => $url   or die "??";
 	    #$req->header('Accept' => 'text/plain');
 	    #$req->header('Accept' => 'text/html'); ## ist das ok so?  oder einfach beide raus.?
-	    my $result = $ua->request($req);
+	    $result = $ua->request($req);
 	    if ($result->is_success) {
 		$contentref = \ $result->content;
 		if ($$contentref =~ /ERROR/ && $$contentref =~ /404/) {
@@ -91,7 +92,7 @@ sub surefetch {
 	}
 	croak "surefetch('$url'): repeated error: ".(onlyone @error);
     }
-    return $contentref;
+    return $wantarray ? ($contentref, $result) : $contentref;
 }
 
 1;
