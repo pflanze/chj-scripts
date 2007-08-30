@@ -408,6 +408,18 @@ sub analyze_file($ ; $ ) {
     my $spamhits= $head->spamhits;
 
     if (!$foldername) {
+	if (my $subject= $head->header("subject")) {
+	    # mailinglist reminders
+	    if ($subject=~ /^\S+\s+mailing list memberships reminder\s*$/
+		and
+		$from=~ /^mailman-owner\@/
+	       ) {
+		$foldername= "mailinglistmembershipreminders";#$type="list";oder toplevel
+	    }
+	}
+    }
+
+    if (!$foldername) {
 	my $list= $head->mailinglist_id;
 	if (defined $list) {
 	    warn "'$filename': mailinglist $list\n" if $DEBUG;
@@ -480,13 +492,6 @@ sub analyze_file($ ; $ ) {
 		# cj 3.12.04 ebay:
 		elsif ($from=~ /\Q<newsletter_ch\@ebay.com>\E/) {
 		    $foldername="ebay-newsletter";# $type="list"; oder "unbekannt" lassen? frage an ct: welche typen gibt es und wie werden sie sonst gehandhabt, resp. ändere es hier einfach selber ab, ich benutze type derzeit eh nicht.
-		}
-		# mailinglist reminders
-		elsif ($subject=~ /^\S+\s+mailing list memberships reminder\s*$/
-			 and
-			 $from=~ /^mailman-owner\@/
-			) {
-		    $foldername= "mailinglistmembershipreminders";#$type="list";oder toplevel
 		}
 	    }
 	}
