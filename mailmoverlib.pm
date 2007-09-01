@@ -394,7 +394,8 @@ sub analyze_file($ ; $ ) {
 	warn "'$filename' is_spam: not scanned\n" if $verbose;
     }
 
-    my $from;my $content;
+    my $from= $head->header("from"); #GRR do not play shit.w/o propr lazynss.
+    my $content;
     my $messageid;
     $messageid=do {
 	#my $_messageid;
@@ -450,7 +451,6 @@ sub analyze_file($ ; $ ) {
 	    } elsif ($subject eq 'DEBUG') {
 		$foldername= "DEBUG";$type="system";
 	    } else {
-		$from= $head->header("from");
 		if ($subject=~ /^\[LifeCMS\]/
 		    and ( $from eq 'alias@ethlife.ethz.ch'
 			  or $from eq 'newsletter@ethlife.ethz.ch') ) {
