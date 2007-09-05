@@ -28,21 +28,22 @@ use MIME::Words 'decode_mimewords';
 use Chj::Encode::Permissive 'encode_permissive';
 use Chj::chompspace;
 
-use overload '""'=> 'stringify';
+#use overload '""'=> 'stringify';
 
 use Class::Array -fields=>
   -publica=>
   'Headersarrayindex',
   'Originalkey', # non-lowercased
+  'Space', # the whitespace between the colon and the value
   'Value', # not decoded!
   'Lineno',
   ;
 
 
-sub new_h_o_v_l {
+sub new_h_o_s_v_l {
     my $class=shift;
     my $s= $class->SUPER::new;
-    (@$s[Headersarrayindex, Originalkey, Value, Lineno])=@_;
+    (@$s[Headersarrayindex, Originalkey, Space, Value, Lineno])=@_;
     $s
 }
 
@@ -70,6 +71,11 @@ sub decodedvalue {
     join("",
 	 map{ encode_permissive $_->[0],$_->[1],$as_charset }
 	 decode_mimewords(chompspace($$s[Value])))
+}
+
+sub as_string { # without the terminating newline.
+    my $s=shift;
+    "$$s[Originalkey]:$$s[Space]$$s[Value]"
 }
 
 

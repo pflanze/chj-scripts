@@ -16,7 +16,7 @@ Chj::Mail::SimpleHead
  my $body= $m->xcontent;
  $m->xrewind;
  my $cnt= $m->xcontent
- join("\n", @{$h->headersArray },"",$body) eq $cnt
+ join("\n", (map { $_->as_string } @{$h->headersArray }),"",$body) eq $cnt
    # => yields true (at least if there are no CRLF problems)
 
 =head1 DESCRIPTION
@@ -28,7 +28,6 @@ Originally copy of code from mailmoverlib.pm
 
 
 Note that lineno starts with 0.
-
 
 =cut
 
@@ -54,11 +53,9 @@ use Class::Array -fields=>
                    # occurrence in the head from top down
    'HeaderSHash',  # hash, lowercase key to [ multiple
                    # Chj::Mail::SimpleHead::Header objects ]
-   'HeadersArray', # array, all headers in the order of occurrence,
-                   # each as one string (not split into key and
-                   # value); join("\n", @{$s->headersArray}) does
-                   # recreate the original head (But what has been the
-                   # real usage for this, if ever?)
+   'HeadersArray', # array, all headers (Chj::Mail::SimpleHead::Header
+                   # objects) in the order of occurrence in the head.
+
    #'Fh', # the fh passed into new_from_fh method; for the case where we'd want the body. hm or leave that to the user?
   );
 
@@ -70,7 +67,6 @@ sub new_from_fh {
     @{$self}[Errors,Warnings]= ([],[]);
 
     my (%header,@headers,@errors,%headers); # $headers{$key}=[ multiple of same type as $header{$key} ]
-    my ($lastheaderkey);
   HEADER:{
 	local $_;
 	my $lineno=-1;
@@ -78,22 +74,18 @@ sub new_from_fh {
 	    chomp;# is this safe enough (i.e. does it strip both cr and lf?)
 	    $lineno++;
 	    if (length) {
-		if (/^(\w[\w.-]+): *(.*)/) {
-		    $lastheaderkey=lc($1);
-		    push @headers,$_;
-		    # "Na: einfach immer der *letzte*mitgleichemkey in %header aufbewahren.
-		    # und so isch multilinevervollständigung auch weiterhin korrekt
-		    # muss dann bei ->header() methode drauf schauen ob multiple."
+		if (/^(\w[\w.-]+):( *)(.*)/) {
+		    my ($originalkey,$space,$value)=($1,$2,$3);
+		    my $lckey=lc($originalkey);
 		    my $header=
-		      Chj::Mail::SimpleHead::Header->new_h_o_v_l($#headers, $1, $2, $lineno);
-		    push @{ $headers{$lastheaderkey} }, $header;
-		    $header{$lastheaderkey}= $header;
+		      Chj::Mail::SimpleHead::Header->new_h_o_s_v_l
+			  (scalar @headers, $originalkey, $space, $value, $lineno);
+		    push @headers,$header;
+		    push @{ $headers{$lckey} }, $header;
+		    $header{$lckey}= $header;
 		} elsif (/^\s/) {  #"(naja, ist das alles so wirklich korrekt?)"
-		    if ($lastheaderkey) {
-			$headers[-1].= "\n$_";
-			if (my $header= $header{$lastheaderkey}) {
-			    ${$header->valueref} .= "\n$_";
-			}
+		    if (my $header= $headers[-1]) {
+			${$header->valueref} .= "\n$_";
 		    } else {
 			push @errors, "First header does not start with a key: '$_'";
 		    }
