@@ -150,7 +150,10 @@ sub decodedheader {
 #calc> :l $m= xopen_read 'Maildir/.Moved.m&APY-glicher spam.NOT spam/cur/1186862437.16013.elvis-mail:2,S'; $h= Chj::Mail::SimpleHead->new_from_fh ($m); $body=$m->xcontent; $m->xrewind ; $cnt= $m->xcontent
 # works fine.
 
-# gehört nicht mehr ins base package:
+
+# --------------------------------------------------------------------------------
+# does not belong into the base package (but it's here for simplicity atm):
+
 my %known_list_precedences= map {$_=>undef} qw( bulk list );
 sub mailinglist_id {
     my $self=shift;
@@ -339,5 +342,7 @@ sub lookslike_autoreply { # cj 10.10.04; sollte 1. wohl eben auch nicht in basis
     }
     0
 }
+
+
 
 end Class::Array;
