@@ -116,6 +116,19 @@ sub header {
 	undef
     }
 }
+*maybe_header= *header; # maybe_header would have been the right name in the first place!!!
+#ah btw doesn't croak on multiple, remember!  returns *none* instead. hmmm  should i change it. no. or? (doofe meldungen von mailmover waren da. aberjo. sicher nicht exn dann.hm.)
+
+sub maybe_header_value {
+    my $s=shift;
+    my ($key)=@_;
+    if (defined (my $header= $s->header($key))) {
+	$header->value
+    } else {
+	undef
+    }
+}
+
 
 sub first_header {
     my $s=shift;
