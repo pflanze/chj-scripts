@@ -25,9 +25,9 @@ package Chj::Mail::SimpleHead;
 
 use strict;
 
-use MIME::Words 'decode_mimewords';
-use Chj::Encode::Permissive 'encode_permissive';
 use Chj::chompspace;
+use Chj::Mail::SimpleHead::Header;
+
 
 use Class::Array -fields=>
   -publica=>
@@ -38,15 +38,15 @@ use Class::Array -fields=>
    'Errors',       # array
    'Warnings',     # array
    'HeadersHash',  # hash, only single headers (or rather, the last
-                   # occurrence of it, right?); key is lowercase,
-                   # value is: [ HeadersArray-index, non-lowercased
-                   # key, value, lineno ]
+                   # occurrence of it, right?), lowercase key to a
+                   # Chj::Mail::SimpleHead::Header object
    'HeadersArray', # array, all headers in the order of occurrence,
                    # each as one string (not split into key and
                    # value); join("\n", @{$s->headersArray})."\n"
                    # should recreate the original head, right?
-   'HeaderSHash',  # $headers{$key}=[ multiple of same type as
-                   # [HeadersHash]{$key} ]
+   'HeaderSHash',  # hash, lowercase key to [ multiple
+                   # Chj::Mail::SimpleHead::Header objects ]
+   #'Fh', # the fh passed into new_from_fh method; for the case where we'd want the body. hm or leave that to the user?
   );
 
 sub new_from_fh {
@@ -71,15 +71,19 @@ sub new_from_fh {
 		    # "Na: einfach immer der *letzte*mitgleichemkey in %header aufbewahren.
 		    # und so isch multilinevervollständigung auch weiterhin korrekt
 		    # muss dann bei ->header() methode drauf schauen ob multiple."
-		    push @{ $headers{$lastheaderkey} }, [$#headers, $1, $2, $lineno];
-		    $header{$lastheaderkey}=[$#headers, $1, $2, $lineno];  ##warum nid dasselbe array obj nehmen wie oben? wird es modified?
+		    my $header=
+		      Chj::Mail::SimpleHead::Header->new_h_o_v_l($#headers, $1, $2, $lineno);
+		    push @{ $headers{$lastheaderkey} }, $header;
+		    $header{$lastheaderkey}= $header;
 		} elsif (/^\s+(.*)/) {  #(naja, ist das alles so wirklich korrekt?)
 		    if ($lastheaderkey) {
 			$headers[-1].="\n\t$1";
-			$header{$lastheaderkey}[2].="\n\t$1" if defined $header{$lastheaderkey};
-			if (my $rf= $headers{$lastheaderkey}[-1]) {
-			    $$rf[2].="\n\t$1"
-			} else { warn "bug?" };
+			if (my $header= $header{$lastheaderkey}) {
+			    ${$header->valueref} .="\n\t$1"
+			}
+# 			if (my $header= $headers{$lastheaderkey}[-1]) {
+# 			    ${$header->valueref} .="\n\t$1" #ehr should already have happened!!ç
+# 			} else { warn "bug?" };
 			#warn "(DEBUG: multiline header)";
 		    } else {
 			push @errors, "First header does not start with a key: '$_'";
@@ -101,15 +105,12 @@ sub new_from_fh {
 sub header {
     my $self=shift;
     my ($key)=@_;
-    if (defined(my $h=$$self[HeadersHash]{lc($key)})) {
+    if (defined(my $header=$$self[HeadersHash]{lc($key)})) {
 	if (@{ $$self[HeaderSHash]{lc $key} } > 1) {
 	    warn "header method called where multiple headers of key '$key' exists";
 	    return undef
 	}
-	#$h->[2]
-	#cj 4.8.04: spaces am ende von headers haben dazu geführt dass folders kreiert wurden welche in squirrelmail/courier-imap nicht subscribebar waren. weil wohl spaces am ende in courierimapsubscribes weggelöscht werden on read supi.
-	# daher wirkli nun hier zentral? isch eigentlich falsch.  aber mal einfcahheitshaltberhier.
-	chompspace($h->[2]);
+	$header
     } else {
 	undef
     }
@@ -123,22 +124,30 @@ sub first_header {
 sub headers {
     my $self=shift;
     my ($key)=@_;
-    map {
-	chompspace($_->[2]);
-    } @{ $$self[HeaderSHash]{lc $key} }
+    if (my $arr= $$self[HeaderSHash]{lc $key}) {
+	@$arr
+    } else {
+	()
+    }
 }
 
 sub decodedheader {
     my $self=shift;
     my ($key,$as_charset)=@_;
     if (defined(my $h=$$self[HeadersHash]{lc($key)})) {
-	join("",
-	     map{ encode_permissive $_->[0],$_->[1],$as_charset }
-	     decode_mimewords(chompspace($h->[2])));
+	$h->decodedvalue ($as_charset)
     } else {
 	undef
     }
 }
+
+# sub body {
+#     my $s=shift;
+#     ${ $$s[_Body]||= \ do { $$s[Fh]->xcontent } }
+# }
+# or better leave that to the user. ?
+#calc> :l $m= xopen_read 'Maildir/.Moved.m&APY-glicher spam.NOT spam/cur/1186862437.16013.elvis-mail:2,S'; $h= Chj::Mail::SimpleHead->new_from_fh ($m); $body=$m->xcontent; $m->xrewind ; $cnt= $m->xcontent
+# works fine.
 
 # gehört nicht mehr ins base package:
 my %known_list_precedences= map {$_=>undef} qw( bulk list );
