@@ -23,7 +23,7 @@ use strict;
 
 use Chj::Mail::SimpleHead;
 
-use Chj::repl;
+#use Chj::repl;
 
 our @modes= qw(LAST SINGLE);
 
