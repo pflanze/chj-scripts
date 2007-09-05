@@ -102,8 +102,11 @@ sub xinteresting_header ($ ) {
 	    $$grouped{$prio}= $header
 	}
     }
-    local our $selectedprio = (sort { $a cmp $b } keys %$grouped)[0];
-    $$grouped{$selectedprio}
+    if (defined (local our $selectedprio = (sort { $a cmp $b } keys %$grouped)[0])) {
+	$$grouped{$selectedprio}
+    } else {
+	die "none of the defined receiving hosts found in the head"
+    }
 }
 
 sub stripped_head_string { # including the empty line after the head
