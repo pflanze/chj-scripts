@@ -30,15 +30,24 @@ use Chj::Encode::Permissive 'encode_permissive';
 use Chj::chompspace;
 
 use Class::Array -fields=>
-  -publica=>(
-	     # ps warum's Inmail class gibt in elcms: weil es inder db es ja auch so gross will wie es eben ist i.e. ram grösse.  (chunking?)
-	     # enum? wie schon machte ich jenes, zahlen versus db.
-	     'Errors', #arrayrf
-	     'Warnings', #arrayrf
-	     'HeadersHash', #hashref, only single headers
-	     'HeadersArray', #arrayref, all headers
-	     'HeaderSHash', # $headers{$key}=[ multiple of same type as $header{$key} ]  (leider gabs HeadersHash schon drum S)
-	    );
+  -publica=>
+  (
+   # "ps warum's Inmail class gibt in elcms: weil es inder db es ja auch so gross will wie es eben ist i.e. ram grösse.  (chunking?)"
+   # "enum? wie schon machte ich jenes, zahlen versus db."
+
+   'Errors',       # array
+   'Warnings',     # array
+   'HeadersHash',  # hash, only single headers (or rather, the last
+                   # occurrence of it, right?); key is lowercase,
+                   # value is: [ HeadersArray-index, non-lowercased
+                   # key, value, lineno ]
+   'HeadersArray', # array, all headers in the order of occurrence,
+                   # each as one string (not split into key and
+                   # value); join("\n", @{$s->headersArray})."\n"
+                   # should recreate the original head, right?
+   'HeaderSHash',  # $headers{$key}=[ multiple of same type as
+                   # [HeadersHash]{$key} ]
+  );
 
 sub new_from_fh {
     my $class=shift;
@@ -51,25 +60,19 @@ sub new_from_fh {
     my ($lastheaderkey);
   HEADER:{
 	local $_;
+	my $lineno=-1;
 	while (defined($_=$fh->xreadline)) {
 	    chomp;# is this safe enough (i.e. does it strip both cr and lf?)
+	    $lineno++;
 	    if (length) {
 		if (/^(\w[\w.-]+): *(.*)/) {
 		    $lastheaderkey=lc($1);
 		    push @headers,$_;
-		    #if (exists $header{$lastheaderkey}) {
-			#push @errors,"encountered header '$lastheaderkey' multiple times, now with '$_'";
-			#undef $header{$lastheaderkey};  #hm. sinnlos weil ich es wiedersetzen muss um es verfollständigen lassen zu können.?.
-			#push @{ $headers{$lastheaderkey} }, $header{$lastheaderkey};
-			# so einfach geht das nicht :/
-			# Na: einfach immer der *letzte*mitgleichemkey in %header aufbewahren.
-			# und so isch multilinevervollständigung auch weiterhin korrekt
-			# muss dann bei ->header() methode drauf schauen ob multiple.
-			push @{ $headers{$lastheaderkey} }, [$#headers,$1,$2];
-			$header{$lastheaderkey}=[$#headers,$1,$2];
-		    #} else {
-		    #    $header{$lastheaderkey}=[$#headers,$1,$2];
-		    #}
+		    # "Na: einfach immer der *letzte*mitgleichemkey in %header aufbewahren.
+		    # und so isch multilinevervollständigung auch weiterhin korrekt
+		    # muss dann bei ->header() methode drauf schauen ob multiple."
+		    push @{ $headers{$lastheaderkey} }, [$#headers, $1, $2, $lineno];
+		    $header{$lastheaderkey}=[$#headers, $1, $2, $lineno];  ##warum nid dasselbe array obj nehmen wie oben? wird es modified?
 		} elsif (/^\s+(.*)/) {  #(naja, ist das alles so wirklich korrekt?)
 		    if ($lastheaderkey) {
 			$headers[-1].="\n\t$1";
