@@ -55,10 +55,8 @@ our $head= Chj::Mail::SimpleHead->new_from_fh ($in);
 
 our $sh= Chj::Mail::Striphead->new_with_hosts
   (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
-   qw(
-      elvis-jaeger.mine.nu
-      ethlife-dev.ethz.ch
-     )
+   'elvis-jaeger.mine.nu' => ['LAST', 2],
+   'ethlife-dev.ethz.ch' => ['SINGLE', 1],
   );
 
 #repl;
