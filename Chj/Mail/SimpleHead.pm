@@ -11,12 +11,21 @@ Chj::Mail::SimpleHead
 
 =head1 SYNOPSIS
 
+ my $m= xopen_read 'Maildir/....';
+ my $h= Chj::Mail::SimpleHead->new_from_fh ($m);
+ my $body= $m->xcontent;
+ $m->xrewind;
+ my $cnt= $m->xcontent
+ join("\n", @{$h->headersArray },"",$body) eq $cnt
+   # => yields true (at least if there are no CRLF problems)
+
 =head1 DESCRIPTION
 
 Simple mail head parser, with line number keeping (not yet done) to be
 able to cut heads apart precisely.
 
 Originally copy of code from mailmoverlib.pm
+
 
 =cut
 
@@ -37,15 +46,16 @@ use Class::Array -fields=>
 
    'Errors',       # array
    'Warnings',     # array
-   'HeadersHash',  # hash, only single headers (or rather, the last
-                   # occurrence of it, right?), lowercase key to a
-                   # Chj::Mail::SimpleHead::Header object
-   'HeadersArray', # array, all headers in the order of occurrence,
-                   # each as one string (not split into key and
-                   # value); join("\n", @{$s->headersArray})."\n"
-                   # should recreate the original head, right?
+   'HeadersHash',  # hash, lowercase key to a
+                   # Chj::Mail::SimpleHead::Header object of the last
+                   # occurrence in the head from top down
    'HeaderSHash',  # hash, lowercase key to [ multiple
                    # Chj::Mail::SimpleHead::Header objects ]
+   'HeadersArray', # array, all headers in the order of occurrence,
+                   # each as one string (not split into key and
+                   # value); join("\n", @{$s->headersArray}) does
+                   # recreate the original head (But what has been the
+                   # real usage for this, if ever?)
    #'Fh', # the fh passed into new_from_fh method; for the case where we'd want the body. hm or leave that to the user?
   );
 
@@ -75,16 +85,12 @@ sub new_from_fh {
 		      Chj::Mail::SimpleHead::Header->new_h_o_v_l($#headers, $1, $2, $lineno);
 		    push @{ $headers{$lastheaderkey} }, $header;
 		    $header{$lastheaderkey}= $header;
-		} elsif (/^\s+(.*)/) {  #(naja, ist das alles so wirklich korrekt?)
+		} elsif (/^\s/) {  #"(naja, ist das alles so wirklich korrekt?)"
 		    if ($lastheaderkey) {
-			$headers[-1].="\n\t$1";
+			$headers[-1].= "\n$_";
 			if (my $header= $header{$lastheaderkey}) {
-			    ${$header->valueref} .="\n\t$1"
+			    ${$header->valueref} .= "\n$_";
 			}
-# 			if (my $header= $headers{$lastheaderkey}[-1]) {
-# 			    ${$header->valueref} .="\n\t$1" #ehr should already have happened!!ç
-# 			} else { warn "bug?" };
-			#warn "(DEBUG: multiline header)";
 		    } else {
 			push @errors, "First header does not start with a key: '$_'";
 		    }
