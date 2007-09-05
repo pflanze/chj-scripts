@@ -79,6 +79,29 @@ sub as_string { # without the terminating newline.
 }
 
 
+# ----------------------------------------------------------------------
+# does not really belong into the base package here anymore maybe. But
+# live is complicated otherwise I think, or do I miss some OO tech
+# still?
+
+sub maybe_received_by ($ ) { # should only be called on 'Received' headers ("of course").
+    my ($header)=@_;
+    my $value= $header->value;
+    if ($value=~ /\bfrom\b(.*)\bby\b(.*)/s) {
+	my ($rawfrom,$rawby)=($1,$2);
+	if (my ($by)= $rawby=~ /(\S+)/) {
+	    $by
+	} else {
+	    warn "HM? '$value'";
+	    ()
+	}
+    } else {
+	#warn "no from by in received header: '$value'";#
+	()
+    }
+}
+
+
 end Class::Array;
 
 *stringify = *chompedvalue; #*decodedvalue;    strange but that's how it worked?. in mailmover{,lib}.

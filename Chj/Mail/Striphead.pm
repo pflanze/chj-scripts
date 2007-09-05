@@ -47,22 +47,6 @@ sub new_with_hosts { # spezielle funktion um parametrisierung immerhin so chance
     $s
 }
 
-sub Header_maybe_received_to ($ ) {
-    my ($header)=@_;
-    my $value= $header->value;
-    if ($value=~ /\bfrom\b(.*)\bby\b(.*)/s) {
-	my ($rawfrom,$rawto)=($1,$2);
-	if (my ($to)= $rawto=~ /(\S+)/) {
-	    $to
-	} else {
-	    warn "HM? '$value'";
-	    ()
-	}
-    } else {
-	#warn "no from by in received header: '$value'";#
-	()
-    }
-}
 
 
 sub xinteresting_header ($ ) {
@@ -70,7 +54,7 @@ sub xinteresting_header ($ ) {
     local our ($head)=@_;
     local our $found= {};
     for our $header ($head->headers ("received")) {
-	if (my $lcto= lc (Header_maybe_received_to ($header))) {
+	if (my $lcto= lc ($header->maybe_received_by)) {
 	    if (my $p= ${$$s[LcHosts]}{$lcto}) {
 		my ($kind,$prio)= @$p;#p wie pair tja well wohl oder nid so. multivalue. tupl. $t?
 		if ($kind eq "SINGLE") {
