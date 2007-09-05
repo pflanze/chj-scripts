@@ -27,6 +27,9 @@ able to cut heads apart precisely.
 Originally copy of code from mailmoverlib.pm
 
 
+Note that lineno starts with 0.
+
+
 =cut
 
 

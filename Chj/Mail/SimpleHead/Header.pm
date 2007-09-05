@@ -13,7 +13,9 @@ Chj::Mail::SimpleHead::Header
 
 =head1 DESCRIPTION
 
-Represents a single header entry
+Represents a single header entry.
+
+Note that lineno() starts with 0 (as coded in SimpleHead.pm, currently).
 
 =cut
 
