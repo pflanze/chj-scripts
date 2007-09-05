@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Mit Sep  5 14:50:32 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+our ($file)=@args;
+
+#use Chj::ruse; use Chj::repl;
+use Chj::Mail::Striphead;
+use Chj::xopen 'xopen_read';
+
+our $in= xopen_read $file;
+our $head= Chj::Mail::SimpleHead->new_from_fh ($in);
+#our $body=$in->xcontent;
+#$m->xrewind;
+#our $cnt= $in->xcontent;
+
+our $sh= Chj::Mail::Striphead->new_with_hosts
+  (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
+   qw(
+      elvis-jaeger.mine.nu
+      ethlife-dev.ethz.ch
+     )
+  );
+
+#repl;
+
+our $out= bless *STDOUT{IO},"Chj::IO::File";
+$out->xprint($sh->stripped_head_string($head));
+$in->xprintfile_to($out);
+$out->xclose;
+$in->xclose;
+
