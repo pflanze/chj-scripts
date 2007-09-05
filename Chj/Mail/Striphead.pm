@@ -18,9 +18,6 @@ Chj::Mail::Striphead
 
 
 package Chj::Mail::Striphead;
-#@ISA="Exporter"; require Exporter;
-#@EXPORT_OK=qw();
-#%EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
 
@@ -28,61 +25,85 @@ use Chj::Mail::SimpleHead;
 
 use Chj::repl;
 
+our @modes= qw(LAST SINGLE);
+
 use Class::Array -fields=>
   -publica=>
-  'LcHosts', # hash (collection) of the lc hosts which  eh whose  name  we look out for  in the head  to know where to strip.
+  'LcHosts', # hash, lc(fqhostname) to one of the @modes, denoting the name(s) of the host which receives the mails, to which we want to cut down the mail head. ah and the mode is followed by a priority.   $fqhostname => [ $MODE , $prio ];  lower value of $prio means "higher priority".
   ;
 
 
 sub new_with_hosts { # spezielle funktion um parametrisierung immerhin so chance zu geben und ah jo kann destrucktiv oder  curriend  später noch andere Werte ergänzen.
     my $class=shift;
     my $s= $class->SUPER::new;
-    $$s[LcHosts]= +{ map { lc($_)=> undef } @_};
+    $$s[LcHosts]= do {
+	my $h= +{ @_ };
+	my $hh;
+	for my $k (keys %$h) {
+	    $$hh{lc $k}= $$h{$k}
+	}
+	$hh
+    };# SO macht man das weisch!  es isch eben NICHT einfach selbstverständlichbuilt in to prl weisch.
     $s
 }
 
-
-sub interesting_headers ($ ) {
-    my $s=shift;#ah udn head dann spater isch ACUh  eine on the fly  currying. end stadium dort wo dan ausgewertetwird.
-    local our ($head)=@_;
-    map {
-	my $header=$_;
-	my $value= $header->value;
-	if ($value=~ /\bfrom\b(.*)\bby\b(.*)/s) {
-	    my ($rawfrom,$rawto)=($1,$2);
-	    # ps solche parser sollten doch auch  raus gelagert wirklich!!!!!  gehören sie!!!!!!
-	    #  wo?.  klasse.   functions.   parametrizedones maby.  MEINUNG~
-	    #if (my ($from)= $rawfrom=~ /(\S+)/) {
-	    #eh ich volldepp
-	    if (my ($to)= $rawto=~ /(\S+)/) {
-		if (exists ${$$s[LcHosts]}{lc $to}) {
-		    $header
-		} else {
-		    ()
-		}
-	    } else {
-		warn "HM? '$value'";
-		()
-	    }
+sub Header_maybe_received_to ($ ) {
+    my ($header)=@_;
+    my $value= $header->value;
+    if ($value=~ /\bfrom\b(.*)\bby\b(.*)/s) {
+	my ($rawfrom,$rawto)=($1,$2);
+	if (my ($to)= $rawto=~ /(\S+)/) {
+	    $to
 	} else {
-	    #warn "no from by in received header: '$value'";#
+	    warn "HM? '$value'";
 	    ()
 	}
-    } $head->headers ("received")
+    } else {
+	#warn "no from by in received header: '$value'";#
+	()
+    }
 }
+
 
 sub xinteresting_header ($ ) {
     my $s=shift;
     local our ($head)=@_;
-    my @ih= $s->interesting_headers ($head);
-    if (@ih == 1) {
-	$ih[0]
-    } else {
-	die do {
-	    @ih ? "more than one matching header found (".(scalar @ih).")"
-	      : "no matching header found"
-	  }
+    local our $found= {};
+    for our $header ($head->headers ("received")) {
+	if (my $lcto= lc (Header_maybe_received_to ($header))) {
+	    if (my $p= ${$$s[LcHosts]}{$lcto}) {
+		my ($kind,$prio)= @$p;#p wie pair tja well wohl oder nid so. multivalue. tupl. $t?
+		if ($kind eq "SINGLE") {
+		    if (exists $$found{$lcto}) {
+			die "multiple headers found for '$lcto'";
+		    } else {
+			$$found{$lcto}= $header
+		    }
+		} elsif ($kind eq "LAST") {
+		    $$found{$lcto}= $header
+		} else {
+		    die "usage error: invalid kind '$kind'";
+		}
+	    }
+	    # else 'do nothing'
+	} # else non-interesting header
     }
+    # now order/group the values of $found by priorities:
+    local our $grouped= {}; # prio => array of objs. well no. just one. multiple are an error right away.
+    while (local our ($lcto,$header)= each %$found) {
+	local our $prio= $$s[LcHosts]{$lcto}[1];
+	if (local our $obj= $$grouped{$prio}) {
+	    if ($obj eq $header) {
+		# ok
+	    } else {
+		die "multiple results of the same priority '$prio'"
+	    }
+	} else {
+	    $$grouped{$prio}= $header
+	}
+    }
+    local our $selectedprio = (sort { $a cmp $b } keys %$grouped)[0];
+    $$grouped{$selectedprio}
 }
 
 sub stripped_head_string { # including the empty line after the head
