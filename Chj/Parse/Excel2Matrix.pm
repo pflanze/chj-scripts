@@ -27,30 +27,34 @@ use Spreadsheet::ParseExcel::Simple;
 
 use Chj::singlequote 'singlequote', 'singlequote_many';
 
+sub sheet2matrix {
+    my ($sheet)=@_;
+    my @rows;
+    while ($sheet->has_data) {
+	my @cols = $sheet->next_row;
+	#print join ", ",singlequote_many @cols;
+	#print scalar @cols;
+	#print "\n";
+	push @rows,\@cols
+    }
+    \@rows
+}
+
 sub Xlsfile2matrix {
     my ($filepath, $optional_sheetindex)=@_;
     my $xls = Spreadsheet::ParseExcel::Simple->read($filepath)
       or die "could not open (or parse?) excel sheet ".Chj::singlequote($filepath)." (os status: $!)";
     my @sheet= $xls->sheets;
-    if (defined($optional_sheetindex) or @sheet==1) {
-	my $sheet= do {
-	    if (defined ($optional_sheetindex)) {
-		my $s= $sheet[$optional_sheetindex];
-		defined $s or die "no sheet with index $optional_sheetindex";
-		$s
-	    } else {
-		shift @sheet
-	    }
-	};
-	my @rows;
-	while ($sheet->has_data) {
-	    my @cols = $sheet->next_row;
-	    #print join ", ",singlequote_many @cols;
-	    #print scalar @cols;
-	    #print "\n";
-	    push @rows,\@cols
+    if (defined($optional_sheetindex)) {
+	if (my $s= $sheet[$optional_sheetindex]) {
+	    sheet2matrix $s
+	} else {
+	    die "no sheet with index $optional_sheetindex";
 	}
-	\@rows
+    } elsif (wantarray) {
+	map { sheet2matrix $_ } @sheet
+    } elsif (@sheet==1) {
+	sheet2matrix $sheet[0]
     } else {
 	die "expecting 1 sheet, got ".@sheet;
     }
