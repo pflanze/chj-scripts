@@ -1,0 +1,100 @@
+#!/usr/bin/perl -w
+
+# Mit Sep  5 14:50:32 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==1;
+
+our ($file)=@args;
+
+our $oldest_acceptable_mail= 1176240568; # Tue Apr 10 23:29:28 2007,
+                                         # this is the first
+                                         # wrongly-as-spam-or-maybespam
+                                         # tagged mail which contains
+                                         # *my* spamassassin marks and
+                                         # my elvis-smtp 'signature'
+
+#use Chj::ruse; use Chj::repl;
+use Chj::Mail::Striphead;
+use Chj::xopen 'xopen_read';
+use Chj::xperlfunc 'basename';
+use Chj::Mail::Detectoutgoing;
+our $detectoutgoing= new Chj::Mail::Detectoutgoing;
+
+our $bn= basename $file;
+if ($bn=~ /^(\d{9,10})\./) {
+    my $filetime= $1;
+    if ($filetime >= $oldest_acceptable_mail) {
+	#ok
+    } else {
+	die "$myname: file '$bn' too old\n";
+    }
+}
+#^- muss hier/an ort gehen wo filename überhaupt bekannt ist. ok könnte noch deliverydates in headers an schauen.
+
+
+our $in= xopen_read $file;
+our $head= Chj::Mail::SimpleHead->new_from_fh ($in);
+
+#if (not $head->headers("received")) {
+#    die "$myname: file '$bn' is outgoing, or at least not incoming mail\n";
+#^- so einfach dass ich keine klass dafür hah. --- doch dann doch nid. hah.
+if ($detectoutgoing->head_is_outgoing($head)) {
+    die "$myname: file '$bn' is outgoing, not incoming, mail\n";
+}
+
+
+our $sh= Chj::Mail::Striphead->new_with_hosts
+  (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
+   'elvis-jaeger.mine.nu' => ['LAST', 2],
+   'ethlife-dev.ethz.ch' => ['SINGLE', 1],
+  );
+
+#repl;
+
+our $out= bless *STDOUT{IO},"Chj::IO::File";
+$out->xprint($sh->stripped_head_string($head));
+$in->xprintfile_to($out);
+$out->xclose;
+$in->xclose;
+
+#^- schlecht mit stdout weil on error  is draussen bereits file angelegt  besser intern  mit gutem tmpfile hdlr.
+
+#(excns gut weil  arbeiten ohne was weis ich denkn    ?)
+

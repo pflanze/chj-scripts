@@ -394,7 +394,8 @@ sub analyze_file($ ; $ ) {
 	warn "'$filename' is_spam: not scanned\n" if $verbose;
     }
 
-    my $from;my $content;
+    my $from= $head->header("from"); #GRR do not play shit.w/o propr lazynss.
+    my $content;
     my $messageid;
     $messageid=do {
 	#my $_messageid;
@@ -406,6 +407,18 @@ sub analyze_file($ ; $ ) {
     };
 
     my $spamhits= $head->spamhits;
+
+    if (!$foldername) {
+	if (my $subject= $head->header("subject")) {
+	    # mailinglist reminders
+	    if ($subject=~ /^\S+\s+mailing list memberships reminder\s*$/
+		and
+		$from=~ /^mailman-owner\@/
+	       ) {
+		$foldername= "mailinglistmembershipreminders";#$type="list";oder toplevel
+	    }
+	}
+    }
 
     if (!$foldername) {
 	my $list= $head->mailinglist_id;
@@ -438,7 +451,6 @@ sub analyze_file($ ; $ ) {
 	    } elsif ($subject eq 'DEBUG') {
 		$foldername= "DEBUG";$type="system";
 	    } else {
-		$from= $head->header("from");
 		if ($subject=~ /^\[LifeCMS\]/
 		    and ( $from eq 'alias@ethlife.ethz.ch'
 			  or $from eq 'newsletter@ethlife.ethz.ch') ) {
@@ -480,13 +492,6 @@ sub analyze_file($ ; $ ) {
 		# cj 3.12.04 ebay:
 		elsif ($from=~ /\Q<newsletter_ch\@ebay.com>\E/) {
 		    $foldername="ebay-newsletter";# $type="list"; oder "unbekannt" lassen? frage an ct: welche typen gibt es und wie werden sie sonst gehandhabt, resp. ändere es hier einfach selber ab, ich benutze type derzeit eh nicht.
-		}
-		# mailinglist reminders
-		elsif ($subject=~ /^\S+\s+mailing list memberships reminder\s*$/
-			 and
-			 $from=~ /^mailman-owner\@/
-			) {
-		    $foldername= "mailinglistmembershipreminders";#$type="list";oder toplevel
 		}
 	    }
 	}
