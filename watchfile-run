@@ -70,7 +70,7 @@ while (1) {
 		# no change
 		#print "'$files[$i]' has not changed\n" if $DEBUG;
 	    } else {
-		print localtime().": '$files[$i]' has changed\n" if $verbose;
+		print "--- ".localtime().": '$files[$i]' has changed -------------\n" if $verbose;
 		$stats[$i]=$s;
 		my $rv= xsystem $cmd;
 		if ($rv==0) {
