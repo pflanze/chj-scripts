@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Mon Sep 17 20:38:19 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname (file(s))
+
+  Read from file(s) or stdin and output to stdout. typical perl <>
+  alike filter.  Removes file basepath info from files in the patches
+  (including the whole --- and +++ lines).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+
+
+
+while (<>) {
+    if (/^diff /) {
+	defined(my $n1= <>) or die $!;
+	defined(my $n2= <>) or die $!; #zum glück gibt perl warning.tja.
+	$n1=~ /^---/ or die "invalid format, line following 'diff ' line is not '---': $n1";
+	$n2=~ /^\+\+\+/ or die "invalid format, line following 'diff ' line is not '+++': $n2";
+	#s{ (\S+)/}{ }s;
+	# two times for both paths:
+	#s{ (\S+)/}{ }s;
+	# or no, better?: (since both paths would be the same anyway)     #ah btw was wrong anyway. same end 2 times tripped
+	s{ /?[^\s/]+/(\S+)\s+\S+}{ $1}s;
+    }
+    print $_ or die $!;
+}

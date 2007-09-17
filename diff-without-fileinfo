@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Mon Sep 17 20:42:35 CEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [diff-options] patch1 patch2
+
+  Runs diff with the given files (sigh only works for files for  eh of course)
+  and  filters them with diff-strip-fileinfo before running diff on them,
+  passing through all options.
+
+  [Sag mal hab ich nich wirklich schon mal so eins gemacht.  ??.]
+  [Note that the @@ stuff, which contains position info, is not excluded. pretty broken thing.]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV>=2;
+
+#mach es simpl. not consider - in names. no -- option.
+
+my @paths= grep { not /^-/ } @ARGV;
+@paths==2 or usage "require 2 files";
+
+my @options= grep { /^-/ } @ARGV;
+
+use Chj::IO::Command;
+
+#make that shell  subcommandpipe read as path trick  in perl. first time? not sure. (see scratch Mon_Sep_17_202019_MEST_2007 comments)
+local $^F= 1000;
+local our @cmds= map { new_sender Chj::IO::Command "diff-strip-fileinfo", $_ } @paths;
+
+#use Chj::repl;repl;
+
+use Chj::xperlfunc;
+
+#*Chj::IO::File::DESTROY= sub  { };
+
+#xexec "diff", @options, map { $_->fd_dev_path } @cmds;
+
+local our @new= map {
+    Chj::IO::File::Fd_dev_path($_->xdupfd)
+} @cmds;
+
+xexec "diff", @options, @new;
+
+
+use Chj::repl;repl;
