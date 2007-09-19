@@ -43,7 +43,7 @@ BEGIN {
     die $@ if $@;
 }
 
-MIME::Lite->send('sendmail');
+#MIME::Lite->send('sendmail');
 
 use Carp;
 
