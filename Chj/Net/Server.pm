@@ -46,23 +46,19 @@ use strict;
 
 use Class::Array -fields=>
   -publica=>
-  'socket',
-  'handlercb', #coderef; gets the  server object ? from that it can get the socket? no it can't. the *conn* socket. is per connection. So it gets this one.   he. you can/could override run_handler?  ah no that does the fork stuff. so another methode?. .stored in an obj? ornot. if not then  yes, configuration, klar he, compiletime zusammenstecken statt callback geben  ah  das können fp compiler eruieren.
-  'maxchildren',
-
-  'ncurrentchildren', #
+#  'socket',
+  'connectionhandler',# obj with handle_connection method receiving connection socket
   ;
-
 
 sub new {
     my $class=shift;
     my $s= $class->SUPER::new;
-    (@$s[Socket, Handlercb, Maxchildren])=@_;
+    (@$s[Socket, Handlerclass, Maxchildren])=@_;
     $s->init;
     $s
 }
 
-sub init {
+sub init { # initialize internal state.(remaining variables.)
     my $s=shift;
     $$s[Ncurrentchildren]=0;
 }
@@ -70,6 +66,7 @@ sub init {
 sub run {
     my $s=shift;
     while (my $conn= $$s[Socket]->accept) {
+	my $handler= $$s[Handlerclass]->new($s,$conn);#kann eben genaugleichwie in fp  nur durch analyse durch compiler statisiert werden ? !!.(parametrisierung dieser __PACKAGE__ würde es explizit allowen, thus ohne analyse ermoeglichen.)
 	$s->run_handler($conn)
     }
 }
