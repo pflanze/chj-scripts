@@ -48,6 +48,7 @@ use Class::Array -fields=>
   -publica=>
 #  'socket',
   'connectionhandler',# obj with handle_connection method receiving connection socket
+  'handlerclass'
   ;
 
 sub new {
