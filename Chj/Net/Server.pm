@@ -68,31 +68,8 @@ sub run {
     my $s=shift;
     while (my $conn= $$s[Socket]->accept) {
 	my $handler= $$s[Handlerclass]->new($s,$conn);#kann eben genaugleichwie in fp  nur durch analyse durch compiler statisiert werden ? !!.(parametrisierung dieser __PACKAGE__ würde es explizit allowen, thus ohne analyse ermoeglichen.)
-	$s->run_handler($conn)
+	$s->handle_connection($conn)
     }
-}
-
-sub run_handler {
-    my $s=shift;
-    my ($conn)=@_;
-    # the 'default' fork based implementation.
-    if ($$s[Ncurrentchildren] < $$s[Maxchildren]) {
-	if (my $pid= xfork) {
-	    $$s[Ncurrentchildren]++;
-	} else {
-	    my $res= $s->call_handler($conn);  # DIES offeriert den override per methode, statt callback coderef.lusha
-	    exit($res); ## requires a status code so. but ye ok ~~. oldunsix.
-	}
-    } else {
-	# hm how to handle this. exception?.die. error code.  call. send sth over the net ?. what.
-	$s->err_too_many_connections($conn)  #can still throw error e.g. if not exists.
-    }
-}
-
-sub call_handler {
-    my $s=shift;
-    my ($conn)=@_;
-    $$s[Handlercb]->($conn)   # könnte eben auch $s geben. dann wärs wie ein object call. hard wired methode  eh dyn gegebene. hard wired dynamsich gegebene. gellsupier.
 }
 
 
