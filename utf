@@ -8,5 +8,7 @@ export LC_ALL=de_CH.UTF-8
 #unset LC_NUMERIC
 LC_CTYPE=de_CH.UTF-8
 
+# grr ({Mon Sep 24 21:45:24 2007}) hack since I still haven't got xemacs working with utf8 properly~:
+EDITOR=emacs
 
 exec "$@"
