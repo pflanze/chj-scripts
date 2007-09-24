@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname .newsuffix 'command [options]' file(s)
+    print "$myname [.newsuffix] 'command [options]' file(s)
 
   Call command (which may contain options -- it is going to be fed
   to a shell) with quoted infile outfile appended, then if
@@ -18,6 +18,12 @@ sub usage {
   Options:
   -f|--force   don't care about existing target files.
   -R|--remove|--trash   trash or remove the original.
+  -p|--pipe    run command with stdin tied to the original file and
+               stdout to the target file instead of running it with
+               the file paths as arguments
+  -r|--replace  replace the original file (leaving the old one as
+                backup with ~ appended). Do *not* give the .newsuffix
+                argument in this case.
 
   (Christian Jaeger <$email>)
 ";
@@ -29,6 +35,8 @@ my $DEBUG=0;
 my $opt_f;
 my $opt_remove;
 my $opt_trash;
+our $opt_pipe;
+our $opt_replace;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -44,6 +52,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_remove=1;
     } elsif (/^--trash$/) {
 	$opt_trash=1;
+    } elsif (/^--?p(ipe)?$/) {
+	$opt_pipe=1;
+    } elsif (/^--?r(eplace)?$/) {
+	$opt_replace=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -56,11 +68,14 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args>=3;
+usage unless (@args>=3
+	      or
+	      ($opt_replace and @args >= 2));
 
 usage "both trash and remove options given" if $opt_trash and $opt_remove;
+usage "both (trash or remove) and replace options given" if (($opt_trash or $opt_remove) and $opt_replace);
 
-my $suffix=shift @args;
+my $suffix=shift @args unless $opt_replace;
 my $cmd=shift @args;
 $suffix=~ /^\./ or usage "suffix argument must start with a dot";
 #my @cmd= split / +/,$cmd;##nunja. bissel schräge heuristik?. Ja zu schräg: müsste anführungszeichen und quoting überprüfen. Shell-like parsen. Oder halt doch die shell machen lassen??
@@ -68,26 +83,41 @@ $suffix=~ /^\./ or usage "suffix argument must start with a dot";
 use Chj::xperlfunc;
 use Chj::Shelllike::touch_r;
 use Chj::Trash 'trash';
+use Chj::xtmpfile;
+use Chj::xpiped ':all';
+
+my $call_on_paths=sub {
+    my ($path, $newpath)=@_;
+    $opt_pipe and die "BUG, call_on_paths called with opt_pipe"; # well i know there's a case where this will happen now:  if opt_replace is not given but opt_pipe is.
+    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+};
 
 for my $path (@args) {
-    my $newpath=$path;
-    #warn "newpath vorher: '$newpath'";
-    $newpath=~ s|(?:\.[^.]{1,5}){1,2}\z|$suffix| or do {
-	$newpath.=$suffix;#hmm?
-    };
-    #warn "newpath nachher: '$newpath'";
-    if (!$opt_f and -e $newpath) {
-	die "file '$newpath' already exists, give -f option to overwrite";
-    }
-    #xxsystem @cmd,$path,$newpath;
-    #xxsystem "$cmd ".shellquote($path)." ".shellquote($newpath);#tja. security wohin oder so.
-    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);#still tja?
-    # assume it has been successfully done.
-    touch_r $path,$newpath; #or call it copy_mtime ?  copy_times? copy_time?
-    if ($opt_remove) {
-	unlink $path;
-    } elsif ($opt_trash) {
-	trash $path;
+    if ($opt_replace) {
+	my $new= xtmpfile $path;
+	if ($opt_pipe) {
+	    my $in= xopen_read $path;
+	    #hm. hab ich noch nix dafür? ok wrote Chj::xpiped now.
+	    xxpiped $in, $new, $cmd;
+	} else {
+	    &$call_on_paths ($path, $new->path);
+	}
+	$new->xputback($path);
+    } else {
+	my $newpath=$path;
+	$newpath=~ s|(?:\.[^.]{1,5}){1,2}\z|$suffix| or do {
+	    $newpath.=$suffix;#hmm?
+	};
+	if (!$opt_f and -e $newpath) {
+	    die "file '$newpath' already exists, give -f option to overwrite";
+	}
+	&$call_on_paths ($path,$newpath);
+	touch_r $path,$newpath; #or call it copy_mtime ?  copy_times? copy_time?
+	if ($opt_remove) {
+	    unlink $path;
+	} elsif ($opt_trash) {
+	    trash $path;
+	}
     }
 }
 
