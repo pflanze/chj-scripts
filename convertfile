@@ -23,7 +23,7 @@ sub usage {
                the file paths as arguments
   -r|--replace  replace the original file (leaving the old one as
                 backup with ~ appended). Do *not* give the .newsuffix
-                argument in this case. NOTE: does *not* preserve mtime.
+                argument in this case.
 
   (Christian Jaeger <$email>)
 ";
@@ -106,6 +106,7 @@ for my $path (@args) {
 	&$call ($path, undef, $new);
 	$new->xclose; # :) strange place to do it but hey.
 	$new->xputback($path);
+	touch_r $path."~",$path; # rather ugly thing this. but so well. Relies on xputback using ~ as backup path.
     } else {
 	my $newpath=$path;
 	$newpath=~ s|(?:\.[^.]{1,5}){1,2}\z|$suffix| or do {
