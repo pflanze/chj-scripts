@@ -23,7 +23,7 @@ sub usage {
                the file paths as arguments
   -r|--replace  replace the original file (leaving the old one as
                 backup with ~ appended). Do *not* give the .newsuffix
-                argument in this case.
+                argument in this case. NOTE: does *not* preserve mtime.
 
   (Christian Jaeger <$email>)
 ";
@@ -77,31 +77,34 @@ usage "both (trash or remove) and replace options given" if (($opt_trash or $opt
 
 my $suffix=shift @args unless $opt_replace;
 my $cmd=shift @args;
-$suffix=~ /^\./ or usage "suffix argument must start with a dot";
-#my @cmd= split / +/,$cmd;##nunja. bissel schräge heuristik?. Ja zu schräg: müsste anführungszeichen und quoting überprüfen. Shell-like parsen. Oder halt doch die shell machen lassen??
+($suffix=~ /^\./ or usage "suffix argument must start with a dot")
+  if defined $suffix;
 
 use Chj::xperlfunc;
 use Chj::Shelllike::touch_r;
 use Chj::Trash 'trash';
 use Chj::xtmpfile;
 use Chj::xpiped ':all';
+use Chj::xopen qw(xopen_read xopen_write);
 
-my $call_on_paths=sub {
-    my ($path, $newpath)=@_;
-    $opt_pipe and die "BUG, call_on_paths called with opt_pipe"; # well i know there's a case where this will happen now:  if opt_replace is not given but opt_pipe is.
-    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+my $call=sub {
+    my ($path, $maybe_newpath, $maybe_newfh)=@_;
+    if ($opt_pipe) {
+	my $newfh= $maybe_newfh||xopen_write($maybe_newpath);
+	my $in= xopen_read $path;
+	#hm. hab ich noch nix dafür? ok wrote Chj::xpiped now.
+	xxpiped $in, $newfh, [$cmd];
+    } else {
+	my $newpath= $maybe_newpath||$maybe_newfh->path;
+	xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+    }
 };
 
 for my $path (@args) {
     if ($opt_replace) {
 	my $new= xtmpfile $path;
-	if ($opt_pipe) {
-	    my $in= xopen_read $path;
-	    #hm. hab ich noch nix dafür? ok wrote Chj::xpiped now.
-	    xxpiped $in, $new, $cmd;
-	} else {
-	    &$call_on_paths ($path, $new->path);
-	}
+	&$call ($path, undef, $new);
+	$new->xclose; # :) strange place to do it but hey.
 	$new->xputback($path);
     } else {
 	my $newpath=$path;
@@ -111,7 +114,7 @@ for my $path (@args) {
 	if (!$opt_f and -e $newpath) {
 	    die "file '$newpath' already exists, give -f option to overwrite";
 	}
-	&$call_on_paths ($path,$newpath);
+	&$call ($path,$newpath, undef);
 	touch_r $path,$newpath; #or call it copy_mtime ?  copy_times? copy_time?
 	if ($opt_remove) {
 	    unlink $path;
