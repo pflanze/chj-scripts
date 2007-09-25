@@ -24,6 +24,9 @@ sub usage {
   -r|--replace  replace the original file (leaving the old one as
                 backup with ~ appended). Do *not* give the .newsuffix
                 argument in this case.
+  -e|--env-vars  put the *escaped* source and target filenames into the
+                 \$from and \$to environment variables instead of
+                 appending them as arguments to the command
 
   (Christian Jaeger <$email>)
 ";
@@ -37,6 +40,7 @@ my $opt_remove;
 my $opt_trash;
 our $opt_pipe;
 our $opt_replace;
+our $opt_envvars;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -56,6 +60,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_pipe=1;
     } elsif (/^--?r(eplace)?$/) {
 	$opt_replace=1;
+    } elsif (/^--?e(nv-vars)?$/) {
+	$opt_envvars=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -74,6 +80,7 @@ usage unless (@args>=3
 
 usage "both trash and remove options given" if $opt_trash and $opt_remove;
 usage "both (trash or remove) and replace options given" if (($opt_trash or $opt_remove) and $opt_replace);
+usage "both --pipe and --env-vars options given" if $opt_pipe and $opt_envvars;
 
 my $suffix=shift @args unless $opt_replace;
 my $cmd=shift @args;
@@ -96,7 +103,13 @@ my $call=sub {
 	xxpiped $in, $newfh, [$cmd];
     } else {
 	my $newpath= $maybe_newpath||$maybe_newfh->path;
-	xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+	if ($opt_envvars) {
+	    $ENV{from}= $path;
+	    $ENV{to}= $newpath;
+	    xxsystem $cmd;
+	} else {
+	    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+	}
     }
 };
 
