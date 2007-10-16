@@ -53,6 +53,7 @@ usage unless @files;
 
 use lib "/root/extlib";
 use Filepaths;
+use Chj::xperlfunc 'Xlstat';
 
 my $inbetween=".";
 
@@ -67,7 +68,9 @@ sub _cleaneditem {
     my ($item)=@_; # might also be a dir
     $item=~ s|/+$||s; # strip ending slash
     $item= "./$item" unless $item=~ m|/|; ###soviel zu portabilität.
-    -e $item or die "item '$item' does not exist\n";
+    #-e $item or die "item '$item' does not exist\n";
+    #n.o.p.e.
+    Xlstat($item) or die "item '$item' does not exist\n";
     $item
 }
 
