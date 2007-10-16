@@ -9,7 +9,14 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname file(s)
+
+  output yes/no whether the given file exists in the git repository.
+  Exit with 0 if all given files exist, 1 if any one doesn't.
+
+  Options:
+  --quiet   do not output anything, just exit with true if all given paths
+            exist in the re
 
   (Christian Jaeger <$email>)
 ";
@@ -18,6 +25,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+our $opt_quiet;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -27,6 +35,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_quiet=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -84,5 +94,27 @@ sub hash_exists_p {
 
 # will ja eigentlich dannaber eher ein find blob.
 
-use Chj::repl; repl;
+#use Chj::repl; repl;
+
+my $res_notexist;
+for my $file (@args) {
+    if (@args>1) {
+	print "$file\t" unless $opt_quiet;
+    }
+    my $ex= hash_exists_p hash_of_file_at_path $file;
+    print($ex ? "yes" : "no"); print "\n";
+    $res_notexist ||= !$ex;
+}
+
+# if *any* of the items don't exist, return false.
+
+# massives hindernis.
+
+# alle beide.xtreme oder so
+
+# katapult und dum und dem.
+
+exit ($res_notexist ? 1 : 0);
+
+#fürht hatl eben dazu dass bei no files  true gegeben wird  isch das logisch.?
 
