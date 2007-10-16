@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Die Okt 16 17:11:37 MEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+
+sub hash_of_file_at_path {
+    my ($path)=@_;
+    my $s= Chj::IO::Command->new_sender ("git-hash-object",$path);
+    my $hash= $s->xcontent;
+    $s->xxfinish;
+    chomp $hash;
+    $hash
+}
+
+sub hash_exists_p {
+    my ($hash)=@_;
+    my $s= Chj::IO::Command->new_sender ("git-cat-file","-t",$hash);
+    my $type= $s->xcontent;
+    my $rv= $s->xfinish;
+    ## shit von stderr verwerfen ?
+    ## grr. und selektiv.  ewiges exception problem ech
+    ## und nö hat kein --quiet ? nö.gagl
+    ## computerwissenschaflter weisch.s o waskranks und so.
+    $rv == 0  ## well.
+}
+
+# will ja eigentlich dannaber eher ein find blob.
+
+use Chj::repl; repl;
+
