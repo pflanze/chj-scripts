@@ -15,8 +15,8 @@ sub usage {
   Exit with 0 if all given files exist, 1 if any one doesn't.
 
   Options:
-  --quiet   do not output anything, just exit with true if all given paths
-            exist in the re
+  --quiet    do not output anything, just communicate the exit value.
+  --showkey  also output the object key (sha1 sum)
 
   (Christian Jaeger <$email>)
 ";
@@ -26,6 +26,7 @@ exit (@_ ? 1 : 0);
 my @args;
 my $DEBUG=0;
 our $opt_quiet;
+our $opt_showkey;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -37,6 +38,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?q(uiet)?$/) {
 	$opt_quiet=1;
+    } elsif (/^--?(k|showkey)$/) {
+	$opt_showkey=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -101,8 +104,13 @@ for my $file (@args) {
     if (@args>1) {
 	print "$file\t" unless $opt_quiet;
     }
-    my $ex= hash_exists_p hash_of_file_at_path $file;
-    print($ex ? "yes" : "no"); print "\n";
+    my $key= hash_of_file_at_path $file;
+    my $ex= hash_exists_p $key;
+    print($ex ? "yes" : "no");
+    if ($opt_showkey) {
+	print "\t$key"
+    }
+    print "\n";
     $res_notexist ||= !$ex;
 }
 
