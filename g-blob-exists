@@ -64,6 +64,23 @@ use Chj::xperlfunc;
 use Chj::IO::Command;
 use Chj::xpipeline 'xxpipeline';
 
+sub xpipeline { ##quick hack. something better should be part of the library of course.
+    eval {
+	xxpipeline @_
+    };
+    #$@  # reversed truth value. absencse of error is success. same old thing as anywhere aliwere  everyyear
+    my $e=$@;
+    if(ref $e or $e) {
+	if($e=~ /exit status/) {
+	    $e
+	} else {
+	    die $e
+	}
+    } else {
+	$e
+    }
+}
+
 sub hash_of_file_at_path {
     my ($path)=@_;
     my $s= Chj::IO::Command->new_sender ("git-hash-object",$path);
@@ -129,8 +146,8 @@ for my $file (@args) {
 	    #my $less= Chj::IO::Command->new_receiver("less","-p",$key);
 	    #my $producer= Chj::IO::Command->new_receiver_w
 	    #hm hab i nis. da isch das mit pipeline.  (wie jene wohl schonwidr funzt?)
-	    xxpipeline (["git-log", "--raw", "--no-abbrev"],
-			["less","-p",$key]);
+	    xpipeline (["git-log", "--raw", "--no-abbrev"],
+		       ["less","-p",$key]);
 	} else {
 	    my $less= Chj::IO::Command->new_receiver("less");
 	    &$print ($less);
