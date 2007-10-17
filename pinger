@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# 30.9.02 umgestellt dass es beeponserver benutzt.
-
 use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -30,13 +28,8 @@ defined $pid or die $!;
 if ($pid) {
     #father
     close WRITE;
-    #sysopen HUHU,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht öffnen: $!";
-    #my $old=select HUHU; $|=1; select $old;
-    #$|=1;
     $SIG{ALRM}= sub {
         die "ALRM\n";
-        #print TTY "\007";
-        #alarm 0;
     };
     my $lastbeep=0;
     while(1) {
@@ -47,7 +40,6 @@ if ($pid) {
                 print "$_";
                 if ($lastbeep) {
                     $lastbeep=0;
-                    #print HUHU "\007"; # andere tonlage?
                     system "/root/bin/beeponserver";
                     print localtime()."\tWEITER\n";
                 }
@@ -57,10 +49,8 @@ if ($pid) {
         my $time=time;
         if ($time-$lastbeep > 10) {
             $lastbeep=$time;
-            #print HUHU "\007";
             system "/root/bin/beeponserver";
             usleep 150000;
-            #print HUHU "\007";
             system "/root/bin/beeponserver";
             print localtime($time)."\tUNTERBRUCH\n";
         }
