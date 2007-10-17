@@ -35,7 +35,7 @@ our ($trouble_on_cb, $trouble_off_cb,
      $expecttime);
 
 if ($opt_popup) {
-    $expecttime= 2; # since the popup is stealing time in the waitpid right?
+    $expecttime= 2; # (at first I thought it would have to be longer but it was just that I didn't kill, just wait, upon backingup event, and only did survive that block by chance with the signal, but alas, problem.)
     my $childpid;
     my $waitpid= sub {
 	waitpid $childpid,0;
