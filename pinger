@@ -6,12 +6,19 @@ $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
     print "$myname address
-  Continuously pings address and beeps if it can't reached.
+  Continuously pings address and beeps or pops up a dialog if it can't reached.
   For use with bad network cabling so you know when you've lost connectivity.
 ";
 exit;
 }
 
+
+use Getopt::Long ':config'=> 'bundling';
+
+our $verbose;
+usage unless GetOptions (
+			 'verbose|v'=>\$verbose,
+			);
 
 usage unless @ARGV==1;
 my $address= shift;
@@ -20,10 +27,22 @@ usage if $address=~ /^-/;
 use Fcntl;
 use Time::HiRes 'usleep';
 
-pipe READ,WRITE;
+pipe READ,WRITE
+  or die $!;
 
 my $pid=fork;
 defined $pid or die $!;
+
+our ($trouble_on_cb, $trouble_off_cb);
+
+$trouble_on_cb= sub {
+    system "/root/bin/beeponserver";
+    usleep 150000;
+    system "/root/bin/beeponserver";
+};
+$trouble_off_cb= sub {
+    system "/root/bin/beeponserver";
+};
 
 if ($pid) {
     #father
@@ -36,12 +55,14 @@ if ($pid) {
         eval {
             alarm 2;
             while (<READ>) {
+		# success, got ping back
                 alarm 2;
-                print "$_";
+                print "$_" if $verbose;
                 if ($lastbeep) {
+		    # been in trouble, not any more
                     $lastbeep=0;
-                    system "/root/bin/beeponserver";
                     print localtime()."\tWEITER\n";
+                    &$trouble_off_cb;
                 }
             }
         };
@@ -49,10 +70,8 @@ if ($pid) {
         my $time=time;
         if ($time-$lastbeep > 10) {
             $lastbeep=$time;
-            system "/root/bin/beeponserver";
-            usleep 150000;
-            system "/root/bin/beeponserver";
             print localtime($time)."\tUNTERBRUCH\n";
+	    &$trouble_on_cb;
         }
     }
 }
