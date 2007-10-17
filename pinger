@@ -24,10 +24,12 @@ use Chj::xperlfunc;
 our $verbose;
 our $opt_popup;
 our $opt_callback; #our $opt_command; #our $opt_callback;
+our $opt_retryperiod;
 usage unless GetOptions (
 			 'verbose|v'=>\$verbose,
 			 'popup|dialog|p'=>\$opt_popup,
 			 'callback|cmd=s'=> \$opt_callback,
+			 'retryperiod=i'=> \$opt_retryperiod,
 			);
 
 usage unless @ARGV==1;
@@ -36,11 +38,15 @@ usage if $address=~ /^-/;
 usage "don't give both --popup and --callback options" if $opt_callback && $opt_popup;
 
 
-our ($trouble_on_cb, $trouble_off_cb,
-     $expecttime);
+our ($trouble_on_cb,
+     $trouble_off_cb,
+     $expecttime,
+     $maybe_retrytime,
+    );
 
 if ($opt_popup) {
     $expecttime= 2; # (at first I thought it would have to be longer but it was just that I didn't kill, just wait, upon backingup event, and only did survive that block by chance with the signal, but alas, problem.)
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : undef;# well it wouldn't make sense here? except to re-rise the window.
     my $childpid;
     my $waitpid= sub {
 	waitpid $childpid,0;
@@ -65,6 +71,7 @@ if ($opt_popup) {
     };
 } elsif ($opt_callback) {
     $expecttime= 6; # give it more time // do not be too sensitive.
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : 10;
     $trouble_on_cb= sub {
 	xsystem $opt_callback;
     };
@@ -73,6 +80,7 @@ if ($opt_popup) {
     };
 } else {
     $expecttime= 2;
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : 10; # beep every 10 seconds, that was what it did in the old version
     $trouble_on_cb= sub {
 	xxsystem "/root/bin/beeponserver";
 	usleep 150000;
@@ -96,7 +104,7 @@ if ($pid) {
     $SIG{ALRM}= sub {
         die "ALRM\n";
     };
-    my $lastbeep=0;
+    my $lastbeep=undef;
     while(1) {
         eval {
             alarm $expecttime;
@@ -105,7 +113,7 @@ if ($pid) {
                 if ($lastbeep) {
 		    # been in trouble, not any more
 		    alarm 0;
-                    $lastbeep=0;
+                    $lastbeep=undef;
                     print localtime()."\tWEITER\n";
                     &$trouble_off_cb;
                 }
@@ -115,7 +123,9 @@ if ($pid) {
         };
         die unless $@ eq "ALRM\n";
         my $time=time;
-        if ($time-$lastbeep > 10) {
+        if (not(defined($lastbeep))
+	    or
+	    ($maybe_retrytime and $time-$lastbeep > $maybe_retrytime)) {
             $lastbeep=$time;
             print localtime($time)."\tUNTERBRUCH\n";
 	    alarm 0;
