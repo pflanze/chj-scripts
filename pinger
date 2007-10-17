@@ -14,35 +14,68 @@ exit;
 
 
 use Getopt::Long ':config'=> 'bundling';
+use Fcntl;
+use Time::HiRes 'usleep';
+use Chj::xperlfunc;
 
 our $verbose;
+our $opt_popup;
 usage unless GetOptions (
 			 'verbose|v'=>\$verbose,
+			 'dialog|popup|p'=>\$opt_popup,
 			);
 
 usage unless @ARGV==1;
 my $address= shift;
 usage if $address=~ /^-/;
 
-use Fcntl;
-use Time::HiRes 'usleep';
+
+
+our ($trouble_on_cb, $trouble_off_cb,
+     $expecttime);
+
+if ($opt_popup) {
+    $expecttime= 2; # since the popup is stealing time in the waitpid right?
+    my $childpid;
+    my $waitpid= sub {
+	waitpid $childpid,0;
+	$childpid= undef;
+    };	
+    my $maybe_killchild= sub {
+	if ($childpid) {
+	    kill 9, $childpid;
+	    &$waitpid;
+	}
+    };
+    $trouble_on_cb= sub {
+	&$maybe_killchild;
+	if ($childpid= xfork) {
+	    # nothing
+	} else {
+	    xexec "xmessage", localtime()." $myname: network down event"
+	}
+    };
+    $trouble_off_cb= sub {
+	&$maybe_killchild;
+    };
+} else {
+    $expecttime= 2;
+    $trouble_on_cb= sub {
+	xxsystem "/root/bin/beeponserver";
+	usleep 150000;
+	xxsystem "/root/bin/beeponserver";
+    };
+    $trouble_off_cb= sub {
+	xxsystem "/root/bin/beeponserver";
+    };
+}
+
+
 
 pipe READ,WRITE
   or die $!;
 
-my $pid=fork;
-defined $pid or die $!;
-
-our ($trouble_on_cb, $trouble_off_cb);
-
-$trouble_on_cb= sub {
-    system "/root/bin/beeponserver";
-    usleep 150000;
-    system "/root/bin/beeponserver";
-};
-$trouble_off_cb= sub {
-    system "/root/bin/beeponserver";
-};
+my $pid=xfork;
 
 if ($pid) {
     #father
@@ -53,17 +86,18 @@ if ($pid) {
     my $lastbeep=0;
     while(1) {
         eval {
-            alarm 2;
+            alarm $expecttime;
             while (<READ>) {
 		# success, got ping back
-                alarm 2;
-                print "$_" if $verbose;
                 if ($lastbeep) {
 		    # been in trouble, not any more
+		    alarm 0;
                     $lastbeep=0;
                     print localtime()."\tWEITER\n";
                     &$trouble_off_cb;
                 }
+                alarm $expecttime;
+                print "$_" if $verbose;
             }
         };
         die unless $@ eq "ALRM\n";
