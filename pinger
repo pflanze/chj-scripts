@@ -11,7 +11,10 @@ sub usage {
     print "$myname address
   Continuously pings address and beeps or pops up a dialog if it can't reached.
   For use with bad network cabling so you know when you've lost connectivity.
-";
+
+  Options:
+  [ see source code GetOptions (this should offer a way to derive a help list, hm) ]
+"; #'syntactically'(aka macros)? at runtime? multistage compiler? (detection as constants and thus 'easy' target of) partial evaluation? MEINUNG
     exit(@_ ? 1 : 0);
 }
 
@@ -27,6 +30,7 @@ our $opt_callback; #our $opt_command; #our $opt_callback;
 our $opt_retryperiod;
 our $opt_i;
 our $opt_expecttime;
+our $opt_periodically;
 usage unless GetOptions (
 			 'verbose|v'=>\$verbose,
 			 'popup|dialog|p'=>\$opt_popup,
@@ -34,6 +38,7 @@ usage unless GetOptions (
 			 'retryperiod=i'=> \$opt_retryperiod,
 			 'i|pinginterval=i'=> \$opt_i,
 			 'expecttime=i'=> \$opt_expecttime, # bad name probably. but what should it be called?
+			 'periodically=i'=> \$opt_periodically,
 			);
 
 usage unless @ARGV==1;
@@ -110,32 +115,47 @@ if ($pid) {
     $SIG{ALRM}= sub {
         die "ALRM\n";
     };
-    my $lastbeep=undef;
+    my $lastbeep=time;
+    my $in_trouble=0;
+    my $time;
     while(1) {
-        eval {
+	my $trouble_on= sub {
+	    my ($msg)=@_;
+	    $lastbeep=$time;
+	    $in_trouble=1;
+            print localtime($time)."\t$msg\n";
+	    alarm 0;
+	    &$trouble_on_cb;
+	};
+
+	eval {
             alarm $expecttime;
             while (<READ>) {
+		$time=time;
 		# success, got ping back
-                if ($lastbeep) {
+                if ($in_trouble) {
 		    # been in trouble, not any more
 		    alarm 0;
-                    $lastbeep=undef;
-                    print localtime()."\tWEITER\n";
+		    $in_trouble=0;
+                    print localtime()."\tOK\n";
                     &$trouble_off_cb;
-                }
+                } else {
+		    if ($opt_periodically) {
+			if ($time-$lastbeep > $opt_periodically) {
+			    &$trouble_on("PERIODIC_CALL");
+			}
+		    }
+		}
                 alarm $expecttime;
                 print "$_" if $verbose;
             }
         };
         die unless $@ eq "ALRM\n";
-        my $time=time;
-        if (not(defined($lastbeep))
+	$time=time; # mutating this variable in 2 places, is necessary, selon the variant of exception path.
+        if (not($in_trouble)
 	    or
 	    ($maybe_retrytime and $time-$lastbeep > $maybe_retrytime)) {
-            $lastbeep=$time;
-            print localtime($time)."\tUNTERBRUCH\n";
-	    alarm 0;
-	    &$trouble_on_cb;
+	    &$trouble_on("TROUBLE");
         }
     }
 }
