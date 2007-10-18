@@ -13,10 +13,12 @@ Chj::Unix::SuperPATH
 
  use Chj::Unix::SuperPATH;
  use Chj::xperlfunc;
-
  strip_me_from_PATH;
  xexec $myname,@args;
- # or just:  xsuperexec $myname,@args
+
+ # or just:
+ use Chj::Unix::SuperPATH;
+ xsuperexec $myname,@args
 
 =head1 DESCRIPTION
 
@@ -72,17 +74,15 @@ sub strip_dirname_from_PATHvalue ($ $ ) { # function
 	     split /:/, $PATHvalue)
     } else {
 	# no sense stripping a directory that doesn't exist
-	undef
+	$PATHvalue
     }
 }
 
 
 sub strip_dirname_from_PATH ( $ ) { # procedure
     my ($dirname)=@_;
-    if (my $newval= strip_dirname_from_PATHvalue($dirname,$ENV{PATH})) {
-	$ENV{PATH}=$newval
-    }
-    ()
+    $ENV{PATH}= strip_dirname_from_PATHvalue($dirname,$ENV{PATH});
+    ()  # or should I return what the assignment returns? not the old value--so not interesting. well. what's perl like?
 }
 
 sub strip_me_from_PATH { # "me" rather meaning "my class", my directory in shell world.
@@ -101,9 +101,8 @@ sub strip_me_from_PATH { # "me" rather meaning "my class", my directory in shell
 }
 
 sub xsuperexec {
-    strip_me_from_PATH;
-    # nope, localize the change, in case the exec fails!:
-    #local $ENV{PATH}= 
+    # do not use strip_me_from_PATH, localize the change, in case the exec fails!:
+    local $ENV{PATH}= strip_dirname_from_PATHvalue(dirname($0),$ENV{PATH});
     no warnings;
     exec @_ or croak "xsuperexec ".singlequote_many(@_).": $!";
 }
