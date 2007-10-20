@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+# Mit Okt 17 12:10:04 MEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname basedir filespec targetbase
+
+  scan basedir and it's subdirs periodically, files which match
+  filespec (a perl expression acting on \$_) and have changed are
+  copied to the target (an ssh url).
+
+  Options:
+  -c|--continuous   keep watching the hierarchy and sync files again if they
+                    changed. Additionally, remove files on the target if they
+                    disappear locally (NOT YET IMPLEMENTED).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+our $opt_continuous;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?c(ontinuous)?$/) {
+	$opt_continuous=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args == 3;
+
+our ($basedir,$filespec_code,$targetbase)=@args;
+
+use Chj::singlequote;
+
+our $filespec_pred= eval 'sub { '.$filespec_code.' }';
+if (ref $@ or $@) {
+    my $str= "$@"; chomp $str;
+    die "filespec ".singlequote($filespec_code).": $@ ";
+}
+#^-auch ein older.oldie.dy.
+
+# ok muss mal ssh dinger urls zerlegen ?.  wie mach ich das: na mit URI natürlich gell!
+
+use URI;
+
+our $targetbase_uri = URI->new($targetbase);
+
+# our $targetbase_host= $targetbase_uri->host;
+our $targetbase_authority= $targetbase_uri->authority;#hm
+# our $targetbase_port= $targetbase_uri->port; gibts au nid.
+
+#muss ich  grr  selber zerlegen  obwohl es genau wie bei hattp isch doch oder??¨!.
+our ($targetbase_maybeuser,
+     $targetbase_host,
+     $targetbase_maybeport)
+  = $targetbase_authority=~ /^(?:(\w+)\@)?(.*?)(?::(\d+))?\z/ or die "no match: '$targetbase_authority'";
+
+our $targetbase_path= $targetbase_uri->path;
+
+# todo: move the above into a library......
+
+
+sub scandir {
+    my ($path)=@_;
+
+
+use Chj::repl;repl;
