@@ -99,7 +99,7 @@ sub do_calculate {
 	($res{maybeuser},
 	 $res{host},
 	 $res{maybeport})
-	  = $authority=~ /^(?:(\w+)\@)?(.*?)(?::(\d*))?\z/
+	  = $authority=~ /^(?:(\w+)\@)?(.*?)(?::(\d*))?\z/  ##NOTE that maybeport is being defined if authority is containing a colon but no digits afterwards!
 	    or die "authority does not match expected pattern: '$authority'";
 	\%res
     };
