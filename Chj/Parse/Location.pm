@@ -32,10 +32,10 @@ use strict;
 
 use Class::Array -fields=>
   -publica=>
-#   'user',
-#   'host',
-#   'port',
-#   'path',
+  'user',
+  'host',
+  'port',
+  'path',
 #hm how to define them abstractly?  is it missing in perl?
   ;
 

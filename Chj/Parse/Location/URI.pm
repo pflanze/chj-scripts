@@ -25,15 +25,16 @@ use strict;
 use URI;
 use Chj::FP::lazy qw(Delay Force);
 
-use Class::Array -fields=>
+use Chj::Parse::Location -extend=>
   -publica=>
   'uri', # URI object.
   # caches:
   '_didcalculate', # bool
-  'user',
-  'host',
-  'port',
-  'path',
+#   'user',
+#   'host',
+#   'port',
+#   'path',
+#now moved to abstract class. strange right?. caches there. whatever?.
   ;
 
 
@@ -52,6 +53,42 @@ sub scheme {
     my $s=shift;
     $$s[Uri]->scheme
 }
+
+#*is_valid= \&scheme;# good? nope. string 'foo:' would return scheme foo. but would in fact rather be a candidate for SSH locators.
+sub is_valid {
+    my $s=shift;
+    my (@accepted_schemes)=@_;
+    if (my $lcscheme= lc($s->scheme)) {
+	for (@accepted_schemes) {
+	    return $s->is_valid_in_scheme($lcscheme) if ($lcscheme eq lc($_));
+	}
+	()
+    } else {
+	()
+    }
+}
+
+#sub is_safely_valid
+# how to call it?
+#sub is_
+# but maybe I should check for ssh:// and so on anyway, above.
+
+our $lcschemes_with_double_slashes=
+  +{
+    map { $_ => 1 } qw(http https ftp ssh rsync)  ## which others also ?
+   };
+
+sub is_valid_in_scheme { # contains knowledge about which schemes require double slashes
+    my $s=shift;
+    my ($lcscheme)=@_;
+    if ($$lcschemes_with_double_slashes{$lcscheme}) {
+	lc($$s[Uri]."")=~ m{^$lcscheme://}  ##am I not missing any uri feature which could invalidate this assumption?
+    } else {
+	# we don't know, assume that yes?
+	2
+    }
+}
+	
 
 sub do_calculate {
     my $s=shift;
