@@ -19,7 +19,7 @@ Chj::Parse::LocationURIorSSH
 
 package Chj::Parse::LocationURIorSSH;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(maybeLocationURIorSSH);
+@EXPORT=qw(MaybeLocationURIorSSH);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -27,7 +27,7 @@ use strict;
 use Chj::Parse::Location::URI;
 use Chj::Parse::Location::SSH;
 
-sub maybeLocationURIorSSH ( $ ) {
+sub MaybeLocationURIorSSH ( $ ) {
     my ($uri_or_string)=@_;
     do {
 	if (my $u= Chj::Parse::Location::URI->new($uri_or_string)) {
