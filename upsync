@@ -18,7 +18,7 @@ sub usage {
   Options:
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
-                    disappear locally (NOT YET IMPLEMENTED).
+                    disappear locally (NOT YET IMPLEMENTED?).
 
   (Christian Jaeger <$email>)
 ";
@@ -66,27 +66,15 @@ if (ref $@ or $@) {
 
 # ok muss mal ssh dinger urls zerlegen ?.  wie mach ich das: na mit URI natürlich gell!
 
-use URI;
-
-our $targetbase_uri = URI->new($targetbase);
-
-# our $targetbase_host= $targetbase_uri->host;
-our $targetbase_authority= $targetbase_uri->authority;#hm
-# our $targetbase_port= $targetbase_uri->port; gibts au nid.
-
-#muss ich  grr  selber zerlegen  obwohl es genau wie bei hattp isch doch oder??¨!.
-our ($targetbase_maybeuser,
-     $targetbase_host,
-     $targetbase_maybeport)
-  = $targetbase_authority=~ /^(?:(\w+)\@)?(.*?)(?::(\d+))?\z/ or die "no match: '$targetbase_authority'";
-
-our $targetbase_path= $targetbase_uri->path;
+use Chj::ruse;#
 
 # todo: move the above into a library......
 
 
-sub scandir {
-    my ($path)=@_;
+
+
+#sub scandir {
+#    my ($path)=@_;
 
 
 use Chj::repl;repl;
