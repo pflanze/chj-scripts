@@ -141,6 +141,11 @@ sub _MkCalculate {
 *path= _MkCalculate (Path);
 
 
+sub path_is_shellcode {
+    # no, for URI's, assume that the path is "lowlevel" (it must be quoted still before being passed to a shell)
+    0
+}
+
 end Class::Array;
 
 __END__

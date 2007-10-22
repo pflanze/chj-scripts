@@ -39,5 +39,10 @@ sub maybe_new {
     $s
 }
 
+sub path_is_shellcode {
+    # yes, SSH Locations (at least as with scp!!!) are shell code and meant to be interpreted by a shell. (With all the obvious safety implications of course!)
+    # it means, "yes use it unsafely, *trust it*", with which comes great responsibility for the user.
+    1
+}
 
 end Class::Array;
