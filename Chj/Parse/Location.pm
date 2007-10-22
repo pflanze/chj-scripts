@@ -39,5 +39,12 @@ use Class::Array -fields=>
 #hm how to define them abstractly?  is it missing in perl?
   ;
 
+#sub new { # should I call it new_user_host_port_path ? or  some other name, ?
+sub new_user_host_port_path {
+    my $class=shift;
+    my $s= $class->SUPER::new;
+    @$s[User,Host,Port,Path]=@_;
+    $s
+}
 
 end Class::Array;
