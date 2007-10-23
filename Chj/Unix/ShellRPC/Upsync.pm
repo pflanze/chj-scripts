@@ -27,18 +27,12 @@ package Chj::Unix::ShellRPC::Upsync;
 use strict;
 use Chj::Random::Formatted;
 use Chj::xopen ();
+use Chj::Unix::ShellRPC::Functions ':all';
+use Chj::singlequote ':all';
 
 sub Randomname {
-    ".tmp-".Chj::Random::Formatted::random_passwd_string (16);
+    ".tmp-".NewMarker
 }
-# 'imports':
-#require Chj::Unix::ShellRPC::Common;# soooschwach. soviel zu unabhängigem mixin. aber ok eben sollte die funcs aus lagern!tdgrr IMMMER grr.
-use Chj::Unix::ShellRPC::Common;
-*NewMarker= \&Chj::Unix::ShellRPC::Common::NewMarker;
-our $shellquoted= $Chj::Unix::ShellRPC::Common::shellquoted;#yes I'm weird.superconsistnt
-*CheckSuccessAndEmptyness= \&Chj::Unix::ShellRPC::Common::CheckSuccessAndEmptyness;#grr.tediaous langsma.
-
-use Chj::singlequote ':all';
 
 sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
     @_==3 or die "wrong number of arguments";#grrrrrr ich depp. soweit bin ich schon  dass ich darauf nimmeracht.(vergass remotepath immer  und wunder mich)
@@ -72,6 +66,24 @@ sub upload_file_path {
 #((praktisch, wie exceptions überall jeweils abbrechen automaticaly.))
 
 
+sub remote_unlink {
+    @_==2 or die "wrong number of arguments";
+    my ($s,$remotepath)=@_;
+    my $cmd= $shellquoted->("/bin/rm","--",$remotepath);
+    CheckSuccessAndEmptyness
+      ($s->remote_run_commandstring_with_statusreply
+       ($cmd));
+}
+
+sub remote_md5 {
+    @_==2 or die "wrong number of arguments";
+    my ($s,$remotepath)=@_;
+    my $cmd= $shellquoted->("md5sum","--",$remotepath);
+    CheckSuccessJoin
+      ($s->remote_run_commandstring_with_statusreply
+       ($cmd));
+}
+
 1
 
 
@@ -90,4 +102,9 @@ calc> $res/6.6e9
 calc> $res/1000
 817445687.182274 years if in 20 years every computer is 1000 times as powerful.
 well anyway.
+
+  NOTES:
+- uglyness that errors aren't really propagated in exceptions? shoudl I trap stderr?
+(or should I write a complete server process (script in perl).)
+
 
