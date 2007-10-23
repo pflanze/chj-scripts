@@ -47,8 +47,8 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
     my $marker= NewMarker();#grr needs parens because it's not imported at compiletime.
     CheckSuccessAndEmptyness
       ($s->remote_run_commandstring_with_statusreply
-       (q/perl -wne 'if (defined $lastline) { print $lastline or die $! } $lastline=$_; END { chop $lastline; print $lastline or die $! }' > /.singlequote_sh($remotetmp).q/ << /
-	.$marker,
+       (q/perl -wne 'if (defined $lastline) { print $lastline or die $! } $lastline=$_; END { chop $lastline; print $lastline or die $! }' > /.singlequote_sh($remotetmp).q/ << '/
+	.$marker.q/'/, # do not forget the singequotes around the marker! (or the shell will interpolate stuff into the contents)
 	sub {
 	    my ($fh)=@_;
 	    $fh->xflush;#see below
