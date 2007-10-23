@@ -11,6 +11,8 @@ Chj::Unix::ShellRPC::Upsync
 
 =head1 SYNOPSIS
 
+(should rather be called ::UpsyncCommands; used by upsync script)
+
 =head1 DESCRIPTION
 
 This class does not have a super class. It is a mixin. (It doesn't
@@ -75,13 +77,15 @@ sub remote_unlink {
        ($cmd));
 }
 
-sub remote_md5 {
+sub remote_md5sum {
     @_==2 or die "wrong number of arguments";
     my ($s,$remotepath)=@_;
     my $cmd= $shellquoted->("md5sum","--",$remotepath);
-    CheckSuccessJoin
+    my $res= CheckSuccessJoin
       ($s->remote_run_commandstring_with_statusreply
        ($cmd));
+    $res=~ /^([a-z0-9]{32}) +/ or die "invalid reply from md5sum: ".singlequote($res);
+    $1
 }
 
 1
