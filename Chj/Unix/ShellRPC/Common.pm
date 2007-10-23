@@ -58,11 +58,14 @@ sub NewMarker {
 
 sub remote_run_commandstring_with_statusreply { # returns (\@replylines, $status_code) ((should that be wrapped up in an objct eh going silly?))
     my $s=shift;
-    @_==1 or croak "wrong number of arguments";
-    my ($cmdstring)=@_;
+    @_==1 or @_==2 or croak "wrong number of arguments";
+    my ($cmdstring,$maybe_sendcb)=@_;
     my $marker= NewMarker;
     my $wholecmd= $cmdstring.' ; echo -e \\\\n'.$marker.'-$?'."\n";
     $$s[Fh]->xprint($wholecmd);
+    if ($maybe_sendcb) {
+	&$maybe_sendcb($$s[Fh])
+    }
     $$s[Fh]->xflush;
     my @reply;
     #warn "marker: ".Chj::singlequote::singlequote_many($marker);#
