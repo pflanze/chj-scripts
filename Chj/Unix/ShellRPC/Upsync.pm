@@ -38,7 +38,7 @@ use Chj::Unix::ShellRPC::Common;
 our $shellquoted= $Chj::Unix::ShellRPC::Common::shellquoted;#yes I'm weird.superconsistnt
 *CheckSuccessAndEmptyness= \&Chj::Unix::ShellRPC::Common::CheckSuccessAndEmptyness;#grr.tediaous langsma.
 
-use Chj::singlequote; #grrrr immmer irgendwi
+use Chj::singlequote ':all';
 
 sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
     @_==3 or die "wrong number of arguments";#grrrrrr ich depp. soweit bin ich schon  dass ich darauf nimmeracht.(vergass remotepath immer  und wunder mich)
@@ -47,7 +47,7 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
     my $marker= NewMarker();#grr needs parens because it's not imported at compiletime.
     CheckSuccessAndEmptyness
       ($s->remote_run_commandstring_with_statusreply
-       (q/perl -wne 'if (defined $lastline) { print $lastline or die $! } $lastline=$_; END { chop $lastline; print $lastline or die $! }' > /.quotemeta($remotetmp).q/ << /
+       (q/perl -wne 'if (defined $lastline) { print $lastline or die $! } $lastline=$_; END { chop $lastline; print $lastline or die $! }' > /.singlequote_sh($remotetmp).q/ << /
 	.$marker,
 	sub {
 	    my ($fh)=@_;

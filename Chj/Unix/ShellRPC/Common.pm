@@ -24,6 +24,7 @@ use strict;
 use Chj::IO::CommandBidirectional;
 use Chj::Random::Formatted ();
 use Carp;
+use Chj::singlequote ':all';
 
 use Class::Array -fields=>
   -publica=>
@@ -83,12 +84,12 @@ sub remote_run_commandstring_with_statusreply { # returns (\@replylines, $status
 #     my $s=shift;
 #     @_>=1 or croak "missing arguments";
 #     my (@cmd)=@_;
-#     $s->remote_run_commandstring_with_statusreply(join(" ",map{ quotemeta $_ } @cmd))
+#     $s->remote_run_commandstring_with_statusreply(join(" ",map{ singlequote_sh $_ } @cmd))
 # }
 #sinnlos, besser das generisch allgemein offerieren. statt danach  jede methode wählen zu wollen.
 our $shellquoted= sub {
     my (@cmd)=@_;
-    join(" ",map{ quotemeta $_ } @cmd)
+    join(" ",map{ singlequote_sh $_ } @cmd)
 };
 # our $identity= sub {
 #     @_==1 or die;

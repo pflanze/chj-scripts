@@ -28,7 +28,7 @@ use strict;
 use Chj::Parse::Location; # a class
 use Chj::Parse::LocationURIorSSH; # a module exporting a constructor function
 use Carp;
-use Chj::singlequote ();
+use Chj::singlequote ':all';#since I want singlequote_sh, too, starting to feel too dumb to fully qualify those always.
 
 use Chj::Unix::ShellRPC::Common -extend=>
   -publica=>
@@ -68,7 +68,7 @@ sub connection_command { # virtual
      &$maybevalue("user","-l"),
      &$maybevalue("port","-p"),
      $$s[Location]->host,
-     join(" ",map { quotemeta $_ } @cmd_to_be_run) ##[ is this always safe?.]
+     join(" ",map { singlequote_sh $_ } @cmd_to_be_run) ##[ is this always safe?.]
     )
 }
 
