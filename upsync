@@ -11,7 +11,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname basedir filespec targetbase
+    print "$myname basedir 'filespec as perl expr' targetbase
 
   scan basedir and it's subdirs periodically, files which match
   filespec (a perl expression acting on \$_) and have changed are
@@ -22,6 +22,7 @@ sub usage {
                     changed. Additionally, remove files on the target if they
                     disappear locally (NOT YET IMPLEMENTED?).
   --dry|--dry-run   only show which files would be synched.
+  --ignore 'perl expr'  ignore dir and file paths matching spec
 
   (Christian Jaeger <$email>)
 ";
@@ -34,6 +35,7 @@ our $opt_dryrun;
 our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
 our $verbose;
+our $opt_ignore;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -49,12 +51,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_continuous=1;
     } elsif (/^--?dry(-?run)?$/) {
 	$opt_dryrun=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
+    } elsif (/^--?i(?:gnore(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_ignore=$1
+        } else {
+            $opt_ignore=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -70,12 +72,19 @@ our ($basedir,$filespec_code,$targetbase)=@args;
 
 use Chj::singlequote;
 
-our $filespec_pred= eval 'sub { my($v)=@_; local $_=$v; '.$filespec_code.' }';
-if (ref $@ or $@) {
-    my $str= "$@"; chomp $str;
-    die "filespec ".singlequote($filespec_code).": $@ ";
+sub sub_from_spec ( $ ) {
+    my ($string)=@_;
+    my $s= eval 'sub { my($v)=@_; local $_=$v; '.$string.' }';
+    if (ref $@ or $@) {
+	my $str= "$@"; chomp $str;
+	die "filespec ".singlequote($filespec_code).": $str ";
+    }
+    $s
 }
 #^-auch ein older.oldie.dy.
+
+our $filespec_pred= sub_from_spec ($filespec_code);
+our $maybe_ignore= sub_from_spec ($opt_ignore) if defined($opt_ignore);
 
 
 use Chj::ruse;#
@@ -164,6 +173,7 @@ sub scan_base ( $ $ ) {
 	my $d=xopendir($path);
 	while (defined (my $item= $d->xnread)) {
 	    my $itempath_from_base= $path_from_base."/".$item;
+	    next if ($maybe_ignore and &$maybe_ignore ($itempath_from_base));
 	    my $itempath= $basedir."/".$itempath_from_base;
 	    #my $st= xstat $itempath; # eben, ev xlstat ? ah und X
 	    if (my $st= $Stat->($itempath)) {
@@ -251,7 +261,6 @@ if ($opt_continuous) {
 	my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
 	$lastsynched= scan_base($lastsynched, $checkprintthunk);
 	sleep $sleeptime;
-	#use Chj::repl;repl;
     }
 } else {
     scan_base({}, Delay { undef });
