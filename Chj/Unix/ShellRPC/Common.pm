@@ -66,14 +66,14 @@ sub remote_run_commandstring_with_statusreply { # returns (\@replylines, $status
     $$s[Fh]->xflush;
     my @reply;
     #warn "marker: ".Chj::singlequote::singlequote_many($marker);#
-    while(1) {
-	my $line= $$s[Fh]->xreadline;
+    while(defined(my $line= $$s[Fh]->xreadline)) {
 	#warn "got line: ".Chj::singlequote::singlequote_many($line);#
 	if ($line=~ /^$marker-(\d+)/) {
 	    return (\@reply, $1)
 	}
 	push @reply,$line;
     }
+    croak "remote shell terminated unexpectedly";
 }
 
 # sub remote_run_command_with_statusreply {
