@@ -5,6 +5,8 @@
 
 use strict;
 
+our $sleeptime=2;#
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -19,6 +21,7 @@ sub usage {
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
                     disappear locally (NOT YET IMPLEMENTED?).
+  --dry|--dry-run   only show which files would be synched.
 
   (Christian Jaeger <$email>)
 ";
@@ -27,7 +30,10 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+our $opt_dryrun;
 our $opt_continuous;
+our $opt_followlinks=1; # fixed for now, ok?
+our $verbose;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -36,9 +42,13 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, @ARGV[$i+1..$#ARGV];
     	last;
     } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
+	$DEBUG=1; $verbose=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
     } elsif (/^--?c(ontinuous)?$/) {
 	$opt_continuous=1;
+    } elsif (/^--?dry(-?run)?$/) {
+	$opt_dryrun=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -53,28 +63,167 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args == 3;
 
+#usage "don't give both --dry and --continuous" if ($opt_dryrun and $opt_continuous); well why not? !.
+
+
 our ($basedir,$filespec_code,$targetbase)=@args;
 
 use Chj::singlequote;
 
-our $filespec_pred= eval 'sub { '.$filespec_code.' }';
+our $filespec_pred= eval 'sub { my($v)=@_; local $_=$v; '.$filespec_code.' }';
 if (ref $@ or $@) {
     my $str= "$@"; chomp $str;
     die "filespec ".singlequote($filespec_code).": $@ ";
 }
 #^-auch ein older.oldie.dy.
 
-# ok muss mal ssh dinger urls zerlegen ?.  wie mach ich das: na mit URI natürlich gell!
 
 use Chj::ruse;#
+use Chj::Backtrace;#
+use Chj::Unix::ShellRPC::UpsyncWithSSH;
+use Chj::xopendir;
+use Chj::xperlfunc;
+use Chj::FP::Memoize 'memoize_1ary';
+use Chj::singlequote;
+use Digest::MD5;
+use Chj::xopen 'xopen_read';
 
-# todo: move the above into a library......
+sub File_md5 ( $ ) {
+    my ($path)=@_;
+    my $f= xopen_read ($path);
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($f)
+      or die $!; ##does this error checking work?
+    #$ctx->hexdigest; #could also use binary, as long as I don't check remote side and don't print it's value:
+    $ctx->digest
+}
+
+our $rem= Chj::Unix::ShellRPC::UpsyncWithSSH->new_parse_location($targetbase);
+$rem->do_connect_and_chdir; #should it do this automatically ?
+
+*memo_warn_nonfile_path= memoize_1ary sub {
+    my ($itempath)=@_;
+    warn "ignoring non-file item ".singlequote ($itempath);
+};
+
+our (
+     $synchfilecontents,
+     $synchfiledelete
+    );
+if ($opt_dryrun) {
+    $synchfilecontents= sub {
+	my ($path_from_base)=@_;
+	print "would sync file ".singlequote ($path_from_base)."\n";
+    };
+    $synchfiledelete= sub {
+	my ($path_from_base)=@_;
+	print "would delete remote file ".singlequote ($path_from_base)."\n";
+    };
+} else {
+    $synchfilecontents= sub {
+	my ($path_from_base)=@_;
+	if ($verbose) {
+	    print "synching file ".singlequote($path_from_base)."\n";
+	}
+	$rem->upload_file_path($basedir."/".$path_from_base, $path_from_base);
+    };
+    $synchfiledelete= sub {
+	my ($path_from_base)=@_;
+	if ($verbose) {
+	    print "deleting remote file ".singlequote($path_from_base)."\n";
+	}
+	$rem->remote_unlink($path_from_base);
+    };
+}
+	
+
+# old hat, too to do move to a lib: ehr hab ich doch schon ?! kewl bin ich.
 
 
+#my $lastsynched={}; # path -> [ statobj, md5sum ]
+
+our $Stat= ($opt_followlinks ? \&Xstat : \&Xlstat);
+
+sub scan_base ( $ ) {
+    my ($lastsynched)=@_;
+    my $synched={};
+
+    my $scandir; $scandir= sub {
+	my ($path_from_base)=@_;
+	my $path= $basedir."/".$path_from_base; ##eine uri function nehmen dafür ? nö? oder wie? .. disalloven  well how would come.
+	my $d=xopendir($path);
+	while (defined (my $item= $d->xnread)) {
+	    my $itempath_from_base= $path_from_base."/".$item;
+	    my $itempath= $basedir."/".$itempath_from_base;
+	    #my $st= xstat $itempath; # eben, ev xlstat ? ah und X
+	    if (my $st= $Stat->($itempath)) {
+
+		my $check_synchit= sub {
+		    my ($maybe_oldmd5)=@_;
+		    my $newmd5= File_md5 ($itempath);
+		    if ($maybe_oldmd5 and ($newmd5 eq $maybe_oldmd5)) {
+			# do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
+		    } else {
+			&$synchfilecontents ($itempath_from_base);
+			$$synched{$itempath_from_base}=[$st,$newmd5];
+		    }
+		};
+
+		if ($st->is_dir) {
+		    &$scandir ($itempath_from_base);
+		} elsif ($st->is_file) {
+		    if (&$filespec_pred ($itempath)) {
+			# already done or not ?.
+			if (my $old= $$lastsynched{$itempath_from_base}) {
+			    my ($oldst,$oldmd5)=@$old;
+			    if ($oldst->equal_content($st)) { # equal_content is enough; equal() would also check permissions."ah". And those I don't sync right now.
+				# if mtime is very near, then check the md5 again (against races)
+				if ((my $timediff= time - $st->mtime) < 2) {
+				    &$check_synchit ($oldmd5);
+				} else {
+				    # do nothing
+				}
+			    } else {
+				&$check_synchit ($oldmd5)
+			    }
+			} else {
+			    &$check_synchit (undef)
+			}
+		    }
+		} else {
+		    memo_warn_nonfile_path ($itempath);
+		}
+	    } else {
+		warn "could not stat ".singlequote($itempath).": $!";
+	    }
+	}
+    };
+
+    &$scandir("");
+    undef $scandir;
+
+    # which files have been deleted?
+    for my $key (keys %$lastsynched) {
+	if ($$synched{$key}) {
+	    # ok
+	} else {
+	    &$synchfiledelete ($key)
+	}
+    }
+
+    $synched
+}
 
 
-#sub scandir {
-#    my ($path)=@_;
-
+if ($opt_continuous) {
+    my $lastsynched={};
+    while (1) {
+	print "check at ".localtime()."\n" if ($verbose or $opt_dryrun);
+	$lastsynched= scan_base($lastsynched);
+	sleep $sleeptime;
+    }
+} else {
+    scan_base({});
+}
 
 use Chj::repl;repl;
