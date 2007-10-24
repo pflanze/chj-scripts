@@ -109,7 +109,8 @@ $rem->do_connect_and_chdir; #should it do this automatically ?
 
 our (
      $synchfilecontents,
-     $synchfiledelete
+     $synchfiledelete,
+     $synchfilemd5,
     );
 if ($opt_dryrun) {
     $synchfilecontents= sub {
@@ -136,6 +137,14 @@ if ($opt_dryrun) {
 	$rem->remote_unlink($path_from_base);
     };
 }
+$synchfilemd5= sub {
+    my ($path_from_base)=@_;
+    if ($verbose) {
+	print "getting md5 of remote file ".singlequote($path_from_base)."\n";#well only in debug mode ?ç
+    }
+    $rem->remote_md5sum($path_from_base);
+};
+
 	
 
 # old hat, too to do move to a lib: ehr hab ich doch schon ?! kewl bin ich.
@@ -162,11 +171,25 @@ sub scan_base ( $ $ ) {
 		my $check_synchit= sub {
 		    my ($maybe_oldmd5)=@_;
 		    my $newmd5= File_md5 ($itempath);
-		    if ($maybe_oldmd5 and ($newmd5 eq $maybe_oldmd5)) {
-			# do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
+		    if ($maybe_oldmd5) {
+			if ($newmd5 eq $maybe_oldmd5) {
+			    # do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
+			} else {
+			    Force ($checkprintthunk);
+			    &$synchfilecontents ($itempath_from_base);
+			}
 		    } else {
 			Force ($checkprintthunk);
-			&$synchfilecontents ($itempath_from_base);
+			# only actually synch it if it's not already the same remotely:
+			my $maybe_remotemd5= eval {
+			    &$synchfilemd5 ($itempath_from_base);
+			};
+			###check kind of error?
+			if ($maybe_remotemd5 and ($maybe_remotemd5 eq $newmd5)) {
+			    print "content of file ".singlequote ($itempath_from_base)." is already the same\n" if $verbose;
+			} else {
+			    &$synchfilecontents ($itempath_from_base);
+			}
 		    }
 		    $$synched{$itempath_from_base}=[$st,$newmd5];
 		};
@@ -225,7 +248,7 @@ sub scan_base ( $ $ ) {
 if ($opt_continuous) {
     local our $lastsynched={};
     while (1) {
-	my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };
+	my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
 	$lastsynched= scan_base($lastsynched, $checkprintthunk);
 	sleep $sleeptime;
 	#use Chj::repl;repl;
