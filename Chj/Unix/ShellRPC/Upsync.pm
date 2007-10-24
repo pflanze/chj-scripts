@@ -43,7 +43,7 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
     my $marker= NewMarker();#grr needs parens because it's not imported at compiletime.
     CheckSuccessAndEmptyness
       ($s->remote_run_commandstring_with_statusreply
-       (q/perl -we 'my ($end,$targetpath)= @ARGV; $end.="\n"; eval { open STDOUT, ">", $targetpath or die "opening ``$targetpath``: $!"; my $prevline=""; while(<STDIN>) { if ($_ eq $end) { $seenend++; chop $prevline; print $prevline or die $!; close STDOUT or die $!; exit } print $prevline or die $!; $prevline= $_ } exit 2}; print STDERR $@; unless($seenend) { while(<STDIN>) { if ($_ eq $end) { last }}} exit 3' /
+       (q/perl -w -MChj::xperlfunc=xmkdir_p,dirname -e 'my ($end,$targetpath)= @ARGV; $end.="\n"; eval { xmkdir_p(dirname($targetpath)); open STDOUT, ">", $targetpath or die "opening ``$targetpath``: $!"; my $prevline=""; while(<STDIN>) { if ($_ eq $end) { $seenend++; chop $prevline; print $prevline or die $!; close STDOUT or die $!; exit } print $prevline or die $!; $prevline= $_ } exit 2}; print STDERR $@; unless($seenend) { while(<STDIN>) { if ($_ eq $end) { last }}} exit 3' /
 	.singlequote_sh($marker)
 	.q/ /
 	.singlequote_sh($remotetmp),
