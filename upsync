@@ -5,7 +5,7 @@
 
 use strict;
 
-our $sleeptime=2;#
+our $sleeptime=1;#
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -87,6 +87,7 @@ use Chj::FP::Memoize 'memoize_1ary';
 use Chj::singlequote;
 use Digest::MD5;
 use Chj::xopen 'xopen_read';
+use Chj::FP::lazy;
 
 sub File_md5 ( $ ) {
     my ($path)=@_;
@@ -94,8 +95,8 @@ sub File_md5 ( $ ) {
     my $ctx = Digest::MD5->new;
     $ctx->addfile($f)
       or die $!; ##does this error checking work?
-    #$ctx->hexdigest; #could also use binary, as long as I don't check remote side and don't print it's value:
-    $ctx->digest
+    $ctx->hexdigest; #could also use binary, as long as I don't check remote side and don't print it's value:
+    #$ctx->digest
 }
 
 our $rem= Chj::Unix::ShellRPC::UpsyncWithSSH->new_parse_location($targetbase);
@@ -144,8 +145,8 @@ if ($opt_dryrun) {
 
 our $Stat= ($opt_followlinks ? \&Xstat : \&Xlstat);
 
-sub scan_base ( $ ) {
-    my ($lastsynched)=@_;
+sub scan_base ( $ $ ) {
+    my ($lastsynched, $checkprintthunk)=@_;
     my $synched={};
 
     my $scandir; $scandir= sub {
@@ -164,9 +165,13 @@ sub scan_base ( $ ) {
 		    if ($maybe_oldmd5 and ($newmd5 eq $maybe_oldmd5)) {
 			# do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
 		    } else {
+			Force ($checkprintthunk);
 			&$synchfilecontents ($itempath_from_base);
-			$$synched{$itempath_from_base}=[$st,$newmd5];
 		    }
+		    $$synched{$itempath_from_base}=[$st,$newmd5];
+		};
+		my $not_synch= sub {#still have to copy over the "currently live files" data.
+		    $$synched{$itempath_from_base}= $$lastsynched{$itempath_from_base};
 		};
 
 		if ($st->is_dir) {
@@ -181,7 +186,8 @@ sub scan_base ( $ ) {
 				if ((my $timediff= time - $st->mtime) < 2) {
 				    &$check_synchit ($oldmd5);
 				} else {
-				    # do nothing
+				    # do nothing--well, do this:
+				    &$not_synch;
 				}
 			    } else {
 				&$check_synchit ($oldmd5)
@@ -199,7 +205,7 @@ sub scan_base ( $ ) {
 	}
     };
 
-    &$scandir("");
+    &$scandir("."); #schreg, "" geht nid weil "/pfade" für remote futch, aber ?.  schlecht weil  . wirklich cwd meint normalerweise   wirrlich oder rechtfertigt ?
     undef $scandir;
 
     # which files have been deleted?
@@ -207,6 +213,7 @@ sub scan_base ( $ ) {
 	if ($$synched{$key}) {
 	    # ok
 	} else {
+	    Force ($checkprintthunk);
 	    &$synchfiledelete ($key)
 	}
     }
@@ -216,14 +223,14 @@ sub scan_base ( $ ) {
 
 
 if ($opt_continuous) {
-    my $lastsynched={};
+    local our $lastsynched={};
     while (1) {
-	print "check at ".localtime()."\n" if ($verbose or $opt_dryrun);
-	$lastsynched= scan_base($lastsynched);
+	my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };
+	$lastsynched= scan_base($lastsynched, $checkprintthunk);
 	sleep $sleeptime;
+	#use Chj::repl;repl;
     }
 } else {
-    scan_base({});
+    scan_base({}, Delay { undef });
 }
 
-use Chj::repl;repl;
