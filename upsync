@@ -113,7 +113,11 @@ $rem->do_connect_and_chdir; #should it do this automatically ?
 
 *memo_warn_nonfile_path= memoize_1ary sub {
     my ($itempath)=@_;
-    warn "ignoring non-file item ".singlequote ($itempath);
+    warn "$myname: ignoring non-file item ".singlequote ($itempath)."\n";
+};
+*memo_warn_couldnotstat= memoize_1ary sub {
+    my ($itempath)=@_;
+    warn "$myname: could not stat ".singlequote($itempath).": $!\n";
 };
 
 our (
@@ -233,7 +237,7 @@ sub scan_base ( $ $ ) {
 		    memo_warn_nonfile_path ($itempath);
 		}
 	    } else {
-		warn "could not stat ".singlequote($itempath).": $!";
+		memo_warn_couldnotstat ($itempath);
 	    }
 	}
     };
