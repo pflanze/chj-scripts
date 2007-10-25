@@ -236,6 +236,9 @@ sub scan_base ( $ $ ) {
 		} else {
 		    memo_warn_nonfile_path ($itempath);
 		}
+		#undef $check_synchit;
+		#undef $not_synch;
+		# don't help. 'interestingly'. perl 5.6.1 is just broken, but i still don't see why those don't help. It must be extremely broken.
 	    } else {
 		memo_warn_couldnotstat ($itempath);
 	    }
@@ -243,7 +246,7 @@ sub scan_base ( $ $ ) {
     };
 
     &$scandir("."); #schreg, "" geht nid weil "/pfade" für remote futch, aber ?.  schlecht weil  . wirklich cwd meint normalerweise   wirrlich oder rechtfertigt ?
-    undef $scandir;
+    undef $scandir; #ok der *ist* notwendig (wenn recursive referenz actually contained in the closure) und *hilft* aber auch.
 
     # which files have been deleted?
     for my $key (keys %$lastsynched) {
