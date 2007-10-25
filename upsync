@@ -265,9 +265,26 @@ sub scan_base ( $ $ ) {
 if ($opt_continuous) {
     local our $lastsynched={};
     while (1) {
-	my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
-	$lastsynched= scan_base($lastsynched, $checkprintthunk);
-	sleep $sleeptime;
+	use Chj::xpipe; use Storable qw(fd_retrieve store_fd);
+	my ($read,$write)=xpipe;
+	if (my $pid= xfork) {
+	    $write->xclose;
+	    print "parent waiting for child to send data and exit..\n" if $DEBUG;
+	    $lastsynched= fd_retrieve($read)
+	      or die "fd_retrieve: ?: $!";
+	    print "parent got child data..\n" if $DEBUG;
+	    xxwait;
+	    print "parent got child status ok.\n" if $DEBUG;
+	} else {
+	    $read->xclose;
+	    for (1..600) { # after so many iterations it will have leaked about 3MB.
+		my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
+		$lastsynched= scan_base($lastsynched, $checkprintthunk);
+		sleep $sleeptime;
+	    }
+	    store_fd($lastsynched,$write) or die "store_fd: ?: $!";
+	    exit 0;
+	}
     }
 } else {
     scan_base({}, Delay { undef });
