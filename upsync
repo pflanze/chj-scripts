@@ -8,6 +8,16 @@ use strict;
 our $sleeptime=1;#
 $|++;
 
+use Chj::xperlfunc;
+sub _mkplaymp3 {
+    my ($path)=@_;
+    sub {
+	xsystem "mpg123","-q", $path
+    }
+}
+*sound_upload= _mkplaymp3 "/usr/share/gtkgo/mp3/click.mp3";
+*sound_delete= _mkplaymp3 "/usr/share/gtkgo/mp3/blackm.mp3";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -24,6 +34,7 @@ sub usage {
                     disappear locally (NOT YET IMPLEMENTED?).
   --dry|--dry-run   only show which files would be synched.
   --ignore 'perl expr'  ignore dir and file paths matching spec
+  --sound           play sounds upon uploads/deletes
 
   (Christian Jaeger <$email>)
 ";
@@ -37,6 +48,7 @@ our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
 our $verbose;
 our $opt_ignore;
+our $opt_sound;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -52,6 +64,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_continuous=1;
     } elsif (/^--?dry(-?run)?$/) {
 	$opt_dryrun=1;
+    } elsif (/^--?sound$/) {
+	$opt_sound=1;
     } elsif (/^--?i(?:gnore(?:=(.*))?)?$/) {
         if (defined $1) {
             $opt_ignore=$1
@@ -159,12 +173,19 @@ $synchfilemd5= sub {
     $rem->remote_md5sum($path_from_base);
 };
 
-	
+# add sound
+if ($opt_sound) {
+    my $mk= sub {
+	my ($orig, $play)=@_;
+	sub {
+	    $orig->(@_);
+	    &$play;
+	}
+    };
+    $synchfilecontents= &$mk($synchfilecontents, \&sound_upload);
+    $synchfiledelete= &$mk($synchfiledelete, \&sound_delete);
+}
 
-# old hat, too to do move to a lib: ehr hab ich doch schon ?! kewl bin ich.
-
-
-#my $lastsynched={}; # path -> [ statobj, md5sum ]
 
 our $Stat= ($opt_followlinks ? \&Xstat : \&Xlstat);
 
