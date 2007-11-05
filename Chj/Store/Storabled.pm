@@ -28,7 +28,7 @@ package Chj::Store::Storabled;
 
 use strict;
 
-use Storable qw(nstore retrieve);
+use Storable qw(nstore_fd retrieve);
 #use Chj::FP::lazy; no, just use thunks. we are the   cacher s  or not eve n.   caching  in other pieceis  is  others duty.
 use Chj::xtmpfile;
 use Carp;
@@ -45,7 +45,7 @@ sub Stored_at ( $ $ ; $ ) {
 	$data
     };
     if (-e $path) {
-	my $data= restore $path;
+	my $data= retrieve $path;
 	defined ($data) ? $data : do {
 	    carp "Storabled_at: error reading from file '$path' (maybe: $!), trying to recreate file";
 	    &$create;
