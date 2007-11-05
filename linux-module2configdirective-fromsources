@@ -1,0 +1,129 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  5 22:17:10 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+our $cachefilepath= ".$myname.cache";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname modulename(s)
+
+  First scans all *.c files for module declarations (hopefully my
+  regex is correct?) and caches the result in '$cachefilepath'.
+
+  Then shows the corresponding c files for the given modulename(s).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+# cache it locally in the tree ?
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+use Chj::FP::lazy;
+use Chj::xopen 'xopen_read';
+use Chj::Store::Storabled; # but exported sub is called Stored_at
+
+
+our $arch= Delay {
+    my $c= Chj::IO::Command->new_sender("uname", "-m");
+    my $str= $c->xreadline;
+    chomp $str;
+    $str=~ /^[\w-]+\z/ or die "hm looks strange for an arch: '$str'";
+    $str #hm detaint it?
+};
+
+
+sub extractsources_files {
+    my ($linuxsourcespath)=@_;
+    my @files;
+    my $add_subpath= sub {
+	my ($subpath)=@_;
+	my $find= Chj::IO::Command->new_sender ("find",$linuxsourcespath.$subpath,"-name","*.c");
+	while (<$find>) {
+	    chomp; push @files, $_
+	}
+	$find->xxfinish;
+    };
+#     &$add_subpath ("/drivers");
+#     &$add_subpath ("/arch/".Force($arch));
+#     &$add_subpath ("/sound");
+#     &$add_subpath ("/usr");
+#     # krank. hätte n map  von paths machen sollen. liste dann durch.
+#     map {
+# 	&$add_subpath ($_)
+#     } (
+#        "/crypto",
+#        "/block",
+#       )
+    # i mean. don't we just want all of it??.
+    &$add_subpath (".");
+    # und nun. eh lazy sein sollen. ~egal.
+    \@files
+}
+
+sub extractsources {
+    my ($linuxsourcespath)=@_;
+    my $path_of_name={};
+    for my $file (@{ extractsources_files ($linuxsourcespath) }) {
+	my $f= xopen_read($file);
+      LINES: {
+	    while (<$f>) {
+		if (/MODULE_NAME\s*\(\s*\"([^\"]*)\"/) {
+		    my ($name)=($1);
+		    push @{$$path_of_name{$name}}, $file;
+		    last LINES;
+		}
+	    }
+	}
+    }
+    $path_of_name
+}
+
+our $path_of_name= Delay { Stored_at ($cachefilepath, sub { extractsources(".") }) };
+
+#use Chj::repl;repl;
+
+sub find_modulename_files {
+    my ($modulename)=@_;
+    Force ($path_of_name)->{$modulename} || []
+}
+
+for my $modulename (@args) {
+    my $files= find_modulename_files ($modulename);
+    print "$modulename:\t";
+    #if (@$files) {
+    print join("\t",@$files),"\n";
+}
