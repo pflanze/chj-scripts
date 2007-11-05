@@ -48,8 +48,8 @@ use Chj::IO::Command;
 
 sub find_modulename {
     my ($modulename)=@_;
-    my $pattern= "module.*$modulename";
-    my $p= Chj::IO::Command->new_sender("linux-grephelp","-l",$pattern);
+    my $pattern= "module.*\\b$modulename\\b";
+    my $p= Chj::IO::Command->new_sender("linux-grephelp","-l","-E",$pattern);
     (
      [
       map { chomp; $_ } $p->xreadline
@@ -67,7 +67,7 @@ for my $modulename (@args) {
     if (@$configfiles) {
 	xsystem "less", "-p", $pattern, "--", @$configfiles
     } else {
-	print "nothing found for '$modulename'. press enter..\n";
+	print "nothing found for '$modulename' ($pattern). press enter..\n";
 	<STDIN>
     }
 }
