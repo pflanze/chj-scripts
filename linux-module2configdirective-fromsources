@@ -48,8 +48,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
-# cache it locally in the tree ?
-
 use Chj::xperlfunc;
 use Chj::IO::Command;
 use Chj::FP::lazy;
@@ -57,13 +55,13 @@ use Chj::xopen 'xopen_read';
 use Chj::Store::Storabled; # but exported sub is called Stored_at
 
 
-our $arch= Delay {
-    my $c= Chj::IO::Command->new_sender("uname", "-m");
-    my $str= $c->xreadline;
-    chomp $str;
-    $str=~ /^[\w-]+\z/ or die "hm looks strange for an arch: '$str'";
-    $str #hm detaint it?
-};
+# our $arch= Delay {
+#     my $c= Chj::IO::Command->new_sender("uname", "-m");
+#     my $str= $c->xreadline;
+#     chomp $str;
+#     $str=~ /^[\w-]+\z/ or die "hm looks strange for an arch: '$str'";
+#     $str #hm detaint it?
+# };
 
 
 sub extractsources_files {
