@@ -15,12 +15,14 @@ Chj::Store::Storabled
 
 Make Storable easier to use. Transparent. Wrapperend. finally.
 
+but do not create unnecessary thunks. please create the thunks yourself, dear user. (you can then choose between Delay and simple thunks.)
+
 =cut
 
 
 package Chj::Store::Storabled;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(Storabled_at);
+@EXPORT=qw(Stored_at);
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -31,27 +33,25 @@ use Storable qw(nstore retrieve);
 use Chj::xtmpfile;
 use Carp;
 
-sub Storabled_at ( $ $ ; $ ) {
+sub Stored_at ( $ $ ; $ ) {
     my ($path, $thunk, $maybe_permissions)=@_;  # do not expect a promise, just a thunk. *we* are the cachers here? if at all?.
-    sub {#warum so. ?  nid dirtk ?  ?  closuresfürallefelle oder wos
-	my $create= sub {
-	    my $data= &$thunk;
-	    my $f= xtmpfile $path;
-	    defined(nstore_fd($data,$f))
-	      or croak "Storabled_at: could not store at '$path' (maybe: $!)";
-	    $f->xclose;
-	    $f->xputback(defined($maybe_permissions) ? $maybe_permissions : 0600);
-	    $data
+    my $create= sub {
+	my $data= &$thunk;
+	my $f= xtmpfile $path;
+	defined(nstore_fd($data,$f))
+	  or croak "Storabled_at: could not store at '$path' (maybe: $!)";
+	$f->xclose;
+	$f->xputback(defined($maybe_permissions) ? $maybe_permissions : 0600);
+	$data
+    };
+    if (-e $path) {
+	my $data= restore $path;
+	defined ($data) ? $data : do {
+	    carp "Storabled_at: error reading from file '$path' (maybe: $!), trying to recreate file";
+	    &$create;
 	};
-	if (-e $path) {
-	    my $data= restore $path;
-	    defined ($data) ? $data : do {
-		carp "Storabled_at: error reading from file '$path' (maybe: $!), trying to recreate file";
-		&$create;
-	    };
-	} else {
-	    &$create
-	}
+    } else {
+	&$create
     }
 }
 
