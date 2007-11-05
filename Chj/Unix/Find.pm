@@ -38,9 +38,10 @@ use Class::Array -fields=>
   ;
 
 use Chj::IO::Command;
-use overload '<>' => "iterate", fallback=>1;
-# the fallback 'true' value is essential so as to display the object in the repl for example
-
+use overload
+  '<>' => "next", # wanted to use "iterate", but forget about it.
+  fallback=>1, # the fallback 'true' value is essential so as to display the object in the repl for example
+  ;
 
 sub new {
     my $class=shift;
@@ -63,20 +64,22 @@ sub next {
     }
 }
 
-# hm since next is always in list context, also provide this:
-sub iterate {
-    my $s=shift;
-    if (wantarray) {
-	warn "note: wants array";
-	my @res;
-	while (defined(my $item= $s->next)) {
-	    push @res,$item
-	}
-	@res
-    } else {
-	warn "note: wants scalar";
-	$s->next
-    }
-}
+# # hm since next is always in list context, also provide this:
+# sub iterate {
+#     my $s=shift;
+#     if (wantarray) {
+# 	warn "note: wants array";
+# 	my @res;
+# 	while (defined(my $item= $s->next)) {
+# 	    push @res,$item
+# 	}
+# 	@res
+#     } else {
+# 	warn "note: wants scalar";
+# 	$s->next
+#     }
+# }
+# nope. forget about it: it's mentioned as a bug in the overload podpage.
+# I can confirm that :l <$foo> gives 'wants scalar'
 
 end Class::Array;
