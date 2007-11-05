@@ -90,8 +90,9 @@ use Class::Array -fields=>
       $baseclass ? ""
 	:
 	  "#\@ISA=\"Exporter\"; require Exporter;
+#\@EXPORT=qw();
 #\@EXPORT_OK=qw();
-#\%EXPORT_TAGS=(all=>\\\@EXPORT_OK);
+#\%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
 ";
 
 
