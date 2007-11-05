@@ -55,15 +55,6 @@ use Chj::xopen 'xopen_read';
 use Chj::Store::Storabled; # but exported sub is called Stored_at
 
 
-# our $arch= Delay {
-#     my $c= Chj::IO::Command->new_sender("uname", "-m");
-#     my $str= $c->xreadline;
-#     chomp $str;
-#     $str=~ /^[\w-]+\z/ or die "hm looks strange for an arch: '$str'";
-#     $str #hm detaint it?
-# };
-
-
 sub extractsources_files {
     my ($linuxsourcespath)=@_;
     my @files;
