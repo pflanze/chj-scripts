@@ -13,6 +13,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname modulename(s)
 
+  To be run from the top dir of the linux source tree.
+
   First scans all Makefile's for object file build declarations
   (hopefully my regex is good enough?) and caches the corresponding
   CONFIG_ directive names in '$cachefilepath'.
@@ -57,6 +59,7 @@ use Chj::FP::lazy;
 use Chj::xopen 'xopen_read';
 use Chj::Store::Storabled; # but exported sub is called Stored_at
 use Chj::Unix::Find;
+use Chj::Unix::arch;
 
 sub extract_from_Makefile {
     my ($path,$bucket)=@_;
@@ -85,7 +88,17 @@ sub make_data {
     my $f= Chj::Unix::Find->new (".", "-name", "Makefile");
     my $bucket={};
     while (<$f>) {
-	extract_from_Makefile ($_, $bucket);
+	my $extract= sub { extract_from_Makefile ($_, $bucket) };
+	if (m{/arch/([^/]+)/}) {
+	    my $arch= $1;
+	    if ($arch eq arch) {
+		&$extract;
+	    } else {
+		warn "ignoring path '$_' in foreign architecture '$arch'" if $DEBUG
+	    }
+	} else {
+	    &$extract
+	}
     }
     $bucket
 }
