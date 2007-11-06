@@ -71,12 +71,18 @@ sub extract_from_Makefile {
 	    #INNER: {
 	    #if (/)
 	    # well I haven't seen any.
-	    my @objs;
-	    while ($remainder=~ /(\w+(?:-\w+)*)\.o\b/sg) { # module names can contain dashes!
-		push @objs, $1
+	    my %objs;
+	    while ($remainder=~ /(\w+(?:-\w+)*)\.o\b/sg) { # module names can contain dashes!..
+		my $objname= $1;
+		# ..but not sure what are the rules that they appear in the names of the actual modules (as listed in lsmod)--well there it's always underscore,right? but the objnames already contain underscores sometimes. why? just random? In any case, put both variants into the hash anyway, ok?
+		$objs{$objname}=undef;
+		$objname=~ tr/-/_/;
+		$objs{$objname}=undef;
+		$objname=~ tr/_/-/;
+		$objs{$objname}=undef;
 	    }
 	    # well could have done it directly, too:
-	    for my $objname (@objs) {
+	    for my $objname (keys %objs) {
 		push @{ $$bucket{$objname} }, $configname
 	    }
 	}
