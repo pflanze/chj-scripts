@@ -61,7 +61,7 @@ my $lines=
 
 if (@args) {
     my $maxline= (sort { $a <=> $b } @args)[0];
-warn "maxline=$maxline";
+
     my $z=0;
     while (<STDIN>) {
 	if (exists $$lines{$z}) {
