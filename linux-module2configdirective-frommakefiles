@@ -52,7 +52,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
-use Chj::Backtrace;
+#use Chj::Backtrace;
 use Chj::xperlfunc;
 use Chj::IO::Command;
 use Chj::FP::lazy;
@@ -110,7 +110,7 @@ sub configs_of_modulename {
     Force ($configs_of_modulename)->{$modulename} || []
 }
 
-use Chj::repl;repl;
+#use Chj::repl;repl;
 
 for my $modulename (@args) {
     my $files= configs_of_modulename ($modulename);
