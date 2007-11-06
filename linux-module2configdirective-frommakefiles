@@ -59,7 +59,7 @@ use Chj::FP::lazy;
 use Chj::xopen 'xopen_read';
 use Chj::Store::Storabled; # but exported sub is called Stored_at
 use Chj::Unix::Find;
-use Chj::Unix::arch;
+use Chj::Unix::arch ':all';
 
 sub extract_from_Makefile {
     my ($path,$bucket)=@_;
@@ -91,10 +91,10 @@ sub make_data {
 	my $extract= sub { extract_from_Makefile ($_, $bucket) };
 	if (m{/arch/([^/]+)/}) {
 	    my $arch= $1;
-	    if ($arch eq arch) {
+	    if (is_current_linux_arch($arch)) {
 		&$extract;
 	    } else {
-		warn "ignoring path '$_' in foreign architecture '$arch'" if $DEBUG
+		warn "ignoring path '$_' in foreign architecture '$arch'\n" if $DEBUG
 	    }
 	} else {
 	    &$extract
