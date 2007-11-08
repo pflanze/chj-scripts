@@ -4,9 +4,9 @@ set -e
 set -x
 
 private tar czf .gitbck_`date_`.tgz .git
-cg-log > .log_pre
+git-log --raw > .log_pre
 git-repack -a -d
 git-prune-packed
-cg-log > .log_post
+git-log --raw > .log_post
 cmp .log_pre .log_post && echo Ok.
 
