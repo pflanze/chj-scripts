@@ -42,20 +42,16 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage if @args;
+usage if @args>1;
 
-my $use_lib=0;
-
-if ($use_lib) {
+if (@args) {
     eval q{
 	   use Chj::singlequote 'singlequote_sh';
-	   local $/;
-	   my $cnt= <STDIN>;
-	   close STDIN or die $!;
-	   print singlequote_sh($cnt);
+	   print singlequote_sh($args[0]);
 	   close STDOUT or die $!;
 	  };
     die if $@;
+    # BUT see bash's  printf '%q' "$value", that's maybe even better?. Well both can handle singlequotes and newlines. Maybe printf is still better in some other ways? (e.g. if shell env vars modify some quoting behaviour maybe? can they?)
 } else {
     # stream
     my $bufsiz=4096;
