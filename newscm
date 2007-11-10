@@ -67,7 +67,7 @@ my @files= map { createscm $_ } @args;
 
 if ($opt_add) {
     #xxsystem "git-add", @args;  huh geht gar nicht?
-    xxsystem "cg-add", @files;
+    xxsystem "git-add", @files;
     #xxsystem "git-add", @args;  definitiv nicht
     #xxsystem "git-add", @files; definitiv nicht wirklich.
 }
