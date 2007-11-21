@@ -54,8 +54,6 @@ if (@ARGV) {
             }
         }
     }
-} else {
-    exec "/root/bin/dfm",$trash;
 }
 
 sub mv { #rename would give 'Invalid cross-device link'
