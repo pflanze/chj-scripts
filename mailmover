@@ -186,8 +186,8 @@ if (catcherrors) {
 sub Maybe_take_filename ( $ ) { # take filename iff it is looking like a maildir file
     my ($filepath)=@_;
     $filepath=~ s|.*/||s;
-    if ($filepath=~ /^\d{9,10}\.[^.]+\./) {
-	$filepath
+    if ($filepath=~ /^(\d{9,10}\.[^.]+\..*)/s) {
+	$1
     } else {
 	# (otherwise let the caller let generate a new proper one)
 	return
@@ -246,8 +246,8 @@ sub conditional_move_file($ $ ) {
 		    }
 		};
 		my $deliver= sub {
-		    my ($filepath,$sub)=@_;
-		    $sub->deliver_file ($filepath, Maybe_take_filename($filepath));
+		    my ($filepath,$sub,$maybe_filename)=@_;
+		    $sub->deliver_file ($filepath, $maybe_filename || Maybe_take_filename($filepath));
 		};
 		if ($type eq "sourceforge") {
 		    &$deliver($filepath,  &$make_sub($foldername, 1));
@@ -295,7 +295,7 @@ sub conditional_move_file($ $ ) {
 		    $in->xclose;
 		    $t->xclose;
 		    #warn "t->path is '".$t->path."'";
-		    &$deliver($t->path, &$make_sub($foldername, 0));
+		    &$deliver($t->path, &$make_sub($foldername, 0), Maybe_take_filename($filepath));
 		} else {
 		    &$deliver($filepath, &$make_sub($foldername, 0));
 		}
