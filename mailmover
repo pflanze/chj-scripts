@@ -244,18 +244,15 @@ sub conditional_move_file($ $ ) {
 		    }
 		};
 		my $deliver= sub {
-		    my ($sub)=@_;
+		    my ($filepath,$sub)=@_;
 		    $sub->deliver_file ($filepath, Maybe_take_filename($filepath));
 		};
 		if ($type eq "sourceforge") {
-		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
-		    &$deliver( &$make_sub($foldername, 1) );
-		    -e "fflasf";
-		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
+		    &$deliver($filepath,  &$make_sub($foldername, 1));
 
 		    # isnt't it hacky: in mailmoverlib I've got the head in memory anyway. hm.
 		    my $in= xopen_read $filepath;
-		    my $t= xtmpfile $filepath;
+		    my $t= xtmpfile "$targetbase/tmp";
 		    while (<$in>) {
 			if (/^$/) {
 			    $t->xprint ($_);
@@ -268,15 +265,11 @@ sub conditional_move_file($ $ ) {
 			    $t->xprint ($_);
 			}
 		    }
-		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
 		    $in->xclose;
 		    $t->xclose;
-		    $t->xputback;
-
-		    &$deliver( &$make_sub($foldername, 0) );
-
+		    &$deliver($t->path, &$make_sub($foldername, 0));
 		} else {
-		    &$deliver( &$make_sub($foldername, 0) );
+		    &$deliver($filepath, &$make_sub($foldername, 0));
 		}
 		# do i have to unlink $filepath afterwards? yes. (unless it will be unlinked anyway of course)
 		xunlink $filepath;
