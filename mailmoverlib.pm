@@ -451,6 +451,7 @@ sub analyze_file($ ; $ ) {
 	    } elsif ($subject eq 'DEBUG') {
 		$foldername= "DEBUG";$type="system";
 	    } else {
+		my $tmp; # instead of relying on $1 too long
 		if ($subject=~ /^\[LifeCMS\]/
 		    and ( $from eq 'alias@ethlife.ethz.ch'
 			  or $from eq 'newsletter@ethlife.ethz.ch') ) {
@@ -497,13 +498,13 @@ sub analyze_file($ ; $ ) {
 		elsif (do {
 		    warn "checking for sourceforge:";
 		    (
-		     $subject=~ /^\[([^\]]+)\]/
+		     (($tmp)= $subject=~ /^\[([^\]]+)\]/)
 		     and
 		     $from=~ /noreply\@sourceforge\.net/
 		    )
 		}) {
 		    warn "yes, sourceforge";
-		    $foldername= $1;
+		    $foldername= $tmp;
 		    $type= "sourceforge";
 		}
 	    }
