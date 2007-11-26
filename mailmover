@@ -1,13 +1,16 @@
 #!/usr/bin/perl -wT
 # ^- risk T  starting from Sun, 24 Oct 2004 22:50:45 +0200
 
+# NOTES:
+# - "sourceforge" subject clipping code is only active when delivering to maildir.
+
 
 # Sam Nov 29 23:17:06 MET 2003
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
 
-use constant catcherrors=>1;# true= exceptions and warnings are catched/collected and delivered by mail -> turn off for debugging.
+use constant catcherrors=> defined($ENV{CATCHERRORS}) ? ($ENV{CATCHERRORS}) : 1;# true= exceptions and warnings are catched/collected and delivered by mail -> turn off for debugging.
 # but do this anyway:
 use Carp;
 use Chj::Backtrace;
@@ -31,6 +34,7 @@ use Chj::singlequote;
 use Chj::chompspace;
 use Chj::Path::Truncator::MD5;
 use Chj::xsysopen 'xsysopen_excl';
+use Chj::xopen 'xopen_read';
 
 # wann will ich eigentlich msgid recorden wirklich?, wann will ich double elimination/checks? normalerweise ja nicht?. (doubleelim bloss wenn sie im gleichen folder landen).(NA oder  wenn notiz und das doppel beide im infolder landen dann auch, oder?, oder notiz unterdrucken dann? eh isch jo eh unterdrückt dann. na, aber dann später wenn die reply aus ml eintrifft, DANN die notiz unterdrücken wär was)
 
@@ -215,7 +219,8 @@ sub conditional_move_file($ $ ) {
 	my $targetfolder_is_symlink;
 	if ($foldername) {
 	    if ($opt_maildirs) {
-		my $sub= do {
+		my $make_sub= sub {
+		    my ($foldername, $flag_sourceforge_original)=@_;
 		    if ($foldername eq "inbox"
 			#or
 			#$foldername eq "inbox-big"
@@ -224,7 +229,9 @@ sub conditional_move_file($ $ ) {
 		    } else {
 			# hacky / should be an option?
 			$type="" if $type eq "unbekannt";
-			$foldername= "Moved/$type/$foldername";
+			$foldername=
+			  $flag_sourceforge_original ? "Moved/$type/originalsubject/$foldername"
+			    : "Moved/$type/$foldername";
 			#/hacky
 			my @pathparts= split /\/+/, $foldername; # does it ever happen ?.
 			my $sub= $maildirbasefolder;
@@ -236,7 +243,41 @@ sub conditional_move_file($ $ ) {
 			$sub
 		    }
 		};
-		$sub->deliver_file ($filepath, Maybe_take_filename($filepath));
+		my $deliver= sub {
+		    my ($sub)=@_;
+		    $sub->deliver_file ($filepath, Maybe_take_filename($filepath));
+		};
+		if ($type eq "sourceforge") {
+		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
+		    &$deliver( &$make_sub($foldername, 1) );
+		    -e "fflasf";
+		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
+
+		    # isnt't it hacky: in mailmoverlib I've got the head in memory anyway. hm.
+		    my $in= xopen_read $filepath;
+		    my $t= xtmpfile $filepath;
+		    while (<$in>) {
+			if (/^$/) {
+			    $t->xprint ($_);
+			    while (<$in>) {
+				$t->xprint ($_);
+			    }
+			    last;
+			} else {
+			    s/^(subject:\s*)\[[^\]]+\]\s*(.*)/$1$2/si;
+			    $t->xprint ($_);
+			}
+		    }
+		    warn "does '$filepath' exist?: ".(-e $filepath ? "yes": "no");
+		    $in->xclose;
+		    $t->xclose;
+		    $t->xputback;
+
+		    &$deliver( &$make_sub($foldername, 0) );
+
+		} else {
+		    &$deliver( &$make_sub($foldername, 0) );
+		}
 		# do i have to unlink $filepath afterwards? yes. (unless it will be unlinked anyway of course)
 		xunlink $filepath;
 	    } else {
