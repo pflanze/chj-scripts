@@ -217,12 +217,12 @@ sub conditional_move_file($ $ ) {
 	$quotedfoldername= singlequote $foldername;
 
 	my $targetfolder_is_symlink;
-	warn "foldername outside: '$foldername'";
+	#warn "foldername outside: '$foldername'";
 	if ($foldername) {
 	    if ($opt_maildirs) {
 		my $make_sub= sub {
 		    my ($foldername, $flag_sourceforge_original)=@_;
-		    warn "foldername='$foldername', flag_sourceforge_original=$flag_sourceforge_original";
+		    #warn "foldername='$foldername', flag_sourceforge_original=$flag_sourceforge_original";
 		    if ($foldername eq "inbox"
 			#or
 			#$foldername eq "inbox-big"
@@ -232,7 +232,7 @@ sub conditional_move_file($ $ ) {
 			# hacky / should be an option?
 			$type="" if $type eq "unbekannt";
 			$foldername=
-			  $flag_sourceforge_original ? "Moved/$type/originalsubject/$foldername"
+			  $flag_sourceforge_original ? "Moved/$type/original/$foldername"
 			    : "Moved/$type/$foldername";
 			#/hacky
 			my @pathparts= split /\/+/, $foldername; # does it ever happen ?.
@@ -269,7 +269,7 @@ sub conditional_move_file($ $ ) {
 		    }
 		    $in->xclose;
 		    $t->xclose;
-		    warn "t->path is '".$t->path."'";
+		    #warn "t->path is '".$t->path."'";
 		    &$deliver($t->path, &$make_sub($foldername, 0));
 		} else {
 		    &$deliver($filepath, &$make_sub($foldername, 0));

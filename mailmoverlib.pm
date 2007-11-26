@@ -496,14 +496,14 @@ sub analyze_file($ ; $ ) {
 		}
 		# sourceforge:
 		elsif (do {
-		    warn "checking for sourceforge:";
+		    #warn "checking for sourceforge:";
 		    (
 		     (($tmp)= $subject=~ /^\[([^\]]+)\]/)
 		     and
 		     $from=~ /noreply\@sourceforge\.net/
 		    )
 		}) {
-		    warn "yes, sourceforge";
+		    #warn "yes, sourceforge";
 		    $foldername= $tmp;
 		    $type= "sourceforge";
 		}
