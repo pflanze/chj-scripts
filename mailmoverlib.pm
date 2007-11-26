@@ -494,10 +494,15 @@ sub analyze_file($ ; $ ) {
 		    $foldername="ebay-newsletter";# $type="list"; oder "unbekannt" lassen? frage an ct: welche typen gibt es und wie werden sie sonst gehandhabt, resp. ändere es hier einfach selber ab, ich benutze type derzeit eh nicht.
 		}
 		# sourceforge:
-		elsif ($subject=~ /^\[([^\]]+)\]/
-		       and
-		       $from=~ /noreply\@sourceforge\.net/
-		      ) {
+		elsif (do {
+		    warn "checking for sourceforge:";
+		    (
+		     $subject=~ /^\[([^\]]+)\]/
+		     and
+		     $from=~ /noreply\@sourceforge\.net/
+		    )
+		}) {
+		    warn "yes, sourceforge";
 		    $foldername= $1;
 		    $type= "sourceforge";
 		}

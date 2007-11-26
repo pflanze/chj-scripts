@@ -221,6 +221,7 @@ sub conditional_move_file($ $ ) {
 	    if ($opt_maildirs) {
 		my $make_sub= sub {
 		    my ($foldername, $flag_sourceforge_original)=@_;
+		    warn "foldername='$foldername', flag_sourceforge_original=$flag_sourceforge_original";
 		    if ($foldername eq "inbox"
 			#or
 			#$foldername eq "inbox-big"
@@ -252,7 +253,7 @@ sub conditional_move_file($ $ ) {
 
 		    # isnt't it hacky: in mailmoverlib I've got the head in memory anyway. hm.
 		    my $in= xopen_read $filepath;
-		    my $t= xtmpfile "$targetbase/tmp";
+		    my $t= xtmpfile "$targetbase/tmp/";# don't forget the slash at the end!!!!!
 		    while (<$in>) {
 			if (/^$/) {
 			    $t->xprint ($_);
@@ -267,6 +268,7 @@ sub conditional_move_file($ $ ) {
 		    }
 		    $in->xclose;
 		    $t->xclose;
+		    warn "t->path is '".$t->path."'";
 		    &$deliver($t->path, &$make_sub($foldername, 0));
 		} else {
 		    &$deliver($filepath, &$make_sub($foldername, 0));
