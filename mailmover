@@ -210,13 +210,14 @@ sub conditional_move_file($ $ ) {
     my $quotedfoldername;
     $quotedfrom=$quotedfoldername="(abgebrochen bevor geholt)";
     eval {
-	my ($mail,$foldername,$type,$important)= analyze_file $filepath;  #(man sieht es fast nicht..)
+	my ($mail,$foldername,$type,$important)= analyze_file $filepath;
 	$quotedsubject= singlequote($mail->decodedheader("subject"),"(kein subject)");
 	$from=$mail->decodedheader("From");
 	$quotedfrom= singlequote $from;
 	$quotedfoldername= singlequote $foldername;
 
 	my $targetfolder_is_symlink;
+	warn "foldername outside: '$foldername'";
 	if ($foldername) {
 	    if ($opt_maildirs) {
 		my $make_sub= sub {
