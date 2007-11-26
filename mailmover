@@ -255,6 +255,23 @@ sub conditional_move_file($ $ ) {
 		    # isnt't it hacky: in mailmoverlib I've got the head in memory anyway. hm.
 		    my $in= xopen_read $filepath;
 		    my $t= xtmpfile "$targetbase/tmp/";# don't forget the slash at the end!!!!!
+		    my $originator= do {
+			my $By;
+			while (<$in>) {
+			    if (/^$/) {
+				for (1..10) {
+				    $_=<$in>; last unless defined $_;
+				    if (($By)= /^By:\s*(\S+)/) {
+					last;
+				    }
+				}
+				last;
+			    }
+			}
+			$By
+		    };
+		    #warn "originator='$originator'";
+		    $in->xrewind;
 		    while (<$in>) {
 			if (/^$/) {
 			    $t->xprint ($_);
@@ -263,7 +280,15 @@ sub conditional_move_file($ $ ) {
 			    }
 			    last;
 			} else {
-			    s/^(subject:\s*)\[[^\]]+\]\s*(.*)/$1$2/si;
+			    (s/^(subject:\s*)\[[^\]]+\]\s*(.*)/$1$2/si
+			     or
+			     s/^(from:\s*)(.*)/
+				 my ($pre,$adr)=($1,$2);
+				 if ($originator) {
+				     $adr=~ s{"[^\"]*"}{"$originator"};
+				 }
+				 $pre.$adr
+			     /ei);
 			    $t->xprint ($_);
 			}
 		    }
