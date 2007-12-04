@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+
+# Die Dez  4 22:40:22 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to
+
+  Cwd must be a Maildir.
+  Also changes the subscriptions file.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args==2;
+
+our ($from,$to)=map {
+    m|/| and usage "argument contains a slash: '$_'";
+    #(ps. detaint it here?)
+    $_
+} @args;
+
+#ps perl '*has*' lists as multi value returns.
+
+use Chj::Maildir::Basefolder;
+use Chj::Maildir::Subfolder;
+use Chj::xperlfunc 'Xlstat';
+
+die "target '$to' already exists" if Xlstat ($to);
+
+our $basefolder= Chj::Maildir::Basefolder->new (".");
+
+#die "source folder does not exist
+
+#our $sourcefolder= $basefolder->  nope. solche methoden habe ich nicht.
+
+our $sourcefolder= Chj::Maildir::Subfolder->new($basefolder,$from);
+use Chj::repl;repl;
+$sourcefolder->exists or die "sourcefolder '$from' does not exist or is not a maildir subfolder";
+
