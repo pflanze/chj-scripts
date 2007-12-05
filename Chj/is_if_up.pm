@@ -1,20 +1,32 @@
-# is interface xxx up?
-# cj Sat Aug  4 02:29:09 CEST 2001
+# Wed Dec  5 02:36:34 2007  Christian Jaeger, christian at jaeger mine nu
+# 
+# Copyright 2007 by Christian Jaeger
+# Published under the same terms as perl itself
+#
+# $Id$
 
-# Wed, 26 Jun 2002 02:33:50 +0200
-# - wenn in keine inet addr stadium bei dhcp: sollte kein ERROR ausgeben! Sondern? -> done, nur bei warnings.
-# - pppon: is_if_up: ppp0: error fetching interface information: Device not found -> done.
+=head1 NAME
 
-# Mon, 26 May 2003 06:39:28 +0200:
-# correct this:
-# is_if_up: no match for 'inet addr' in interface output:
-# eth0:1    Link encap:Ethernet  HWaddr 00:B0:D0:F9:12:E7  
-#           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+Chj::is_if_up
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+Linux only atm. Beware, very old code of mine (moved here from
+(non-namespace-prefixed) 'is_if_up').
+
+=cut
 
 
+package Chj::is_if_up;
+@ISA="Exporter"; require Exporter;
+@EXPORT=qw(extractfromone is_if_up);# export everything for backwards compatibility
+%EXPORT_TAGS=(all=>[@EXPORT]);
 
+use strict;
 
-my $ifconfig= "/sbin/ifconfig";
+our $ifconfig= "/sbin/ifconfig";
 
 sub extractfromone {
     my ($a)=@_; # string from ifconfig of one interface
