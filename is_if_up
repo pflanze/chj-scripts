@@ -20,8 +20,7 @@ usage unless @ARGV==1;
 my ($if)= @ARGV;
 usage if $if=~/^-/;
 
-use lib "/root/extlib";
-use is_if_up;
+use Chj::is_if_up;
 
 my $ip= is_if_up($if);
 if (defined $ip) {
