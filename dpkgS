@@ -1,13 +1,7 @@
 #!/usr/bin/perl -w
 
-# bloss in shell definieren "reicht nicht" weil es zu kompliziert wird. Muss nämlich schauen
-# ob / in pfad. :()
-# Jan 27 06:37
-
-
 use strict;
-use lib "/root/extlib";
-use backtick qw/xbacktick xsystem/;
+use Chj::backtick qw/xbacktick xsystem/;
 
 sub usage {
     print "usage: dpkgS commandname|file/path
@@ -23,14 +17,19 @@ for (@ARGV) {
         local $/;
         if (! /\//) { # it could be a command
             my $path= xbacktick("which",$_);
-            if ($?>>8 == 0) {
+            if ($? == 0) {
                 chop $path;
                 $_=$path 
             }
         }
         my $realpath= xbacktick("chase",$_);
-        chop $realpath;
-        xsystem "dpkg", "-S", $realpath;
+	if ($? == 0) {
+	    chop $realpath;
+	    xsystem "dpkg", "-S", $realpath;
+	} else {
+	    # a message has already been printed by chase
+	    exit 1
+	}
     }
 }
 
