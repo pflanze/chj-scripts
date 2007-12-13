@@ -14,6 +14,7 @@ use Digest::MD5 "md5_hex";
 use Chj::xperlfunc;
 use Chj::Util::AskYN;
 use Time::HiRes 'sleep';
+use Chj::xtmpfile;
 *Class::Array::clone=sub {my $self=shift;my $new=[@$self]; bless $new,ref $self} unless *Class::Array::clone{CODE};
 
 my $usage;
@@ -139,7 +140,11 @@ xmkdir $basedir unless -d $basedir;
 if (-d $runbase) {
     utime time,time,$runbase  # for future cleaner, to ignore too new directories (though runfile check should be done anyway too)
 } else {
-    xmkdir $runbase,0700
+    xmkdir $runbase,0700;
+    my $f= xtmpfile($runbase."/cmdline");
+    $f->xprint ($_,"\0") for @ARGV;
+    $f->xclose;
+    $f->xputback(0444);
 }
 my $runfile= "$runbase/run";
 
