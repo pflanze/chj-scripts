@@ -237,8 +237,7 @@ sub fork {
 	    exit 1;
 	}
 	$write->xclose;
-	return;# EHRRRR????? ah yes. necessary. of course, the real 'body' code is coming outside.
-	#exit 0;
+	return;# yes, don't exit here, the real 'body' code is coming outside.
     }
 }
 
