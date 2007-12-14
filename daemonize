@@ -24,6 +24,7 @@ my $basedir= "$ENV{HOME}/.daemonize-run";
 my $maxwait=3;#seconds
 our $logfile= "nohup.out";
 our $opt_quiet;
+our $opt_no_error_if_running;
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -50,6 +51,8 @@ ARG:{
 		} elsif ($1 eq 'help') {
 		    $usage="";
 		    #last ARG; nope
+		} elsif (($1 eq 'no-error-if-running') or ($1 eq 'no-error')) {
+		    $opt_no_error_if_running=1;
 		} else {
 		    $usage= "unknown option '$1'";
 		    last ARG;
@@ -117,6 +120,8 @@ if (defined $usage) {
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
   --quiet|-q  be quiet (do not output the pid of the daemon)
+  --no-error-if-running|--no-error  do not report an error if the
+              daemon is already running
   --         terminate option processing
 
   Note: the pid file (and the output if nohup.out is not used)-- ehr?.
@@ -203,7 +208,11 @@ else {
     }
     $daemonizer->set_outputs($output);
 
-    if (my $pid= $daemonizer->fork) {
+    if (my $pid= $daemonizer->fork ($opt_no_error_if_running && sub {
+					print STDERR "daemon already running\n"
+					  unless $opt_quiet;
+					exit 0
+				    })) {
 	print STDERR "daemon running as pid $pid",($opt_bg ? () : " (you can hit ctl-c now)"),"\n"
 	  unless $opt_quiet;
 	unless ($opt_bg) {
