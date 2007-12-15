@@ -1,0 +1,75 @@
+#!/usr/bin/perl -w
+
+# Die Nov  6 03:57:31 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname linenumber(s)
+
+  extracts the given linenumbers (only single numbers for now)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+#our @lines= sort { $a <=> $b } @args;
+
+# oder sollen sie in der reihenfolge gegeben werden wie eben gegeben?
+# ah abr doch so schnell streamend wie möglich ? ?
+# :) was man immer machn kann...
+
+#well derzeit doch  reihenfolgeignored.
+
+
+my $lines=
+  +{
+    map {
+	$_ => undef
+    } @args
+   };
+
+if (@args) {
+    my $maxline= (sort { $a <=> $b } @args)[0];
+
+    my $z=0;
+    while (<STDIN>) {
+	if (exists $$lines{$z}) {
+	    print $_ or die "writing to stdout: $!";
+	}
+	$z++;#mensch. vergessen.
+    }
+}
+
+close STDIN
+  or die "closing stdin: $!";

@@ -1,0 +1,73 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  5 21:57:38 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname modulename(s)
+
+  runs less on the Kconfig files mentioning module.*\$modulename
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+
+sub find_modulename {
+    my ($modulename)=@_;
+    my $pattern= "module.*\\b$modulename\\b";
+    my $p= Chj::IO::Command->new_sender("linux-grephelp","-l","-E",$pattern);
+    (
+     [
+      map { chomp; $_ } $p->xreadline
+     ],
+     $pattern
+    )
+}
+
+# und gleich less ?
+# jo is i aber ah wie ging das mit dem  pattern suchen  ??. wo war das schon wider ech.
+# in g-blob-exists. -p.
+
+for my $modulename (@args) {
+    my ($configfiles,$pattern)= find_modulename ($modulename);
+    if (@$configfiles) {
+	xsystem "less", "-p", $pattern, "--", @$configfiles
+    } else {
+	print "nothing found for '$modulename' ($pattern). press enter..\n";
+	<STDIN>
+    }
+}
