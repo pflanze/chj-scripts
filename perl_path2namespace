@@ -45,9 +45,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @files, $_
     }
 }
-usage if @files;
 
-while (<STDIN>){
+
+sub turn {
+    local $_= $_[0];
     if (m{(\S+\.pm)}) {
 	my $path=$1;
 	$path=~ s{^\./}{};
@@ -91,3 +92,12 @@ while (<STDIN>){
 		    print "use $class;\n";
     }
 }
+
+if (@files) {
+    turn $_ for @files;
+} else {
+    turn $_ while <STDIN>;
+}
+
+
+
