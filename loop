@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# for now, simple.
+while true; do
+    "$@"
+    # not even terminate on error.rigthe?. tath's aboutprecisely~ one of the pointsofit.
+    sleep 1
+    # ^- not for evrything necessar.y  for some, that's bad.
+done
