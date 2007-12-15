@@ -21,7 +21,13 @@ stuff like in my cj-env module hehe.
 package Chj::Env;
 @ISA="Exporter"; require Exporter;
 #@EXPORT_OK=qw();
-@EXPORT=qw(pp_through);
+@EXPORT=qw(
+	   pp_through
+	   min
+	   max
+	   zip
+	   zipall
+	  );
 
 use strict;
 use Data::Dumper;
@@ -32,6 +38,45 @@ sub pp_through {
     print STDERR Dumper @_;
     wantarray ? @_ : $_[-1] ##hmnm
 }
+
+sub max {
+    return () unless @_;
+    my $res=shift;
+    for (@_) {
+	if ($_>$res) {
+	    $res=$_
+	}
+    }
+    $res
+}
+
+sub min {
+    return () unless @_;
+    my $res=shift;
+    for (@_) {
+	if ($_<$res) {
+	    $res=$_
+	}
+    }
+    $res
+}
+
+sub _Mkzip {
+    my ($minmax)=@_;
+    sub {
+	my $width=@_;
+	my $len= &$minmax( map { scalar @$_ } @_ );
+	my @res;
+	for (my $i=0; $i<$len; $i++) {
+	    push @res, [ map { $$_[$i] } @_ ]
+	}
+	\@res
+    }
+}
+
+*zip= _Mkzip \&min;
+*zipall= _Mkzip \&max;
+
 
 
 1

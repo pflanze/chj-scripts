@@ -187,9 +187,11 @@ require Exporter;
 	      xmkdir_p
 	      xlink_p
 	     );
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 use strict;
 use Carp;
 use Chj::singlequote 'singlequote_many'; # the only dependency so far
+use Chj::Unix::exitcode;
 
 BEGIN {
     if ($^O eq 'linux') {
@@ -258,14 +260,14 @@ sub xxsystem {
     (system @_)>=0
       or croak "xxsystem: could not start command '$_[0]': $!";
     $?==0
-      or croak "xxsystem: command exited with code $?";
+      or croak "xxsystem: process terminated with ".exitcode($?);
 }
 
 sub xwaitpid ( $ ; $ ) {
     my ($pid,$flags)=@_;
     defined $flags or $flags= 0;
     my $kid= waitpid $pid,$flags;
-    die "xwaitpid ($pid,$flags): no child" if $kid<0; # "no such child" but pid -1 is okay right? so..
+    die "xwaitpid ($pid,$flags): no child process" if $kid<0; # "no such child" but pid -1 is okay right? so..
     #$? # hm drop $kid?  build tuple?   ?
     $kid
 }
@@ -274,7 +276,7 @@ sub xxwaitpid ( $ ; $ ) {
     my ($pid,$flags)=@_;
     defined $flags or $flags= 0;
     my $kid= xwaitpid $pid,$flags;
-    $? == 0 or die "xxwaitpid ($pid,$flags): child exited with status $?";
+    $? == 0 or die "xxwaitpid ($pid,$flags): child process terminated with ".exitcode($?);
     $kid
 }
 
@@ -288,10 +290,9 @@ sub xxwait {
     my $kid= wait;
     defined $kid or die "xwait: $!";# when can this happen? EINTR?
     my $status= $?;
-    $status == 0 or die "xxwait: child $kid exited with status $?";
+    $status == 0 or die "xxwait: child process $kid terminated with ".exitcode($?);
     $kid
 }
-# todo: turn $? in messages into nice view using my new status displayer.
 
 sub xrename {
     @_==2 or croak "xrename: wrong number of arguments";
