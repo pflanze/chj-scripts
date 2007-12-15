@@ -1,9 +1,16 @@
 #!/bin/bash
 
-# for now, simple.
+# for now, simple (e.g. do not take options yet)
+
+# but employ 'burst mode': react quickly a number of times, but then
+# sleep enough for not being a problem in the endless termination
+# case.
+
+nburst=5
+
 while true; do
-    "$@"
-    # not even terminate on error.rigthe?. tath's aboutprecisely~ one of the pointsofit.
-    sleep 1
-    # ^- not for evrything necessar.y  for some, that's bad.
+    for i in `seq 1 "$nburst"`; do
+	"$@"
+    done
+    sleep "$nburst"
 done
