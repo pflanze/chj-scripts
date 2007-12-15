@@ -33,9 +33,12 @@ usage unless @package;
 for my $package (@package) {
     chomp $package;
     if ($package=~ /^[^\s]+$/s) {
-        open OUT,"| dpkg --set-selections" or die "Could not execute dpkg command: $!";
-        print OUT "$package\thold\n";
-        close OUT;
+        open OUT,"| dpkg --set-selections"
+	  or die "Could not execute dpkg command: $!";
+        print OUT "$package\thold\n"
+	  or die $!;
+        close OUT
+	  or die $!;
         if ($? != 0) {
             warn "dpkg returned error code $? for package $package\n";
         }
