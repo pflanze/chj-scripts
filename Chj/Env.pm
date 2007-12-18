@@ -26,6 +26,7 @@ package Chj::Env;
 	   max
 	   zip
 	   zipall
+	   Map
 	  );
 @EXPORT_OK=qw(
 	      compose
@@ -105,5 +106,9 @@ sub compose_maybe {
     }
 }
 
+sub Map {
+    my $fn=shift;
+    map { &$fn($_) } @_
+}
 
 1
