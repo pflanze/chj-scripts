@@ -85,23 +85,23 @@ sub _Mkzip {
 sub compose {
     my (@fn)= reverse @_;
     sub {
-	my ($v)= @_;
+	my (@v)= @_;
 	for (@fn) {
-	    $v= &$_($v);
+	    @v= &$_(@v);
 	}
-	$v
+	wantarray ? @v : $v[-1]
     }
 }
 
 sub compose_maybe {
     my (@fn)= reverse @_;
     sub {
-	my ($v)= @_;
+	my (@v)= @_;
 	for (@fn) {
-	    return unless defined $v;
-	    $v= &$_($v);
+	    return unless @v>1 or defined $v[0];
+	    @v= &$_(@v);
 	}
-	$v
+	wantarray ? @v : $v[-1]
     }
 }
 
