@@ -20,7 +20,6 @@ stuff like in my cj-env module hehe.
 
 package Chj::Env;
 @ISA="Exporter"; require Exporter;
-#@EXPORT_OK=qw();
 @EXPORT=qw(
 	   pp_through
 	   min
@@ -28,6 +27,12 @@ package Chj::Env;
 	   zip
 	   zipall
 	  );
+@EXPORT_OK=qw(
+	      compose
+	      compose_maybe
+	     );
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
+
 
 use strict;
 use Data::Dumper;
@@ -77,6 +82,28 @@ sub _Mkzip {
 *zip= _Mkzip \&min;
 *zipall= _Mkzip \&max;
 
+sub compose {
+    my (@fn)= reverse @_;
+    sub {
+	my ($v)= @_;
+	for (@fn) {
+	    $v= &$_($v);
+	}
+	$v
+    }
+}
+
+sub compose_maybe {
+    my (@fn)= reverse @_;
+    sub {
+	my ($v)= @_;
+	for (@fn) {
+	    return unless defined $v;
+	    $v= &$_($v);
+	}
+	$v
+    }
+}
 
 
 1
