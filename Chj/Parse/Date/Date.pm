@@ -43,6 +43,7 @@ $errmsgs[E_invaliddayname]= "invalid day name";
 use Chj::Parse::Date::months '$lcmonth_hash', '%shortmonth_list_by_locale';
 use Chj::Parse::Date::days '%shortday_list_by_locale', '$lcday_hash';
 use Date::Parse 'str2time';
+use Chj::singlequote 'singlequote_many';
 
 our $day_idx2english = $shortday_list_by_locale{en};
 our $day_anystr2idx= $lcday_hash;
@@ -74,7 +75,12 @@ sub parse_segments {
 	    (my $month_str_en=
 	     Convert ($month_anystr2idx, $month_idx2english, $month_str))) {
 	    my $newstr= "$weekday_str_en $month_str_en $mday $hour:$min:$sec $zone_str $year";
-	    $newstr ###
+	    if (defined (my $t= str2time ($newstr))) {
+		$t
+	    } else {
+		die "?? parse_segments(".singlequote_many(@_)."): str2time can't parse, shouldn't happen here, internal inconsistency, got str '$newstr'";
+		##ok könte noch sein dass zonen nid stimmen oder solches -- wie dies genau konsistent handhaben?
+	    }
 	} else {
 	    $$s[Error]= E_invalidmonthname;
 	}
@@ -90,12 +96,8 @@ sub parse {# hm can still throw exceptions, since str2time can (as man Date::Par
     if (defined (my $t= str2time ($str))) {
 	$t
     } elsif (my @v= $str=~ /^(\w{3}) (\w{3}) {1,2}(\d{1,2}) (\d{2}):(\d{2}):(\d{2}) (\w{1,4}) (\d{4})\z/) {
-	if (defined (my $newstr= $s->parse_segments (@v))) {
-	    if (defined (my $t= str2time ($newstr))) {
-		$t
-	    } else {
-		die "?? str2time can't parse, shouldn't happen here, internal inconsistency, got str '$newstr', old one was '$str'";
-	    }
+	if (defined (my $t= $s->parse_segments (@v))) {
+	    $t
 	} else {
 	    # error already saved
 	    return
