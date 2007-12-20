@@ -79,6 +79,9 @@ require Exporter;
 	       xsysopen_uappend
 	       xsysopen_excl
 	      );
+%EXPORT_TAGS= (all=> [@EXPORT, @EXPORT_OK]);
+
+
 use strict;
 
 use Chj::IO::File;
@@ -106,7 +109,7 @@ sub xsysopen_readwrite {
     if (defined $perms) {
 	xsysopen $path,O_RDWR|O_CREAT,$perms;
     } else {
-	xsysopen $path,O_WRONLY|O_CREAT;
+	xsysopen $path,O_RDWR|O_CREAT;
     }
 }
 sub xsysopen_update {

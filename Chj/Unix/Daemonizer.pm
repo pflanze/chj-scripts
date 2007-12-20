@@ -170,6 +170,7 @@ sub namegiver{shift->[Namegiver]} sub set_namegiver {my $s=shift;($$s[Namegiver]
 
 sub fork {
     my $s=shift;
+    my ($maybe_alreadyrunningcb)=@_;
     my ($read,$write)=xpipe;
     if (my $pid=xfork) {
 	$write->xclose;
@@ -177,15 +178,23 @@ sub fork {
 	$read->xclose;
 	if ($cont) {
 	    waitpid $pid,0;
-	    $cont=~ s/ at .*?\z//s;
-	    croak $cont;
+	    my $status= $?;#well but so what~.
+	    if ($cont eq "\0") {
+		&$maybe_alreadyrunningcb
+	    } elsif ($cont=~ s/^\001//s) {
+		$cont=~ s/ at .*?\z//s;
+		croak $cont;
+	    } else {
+		die "error in transmission??"
+	    }
+	} else {
+	    $pid;
 	}
-	return $pid;
     } else {
 	eval {
 	    $read->xclose;
 	    $$s[_Runfile]= Chj::Unix::DaemonRunfile->new($$s[Runpath],$$s[Namegiver]);
-	    $$s[_Runfile]->writefile;# throws exception if already in use. ##interessant: erst nach dem fork?
+	    $$s[_Runfile]->writefile (undef, $maybe_alreadyrunningcb && sub { die (bless {}, "ALREADYRUNNING")});# throws exception if already in use. ##interessant: erst nach dem fork?
 	    #$$s[_Runfile]->autoclean;#(well, doch ziemlich unnötig dass dies eine extra methode ist?)
 	    # ^- rather dangerous since we do not know if the user is keeping the daemonizer instance till the end? well no, it'll release the lock anyway at that point so we loose nothing.
 	    # ^- AH f*ck, yes it is a problem, in the case where the daemon forks off a perl child which does not exec but exit itself, it will remove the pidfile while the parent is still running. no chance switching that off except manually or hooking into fork.
@@ -217,13 +226,18 @@ sub fork {
 		  or die "error opening /dev/null for writing: $!";
 	    }
 	};
-	if ($@){
-	    $write->xprint($@);
+	my $e=$@;
+	if (ref $e or $e){
+	    if (UNIVERSAL::isa ($e,"ALREADYRUNNING")) {
+		$write->xprint("\0");#belive in special, unquoted ugly stuff.hm.
+	    } else {
+		$write->xprint("\1".$e);#ok not unquoted. done right. well. uuugly.
+	    }
 	    $write->xclose;
 	    exit 1;
 	}
 	$write->xclose;
-	return;
+	return;# yes, don't exit here, the real 'body' code is coming outside.
     }
 }
 
