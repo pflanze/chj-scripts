@@ -30,7 +30,7 @@ package Chj::Env;
 	  );
 @EXPORT_OK=qw(
 	      compose
-	      compose_maybe
+	      maybe_compose
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -94,7 +94,7 @@ sub compose {
     }
 }
 
-sub compose_maybe {
+sub maybe_compose {
     my (@fn)= reverse @_;
     sub {
 	my (@v)= @_;
