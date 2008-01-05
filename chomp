@@ -12,6 +12,8 @@ sub usage {
     print "$myname file(s)
 
   Remove trailing \\r's and \\n's.
+  (Note: not per line, only at the end of the file!
+   Also: doesn't work on stdin or '-'.)
 
   (Christian Jaeger <$email>)
 ";
