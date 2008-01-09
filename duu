@@ -24,8 +24,8 @@ GetOptions (
 	    "blocksize|b=i"=> \$blocksize,
 	    "reverse|r"=> \$opt_reverse,
 	   ) or usage;
-usage unless @ARGV==1;
-our ($dir)=@ARGV;
+usage unless @ARGV<=1;
+our ($dir)=@ARGV ? @ARGV : ".";
 
 my $sortfunc=
   !$opt_reverse ? sub { $a->[1] <=> $b->[1] } : sub { $b->[1] <=> $a->[1] };
