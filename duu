@@ -15,31 +15,20 @@ sub usage {
 ";
     exit 1;
 }
-my $blocksize;
-my $flag_blocksize_given;
-my $dir;
-if (@ARGV) {
-    if ($ARGV[0]=~ /^--?h/) {
-    usage
-    } else {
-      hey_you_think_this_is_chaos_eh:
-    if ($ARGV[0]=~ /^--?b(locksize)?$/) {
-        @ARGV<=3 or usage;
-        $blocksize=$ARGV[1];
-        $flag_blocksize_given=1;
-        $dir=$ARGV[2] unless defined $dir;
-    } elsif (@ARGV==3) {
-        $dir=shift;
-        goto hey_you_think_this_is_chaos_eh;
-    } elsif (@ARGV==1) {
-        $dir=shift;
-    } else {
-        usage
-    }
-    }
-}
+our $blocksize;
+our $flag_blocksize_given;
+our $opt_reverse;
+use Getopt::Long;
+GetOptions (
+	    "h|help"=> sub {usage},
+	    "blocksize|b=i"=> \$blocksize,
+	    "reverse|r"=> \$opt_reverse,
+	   ) or usage;
+usage unless @ARGV==1;
+our ($dir)=@ARGV;
 
-my $sortfunc= sub { $b->[1] <=> $a->[1] };
+my $sortfunc=
+  !$opt_reverse ? sub { $a->[1] <=> $b->[1] } : sub { $b->[1] <=> $a->[1] };
 
 if (defined($dir)&&length($dir)) {
     $dir=~ s|/$||;
@@ -103,8 +92,9 @@ sub execute {
             # parent
             local $/=undef;
             my $in=<IN>;
-            close IN;
-            #wait; nötig?
+            close IN or die $!;
+            #wait;
+	    #$? == 0 or die "@_ returned exit code $?";  does not work anyway, -1 is returned, hm
             $in;
         } else {
             exec @_;
