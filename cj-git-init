@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# cj {Wed Jan 16 17:08:00 2008}
+# wrapper to add i18n latin1 mode to the git config file
+
+set -eu
+
+if [ -e ".git" ]; then
+    echo ".git already exists; can only work on local directory, thus aborting before doing anything."
+    exit 1
+fi
+
+git-init "$@"
+
+if [ -d ".git" ]; then
+    cat >> .git/config <<EOF
+[i18n]
+	commitencoding=latin1
+EOF
+else
+    echo "missing .git dir; can only work on local directory, thus aborting before post setup step."
+    exit 1
+fi
