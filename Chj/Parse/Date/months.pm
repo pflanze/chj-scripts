@@ -26,6 +26,7 @@ package Chj::Parse::Date::months;
 	       %longmonth_list_by_locale
 	       %shortmonth_hash_by_locale
 	       %longmonth_hash_by_locale
+	       $lcmonth_hash
 	     );
 use strict;
 use Carp;
@@ -198,30 +199,14 @@ our %longmonth_list_by_locale=
   );
 $longmonth_list_by_locale{de}= $longmonth_list_by_locale{de_CH};
 
-# wenn hier error?
-# ech ne exc?
-#sub parse_shortmonth_by_locale {
-#sub init_locale {
-#    my ($loc)=@_;
-#    if my 
 
-# our %shortmonth_hash_by_locale;
-# our %longmonth_hash_by_locale;
+# map *all* sorts of month names to the month number (0..11):
+use Chj::Parse::Date::daysmonthsutils 'list_of_arrays_to_hash__with_startidx';
+our $lcmonth_hash =
+  list_of_arrays_to_hash__with_startidx(0) # also start at 0, so that back-conversions (using the number as index into an array) work easily.
+  ->((values %shortmonth_list_by_locale),
+     (values %longmonth_list_by_locale));
 
-
-# for my $locale (qw(de_CH)) {
-#     for ([\%longmonth_list_by_locale,\%longmonth_hash_by_locale],
-# 	 [\%shortmonth_list_by_locale,\%shortmonth_hash_by_locale]) {
-# 	my ($hash__list_by_locale,$targethash)=@$_;
-# 	my $n=1;
-# 	my $ref= $hash__list_by_locale->{$locale} or die "bug";
-# 	my %hash;
-# 	for (@$ref) {
-# 	    $hash{$_}=$n++;
-# 	}
-# 	$targethash->{$locale}=\%hash;
-#     }
-# }
 
 # Wed, 29 Mar 2006 05:28:32 +0200: better code, copy from days.pm:
 
