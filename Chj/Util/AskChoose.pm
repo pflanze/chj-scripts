@@ -52,24 +52,21 @@ sub askchoose_autonum_withcanceldef {
     $map{$cancelchar}= undef;
 
     local$|=1;
-    my $n=10;
+    my $n=3;
   ASK: {
 	print "$prompt: ";
 	my $ans=<STDIN>;
-	if (defined $ans) {
-	    #chomp $ans;
-	    $ans=~ s/\s+\z//s; $ans=~ s/^\s+//s;
-	    if (exists $map{$ans}) {
-		return $map{$ans};
-	    } else {
-		if (--$n > 0) {
-		    redo ASK;
-		} else {
-		    croak "askchoose_autonum_withcanceldef: too many failed attempts to ask"
-		}
-	    }
+	goto RETRY if (!defined $ans);
+	$ans=~ s/\s+\z//s; $ans=~ s/^\s+//s;
+	if (exists $map{$ans}) {
+	    return $map{$ans};
 	} else {
-	    croak "askchoose_autonum_withcanceldef: eof on stdin"
+	  RETRY:
+	    if (--$n > 0) {
+		redo ASK;
+	    } else {
+		croak "askchoose_autonum_withcanceldef: too many failed attempts to ask"
+	    }
 	}
     }
 }
