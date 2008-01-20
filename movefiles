@@ -10,9 +10,8 @@ sub myeval ( $ ) {
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
-use Chj::xperlfunc;
 use Chj::Util::AskChoose qw(askchoose_autonum_withcanceldef);
-use Chj::xperlfunc 'xspawn'; # some $opt_show fragments may want this...
+use Chj::xperlfunc ":all";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
@@ -83,7 +82,7 @@ for (@args) {
     if (defined (my $target=askchoose_autonum_withcanceldef(["n","[n]o move"],@to))) {
 	my $filename= $_; $filename=~ s{.*/}{}s;
 	my $to= "$target/$filename";
-	xrename $_,$to;
+	xlinkunlink $_,$to;
     }
 }
 
