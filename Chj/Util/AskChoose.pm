@@ -51,6 +51,7 @@ sub askchoose_autonum_withcanceldef {
     $map{$cancelchar}= undef;
 
     local$|=1;
+    my $n=10;
   ASK: {
 	print "$prompt: ";
 	my $ans=<STDIN>;
@@ -59,7 +60,11 @@ sub askchoose_autonum_withcanceldef {
 	if (exists $map{$ans}) {
 	    return $map{$ans};
 	} else {
-	    redo ASK;
+	    if (--$n > 0) {
+		redo ASK;
+	    } else {
+		die "too many failed attempts to ask"
+	    }
 	}
     }
 }
