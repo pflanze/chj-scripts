@@ -25,6 +25,7 @@ package Chj::Util::AskChoose;
 @ISA="Exporter"; require Exporter;
 #@EXPORT= qw(askchoose);
 @EXPORT_OK=qw(askchoose_autonum_withcanceldef);
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
 use Carp;
@@ -55,16 +56,20 @@ sub askchoose_autonum_withcanceldef {
   ASK: {
 	print "$prompt: ";
 	my $ans=<STDIN>;
-	#chomp $ans;
-	$ans=~ s/\s+\z//s; $ans=~ s/^\s+//s;
-	if (exists $map{$ans}) {
-	    return $map{$ans};
-	} else {
-	    if (--$n > 0) {
-		redo ASK;
+	if (defined $ans) {
+	    #chomp $ans;
+	    $ans=~ s/\s+\z//s; $ans=~ s/^\s+//s;
+	    if (exists $map{$ans}) {
+		return $map{$ans};
 	    } else {
-		die "too many failed attempts to ask"
+		if (--$n > 0) {
+		    redo ASK;
+		} else {
+		    croak "askchoose_autonum_withcanceldef: too many failed attempts to ask"
+		}
 	    }
+	} else {
+	    croak "askchoose_autonum_withcanceldef: eof on stdin"
 	}
     }
 }
