@@ -1,11 +1,18 @@
 #!/usr/bin/perl -w
 
+# prevent lexical var trapping:
+sub myeval ( $ ) {
+    #eval @_ NOOOGRR
+    eval $_[0]
+}
+
 # Don Dez 11 12:22:45 MET 2003
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
 use Chj::xperlfunc;
 use Chj::Util::AskChoose qw(askchoose_autonum_withcanceldef);
+use Chj::xperlfunc 'xspawn'; # some $opt_show fragments may want this...
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
@@ -17,6 +24,8 @@ sub usage {
   --show perlcode  run this code before each question instead of running
                    less; \$_ is set to the current file path
 
+  \$opt_no_reopen_tty not yet interfaced
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
@@ -24,7 +33,7 @@ exit @_ ? 1 : 0;
 
 my @args;
 my $DEBUG=0;
-my ($opt_to, $opt_show);
+my ($opt_to, $opt_show, $opt_no_reopen_tty);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -55,7 +64,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @args and $opt_to;
 
 my $show = $opt_show ? do {
-    my $c= eval 'sub {'.$opt_show.'}';
+    my $c= myeval 'sub {'.$opt_show.'}';
     die $@ if $@;
     $c
 } : sub {
@@ -65,6 +74,9 @@ my $show = $opt_show ? do {
 my @to=split /,/,$opt_to;
 
 @to or usage "no folders given";
+
+open STDIN, "</dev/tty" or die "could not open /dev/tty: $!"
+  unless $opt_no_reopen_tty;
 
 for (@args) {
     &$show;
