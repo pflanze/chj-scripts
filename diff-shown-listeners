@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# remove pid, and uniformize whitespace, then do a diff -u, on the two files given.
+# and pipe it into less, too.
+
+exec map 'perl -wne '\''s/((?:\S+\s+){4})\d+/$1/; chomp; s/\s+/ /mg; print "$_\n"'\''' diff-u "$@" |less
