@@ -40,12 +40,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage if @files;
 
 while (<STDIN>){
-    if (m/^[-dpsrwsxtSTcb]{10}\s+\d+\s+\w+\s+\w+\s+\d+
+    if (m/^[-dlps][-rwsxtSTcb]{9}\s+\d+\s+\w+\s+\w+\s+\d+
 	#17. Feb 02:05
 	# 1. Jan 1970
 	.{15}\d*\s+   # cj 1.9.04: von 13 auf 15 hochgesetzt. elvis-15
 	(.+)
-	/sx){
+	/sx) {
 	my $fn=$1;
 	chomp $fn;
 	$fn=~ s|/$||s or $fn=~ s|\*$||s ; # or ..
