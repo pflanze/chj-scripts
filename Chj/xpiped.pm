@@ -41,6 +41,7 @@ use Chj::xperlfunc 'xfork','xwaitpid','xexec';
 #use Chj::repl;
 use Chj::Unix::exitcode;
 use POSIX 'dup2';
+use Chj::singlequote ":all";
 
 #repl;  well hab kein xdup2 in xperlfunc nein. weil isch posix.
 
@@ -54,8 +55,8 @@ sub xpiped ($ $ $ ) {
     my ($stdin,$stdout,$cmd)=@_;
     if (ref($cmd) eq "CODE") { die "CODE refs not yet supported (well it'd be easy enough but well. doit when needed)" }
     if (my $pid= xfork) {
-	xwaitpid($pid); #does this return $? already  ?
-	#$?
+	xwaitpid($pid); #does this return $? already? no, it returns the pid. so..:
+	$?
     } else {
 	xdupfh2($stdin,0);
 	xdupfh2($stdout,1);
@@ -65,7 +66,14 @@ sub xpiped ($ $ $ ) {
 
 sub xxpiped ($ $ $ ) {
     my $res= &xpiped;
-    $?==0 or die "xxpiped (".singlequote_many(@_)."): ".exitcode($?)
+    $res==0 or die "xxpiped ($_[0], $_[1], ".do{
+	if (ref($_[2]) eq "CODE") { #SIGH is error handling difficult   with so  separate  items. MEINUNG?
+	    $_[2]
+	} else {
+	    "[ ".singlequote_many(@{$_[2]})." ]"
+	}
+	# wahnsinn was ich mache um nur einfach argumente properly dar zu stellen. was gmb von sich aus macht.ehnein.
+    }."): command exited with ".exitcode($res)
 }
 
 
