@@ -451,6 +451,7 @@ sub analyze_file($ ; $ ) {
 	    } elsif ($subject eq 'DEBUG') {
 		$foldername= "DEBUG";$type="system";
 	    } else {
+		my $tmp; # instead of relying on $1 too long
 		if ($subject=~ /^\[LifeCMS\]/
 		    and ( $from eq 'alias@ethlife.ethz.ch'
 			  or $from eq 'newsletter@ethlife.ethz.ch') ) {
@@ -492,6 +493,19 @@ sub analyze_file($ ; $ ) {
 		# cj 3.12.04 ebay:
 		elsif ($from=~ /\Q<newsletter_ch\@ebay.com>\E/) {
 		    $foldername="ebay-newsletter";# $type="list"; oder "unbekannt" lassen? frage an ct: welche typen gibt es und wie werden sie sonst gehandhabt, resp. ändere es hier einfach selber ab, ich benutze type derzeit eh nicht.
+		}
+		# sourceforge:
+		elsif (do {
+		    #warn "checking for sourceforge:";
+		    (
+		     (($tmp)= $subject=~ /^\[([^\]]+)\]/)
+		     and
+		     $from=~ /noreply\@sourceforge\.net/
+		    )
+		}) {
+		    #warn "yes, sourceforge";
+		    $foldername= $tmp;
+		    $type= "sourceforge";
 		}
 	    }
 	}

@@ -16,7 +16,7 @@ sub usage {
 exit;
 }
 
-use backtick qw(xbacktick);
+use Chj::backtick qw(xbacktick);
 use Text::Diff;
 
 usage unless @ARGV;

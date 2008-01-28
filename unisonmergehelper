@@ -1,6 +1,10 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Chj::xopen qw(xopen_read);
+use Chj::xperlfunc;
+use Chj::xtmpfile;
+use Compress::Zlib;
 
 # Weil unison 3 parameter gibt aber tkdiff nur 2 handhaben kann.
 # Der einzige grosse Scheiss ist wohl nur dass unison wohl filenames nicht \' escaped resp.
@@ -10,21 +14,84 @@ die "Dies iss bloss n helper skript, für unison" unless @ARGV==3;
 
 my ($CURRENT1,$CURRENT2,$NEW)=@ARGV;
 
-system "tkdiff", $CURRENT1, $CURRENT2;
+my $is_gziped;
+my ($file1,$file2);
+my ($t1,$t2);
+if ($CURRENT1=~ /\.gnumeric$/) {
+    $is_gziped=1;
+    #system "cp","-f",$CURRENT1,
+#    my$d=sub{
+#	our ();
+#	local ();
+#	
+#    };
+#    for ([$CURRENT1,*file1]  gahtnöd, isch nöd perl
+    my $SIZE=1024*128;
+    my $buf;
+    my $schleus=sub{
+	my($from,$to)=@_;
+	my $gz= gzopen($from,"r") or die "?";#
+	while(1){
+	    my $res=$gz->gzread($buf,$SIZE);
+	    (defined $res and $res>=0) or die "error from gzread?";
+	    last if $res==0;
+	    $to->xprint($buf);
+	}
+	$to->xclose;
+    };
+	
+    for ([$CURRENT1,\$file1,\$t1],
+	 [$CURRENT2,\$file2,\$t2]) {
+	my ($c,$f,$t)=@$_;
+	$$t= xtmpfile;
+	my $fh= xopen_read $c;
+	#$f->xsendfile($$t);# _to ?  inkonsistent?
+	$schleus->($fh,$$t);
+	#$$t->xclose; isch inklusive
+	$$f= $$t->path;
+    }
+
+} else {
+    ($file1,$file2)=($CURRENT1,$CURRENT2);
+}
+
+system "tkdiff", $file1, $file2;
 # wenn's zurückkehrt, wird es BITTE das file "$CURRENT1-merge" geschrieben haben.
 
-$CURRENT1=~ /(^.*?)(\.[^.]*)?$/;
+$file1=~ /(^.*?)(\.[^.]*)?$/;  ##ps. cj 25.2.04: sollte das nich [^.]+ sein? statt *
 my ($p1,$p2)=($1,defined $2 ? $2 : "");
 
 #print "$0: '$p1' '$p2' resp. '$p1-merge$p2'\n";
 
 if (-e "$p1-merge$p2") {
 	warn "Oky, tkcvs hat mergefile geschrieben.\n";
-	system "/bin/mv","$p1-merge$p2",$NEW;
-	if ($?) {
-		warn "$0: Fehler: mv command hat $? gegeben";
+#	system "/bin/mv","$p1-merge$p2",$NEW;
+# 	if ($?) {
+# 		warn "$0: Fehler: mv command hat $? gegeben";
+# 	} else {
+# 		#warn "ok, nach '$NEW' gemovet.\n";
+# 	}
+	if ($is_gziped) {
+	    # wieder zippen.
+	    my $f=xopen_read "$p1-merge$p2";
+	    my $t= xtmpfile $NEW;
+	    my $gz= gzopen($t,"w");
+	    my $buf; my $SIZE= 1024*128;
+	    while(1){
+		$f->xread($buf,$SIZE) or last;
+		my $res=$gz->gzwrite($buf);
+		(defined $res and $res>=0) or die "gzwrite error";
+	    }
+	    my $res= $gz->gzclose;
+	    # was mit $res machen? mann.
+	    # mann sogar das example in manpage isch doch nuts.
+	    (defined $res and $res>=0) or die "gzclose error";
+	    #$t->xclose;#gefahr? hoff keine. ah, eh schon closed worden von zlib.
+	    $t->xrename($NEW);
 	} else {
-		#warn "ok, nach '$NEW' gemovet.\n";
+	    #xrename "$p1-merge$p2",$NEW;
+	    # "xrename(/home/chris/mnt/ethimdialog/app/start-merge, /root/.unison/#unisonmerged-start): Ungültiger Link über Gerätegrenzen hinweg at /root/bin/unisonmergehelper line 92"
+	    xxsystem "mv","-f", "$p1-merge$p2",$NEW;
 	}
 } else {
 	#warn "tkcvs hat KEIN file '$p1-merge$p2' geschrieben.\n"

@@ -38,8 +38,19 @@ our @fileargs= grep {
 } @args;
 
 use Chj::xperlfunc;
+use Chj::Unix::SuperPATH;
+
 sub normalexe {
-    xexec $origprog,@ARGV;
+#    &{(do{ # really, I'm not joking, those *3* layers around the if are necessary.
+&{ # ah no, this works, too. but once you decide (usually you have to,right???!) to use do, then you have to wrap it up in two additional layers. Funny, why is the do not necessary here?. (*because* it would take 3 layers otherwise?)
+	if ($origprog=~ m|/|) {
+	    \&xexec
+	} else {
+	    \&xsuperexec
+	}
+}
+#    })}
+($origprog,@ARGV);
 }
 
 use Chj::IO::Command;

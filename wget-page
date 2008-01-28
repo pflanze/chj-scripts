@@ -4,7 +4,11 @@
 
 # man wget
 
-wget -E -H -k -K -p "$@"
+wget -N -E -H -k -K -p "$@"
+
+#        -N
+#               --timestamping
+# 	                 Turn on time-stamping.
 
 #        -E
 #        --html-extension

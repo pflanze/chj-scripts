@@ -5,8 +5,7 @@
 
 # Tue,  7 May 2002 15:14:44 +0200 hacked to warn about secretary phone no's
 
-use lib "/root/extlib";
-use backtick 'xbacktick';
+use Chj::backtick 'xbacktick';
 
 # Build a char->hex map
 for (0..255) {

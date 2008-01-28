@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# cj Mon, 29 Aug 2005 14:15:49 +0200
-# für alte eid nedit files nach emacs zu konversen
-
 set -e
 
 if [ -n "$TAB_EXPAND_N" ]; then 
@@ -13,16 +10,11 @@ fi
 
 if [ $# -gt 0 ]; then
     for file in "$@"; do
-	#tmp="`tempfile -n "$file"`"
-	#<<so ein scheiss programm>>
-	#tmp="`tempfile -d "`dirname "$file"`"`"
-	#und shell auch gleich fuc
 	tmp="$(tempfile -d "$(dirname "$file")")"
 	expand --tabs=$N < "$file" > "$tmp"  ## no quotes around $N?
 	PERMS="`perms-of "$file"`"
 	mvnumber -a "_vor_tab-expand" "$file"
 	mv -i "$tmp" "$file" # should rather throw an error immediately.
-	#perms-set "$file" "$PERMS"
 	chmod "$PERMS" "$file"
     done
 else
@@ -33,4 +25,3 @@ else
 fi
 
 
-####OOOOOCH TODOOOOO: permissions sind immer private nun.  uraltfrage: copyperms tool fehlt.  und tempfile nimmt nur mode.  wie krieg ich den von nem file? -> neues tüüleli.

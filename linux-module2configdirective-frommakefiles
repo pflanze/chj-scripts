@@ -1,0 +1,124 @@
+#!/usr/bin/perl -w
+
+# Mon Nov  5 23:39:38 CET 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+our $cachefilepath= ".$myname.cache";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname modulename(s)
+
+  To be run from the top dir of the linux source tree.
+
+  First scans all Makefile's for object file build declarations
+  (hopefully my regex is good enough?) and caches the corresponding
+  CONFIG_ directive names in '$cachefilepath'.
+
+  Then shows the corresponding config directive names for the given
+  modulename(s).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+#use Chj::Backtrace;
+use Chj::xperlfunc;
+use Chj::IO::Command;
+use Chj::FP::lazy;
+use Chj::xopen 'xopen_read';
+use Chj::Store::Storabled; # but exported sub is called Stored_at
+use Chj::Unix::Find;
+use Chj::Unix::arch ':all';
+
+sub extract_from_Makefile {
+    my ($path,$bucket)=@_;
+    my $f= xopen_read $path;
+    while (<$f>) {
+	if ( /^obj-\$\(CONFIG_(\w+)\)\s*(.*)/ ) {
+	    my ($configname,$remainder)=($1,$2);
+	    # are ther continuation lines?
+	    #INNER: {
+	    #if (/)
+	    # well I haven't seen any.
+	    my %objs;
+	    while ($remainder=~ /(\w+(?:-\w+)*)\.o\b/sg) { # module names can contain dashes!..
+		my $objname= $1;
+		# ..but not sure what are the rules that they appear in the names of the actual modules (as listed in lsmod)--well there it's always underscore,right? but the objnames already contain underscores sometimes. why? just random? In any case, put both variants into the hash anyway, ok?
+		$objs{$objname}=undef;
+		$objname=~ tr/-/_/;
+		$objs{$objname}=undef;
+		$objname=~ tr/_/-/;
+		$objs{$objname}=undef;
+	    }
+	    # well could have done it directly, too:
+	    for my $objname (keys %objs) {
+		push @{ $$bucket{$objname} }, $configname
+	    }
+	}
+    }
+    $f->xclose;
+}
+
+sub make_data {
+    my $f= Chj::Unix::Find->new (".", "-name", "Makefile");
+    my $bucket={};
+    while (<$f>) {
+	my $extract= sub { extract_from_Makefile ($_, $bucket) };
+	if (m{/arch/([^/]+)/}) {
+	    my $arch= $1;
+	    if (is_current_linux_arch($arch)) {
+		&$extract;
+	    } else {
+		warn "ignoring path '$_' in foreign architecture '$arch'\n" if $DEBUG
+	    }
+	} else {
+	    &$extract
+	}
+    }
+    $bucket
+}
+
+our $configs_of_modulename= Delay { Stored_at ($cachefilepath, \&make_data) };
+
+sub configs_of_modulename {
+    my ($modulename)=@_;
+    Force ($configs_of_modulename)->{$modulename} || []
+}
+
+#use Chj::repl;repl;
+
+for my $modulename (@args) {
+    my $files= configs_of_modulename ($modulename);
+    print join("\t","$modulename:",@$files),"\n" or die $!;
+}

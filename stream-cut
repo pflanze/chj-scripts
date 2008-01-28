@@ -82,16 +82,24 @@ sub parse_position {
     } elsif ($str=~ /^(\d+(?:\.\d*)?)\%\z/) {
 	my $percentpos= $1;
 	if ($percentpos <= 100) {
-	    sub {
-		# my ($totlen)=@_; NO since the outer side doesn't know IFF she must stat the fd
-		#my ($fh)=@_;
-		#hm how do we cache the stat result ? ah  give a delayed stat mensch.
-		my ($totlen_)=@_;
-		Force($totlen_) * $percentpos / 100
+	    if ($percentpos == 100) {
+		sub { undef }
+	    } else {
+		sub {
+		    # my ($totlen)=@_; NO since the outer side doesn't know IFF she must stat the fd
+		    #my ($fh)=@_;
+		    #hm how do we cache the stat result ? ah  give a delayed stat mensch.
+		    my ($totlen_)=@_;
+		    Force($totlen_) * $percentpos / 100
+		}
 	    }
 	} else {
 	    usage "invalid percent number: $percentpos"
 	}
+#    } elsif ($str=~ /^(\d+)  todo hour:minute:sec stuff./) {
+    } elsif ($str eq "-") {
+	# same as 100 %
+	sub { undef }
     } else {
 	usage "invalid format of position: '$str'";
     }
@@ -135,6 +143,7 @@ our ($f,$totlen_)= do {
 # well for now just require seeking  [so above delay was in vain]
 
 our $from= &$from__ ($totlen_);
+$from = 0 unless defined $from;
 our $to= &$to__ ($totlen_);
 #^- heh. int?. nope 32bit?. heh. mensch
 
@@ -153,7 +162,12 @@ my $buf;
 #AH das hat es sogar!
 
 our $out= bless *STDOUT{IO}, "Chj::IO::File";
-$f->xsendfile_to ($out, 0, $to-$from);
+if (defined $to) {
+    $f->xsendfile_to ($out, 0, $to-$from);
+} else {
+    # until eof
+    $f->xsendfile_to ($out)
+}
 
 $f->xclose;
 $out->xclose;

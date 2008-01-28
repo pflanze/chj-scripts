@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# for now, simple (e.g. do not take options yet)
+
+# but employ 'burst mode': react quickly a number of times, but then
+# sleep enough for not being a problem in the endless termination
+# case.
+
+nburst=5
+
+while true; do
+    for i in `seq 1 "$nburst"`; do
+	"$@"
+    done
+    sleep "$nburst"
+done

@@ -1,23 +1,25 @@
 #!/usr/bin/perl -w
 
-# Sam Dez  6 05:42:03 MET 2003
+# Mon Nov  5 13:42:46 MET 2007
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
 
-$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
-my ($mydir, $myname)=($1,$2); 
+our $length_in_bytes= 5;
+
+my $_length_in_bits= $length_in_bytes*8;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname file(s)
+    print "$myname
 
-  Remove trailing \\r's and \\n's.
-  (Note: not per line, only at the end of the file!
-   Also: doesn't work on stdin or '-'.)
+  Generate password of $length_in_bytes bytes of randomness/entropy(?)/data ($_length_in_bits bits).
 
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit (@_ ? 1 : 0);
 }
 
 my @args;
@@ -43,20 +45,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args;
+usage if @args;
 
-use Chj::xopen qw(xopen_read);
-use Chj::xtmpfile;
+use Chj::Random::Formatted 'random_passwd_string';
 
-for my $filepath (@args) {
-    my $content= (xopen_read $filepath)->xcontent;
-    #chomp $content;
-    if ($content=~ s/[\r\n]+\z//s) {
-	my $out= xtmpfile $filepath;
-	$out->xprint($content);
-	$out->xclose;
-	$out->xreplace_or_withmode($filepath);
-	print "did change file '$filepath'\n";
-    }
-}
+print random_passwd_string ($length_in_bytes),"\n"
+  or die $!;
 
+close STDOUT
+  or die $!;
