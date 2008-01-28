@@ -43,6 +43,7 @@ my $opt_trash;
 our $opt_pipe;
 our $opt_replace;
 our $opt_envvars;
+our $opt_continue;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -64,6 +65,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_replace=1;
     } elsif (/^--?e(nv-vars)?$/) {
 	$opt_envvars=1;
+    } elsif (/^--?c(ontinue)?$/) {
+	$opt_continue=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -97,7 +100,7 @@ use Chj::xpiped ':all';
 use Chj::xopen qw(xopen_read xopen_write);
 use Chj::Unix::exitcode;
 
-my $call=sub { # returns exit code from command
+my $call_=sub { # returns exit code from command
     my ($path, $maybe_newpath, $maybe_newfh)=@_;
     if ($opt_pipe) {
 	my $newfh= $maybe_newfh||xopen_write($maybe_newpath);
@@ -114,6 +117,11 @@ my $call=sub { # returns exit code from command
 	    xsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath)
 	}
     }
+};
+
+my $call= $opt_continue ? $call_ : sub {
+    my $rv= &$call_;
+    $rv == 0 or die "$myname: $cmd exited with ".exitcode($rv);
 };
 
 for my $path (@args) {
