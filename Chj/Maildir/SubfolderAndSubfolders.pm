@@ -13,6 +13,32 @@ Chj::Maildir::SubfolderAndSubfolders
 
 =head1 DESCRIPTION
 
+See maildir-move-folder script for an example.
+
+=head1 METHODS
+
+=over 4
+
+=item new ($the_subfolder_to_ac_upon)
+
+=item add_from_subbasename ($subbasename)
+
+(internally called by record_subfolders, not (really) meant for user usage (right?))
+
+(QUESTION: does it only do this 1 level deep?)
+
+=item record_subfolders ()
+
+to be called from outside, to get to know all sub folders to be moved with it. (modifies $self)
+
+=item rename ("newname")
+
+carries out the rename work, both renaming all affected folders in the
+filesystem and the subscriptions in the subscriptions file. (modifies data outside)
+
+HMMMM, can only rename? not move to a different 'place' (folder) altogether?
+
+=back
 
 =cut
 

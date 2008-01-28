@@ -207,20 +207,4 @@ sub basename {# haha, in the shell `basename` sense: the last part of the unix p
 # }
 
 
-# cj 4.8.04:
-# rename?  oder delete?  in beiden fällen müsste geprüft werden ob es subfolders gibt.
-# in welchem falle der folder nur geleert werden dürfte, nicht rmeoved. oder aber: alle sub folders nach-gemoved.
-# mitmoven isch wohl gescheiter
-# sub list_of_subfolders {
-#     my $s=shift;
-#     my $basedirectorypath= $s->basedirectorypath;
-#     my $d=xopendir $basedirectorypath;
-#-> Chj::Maildir::SubfolderAndSubfolders
-
-#sub DESTROY {
-#    my $self=shift;
-#    # çç dito rausschmeissen wenn nicht benutzt
-#    $self->SUPER::DESTROY;
-#}
-
 1;

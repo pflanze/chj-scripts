@@ -31,8 +31,7 @@ use strict;
 
 
 use Chj::xopen;
-use lib "/root/extlib"; ##urgh
-use is_if_up;
+use Chj::is_if_up;
 
 
 our @defaultifaces= qw(eth0 eth1 ppp0);
