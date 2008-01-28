@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Son Jan 20 09:43:40 MET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $separator=",";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  Joins the strings given as arguments, using '$separator' by default.
+  Note: does not currently escape anything!
+  (I'm using it for mkdir .a .b .c then turn those arguments to a --to
+  argument for movefiles.)
+
+  Options:
+  --separator
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?s(?:ep(?:arator)?(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $separator=$1
+        } else {
+            $separator=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+#usage unless @args;
+
+print join( $separator, @args ),"\n"
+  or die "stdout: $!";
+close STDOUT or die "stdout: $!";

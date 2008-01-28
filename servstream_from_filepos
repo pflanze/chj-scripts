@@ -7,10 +7,10 @@ fi
 
 
 if [ $# -ne 2 -o "H$1" == "H-h" ]; then
-    echo "Usage: $0 filename bytes|percent%"
+    echo "Usage: $0 filename bytes|percent%|XhYmZs"
     cat <<EOF
   Bitte filename angeben des files das tail'ed und served werden soll, 
-  sowie position in bytes oder prozent mit %
+  sowie position in bytes oder prozent mit % oder als stundenminutensekunden.
   Das ist ein quickhack eines streaming servers.
 EOF
     exit 1
@@ -47,6 +47,13 @@ perl -we '
 	$p=$1;
 	$l=(stat $ARGV[0])[7];
 	$pos= $l*$p/100;
+    } elsif ($pos=~ /^(?:(\d*)[hH:])?(?:(\d*)[mM'\''])?(?:(\d*)(?:[sS]|'\'\''))?\z/) {
+	# bleibt nur noch, 6:30 oder so zu erkennen, als wenn an einer stelle einheit angegeben die andere eruieren  ableiten.  (aber, im Falle von : ja eben unsicher weil ja eben auch minuten sein koennten..)
+	my ($h,$m,$s)=($1,$2,$3);
+	my $sec= 60 * ((60 * ($h||0)) + ($m||0)) + ($s||0);
+	# assume 128000 bit/sec as in dnalounge streams:
+	my $bytespersec= 128000/8;
+	$pos= int($bytespersec * $sec);
     }
     seek F,$pos,0 or die "seek: $!";
     do { 

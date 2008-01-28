@@ -1,17 +1,29 @@
 #!/usr/bin/perl -w
 
+# prevent lexical var trapping:
+sub myeval ( $ ) {
+    #eval @_ NOOOGRR
+    eval $_[0]
+}
+
 # Don Dez 11 12:22:45 MET 2003
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
-use Chj::xperlfunc;
 use Chj::Util::AskChoose qw(askchoose_autonum_withcanceldef);
+use Chj::xperlfunc ":all";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname --to folder1,folder2,folder3 files
+
+  Optional options:
+  --show perlcode  run this code before each question instead of running
+                   less; \$_ is set to the current file path
+
+  \$opt_no_reopen_tty not yet interfaced
 
   (Christian Jaeger <$email>)
 ";
@@ -20,7 +32,7 @@ exit @_ ? 1 : 0;
 
 my @args;
 my $DEBUG=0;
-my $opt_to;
+my ($opt_to, $opt_show, $opt_no_reopen_tty);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -36,6 +48,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         } else {
             $opt_to=$ARGV[++$i] or usage "missing argument for '$_' option";
         }
+    } elsif (/^--?s(?:how(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_show=$1
+        } else {
+            $opt_show=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -44,17 +62,27 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args and $opt_to;
 
+my $show = $opt_show ? do {
+    my $c= myeval 'sub {'.$opt_show.'}';
+    die $@ if $@;
+    $c
+} : sub {
+    xsystem "less",$_;
+};
+
 my @to=split /,/,$opt_to;
 
 @to or usage "no folders given";
 
-for my $file (@args) {
-    xsystem "less",$file;
+open STDIN, "</dev/tty" or die "could not open /dev/tty: $!"
+  unless $opt_no_reopen_tty;
+
+for (@args) {
+    &$show;
     if (defined (my $target=askchoose_autonum_withcanceldef(["n","[n]o move"],@to))) {
-	#my $fromdir= $file; $fromdir=~ s{[^/]+\z}{} or die "'$file' is not a file path";
-	my $filename= $file; $filename=~ s{.*/}{}s;
+	my $filename= $_; $filename=~ s{.*/}{}s;
 	my $to= "$target/$filename";
-	xrename $file,$to;
+	xlinkunlink $_,$to;
     }
 }
 

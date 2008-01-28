@@ -1,74 +1,167 @@
 #!/usr/bin/perl -w
 
-# 30.9.02 umgestellt dass es beeponserver benutzt.
-
 use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
-	print "$myname address
-  Continuously pings address and beeps if it can't reached.
+    if (@_) {
+	print @_,"\n";
+    }
+    print "$myname address
+  Continuously pings address and beeps or pops up a dialog if it can't reached.
   For use with bad network cabling so you know when you've lost connectivity.
-";
-exit;
+
+  Options:
+  [ see source code GetOptions (this should offer a way to derive a help list, hm) ]
+"; #'syntactically'(aka macros)? at runtime? multistage compiler? (detection as constants and thus 'easy' target of) partial evaluation? MEINUNG
+    exit(@_ ? 1 : 0);
 }
 
+
+use Getopt::Long ':config'=> 'bundling';
+use Fcntl;
+use Time::HiRes 'usleep';
+use Chj::xperlfunc;
+
+our $verbose;
+our $opt_popup;
+our $opt_callback; #our $opt_command; #our $opt_callback;
+our $opt_retryperiod;
+our $opt_i;
+our $opt_expecttime;
+our $opt_periodically;
+usage unless GetOptions (
+			 'verbose|v'=>\$verbose,
+			 'popup|dialog|p'=>\$opt_popup,
+			 'callback|cmd=s'=> \$opt_callback,
+			 'retryperiod=i'=> \$opt_retryperiod,
+			 'i|pinginterval=i'=> \$opt_i,
+			 'expecttime=i'=> \$opt_expecttime, # bad name probably. but what should it be called?
+			 'periodically=i'=> \$opt_periodically,
+			);
 
 usage unless @ARGV==1;
 my $address= shift;
 usage if $address=~ /^-/;
+usage "don't give both --popup and --callback options" if $opt_callback && $opt_popup;
 
-use Fcntl;
-use Time::HiRes 'usleep';
+our ($trouble_on_cb,
+     $trouble_off_cb,
+     $expecttime,
+     $maybe_retrytime,
+    );
 
-pipe READ,WRITE;
+if ($opt_popup) {
+    $expecttime= defined($opt_expecttime) ? $opt_expecttime : 2; # (at first I thought it would have to be longer but it was just that I didn't kill, just wait, upon backingup event, and only did survive that block by chance with the signal, but alas, problem.)
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : undef;# well it wouldn't make sense here? except to re-rise the window.
+    my $childpid;
+    my $waitpid= sub {
+	waitpid $childpid,0;
+	$childpid= undef;
+    };	
+    my $maybe_killchild= sub {
+	if ($childpid) {
+	    kill 9, $childpid;
+	    &$waitpid;
+	}
+    };
+    $trouble_on_cb= sub {
+	&$maybe_killchild;
+	if ($childpid= xfork) {
+	    # nothing
+	} else {
+	    xexec "xmessage", localtime()." $myname: network down event"
+	}
+    };
+    $trouble_off_cb= sub {
+	&$maybe_killchild;
+    };
+} elsif ($opt_callback) {
+    $expecttime= defined($opt_expecttime) ? $opt_expecttime : 6; # give it more time // do not be too sensitive.
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : 10;
+    $trouble_on_cb= sub {
+	xsystem $opt_callback;
+    };
+    $trouble_off_cb= sub {
+	# noop
+    };
+} else {
+    $expecttime= defined($opt_expecttime) ? $opt_expecttime : 2;
+    $maybe_retrytime= defined($opt_retryperiod) ? $opt_retryperiod : 10; # beep every 10 seconds, that was what it did in the old version
+    $trouble_on_cb= sub {
+	xxsystem "/root/bin/beeponserver";
+	usleep 150000;
+	xxsystem "/root/bin/beeponserver";
+    };
+    $trouble_off_cb= sub {
+	xxsystem "/root/bin/beeponserver";
+    };
+}
 
-my $pid=fork;
-defined $pid or die $!;
+usage "pinginterval ($opt_i) must be smaller than expecttime ($expecttime)!"
+  if (defined ($opt_i) and $opt_i >= $expecttime);
+
+
+
+pipe READ,WRITE
+  or die $!;
+
+my $pid=xfork;
 
 if ($pid) {
-	#father
-	close WRITE;
-	#sysopen HUHU,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht öffnen: $!";
-	#my $old=select HUHU; $|=1; select $old;
-	#$|=1;
-	$SIG{ALRM}= sub {
-		die "ALRM\n";
-		#print TTY "\007";
-		#alarm 0;
+    #father
+    close WRITE;
+    $SIG{ALRM}= sub {
+        die "ALRM\n";
+    };
+    my $lastbeep=time;
+    my $in_trouble=0;
+    my $time;
+    while(1) {
+	my $trouble_on= sub {
+	    my ($msg)=@_;
+	    $lastbeep=$time;
+	    $in_trouble=1;
+            print localtime($time)."\t$msg\n";
+	    alarm 0;
+	    &$trouble_on_cb;
 	};
-	my $lastbeep=0;
-	while(1) {
-		eval {
-			alarm 2;
-			while (<READ>) {
-				alarm 2;
-				print "$_";
-				if ($lastbeep) {
-					$lastbeep=0;
-					#print HUHU "\007"; # andere tonlage?
-					system "/root/bin/beeponserver";
-					print localtime()."\tWEITER\n";
-				}
+
+	eval {
+            alarm $expecttime;
+            while (<READ>) {
+		$time=time;
+		# success, got ping back
+                if ($in_trouble) {
+		    # been in trouble, not any more
+		    alarm 0;
+		    $in_trouble=0;
+                    print localtime()."\tOK\n";
+                    &$trouble_off_cb;
+                } else {
+		    if ($opt_periodically) {
+			if ($time-$lastbeep > $opt_periodically) {
+			    &$trouble_on("PERIODIC_CALL");
 			}
-		};
-		die unless $@ eq "ALRM\n";
-		my $time=time;
-		if ($time-$lastbeep > 10) {
-			$lastbeep=$time;
-			#print HUHU "\007";
-			system "/root/bin/beeponserver";
-			usleep 150000;
-			#print HUHU "\007";
-			system "/root/bin/beeponserver";
-			print localtime($time)."\tUNTERBRUCH\n";
+		    }
 		}
-	}
+                alarm $expecttime;
+                print "$_" if $verbose;
+            }
+        };
+        die unless $@ eq "ALRM\n";
+	$time=time; # mutating this variable in 2 places, is necessary, selon the variant of exception path.
+        if (not($in_trouble)
+	    or
+	    ($maybe_retrytime and $time-$lastbeep > $maybe_retrytime)) {
+	    &$trouble_on("TROUBLE");
+        }
+    }
 }
 else {
-	close READ;
-	open STDOUT,">&WRITE";
-	exec "ping",$address;
-	die
+    close READ;
+    open STDOUT,">&WRITE";
+    exec "ping", (defined($opt_i) ? ("-i",$opt_i) : ()), $address;
+    die
 }

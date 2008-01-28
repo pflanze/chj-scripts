@@ -1,0 +1,173 @@
+#!/usr/bin/perl -w
+
+# Die Okt 16 17:11:37 MEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  output yes/no whether the given file exists in the git repository.
+  Exit with 0 if all given files exist, 1 if any one doesn't.
+
+  Options:
+  --quiet|-q    do not output anything, just communicate the exit value.
+  --showkey|-k  also output the object key (sha1 sum)
+  --showlog|-l  instead of outputting yes/no, iff the key esists, show
+                the log starting from the current head in less with the key as
+                search pattern.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+our $opt_quiet;
+our $opt_showkey;
+our $opt_showlog;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1;
+    } elsif (/^--?q(uiet)?$/) {
+	$opt_quiet=1;
+    } elsif (/^--?(k|showkey)$/) {
+	$opt_showkey=1;
+    } elsif (/^--?(l|showlog)$/) {
+	$opt_showlog=1;
+#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
+#         if (defined $1) {
+#             $XXX=$1
+#         } else {
+#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
+#         }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args;
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+use Chj::xpipeline 'xxpipeline';
+
+sub xpipeline { ##quick hack. something better should be part of the library of course.
+    eval {
+	xxpipeline @_
+    };
+    #$@  # reversed truth value. absencse of error is success. same old thing as anywhere aliwere  everyyear
+    my $e=$@;
+    if(ref $e or $e) {
+	if($e=~ /exit status/) {
+	    $e
+	} else {
+	    die $e
+	}
+    } else {
+	$e
+    }
+}
+
+sub hash_of_file_at_path {
+    my ($path)=@_;
+    my $s= Chj::IO::Command->new_sender ("git-hash-object",$path);
+    my $hash= $s->xcontent;
+    $s->xxfinish;
+    chomp $hash;
+    $hash
+}
+
+sub hash_exists_p {
+    my ($hash)=@_;
+    my $s= Chj::IO::Command->new_combinedsender ("git-cat-file","-t",$hash);
+    my $type_or_errors= $s->xcontent;
+    my $rv= $s->xfinish;
+    #print $type_or_errors,"\n";
+    #print "rv=$rv\n";
+    (($rv == 0) ? 1 :
+     ($rv == 128<<8 ? ($type_or_errors=~ /unable to find/ ? 0 : die "unknown error from git-cat-file (2) : '$type_or_errors'") :
+      die "unknown error from git-cat-file (1) : '$type_or_errors'"))
+}
+# NOTE:  behaves strangely in the case where a shorter than full id is given  and  it's  the prefix  ok   only this?
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfe"
+# 1
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfeb41c1"
+# 0
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfeb41c0"
+# 1
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfeb41c2"
+# 0
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfeb41c"
+# 1
+# main> :l hash_exists_p "bc4c75e918c750b606e1db20756c3346cfeb41d"
+# unknown error from git-cat-file (2) : 'fatal: Not a valid object name bc4c75e918c750b606e1db20756c3346cfeb41d
+# ' at ./g-blob-exists line 63.
+# main> 
+# ok yes it's only this.
+
+
+# will ja eigentlich dannaber eher ein find blob.
+
+#use Chj::repl; repl;
+
+my $stdout= bless *STDOUT{IO}, "Chj::IO::File";# solte doch ewig schon was  irgendwieanderschweisch.
+
+my $res_notexist;
+for my $file (@args) {
+    if (@args>1) {
+	print "$file\t" unless $opt_quiet;
+    }
+    my $key= hash_of_file_at_path $file;
+    my $ex= hash_exists_p $key;
+    my $print= sub {
+	my ($f)=@_;
+	$f->xprint($ex ? "yes" : "no");
+	if ($opt_showkey) {
+	    $f->xprint("\t$key")
+	}
+	$f->xprint("\n");
+    };
+    if ($opt_showlog) {
+	# output something into less.
+	if ($ex) {
+	    #my $less= Chj::IO::Command->new_receiver("less","-p",$key);
+	    #my $producer= Chj::IO::Command->new_receiver_w
+	    #hm hab i nis. da isch das mit pipeline.  (wie jene wohl schonwidr funzt?)
+	    xpipeline (["git-log", "--raw", "--no-abbrev"],
+		       ["less","-p",$key]);
+	} else {
+	    my $less= Chj::IO::Command->new_receiver("less");
+	    &$print ($less);
+	    $less->xfinish;
+	}
+    } else {
+	&$print ($stdout);
+    }
+    $res_notexist ||= !$ex;
+}
+
+# if *any* of the items don't exist, return false.
+
+# massives hindernis.
+
+# alle beide.xtreme oder so
+
+# katapult und dum und dem.
+
+exit ($res_notexist ? 1 : 0);
+
+#fürht hatl eben dazu dass bei no files  true gegeben wird  isch das logisch.?
+

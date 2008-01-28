@@ -1,0 +1,314 @@
+#!/usr/bin/perl -w
+
+# Mit Okt 17 12:10:04 MEST 2007
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $sleeptime=1;#
+$|++;
+
+use Chj::xperlfunc;
+sub _mkplaymp3 {
+    my ($path)=@_;
+    sub {
+	xsystem "mpg123","-q", $path
+    }
+}
+*sound_upload= _mkplaymp3 "/usr/share/gtkgo/mp3/click.mp3";
+*sound_delete= _mkplaymp3 "/usr/share/gtkgo/mp3/blackm.mp3";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname basedir 'filespec as perl expr' targetbase
+
+  scan basedir and it's subdirs periodically, files which match
+  filespec (a perl expression acting on \$_) and have changed are
+  copied to the target (an ssh url).
+
+  Options:
+  -c|--continuous   keep watching the hierarchy and sync files again if they
+                    changed. Additionally, remove files on the target if they
+                    disappear locally (NOT YET IMPLEMENTED?).
+  --dry|--dry-run   only show which files would be synched.
+  --ignore 'perl expr'  ignore dir and file paths matching spec
+  --sound           play sounds upon uploads/deletes
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my @args;
+my $DEBUG=0;
+our $opt_dryrun;
+our $opt_continuous;
+our $opt_followlinks=1; # fixed for now, ok?
+our $verbose;
+our $opt_ignore;
+our $opt_sound;
+for (my $i=0; $i<=$#ARGV; $i++) {
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+    	usage
+    } elsif ($_ eq '--') {
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
+    } elsif (/^--?d(ebug)?$/) {
+	$DEBUG=1; $verbose=1;
+    } elsif (/^--?v(erbose)?$/) {
+	$verbose=1;
+    } elsif (/^--?c(ontinuous)?$/) {
+	$opt_continuous=1;
+    } elsif (/^--?dry(-?run)?$/) {
+	$opt_dryrun=1;
+    } elsif (/^--?sound$/) {
+	$opt_sound=1;
+    } elsif (/^--?i(?:gnore(?:=(.*))?)?$/) {
+        if (defined $1) {
+            $opt_ignore=$1
+        } else {
+            $opt_ignore=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
+    } elsif (/^-./) {
+    	usage("Unknown option '$_'\n");
+    } else {
+    	push @args, $_
+    }
+}
+usage unless @args == 3;
+
+#usage "don't give both --dry and --continuous" if ($opt_dryrun and $opt_continuous); well why not? !.
+
+
+our ($basedir,$filespec_code,$targetbase)=@args;
+
+use Chj::singlequote;
+
+sub sub_from_spec ( $ ) {
+    my ($string)=@_;
+    my $s= eval 'sub { my($v)=@_; local $_=$v; '.$string.' }';
+    if (ref $@ or $@) {
+	my $str= "$@"; chomp $str;
+	die "filespec ".singlequote($filespec_code).": $str ";
+    }
+    $s
+}
+#^-auch ein older.oldie.dy.
+
+our $filespec_pred= sub_from_spec ($filespec_code);
+our $maybe_ignore= sub_from_spec ($opt_ignore) if defined($opt_ignore);
+
+
+use Chj::ruse;#
+use Chj::Backtrace;#
+use Chj::Unix::ShellRPC::UpsyncWithSSH;
+use Chj::xopendir;
+use Chj::xperlfunc;
+use Chj::FP::Memoize 'memoize_1ary';
+use Chj::singlequote;
+use Digest::MD5;
+use Chj::xopen 'xopen_read';
+use Chj::FP::lazy;
+
+sub File_md5 ( $ ) {
+    my ($path)=@_;
+    my $f= xopen_read ($path);
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($f)
+      or die $!; ##does this error checking work?
+    $ctx->hexdigest; #could also use binary, as long as I don't check remote side and don't print it's value:
+    #$ctx->digest
+}
+
+our $rem= Chj::Unix::ShellRPC::UpsyncWithSSH->new_parse_location($targetbase);
+$rem->do_connect_and_chdir; #should it do this automatically ?
+
+*memo_warn_nonfile_path= memoize_1ary sub {
+    my ($itempath)=@_;
+    warn "$myname: ignoring non-file item ".singlequote ($itempath)."\n";
+};
+*memo_warn_couldnotstat= memoize_1ary sub {
+    my ($itempath)=@_;
+    warn "$myname: could not stat ".singlequote($itempath).": $!\n";
+};
+
+our (
+     $synchfilecontents,
+     $synchfiledelete,
+     $synchfilemd5,
+    );
+if ($opt_dryrun) {
+    $synchfilecontents= sub {
+	my ($path_from_base)=@_;
+	print "would sync file ".singlequote ($path_from_base)."\n";
+    };
+    $synchfiledelete= sub {
+	my ($path_from_base)=@_;
+	print "would delete remote file ".singlequote ($path_from_base)."\n";
+    };
+} else {
+    $synchfilecontents= sub {
+	my ($path_from_base)=@_;
+	if ($verbose) {
+	    print "synching file ".singlequote($path_from_base)."\n";
+	}
+	$rem->upload_file_path($basedir."/".$path_from_base, $path_from_base);
+    };
+    $synchfiledelete= sub {
+	my ($path_from_base)=@_;
+	if ($verbose) {
+	    print "deleting remote file ".singlequote($path_from_base)."\n";
+	}
+	$rem->remote_unlink($path_from_base);
+    };
+}
+$synchfilemd5= sub {
+    my ($path_from_base)=@_;
+    if ($verbose) {
+	print "getting md5 of remote file ".singlequote($path_from_base)."\n";#well only in debug mode ?ç
+    }
+    $rem->remote_md5sum($path_from_base);
+};
+
+# add sound
+if ($opt_sound) {
+    my $mk= sub {
+	my ($orig, $play)=@_;
+	sub {
+	    $orig->(@_);
+	    &$play;
+	}
+    };
+    $synchfilecontents= &$mk($synchfilecontents, \&sound_upload);
+    $synchfiledelete= &$mk($synchfiledelete, \&sound_delete);
+}
+
+
+our $Stat= ($opt_followlinks ? \&Xstat : \&Xlstat);
+
+sub scan_base ( $ $ ) {
+    my ($lastsynched, $checkprintthunk)=@_;
+    my $synched={};
+
+    my $scandir; $scandir= sub {
+	my ($path_from_base)=@_;
+	my $path= $basedir."/".$path_from_base; ##eine uri function nehmen dafür ? nö? oder wie? .. disalloven  well how would come.
+	my $d=xopendir($path);
+	while (defined (my $item= $d->xnread)) {
+	    my $itempath_from_base= $path_from_base."/".$item;
+	    next if ($maybe_ignore and &$maybe_ignore ($itempath_from_base));
+	    my $itempath= $basedir."/".$itempath_from_base;
+	    #my $st= xstat $itempath; # eben, ev xlstat ? ah und X
+	    if (my $st= $Stat->($itempath)) {
+
+		my $check_synchit= sub {
+		    my ($maybe_oldmd5)=@_;
+		    my $newmd5= File_md5 ($itempath);
+		    if ($maybe_oldmd5) {
+			if ($newmd5 eq $maybe_oldmd5) {
+			    # do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
+			} else {
+			    Force ($checkprintthunk);
+			    &$synchfilecontents ($itempath_from_base);
+			}
+		    } else {
+			Force ($checkprintthunk);
+			# only actually synch it if it's not already the same remotely:
+			my $maybe_remotemd5= eval {
+			    &$synchfilemd5 ($itempath_from_base);
+			};
+			###check kind of error?
+			if ($maybe_remotemd5 and ($maybe_remotemd5 eq $newmd5)) {
+			    print "content of file ".singlequote ($itempath_from_base)." is already the same\n" if $verbose;
+			} else {
+			    &$synchfilecontents ($itempath_from_base);
+			}
+		    }
+		    $$synched{$itempath_from_base}=[$st,$newmd5];
+		};
+		my $not_synch= sub {#still have to copy over the "currently live files" data.
+		    $$synched{$itempath_from_base}= $$lastsynched{$itempath_from_base};
+		};
+
+		if ($st->is_dir) {
+		    &$scandir ($itempath_from_base);
+		} elsif ($st->is_file) {
+		    if (&$filespec_pred ($itempath)) {
+			# already done or not ?.
+			if (my $old= $$lastsynched{$itempath_from_base}) {
+			    my ($oldst,$oldmd5)=@$old;
+			    if ($oldst->equal_content($st)) { # equal_content is enough; equal() would also check permissions."ah". And those I don't sync right now.
+				# if mtime is very near, then check the md5 again (against races)
+				if ((my $timediff= time - $st->mtime) < 2) {
+				    &$check_synchit ($oldmd5);
+				} else {
+				    # do nothing--well, do this:
+				    &$not_synch;
+				}
+			    } else {
+				&$check_synchit ($oldmd5)
+			    }
+			} else {
+			    &$check_synchit (undef)
+			}
+		    }
+		} else {
+		    memo_warn_nonfile_path ($itempath);
+		}
+		#undef $check_synchit;
+		#undef $not_synch;
+		# don't help. 'interestingly'. perl 5.6.1 is just broken, but i still don't see why those don't help. It must be extremely broken.
+	    } else {
+		memo_warn_couldnotstat ($itempath);
+	    }
+	}
+    };
+
+    &$scandir("."); #schreg, "" geht nid weil "/pfade" für remote futch, aber ?.  schlecht weil  . wirklich cwd meint normalerweise   wirrlich oder rechtfertigt ?
+    undef $scandir; #ok der *ist* notwendig (wenn recursive referenz actually contained in the closure) und *hilft* aber auch.
+
+    # which files have been deleted?
+    for my $key (keys %$lastsynched) {
+	if ($$synched{$key}) {
+	    # ok
+	} else {
+	    Force ($checkprintthunk);
+	    &$synchfiledelete ($key)
+	}
+    }
+
+    $synched
+}
+
+
+if ($opt_continuous) {
+    local our $lastsynched={};
+    while (1) {
+	use Chj::xpipe; use Storable qw(fd_retrieve store_fd);
+	my ($read,$write)=xpipe;
+	if (my $pid= xfork) {
+	    $write->xclose;
+	    print "parent waiting for child to send data and exit..\n" if $DEBUG;
+	    $lastsynched= fd_retrieve($read)
+	      or die "fd_retrieve: ?: $!";
+	    print "parent got child data..\n" if $DEBUG;
+	    xxwait;
+	    print "parent got child status ok.\n" if $DEBUG;
+	} else {
+	    $read->xclose;
+	    for (1..600) { # after so many iterations it will have leaked about 3MB.
+		my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
+		$lastsynched= scan_base($lastsynched, $checkprintthunk);
+		sleep $sleeptime;
+	    }
+	    store_fd($lastsynched,$write) or die "store_fd: ?: $!";
+	    exit 0;
+	}
+    }
+} else {
+    scan_base({}, Delay { undef });
+}
+
