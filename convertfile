@@ -27,6 +27,8 @@ sub usage {
   -e|--env-vars  put the *escaped* source and target filenames into the
                  \$from and \$to environment variables instead of
                  appending them as arguments to the command
+  -c|--continue  continue after errors; but throw away the output files
+                 that have been generated.
 
   (Christian Jaeger <$email>)
 ";
@@ -93,22 +95,23 @@ use Chj::Trash 'trash';
 use Chj::xtmpfile;
 use Chj::xpiped ':all';
 use Chj::xopen qw(xopen_read xopen_write);
+use Chj::Unix::exitcode;
 
-my $call=sub {
+my $call=sub { # returns exit code from command
     my ($path, $maybe_newpath, $maybe_newfh)=@_;
     if ($opt_pipe) {
 	my $newfh= $maybe_newfh||xopen_write($maybe_newpath);
 	my $in= xopen_read $path;
 	#hm. hab ich noch nix dafür? ok wrote Chj::xpiped now.
-	xxpiped $in, $newfh, [$cmd];
+	xpiped $in, $newfh, [$cmd]
     } else {
 	my $newpath= $maybe_newpath||$maybe_newfh->path;
 	if ($opt_envvars) {
 	    $ENV{from}= $path;
 	    $ENV{to}= $newpath;
-	    xxsystem $cmd;
+	    xsystem $cmd
 	} else {
-	    xxsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath);
+	    xsystem "$cmd ".quotemeta($path)." ".quotemeta($newpath)
 	}
     }
 };
