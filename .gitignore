@@ -7,6 +7,10 @@
 Chj/IO/Tempfile.pmORIG
 *.unison.bak
 
+.gitbck_*
+.log_post
+.log_pre
+
 
 # todo fix those (they don't load):
 

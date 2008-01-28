@@ -14,7 +14,7 @@ Chj::Parse::Date::Localtime
  my $parser= Chj::Parse::Date::Localtime->new;
  my $unixtime= $parser->xparse("Fri Dec  7 16:34:28 2001");
  my $unixtime= $parser->parse("Fri Dec  7 16:34:28 2001")
-   or die $parser->msgstr;
+   or die $parser->errmsg;
 
 
 

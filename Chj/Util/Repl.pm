@@ -46,6 +46,8 @@ For a list of all settable options see source of this module.
 
  - 'A::Class-> ' method completion
  - maybe '$ans->[1]->' method completion
+ - fix problem with exception display w/o :l mode
+ - with :v, already the output during computation should go to less, right? or introduce :V maybe?
 
 =item IDEAS
 
@@ -364,7 +366,10 @@ sub run {
 		    $term->readline($$self[Prompt] or ($$self[Package]||$caller)."> ");
 		};
 		if ($@) {
-		    if ($@ eq "SIGINT\n") {
+		    if (!ref($@) and
+			($@ eq "SIGINT\n"
+			 or $@=~ /^SIGINT\n\t\w/s # when use Chj::Backtrace is in use
+			)) {
 			print $STDOUT "\n";
 			redo DO;
 		    } else {

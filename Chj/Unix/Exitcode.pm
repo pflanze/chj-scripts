@@ -42,11 +42,11 @@ sub as_string {
     if ($code < 256) {
 	"signal $code (".Chj::Unix::Signal->new($code)->as_string.")"
     } else {
-	if (($code % 256) == 0) {
-	    "code ".($code >> 8)
+	if (($code & 255) == 0) {
+	    "exit value ".($code >> 8)
 	} else {
 	    warn "does this ever happen?";
-	    "both exit code and signal ($code)"
+	    "both exit value and signal ($code)"
 	}
     }
 }

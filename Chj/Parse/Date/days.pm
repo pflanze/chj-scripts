@@ -29,6 +29,7 @@ package Chj::Parse::Date::days;
 	      %longday_list_by_locale
 	      %shortday_hash_by_locale
 	      %longday_hash_by_locale
+	      $lcday_hash
 	     );
 
 use strict;
@@ -37,7 +38,7 @@ use strict;
 # :d ($dt = DateTime::Locale->load( 'it' ))-> day_abbreviations
 # etc.
 
-our %shortday_list_by_locale=
+our %shortday_list_by_locale=  #(well "locale" is misleading, "language" would be more appropriate)
   (
    de=> [
 	 'Mo',
@@ -47,6 +48,15 @@ our %shortday_list_by_locale=
 	 'Fr',
 	 'Sa',
 	 'So'
+	],
+   de_3char=> [ # as printed by "date" with de_CH locale.
+	 'Mon',
+	 'Die',
+	 'Mit',
+	 'Don',
+	 'Fre',
+	 'Sam',
+	 'Son'
 	],
    en=> [
 	 'Mon',
@@ -117,7 +127,14 @@ our %longday_list_by_locale=
 	],
   );
 
+# starting to use refs everywhere.
 
+# map *all* sorts of day names to the day number (0..6):
+use Chj::Parse::Date::daysmonthsutils 'list_of_arrays_to_hash__with_startidx';
+our $lcday_hash =
+  list_of_arrays_to_hash__with_startidx(0)
+  ->((values %shortday_list_by_locale),
+     (values %longday_list_by_locale));
 
 
 # modified copy from months.pm:

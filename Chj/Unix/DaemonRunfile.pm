@@ -102,8 +102,8 @@ sub new {
 
 sub writefile {
     my $s=shift;
-    my ($namegiver)=@_;# optional. naja?.
-    $namegiver||= $$s[Namegiver];
+    my ($maybe_namegiver, $maybe_alreadyrunningcb)=@_;# 'optional. naja?.'  jo und nun backwards needed.
+    my $namegiver= $maybe_namegiver || $$s[Namegiver];
     {
 	local $^F=60000;# do not close on exec. safe number?
 	$$s[_Fh]= xsysopen_readwrite $$s[Path];
@@ -115,7 +115,6 @@ sub writefile {
 				       $namegiver->ip,
 				       $namegiver->pid);
 	# 2.) get fcntl lock, too?
-	
 	#$runfh->xrewind; it's still 0 anyway
 	$$s[_Fh]->xtruncate;
 	$$s[_Fh]->xprint("$user\0$hostname\0$ip\0$pid\n");
@@ -140,7 +139,11 @@ sub writefile {
 		}
 	    };
 	}
-	croak __PACKAGE__.": writefile '$$s[Path]': there is already a daemon running ($u\@$h pid $p)";##(warum croak?)
+	if ($maybe_alreadyrunningcb) {
+	    &$maybe_alreadyrunningcb
+	} else {
+	    croak __PACKAGE__.": writefile '$$s[Path]': there is already a daemon running ($u\@$h pid $p)";##(warum croak?)    warum  package?.  warum  exception?  warum sagen es gehe um daemon?  wenns doch unabhaenige funktionalitaet ist oder nid? nid ganz? krank.
+	}
     }
 }
 

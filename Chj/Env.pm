@@ -20,8 +20,20 @@ stuff like in my cj-env module hehe.
 
 package Chj::Env;
 @ISA="Exporter"; require Exporter;
-#@EXPORT_OK=qw();
-@EXPORT=qw(pp_through);
+@EXPORT=qw(
+	   pp_through
+	   min
+	   max
+	   zip
+	   zipall
+	   Map
+	  );
+@EXPORT_OK=qw(
+	      compose
+	      maybe_compose
+	     );
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
+
 
 use strict;
 use Data::Dumper;
@@ -33,5 +45,70 @@ sub pp_through {
     wantarray ? @_ : $_[-1] ##hmnm
 }
 
+sub max {
+    return () unless @_;
+    my $res=shift;
+    for (@_) {
+	if ($_>$res) {
+	    $res=$_
+	}
+    }
+    $res
+}
+
+sub min {
+    return () unless @_;
+    my $res=shift;
+    for (@_) {
+	if ($_<$res) {
+	    $res=$_
+	}
+    }
+    $res
+}
+
+sub _Mkzip {
+    my ($minmax)=@_;
+    sub {
+	my $width=@_;
+	my $len= &$minmax( map { scalar @$_ } @_ );
+	my @res;
+	for (my $i=0; $i<$len; $i++) {
+	    push @res, [ map { $$_[$i] } @_ ]
+	}
+	\@res
+    }
+}
+
+*zip= _Mkzip \&min;
+*zipall= _Mkzip \&max;
+
+sub compose {
+    my (@fn)= reverse @_;
+    sub {
+	my (@v)= @_;
+	for (@fn) {
+	    @v= &$_(@v);
+	}
+	wantarray ? @v : $v[-1]
+    }
+}
+
+sub maybe_compose {
+    my (@fn)= reverse @_;
+    sub {
+	my (@v)= @_;
+	for (@fn) {
+	    return unless @v>1 or defined $v[0];
+	    @v= &$_(@v);
+	}
+	wantarray ? @v : $v[-1]
+    }
+}
+
+sub Map {
+    my $fn=shift;
+    map { &$fn($_) } @_
+}
 
 1

@@ -13,6 +13,9 @@ Chj::status
 
 =head1 DESCRIPTION
 
+=head1 NOTE
+
+Use L<Chj::Unix::exitcode> instead now, ok?
 
 =cut
 
