@@ -15,4 +15,4 @@ if [ $# -lt 1 -o "A$1" == "A-h" -o "A$1" == "A--help" ]; then
     usage
 fi
 
-find -name Kconfig -print0|xargs -0 egrep "$@"
+find -name 'Kconfig*' -print0|xargs -0 egrep "$@"
