@@ -14,15 +14,46 @@ my ($mydir, $myname)=($1,$2);
 
 use Chj::Unix::SuperPATH;
 use Chj::xperlfunc 'Xlstat';
+use Getopt::Long;
+
+our @origargv= @ARGV;
+
+my $options={};
+GetOptions($options,
+	   'f=s',# actually i but who bothers
+	   'l=s',
+	   'layout',
+	   'raw',
+	   'htmlmeta',
+	   'enc',
+	   'eol=s',
+	   'nopgbrk',
+	   'opw=s',
+	   'upw=s',
+	   'q',
+	   'cfg',
+	   'v',
+	   'h',
+	  )
+  or die "$0: there are unknown/invalid options, maybe you're using a newer version of pdftotext than this wrapper is written for, so adapt my source code";
+
+
+our $super=sub { #you ask why I put it into scalar space? because, I dunno, wrote the calls below like that, so I will write the declaration to fit them.
+    xsuperexec $myname, @origargv;
+};
 
 if (@ARGV==2) {
     my ($from, $to)=@ARGV;
-    if (Xlstat($to)) {
+    if (Xlstat($to)) { # Xlstat is better than lstat: it checks for permission errors and the like. Ok you may say, why bother, if the path cannot be accessed super will also not be able to write it. well anyway.
 	die "path '$to' already exists";
     } else {
-	xsuperexec $myname, $from,$to;
+	&$super;
     }
 } elsif (@ARGV==1) {
-    xsuperexec $myname,$ARGV[0];
+    &$super
+} elsif (@ARGV>2) {
+    die "too many paths given";
 } else {
-    die "$0: expected 
+    # no paths given at all; should be safe.
+    &$super;
+}
