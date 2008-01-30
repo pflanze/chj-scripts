@@ -1,0 +1,28 @@
+#!/usr/bin/perl -w
+
+# Mit Jan 30 12:27:49 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+# A wrapper around pdftotext to check, if given, the second argument
+# for existance. I don't want to have my pdf files overwritten just
+# because I gave it pdftotext *.pdf (argh)
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+use Chj::Unix::SuperPATH;
+use Chj::xperlfunc 'Xlstat';
+
+if (@ARGV==2) {
+    my ($from, $to)=@ARGV;
+    if (Xlstat($to)) {
+	die "path '$to' already exists";
+    } else {
+	xsuperexec $myname, $from,$to;
+    }
+} elsif (@ARGV==1) {
+    xsuperexec $myname,$ARGV[0];
+} else {
+    die "$0: expected 
