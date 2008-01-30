@@ -45,7 +45,7 @@ our $super=sub { #you ask why I put it into scalar space? because, I dunno, wrot
 if (@ARGV==2) {
     my ($from, $to)=@ARGV;
     if (Xlstat($to)) { # Xlstat is better than lstat: it checks for permission errors and the like. Ok you may say, why bother, if the path cannot be accessed super will also not be able to write it. well anyway.
-	die "path '$to' already exists";
+	die "target path '$to' already exists";
     } else {
 	&$super;
     }
