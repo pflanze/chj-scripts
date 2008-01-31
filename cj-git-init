@@ -17,6 +17,12 @@ if [ -d ".git" ]; then
 [i18n]
 	commitencoding=latin1
 EOF
+    if [ ! -f ".gitignore" ]; then
+	cat >> .gitignore <<EOF
+*~
+.gitignore
+EOF
+    fi
 else
     echo "missing .git dir; can only work on local directory, thus aborting before post setup step."
     exit 1
