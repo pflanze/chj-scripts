@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+
+# Don Jan 31 06:24:59 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+# Yes, since mbox2maildir from the debian qmail package is not in
+# source-installed qmail. And the mb2md Debian package script just
+# doesn't seem to want to work.
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path/to/mbox path/to/maildir
+
+[  Options:
+  --create   create the target mailbox. sense?
+]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+
+my $options={};
+
+GetOptions($options,
+"create=s",
+)
+or usage "invalid options";#?.
+usage unless @ARGV==2;
+
+our ($path_mbox, $path_maildir)=@ARGV;
+
+# for now, assume $path_maildir exists. (use cj-maildirmake manually)
+
+use Chj::xopen 'xopen_read';
+use Chj::xsysopen ':all';  # Chj::xopen does not offer any excl option. Sigh still?. But doesn't matter?
+
+sub readandwrite {
+    my $f= xopen_read($path_mbox);
+    my $time=time;
+    my $pid=$$;
+    local $_;
+    # loop variables:
+    my $n=0;
+    my $out;
+    while (defined($_= $f->xreadline)) {
+	if (/^From /) {
+	    $out->xclose if $out;
+	    my $outpath= "$path_maildir/new/$time.${pid}_$n.mbox";
+	    $n++;
+	    $out= xsysopen_excl($outpath);
+	} else {
+	    s/^>From /From /;
+	    $out->xprint($_);
+	}
+    }
+    $f->xclose;
+    $out->xclose if $out;
+}
+
+readandwrite;
+
