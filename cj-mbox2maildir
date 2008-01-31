@@ -15,9 +15,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname path/to/mbox path/to/maildir
 
-[  Options:
-  --create   create the target mailbox. sense?
-]
+  Options:
+  #--create   create the target mailbox. sense? not impl.!
+  --picky   do not treat any /^From / as a message split marker.
+            useful for converting mailman archives.
+            Require a mail address and a date in the line in this case.
 
   (Christian Jaeger <$email>)
 ";
@@ -26,12 +28,13 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 
-my $options={};
+my $option={};
 
-GetOptions($options,
-"create=s",
-)
-or usage "invalid options";#?.
+GetOptions($option,
+	   "create=s",
+	   "picky",
+	  )
+  or exit 1;# msg has already been printed.!
 usage unless @ARGV==2;
 
 our ($path_mbox, $path_maildir)=@ARGV;
@@ -41,6 +44,7 @@ our ($path_mbox, $path_maildir)=@ARGV;
 use Chj::xopen 'xopen_read';
 use Chj::xsysopen ':all';  # Chj::xopen does not offer any excl option. Sigh still?. But doesn't matter?
 
+my $match= $$option{picky} ? qr/^From (?:\S+\s+)+(20|19)\d\d\s*$/ : qr/^From /; # ziemlich doof. richtig datumsparsen? wie?. tja. eben. ...huh...
 sub readandwrite {
     my $f= xopen_read($path_mbox);
     my $time=time;
@@ -50,7 +54,7 @@ sub readandwrite {
     my $n=0;
     my $out;
     while (defined($_= $f->xreadline)) {
-	if (/^From /) {
+	if (/$match/) {
 	    $out->xclose if $out;
 	    my $outpath= "$path_maildir/new/$time.${pid}_$n.mbox";
 	    $n++;
