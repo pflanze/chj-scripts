@@ -20,6 +20,11 @@ sub usage {
   --picky   do not treat any /^From / as a message split marker.
             useful for converting mailman archives.
             Require a mail address and a date in the line in this case.
+  --subject-modify perlcode
+            code to do things on subject line in \$_ like strip
+            mailinglist identifyers. NOTE hack: only first line of
+            subject is treated.. (tja. so comes when one does not use
+            a library.)
 
   (Christian Jaeger <$email>)
 ";
@@ -33,6 +38,7 @@ my $option={};
 GetOptions($option,
 	   "create=s",
 	   "picky",
+	   "subject-modify=s",
 	  )
   or exit 1;# msg has already been printed.!
 usage unless @ARGV==2;
@@ -45,6 +51,16 @@ use Chj::xopen 'xopen_read';
 use Chj::xsysopen ':all';  # Chj::xopen does not offer any excl option. Sigh still?. But doesn't matter?
 
 my $match= $$option{picky} ? qr/^From (?:\S+\s+)+(20|19)\d\d\s*$/ : qr/^From /; # ziemlich doof. richtig datumsparsen? wie?. tja. eben. ...huh...
+my $maybe_subject_run= do {
+    if (my $code= $$option{"subject-modify"}) {
+	my $c= eval "sub { $code }";
+	die if $@;
+	$c
+    } else {
+	undef
+    }
+};
+
 sub readandwrite {
     my $f= xopen_read($path_mbox);
     my $time=time;
@@ -53,14 +69,31 @@ sub readandwrite {
     # loop variables:
     my $n=0;
     my $out;
+    my $in_head;
     while (defined($_= $f->xreadline)) {
 	if (/$match/) {
 	    $out->xclose if $out;
 	    my $outpath= "$path_maildir/new/$time.${pid}_$n.mbox";
 	    $n++;
 	    $out= xsysopen_excl($outpath);
+	    $in_head=1;
 	} else {
-	    s/^>From /From /;
+	    if (/^$/) {
+		$in_head=0;
+	    }
+	    if ($in_head) {
+		if ($maybe_subject_run and /^((?i:subject):\s*)([^\r\n]*)(.*)/s) {
+		    $_= do {
+			my $pre=$1;
+			local $_=$2;
+			my $post=$3;
+			&$maybe_subject_run();
+			$pre.$_.$post
+		    };
+		}
+	    } else {
+		s/^>From /From /;
+	    }
 	    $out->xprint($_);
 	}
     }
