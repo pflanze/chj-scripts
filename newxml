@@ -41,7 +41,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
-#use Chj::xsysopen 'xsysopen_excl';  gibt es nicht, ev richtigerweise?.
+#using xtmpfile since  Chj::xsysopen 'xsysopen_excl' didn't exist at that time.
 use Chj::xtmpfile;
 use Chj::xperlfunc;
 
