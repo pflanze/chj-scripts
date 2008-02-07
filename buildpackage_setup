@@ -37,10 +37,13 @@ use fileutils qw(fetchfile writebackfile);
 
 my %mapping= (# Note: & will be replaced by @; this is a precaution against spam robots
 	      # reading this script from my homepage
-	      chris=>["cj",'jaeger&ethlife.ethz.ch'],
-	      christian=>["ct",'tarnutzer&ethlife.ethz.ch'],
-	      chriscompile=>["cj",'jaeger&ethlife.ethz.ch'],
-	     );
+	      do {
+		  my $cj= ["cj",'christian&jaeger.mine.nu'];
+		  (chris=> $cj,
+		   chriscompile=> $cj,
+		   chrisrebuild=> $cj)
+	      });
+#^- todo: finally replace all those with gecos etc tracking. I've got that even already in a module after all (almost).
 
 $_= $mapping{$ENV{USER}} or die "Kenne User '$ENV{USER}' nicht, bitte in $0 nachtragen.\n";
 my ($initials,$email)= @$_;
