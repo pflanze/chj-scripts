@@ -4,6 +4,8 @@
 
 use strict;
 use Chj::Cwd::realpath ;
+#use Chj::Lockfile;
+use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 
 my $emacs= $ENV{EMACS_FLAVOUR} || "xemacs21";
 my $gnuclient= "/usr/bin/gnuclient.$emacs";
@@ -34,7 +36,8 @@ exit @_;
 }
 
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
-my $startuplock= $lockfilebase."/.startuplock";
+my $startuplock_path= $lockfilebase."/.startuplock";
+my $startuplockfh= xsysopen_append ($startuplock_path, 0600);
 
 my $nw;
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -78,7 +81,7 @@ sub rungnuclientwithargs {
 my $tty;
 if (!$ENV{DISPLAY} or $nw) {
     $ENV{TERM}="linux"; #if $ENV{TERM} eq "xterm";
-    # check/create lock file:
+    # check/create display lock file: (this is independent from startup lock!)
     unless (-d $lockfilebase) {
 	mkdir $lockfilebase,0700
 	  or die "$myname: could not create base dir for lock files '$lockfilebase': $!\n";
@@ -90,7 +93,8 @@ if (!$ENV{DISPLAY} or $nw) {
 	if (kill 0,$pid){
 	    die "$myname: you have already an emacs frame running on this terminal.\n";
 	} else {
-	    unlink $linkfile or die "$myname: could not unlink stale '$linkfile': $!\n";
+	    unlink $linkfile
+	      or die "$myname: could not unlink stale '$linkfile': $!\n";
 	}
     }
     if (! -f "$lockfilebase/.lastcleanup" or  -M _ > 1/100) { # 100 per day
@@ -102,7 +106,8 @@ if (!$ENV{DISPLAY} or $nw) {
 		if (kill 0,$pid){
 		    # leave it there
 		} else {
-		    unlink $l or warn "$myname: could not unlink stale '$l': $!\n";
+		    unlink $l
+		      or warn "$myname: could not unlink stale '$l': $!\n";
 		}
 	    }
 	}
@@ -112,17 +117,34 @@ if (!$ENV{DISPLAY} or $nw) {
     symlink "$$",$linkfile or die "$myname: could not create symlink $linkfile: $!\n";
 }
 
-if (reachable) {
-    rungnuclientwithargs;
-} else {
-    require Chj::ulimit;
-    Chj::ulimit::ulimit("-S","-v",200000);
-    0==system "screen","-d","-m",$emacs,"-nw","-f","gnuserv-start"
-      or die "screen returned exit code $?";
-    my $z=0;
-    do {
-        sleep 1;
-        $z++ > 40 and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
-    } until reachable;
-    rungnuclientwithargs;
+my $TIMEOUT=40;
+my $reachattempts=0;
+CHECKREACHABLE: {
+    if (reachable) {
+	rungnuclientwithargs;
+    } else {
+	require Chj::ulimit;
+	Chj::ulimit::ulimit("-S","-v",200000);
+	if (flock $startuplockfh,LOCK_EX) {
+	    0==system "screen","-d","-m",$emacs,"-nw","-f","gnuserv-start"
+	      or die "screen returned exit code $?";
+	    my $z=0;
+	    do {
+		sleep 1;
+		$z++ > $TIMEOUT
+		  and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
+	    } until reachable;
+	    flock $startuplockfh,LOCK_UN or die "??unlock: $!";
+	    rungnuclientwithargs;
+	} else {
+	    # there's already someone starting the up, so wait and try again.
+	    if ($reachattempts <= ($TIMEOUT + 10)) { # give it 10 more seconds: this gives someone (maybe us) a second chance starting the thing.
+		$reachattempts++;
+		sleep 1;
+		redo CHECKREACHABLE;
+	    } else {
+		die "too many attempts at reaching an emacs that is supposedly being started by another process";
+	    }
+	}
+    }
 }
