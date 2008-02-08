@@ -44,7 +44,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 
-use lib "/root/extlib";
 use Chj::defined_and_length;
 
 sub absolutize($$) {  ## could be much better: check for symlinks in paths in filesystem.

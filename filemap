@@ -12,7 +12,8 @@ use Chj::xperlfunc;
 use Chj::xperlfunc qw( xxcarefulrename);#xlinkunlink
 use Carp;
 use Chj::xopen qw(xopen_read xopen_write);
-use lib "/root/extlib"; use Filepaths;
+use lib "/opt/chj/perllib";
+use Filepaths;
 use Chj::Cwd::realpath;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 

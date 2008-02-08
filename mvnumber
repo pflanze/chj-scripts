@@ -51,7 +51,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @files;
 
-use lib "/root/extlib";
+use lib "/opt/chj/perllib";
 use Filepaths;
 use Chj::xperlfunc 'Xlstat';
 
