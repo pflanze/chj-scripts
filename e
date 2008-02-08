@@ -22,9 +22,9 @@ sub usage {
 
   options: see options in the gnuclient manpage.
 
- (This should work for all emacsen. You may set the \$EMACS_FLAVOUR
-  env var to something like 'emacs' or 'emacs-21.1'; the
-  default is 'xemacs21'.
+ (This might work for all emacsen (but probably not). You may set the
+ \$EMACS_FLAVOUR env var to something like 'emacs' or 'emacs-21.1';
+ the default is 'xemacs21'.
   The current values are:
     emacs: '$emacs'
     gnuclient: '$gnuclient'
