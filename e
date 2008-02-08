@@ -6,6 +6,8 @@ use strict;
 use Chj::Cwd::realpath ;
 #use Chj::Lockfile;
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
+use Chj::Unix::exitcode;
+use Chj::oerr;
 
 $|++;
 
@@ -16,7 +18,7 @@ my $gnuclient= "/usr/bin/gnuclient.$emacs";
 # terminal situations.)
 
 my $TIMEOUT=40;
-
+our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5); # seconds before we let any other 'e' call send anything to our beloved and hell of buggy xemacs 21.4 (patch 6)
 our $verbose= $ENV{VERBOSE} ? 1 : 0;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -31,6 +33,8 @@ sub usage {
   options: see options in the gnuclient manpage.
 
   For verbosity, set the VERBOSE environment variable to true.
+  For changing the time to let xemacs alone from $TIME_TO_GIVE_XEMACS
+  to something else, set the TIME_TO_GIVE_XEMACS env var accordingly.
 
  (This might work for all emacsen (but probably not). You may set the
  \$EMACS_FLAVOUR env var to something like 'emacs' or 'emacs-21.1';
@@ -75,7 +79,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 sub reachable {
     warn "$$ checking reachability.." if $verbose;
-    #sleep 1;  ---> ohne dies wird foo gar nicht geöffnet!  --> muss lock wohl noch länger anhalten!!!
     my $p=fork;
     defined $p or die "Could not fork: $!";
     my $res= do {
@@ -97,6 +100,7 @@ sub reachable {
 }
 
 sub rungnuclientwithargs {
+    alarm 0; # switch off previously set up alarms. #hacky?
     my @args;
     for (@ARGV) {
 	push @args, do {
@@ -107,7 +111,29 @@ sub rungnuclientwithargs {
 	    }
 	};
     }
-    exec $gnuclient, @args;
+    my $p=fork;
+    defined $p or die "Could not fork: $!";
+    if ($p) {
+	# now either we return soon enough to justify holding on to
+	# the lock, or just unlock after that certain time:
+	$SIG{ALRM}= sub {
+	    alarm 0;
+	    startup_unlock;
+	};
+	alarm $TIME_TO_GIVE_XEMACS;
+	wait;
+	# does the alarm make us continue w/o having really waited? (I think perl does reenter, right?)
+	warn "$$ returned from wait for gnuclient" if $verbose;
+	# propagate errors --- OLD missing stuff...
+	if ($? == 0) {
+	    exit 0
+	} else {
+	    warn "$myname: gnuclient exited with ".exitcode($?)."\n";
+	    exit 1;
+	}
+    } else {
+	exec $gnuclient, @args;
+    }
 }
 
 my $tty;
@@ -156,8 +182,7 @@ alarm $TIMEOUT;
 eval {
     startup_lock; #this and the above 5 lines and the catching should of course be abstracted away.
     if (reachable) { #btw we're (still) getting a second chance, starting it on our own here.. (we're using two approaches for 'waiting' for the emacs server process hehe)
-	alarm 0;#!!
-	startup_unlock;
+	#alarm 0;#!!
 	rungnuclientwithargs;
     } else {
 	require Chj::ulimit;
@@ -170,8 +195,7 @@ eval {
 	    $z++ > ($TIMEOUT - 5)
 	      and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
 	} until reachable;
-	alarm 0;#!!
-	startup_unlock;
+	#alarm 0;#!!
 	rungnuclientwithargs;
     }
 };
