@@ -140,6 +140,7 @@ alarm $TIMEOUT;
 eval {
     startup_lock; #this and the above 5 lines and the catching should of course be abstracted away.
     if (reachable) { #btw we're (still) getting a second chance, starting it on our own here.. (we're using two approaches for 'waiting' for the emacs server process hehe)
+	alarm 0;#!!
 	startup_unlock;
 	rungnuclientwithargs;
     } else {
@@ -153,6 +154,7 @@ eval {
 	    $z++ > ($TIMEOUT - 5)
 	      and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
 	} until reachable;
+	alarm 0;#!!
 	startup_unlock;
 	rungnuclientwithargs;
     }
