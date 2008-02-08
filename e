@@ -7,6 +7,8 @@ use Chj::Cwd::realpath ;
 #use Chj::Lockfile;
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 
+$|++;
+
 my $emacs= $ENV{EMACS_FLAVOUR} || "xemacs21";
 my $gnuclient= "/usr/bin/gnuclient.$emacs";
 # (There's also emacsclient.emacs21, part of emacs21 package; but that
@@ -43,18 +45,22 @@ exit @_;
 
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 my $startuplock_path= $lockfilebase."/.startuplock";
-my $startuplockfh= xsysopen_append ($startuplock_path, 0600);
+my $startuplockfh= do {
+    local $^F=0;
+    xsysopen_append ($startuplock_path, 0600);
+};
+use Carp;
 sub startup_lock {
-    warn "$$: trying to get lock" if $verbose;
+    carp "$$: trying to get lock" if $verbose;
     flock $startuplockfh,LOCK_EX
       or die "locking: $!";
-    warn "$$: got lock" if $verbose;
+    carp "$$: got lock" if $verbose;
 }
 sub startup_unlock {
-    warn "$$: releasing lock" if $verbose;
+    carp "$$: releasing lock" if $verbose;
     flock $startuplockfh,LOCK_UN or die "??unlock: $!";
 }
-
+#und fun warum backtrace von carp?. heut geht wieder mal nichts deterministisch.
 
 my $nw;
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -68,17 +74,42 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 
 sub reachable {
+    warn "$$ checking reachability.." if $verbose;
+    sleep 1;
     my $p=fork;
     defined $p or die "Could not fork: $!";
-    if ($p){
-        wait;
-    } else {
-        open STDOUT,">/dev/null";
-        open STDERR,">/dev/null";
-        exec $gnuclient, qw(-batch -eval t);
-        exit 2;
-    }
-    $? == 0;
+    my $res= do {
+	if ($p){
+	    local $SIG{ALRM}= sub { die "ALRM\n"};
+	    alarm 5;
+	    eval {
+		wait;
+		alarm 0;
+	    };
+	    my $e=$@;
+	    alarm 0;
+	    if (ref $e or $e) {
+		if ($e eq "ALRM\n") {
+		    kill 9,$p and do{ warn "$$ killed $p" if $verbose };
+		    warn "$$ got timeout checking for reachability" if $verbose;
+		    undef
+		} else {
+		    die $e
+		}
+	    } else {
+		$? == 0;
+	    }
+	} else {
+	    unless ($verbose) {
+		open STDOUT,">/dev/null";
+		open STDERR,">/dev/null";
+	    }
+	    exec $gnuclient, qw(-batch -eval t);
+	    exit 2;
+	}
+    };
+    warn "$$ reachability check gave ".($res ? "true":"false") if $verbose;
+    $res
 }
 
 sub rungnuclientwithargs {
@@ -162,7 +193,7 @@ eval {
 };
 if (ref $@ or $@) {
     if ($@ eq "ALRM\n") {
-	die "$myname: timed out waiting for lock (another process supposedly starting up xemacs)\n";
+	die "$myname ($$): timed out waiting for lock (another process supposedly starting up xemacs)\n";
     } else {
 	die $@
     }
