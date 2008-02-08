@@ -60,7 +60,7 @@ unless ($cmd){
  use SGML::DTD; # fuer Doku lies /usr/share/doc/perlsgml/html/SGML..DTD.htmluse elcms_general_settings;
  BEGIN { $^W=$oldW }
 }
-use lib "/root/extlib";
+use lib "/opt/chj/perllib";
 use fileutils 'fetchfile';
 use Data::Dumper;
 
