@@ -132,7 +132,7 @@ $SIG{ALRM}= sub {
 alarm $TIMEOUT;
 eval {
     startup_lock; #this and the above 5 lines and the catching should of course be abstracted away.
-    if (reachable) {
+    if (reachable) { #btw we're (still) getting a second chance, starting it on our own here.. (we're using two approaches for 'waiting' for the emacs server process hehe)
 	startup_unlock;
 	rungnuclientwithargs;
     } else {
