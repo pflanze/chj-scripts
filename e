@@ -38,6 +38,13 @@ exit @_;
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= xsysopen_append ($startuplock_path, 0600);
+sub startup_lock {
+    flock $startuplockfh,LOCK_EX
+}
+sub startup_unlock {
+    flock $startuplockfh,LOCK_UN or die "??unlock: $!";
+}
+
 
 my $nw;
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -118,33 +125,35 @@ if (!$ENV{DISPLAY} or $nw) {
 }
 
 my $TIMEOUT=40;
-my $reachattempts=0;
-CHECKREACHABLE: {
+
+$SIG{ALRM}= sub {
+    die "ALRM\n";
+};
+alarm $TIMEOUT;
+eval {
+    startup_lock; #this and the above 5 lines and the catching should of course be abstracted away.
     if (reachable) {
+	startup_unlock;
 	rungnuclientwithargs;
     } else {
 	require Chj::ulimit;
 	Chj::ulimit::ulimit("-S","-v",200000);
-	if (flock $startuplockfh,LOCK_EX) {
-	    0==system "screen","-d","-m",$emacs,"-nw","-f","gnuserv-start"
-	      or die "screen returned exit code $?";
-	    my $z=0;
-	    do {
-		sleep 1;
-		$z++ > $TIMEOUT
-		  and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
-	    } until reachable;
-	    flock $startuplockfh,LOCK_UN or die "??unlock: $!";
-	    rungnuclientwithargs;
-	} else {
-	    # there's already someone starting the up, so wait and try again.
-	    if ($reachattempts <= ($TIMEOUT + 10)) { # give it 10 more seconds: this gives someone (maybe us) a second chance starting the thing.
-		$reachattempts++;
-		sleep 1;
-		redo CHECKREACHABLE;
-	    } else {
-		die "too many attempts at reaching an emacs that is supposedly being started by another process";
-	    }
-	}
+	0==system "screen","-d","-m",$emacs,"-nw","-f","gnuserv-start"
+	  or die "screen returned exit code $?";
+	my $z=0;
+	do {
+	    sleep 1;
+	    $z++ > ($TIMEOUT - 5)
+	      and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
+	} until reachable;
+	startup_unlock;
+	rungnuclientwithargs;
+    }
+};
+if (ref $@ or $@) {
+    if ($@ eq "ALRM\n") {
+	die "$myname: timed out waiting for lock (another process supposedly starting up xemacs)\n";
+    } else {
+	die $@
     }
 }
