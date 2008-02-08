@@ -47,6 +47,7 @@ my $startuplockfh= xsysopen_append ($startuplock_path, 0600);
 sub startup_lock {
     warn "$$: trying to get lock" if $verbose;
     flock $startuplockfh,LOCK_EX
+      or die "locking: $!";
     warn "$$: got lock" if $verbose;
 }
 sub startup_unlock {
