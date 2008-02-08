@@ -65,13 +65,13 @@ sub reachable {
 sub rungnuclientwithargs {
     my @args;
     for (@ARGV) {
-    push @args, do {
-        if (/^-/) {
-        $_;
-        } else {
-        realpath($_) or $_
-        }
-    };
+	push @args, do {
+	    if (/^-/) {
+		$_;
+	    } else {
+		realpath($_) or $_
+	    }
+	};
     }
     exec $gnuclient, @args;
 }
@@ -82,17 +82,18 @@ if (!$ENV{DISPLAY} or $nw) {
     $ENV{TERM}="linux"; #if $ENV{TERM} eq "xterm";
     # check/create lock file:
     unless (-d $lockfilebase) {
-    mkdir $lockfilebase,0700 or die "$myname: could not create base dir for lock files '$lockfilebase': $!\n";
+	mkdir $lockfilebase,0700
+	  or die "$myname: could not create base dir for lock files '$lockfilebase': $!\n";
     }
     $tty=`/usr/bin/tty`; chomp $tty;
     $tty=~ s/\//-/sg;
     my $linkfile= "$lockfilebase/$tty";
     if (my $pid=readlink $linkfile){
-    if (kill 0,$pid){
-        die "$myname: you have already an emacs frame running on this terminal.\n";
-    } else {
-        unlink $linkfile or die "$myname: could not unlink stale '$linkfile': $!\n";
-    }
+	if (kill 0,$pid){
+	    die "$myname: you have already an emacs frame running on this terminal.\n";
+	} else {
+	    unlink $linkfile or die "$myname: could not unlink stale '$linkfile': $!\n";
+	}
     }
 =pod
     my $pid=fork; defined $pid or die "$myname: could not fork: $!\n";
@@ -114,20 +115,20 @@ if (!$ENV{DISPLAY} or $nw) {
   # so it does not work that well from perl. Instead, do periodic cleanups.
   # well es würd schon gehn mit WUNTRACED aber iss ja nun egal.
     if (! -f "$lockfilebase/.lastcleanup" or  -M _ > 1/100) { # 100 per day
-    opendir DIR,$lockfilebase  or die "opendir: $!";
-    while (defined ($_=readdir DIR)){
-        next if $_=~/^\./;
-        my $l= "$lockfilebase/$_";
-        if (my $pid=readlink $l){
-        if (kill 0,$pid){
-            # leave it there
-        } else {
-            unlink $l or warn "$myname: could not unlink stale '$l': $!\n";
-        }
-        }
-    }
-    closedir DIR;
-    open OUT,">$lockfilebase/.lastcleanup" or die $!; print OUT "~";close OUT;
+	opendir DIR,$lockfilebase  or die "opendir: $!";
+	while (defined ($_=readdir DIR)){
+	    next if $_=~/^\./;
+	    my $l= "$lockfilebase/$_";
+	    if (my $pid=readlink $l){
+		if (kill 0,$pid){
+		    # leave it there
+		} else {
+		    unlink $l or warn "$myname: could not unlink stale '$l': $!\n";
+		}
+	    }
+	}
+	closedir DIR;
+	open OUT,">$lockfilebase/.lastcleanup" or die $!; print OUT "~";close OUT;
     }
     symlink "$$",$linkfile or die "$myname: could not create symlink $linkfile: $!\n";
 }
