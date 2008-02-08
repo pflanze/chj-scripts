@@ -75,7 +75,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 sub reachable {
     warn "$$ checking reachability.." if $verbose;
-    sleep 1;
+    #sleep 1;  ---> ohne dies wird foo gar nicht geöffnet!  --> muss lock wohl noch länger anhalten!!!
     my $p=fork;
     defined $p or die "Could not fork: $!";
     my $res= do {
@@ -87,7 +87,7 @@ sub reachable {
 		open STDOUT,">/dev/null";
 		open STDERR,">/dev/null";
 	    }
-	    alarm 5; # does this hold over to after the exec?
+	    alarm 3; # does this hold over to after the exec? yes.
 	    exec $gnuclient, qw(-batch -eval t);
 	    exit 2;
 	}
