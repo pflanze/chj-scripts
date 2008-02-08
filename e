@@ -13,6 +13,10 @@ my $gnuclient= "/usr/bin/gnuclient.$emacs";
 # doesn't work on terminals afaik, or at least not in mixed X and
 # terminal situations.)
 
+my $TIMEOUT=40;
+
+our $verbose= $ENV{VERBOSE} ? 1 : 0;
+
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
@@ -23,6 +27,8 @@ sub usage {
   It allows to use just this one command to use $emacs comfortably.
 
   options: see options in the gnuclient manpage.
+
+  For verbosity, set the VERBOSE environment variable to true.
 
  (This might work for all emacsen (but probably not). You may set the
  \$EMACS_FLAVOUR env var to something like 'emacs' or 'emacs-21.1';
@@ -39,9 +45,12 @@ my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= xsysopen_append ($startuplock_path, 0600);
 sub startup_lock {
+    warn "$$: trying to get lock" if $verbose;
     flock $startuplockfh,LOCK_EX
+    warn "$$: got lock" if $verbose;
 }
 sub startup_unlock {
+    warn "$$: releasing lock" if $verbose;
     flock $startuplockfh,LOCK_UN or die "??unlock: $!";
 }
 
@@ -123,8 +132,6 @@ if (!$ENV{DISPLAY} or $nw) {
     }
     symlink "$$",$linkfile or die "$myname: could not create symlink $linkfile: $!\n";
 }
-
-my $TIMEOUT=40;
 
 $SIG{ALRM}= sub {
     die "ALRM\n";
