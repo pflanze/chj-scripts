@@ -80,30 +80,14 @@ sub reachable {
     defined $p or die "Could not fork: $!";
     my $res= do {
 	if ($p){
-	    local $SIG{ALRM}= sub { die "ALRM\n"};
-	    alarm 5;
-	    eval {
-		wait;
-		alarm 0;
-	    };
-	    my $e=$@;
-	    alarm 0;
-	    if (ref $e or $e) {
-		if ($e eq "ALRM\n") {
-		    kill 9,$p and do{ warn "$$ killed $p" if $verbose };
-		    warn "$$ got timeout checking for reachability" if $verbose;
-		    undef
-		} else {
-		    die $e
-		}
-	    } else {
-		$? == 0;
-	    }
+	    wait;
+	    $? == 0;
 	} else {
 	    unless ($verbose) {
 		open STDOUT,">/dev/null";
 		open STDERR,">/dev/null";
 	    }
+	    alarm 5; # does this hold over to after the exec?
 	    exec $gnuclient, qw(-batch -eval t);
 	    exit 2;
 	}
