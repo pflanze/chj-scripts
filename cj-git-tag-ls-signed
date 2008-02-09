@@ -14,12 +14,25 @@ sub usage {
   List all tags in the current git repository which are signed, sorted
   by their creation date.
 
+  Options:
+  -v|--invert show tags which are *not* signed
+  -a|--all  show all tags
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
+use Getopt::Long;
+my $options={};
+GetOptions($options,
+	   "v|invert",
+	   "a|all",
+	  )
+  or exit 1;
 usage if @ARGV;
+
+use Data::Dumper; print Dumper $options;
 
 {
     package Chj_App::ParsedTag;
@@ -63,9 +76,13 @@ sub cat_tag {
 
 sub getsignedtagsparsedandsorted {
     my $ls= Chj::IO::Command->new_sender("git","tag","-l");
+    my $curried_xor= sub {
+	my ($v)=@_;
+	$$options{v} ? !$v : $v
+    };
     my $res= [
 	      sort { $a->maybe_unixtime <=> $b->maybe_unixtime }
-	      grep { $_->is_signed and $_->maybe_unixtime }
+	      grep { $$options{a} || &$curried_xor($_->is_signed) and $_->maybe_unixtime }
 	      map { chomp; parse_tag($_, cat_tag ($_)) }
 	      <$ls>
 	     ];
