@@ -24,7 +24,7 @@ usage if @ARGV;
 {
     package Chj_App::ParsedTag;
     use Class::Array -fields=> -publica=>
-      (qw(name maybe_contentrf maybe_unixtime is_signed));
+      (qw(name maybe_contentrf maybe_unixtime maybe_tagger is_signed));
     sub new {
 	my $cl=shift;
 	bless [@_],$cl
@@ -37,15 +37,15 @@ use Chj::IO::Command;
 sub parse_tag {
     my ($name,$strrf)=@_;
     my $is_signed= $$strrf=~ /^-----BEGIN PGP SIGNATURE-----$/m;
-    my $maybe_unixtime= do {
-	if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger (?:[^\n]*) (\d+) [-+\d]\d+ *\n/s) {
-	    $1
+    my ($maybe_unixtime,$maybe_tagger)= do {
+	if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger ([^\n]*) (\d+) [-+\d]\d+ *\n/s) {
+	    ($2,$1)
 	} else {
 	    warn "no match for tagger field in '$$strrf'";
-	    undef
+	    (undef,undef)
 	}
     };
-    Chj_App::ParsedTag->new($name,$strrf,$maybe_unixtime,$is_signed);
+    Chj_App::ParsedTag->new($name,$strrf,$maybe_unixtime,$maybe_tagger,$is_signed);
 }
 
 sub cat_file { # returns content ref
@@ -76,5 +76,5 @@ sub getsignedtagsparsedandsorted {
 #use Chj::Backtrace; use Chj::repl; repl;
 for (@{ getsignedtagsparsedandsorted() }) {
     #disguisedlyoptimized,  or even not optimized because I prevented optimizer because of my vector but optimizer isnt so good anyway, lazy map.
-    print localtime($_->maybe_unixtime)."\t".$_->name."\n";
+    print localtime($_->maybe_unixtime)."\t".$_->name."\t".$_->maybe_tagger."\n";
 }
