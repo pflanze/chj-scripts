@@ -73,8 +73,6 @@ sub getsignedtagsparsedandsorted {
     $res
 }
 
-#use Chj::Backtrace; use Chj::repl; repl;
 for (@{ getsignedtagsparsedandsorted() }) {
-    #disguisedlyoptimized,  or even not optimized because I prevented optimizer because of my vector but optimizer isnt so good anyway, lazy map.
     print localtime($_->maybe_unixtime)."\t".$_->name."\t".$_->maybe_tagger."\n";
 }
