@@ -83,6 +83,7 @@ sub Main { #only to be called once!! (GetOptions)
       or $pos= @cmd;
 
     use Chj::IO::Command;
+    use Chj::xperlfunc;
 
     my $recordsep="\n";
     local $/= $recordsep;
