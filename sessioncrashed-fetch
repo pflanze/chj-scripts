@@ -107,9 +107,14 @@ if ($dryrun) {
     }
     my $logfile= Force $Sessioncrashedfile_log;
     my $logfile_tmp= $logfile.".tmp";
-    die "logfile temp file '$logfile_tmp' already exists" if -e $logfile_tmp; #(well. we don't check the other one. but w'ever)
-    xxpipeline( [ "wget-page", @urls ],
-		[ "tee", "--append", "--ignore-interrupts", $logfile ] ); # append just for safety.?.
+    die "logfile temp file '$logfile_tmp' already exists"
+      if -e $logfile_tmp; #(well. we don't check the other one. but w'ever)
+    xxpipeline( sub {
+		    open STDERR,">&STDOUT" or die $!;
+		    xexec "wget-page", @urls
+		},
+		[ "tee", "--append", "--ignore-interrupts", $logfile_tmp ] # append just for safety.?.
+	      );
     xrename $logfile_tmp, $logfile;
     xrename $sessioncrashedfile_copy_tmp, $sessioncrashedfile_copy;
     print "$myname: done.\n";
