@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Son Feb 10 17:36:24 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $sessioncrashedfile= "$ENV{HOME}/.galeon/session_crashed.xml";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [sessioncrashed-file]
+
+  File is '$sessioncrashedfile' by default.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+($sessioncrashedfile)=@ARGV if @ARGV;
+
+use XML::LibXML;
+#use XML::LibXML::Parser; can't locate!
+our $parser= XML::LibXML->new; # strangely this returns a XML::LibXML::Parser object..? (man XML::LibXML::Parser) well no it's a XML::LibXML=HASH(0x82759e4). watever.  XML::LibXML::Parser->new doesn't work!
+
+$parser->line_numbers(1);
+
+our $doc = $parser->parse_file($sessioncrashedfile)
+  or die "could not parse file '$sessioncrashedfile' (os error?: $!)";
+
+#local our $node;
+#for $node ($doc ->findnodes ("/session/window/embed")) {
+#use Chj::Backtrace; use Chj::repl; repl;
+#}
+
+local our $url;
+for $url (
+	  map { $_ ->getAttribute("url") } $doc ->findnodes ("/session/window/embed")
+	 )
+  {
+      print "$url\n"
+  }
+
+#use Chj::ruse;
+
