@@ -6,14 +6,25 @@
 use strict;
 
 our $sessioncrashedfile= "$ENV{HOME}/.galeon/session_crashed.xml";
+sub chompingbacktick ( $ ) {
+    my $res= `$_[0]`;
+    chomp $res;
+    $res
+}
+our $sessioncrashedfile_copy= "urls_".chompingbacktick("date_").".xml";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [sessioncrashed-file]
+    print "$myname
 
-  File is '$sessioncrashedfile' by default.
+  Options:
+  --from sessioncrashedfile  ('$sessioncrashedfile' by default)
+  --to  copy_as_url_file  ('$sessioncrashedfile_copy' by default)
+
+  --dry-run   do only display the urls
+  --force     do not ask for confirmation before downloading
 
   (Christian Jaeger <$email>)
 ";
@@ -22,34 +33,72 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $dryrun=0;
+our $force=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "dry-run"=> \$dryrun,
+	   "force"=> \$force,
 	   ) or exit 1;
-usage unless @ARGV<=1;
+#usage unless @ARGV<=1;
+usage if @ARGV;
 
-($sessioncrashedfile)=@ARGV if @ARGV;
+#($sessioncrashedfile_copy)=@ARGV if @ARGV;
+
+use Chj::xperlfunc;
+
+xxsystem("cp",
+	 #"-a", no. current mtime, ok?
+	 $sessioncrashedfile,
+	 $sessioncrashedfile_copy);
 
 use XML::LibXML;
-#use XML::LibXML::Parser; can't locate!
-our $parser= XML::LibXML->new; # strangely this returns a XML::LibXML::Parser object..? (man XML::LibXML::Parser) well no it's a XML::LibXML=HASH(0x82759e4). watever.  XML::LibXML::Parser->new doesn't work!
+our $parser= XML::LibXML->new; # (notes about XML::LibXML{,::Parser} oddity stripped)
 
 $parser->line_numbers(1);
 
-our $doc = $parser->parse_file($sessioncrashedfile)
-  or die "could not parse file '$sessioncrashedfile' (os error?: $!)";
+our $doc = $parser->parse_file($sessioncrashedfile_copy)
+  or die "could not parse file '$sessioncrashedfile_copy' (os error?: $!)";
 
-#local our $node;
-#for $node ($doc ->findnodes ("/session/window/embed")) {
-#use Chj::Backtrace; use Chj::repl; repl;
-#}
-
-local our $url;
-for $url (
-	  map { $_ ->getAttribute("url") } $doc ->findnodes ("/session/window/embed")
-	 )
-  {
-      print "$url\n"
+our $errors=0;
+our @urls=
+  grep {
+      m|^https?://|s or do {
+	  warn "$myname: url '$_' does not look like something we can fetch\n";
+	  $errors++;
+	  0
+      }
   }
+  map { $_ ->getAttribute("url") }
+  $doc ->findnodes ("/session/window/embed");
 
+use Chj::Util::AskYN;
+sub make_sure ( $ ) {
+    my ($question)=@_;
+    if (!askyn($question)) { #should rather be called ask_confirmation or something like that.
+	die "$myname: exiting on user request.\n";
+    }
+}
+
+if ($errors) {
+    make_sure "Do you want to proceed with the remaining url's in spite of the above having been filtered out? "
+}
+
+our $prin= sub{
+    print map {"$_\n"} @urls
+      or die $!;
+};
+if ($dryrun) {
+    &$prin
+} else {
+    if ($force) {
+	# just do it
+    } else {
+	&$prin;
+	make_sure("Do you want to download the above url's? ");
+    }
+    xxsystem "wget-page", @urls;
+    print "$myname: done.\n";
+}
 #use Chj::ruse;
-
+#use Chj::Backtrace; use Chj::repl; repl;
