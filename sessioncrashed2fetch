@@ -41,10 +41,7 @@ GetOptions("verbose"=> \$verbose,
 	   "dry-run"=> \$dryrun,
 	   "force"=> \$force,
 	   ) or exit 1;
-#usage unless @ARGV<=1;
 usage if @ARGV;
-
-#($sessioncrashedfile_copy)=@ARGV if @ARGV;
 
 use Chj::xperlfunc;
 
