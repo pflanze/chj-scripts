@@ -60,6 +60,7 @@ while (<STDIN>) {
     # since we care about the record separator being output always
     # correctly, we filter the output ourselves:
     my $s= Chj::IO::Command->new_sender(@cmd);
+    $cmd[$pos]=undef; $_=undef; # save memory.
     my $out= $s->xcontentref;
     $s->xxfinish;
     chomp $$out;
