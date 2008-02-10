@@ -25,7 +25,6 @@ sub usage {
   mkdir's $newbasedir,
   hardlinks everything from $oldbasedir to $newbasedir,
   runs git-fetch and git-reset --hard \$tag in the latter,
-  runs git-fsck --full,
   runs @make_cmd,
   remembers time as time B,
   sleep 1,
