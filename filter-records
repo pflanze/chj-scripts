@@ -1,0 +1,9 @@
+#!/usr/bin/perl -w
+
+# Son Feb 10 05:27:47 CET 2008
+
+use strict;
+
+use Chj::App::Shell::FilterMap;
+
+Main("filter");
