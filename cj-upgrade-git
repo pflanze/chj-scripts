@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+
+# Sam Feb  9 23:18:54 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $oldbasedir= "/usr/src/GIT/git-old";
+our $newbasedir= "/usr/src/GIT/git-new";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname tag
+
+  mkdir's $newbasedir,
+  hardlinks everything from $oldbasedir to $newbasedir,
+  runs git-fetch and git-reset --hard \$tag in the latter,
+  runs git-fsck --full,
+  runs make,
+  remembers time as time A,
+  goes into $oldbasedir,
+    sleep 1,
+    checks that no file is as recent as A
+    runs make uninstall,
+  goes back into $newbasedir,
+    checks that no file is newer than A,
+    runs make install
+  removes $oldbasedir,
+  moves $newbasedir to $oldbasedir
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	  ) or exit 1;
+usage unless @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
