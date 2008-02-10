@@ -25,12 +25,13 @@ sub usage {
   mkdir's $newbasedir,
   hardlinks everything from $oldbasedir to $newbasedir,
   goes into $newbasedir
+    make sure that we're past A (sleep if not),
     runs git-fetch and git-reset --hard \$tag,
     runs @make_cmd,
   remembers time as time B,
-  sleep 1,
   goes into $oldbasedir,
     checks that no file is newer than A
+    make sure that we're past B (sleep if not),
     runs @make_uninstall_cmd,
   goes back into $newbasedir,
     checks that no file is newer than B,
