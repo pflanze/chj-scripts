@@ -24,8 +24,9 @@ sub usage {
   remembers time as time A,
   mkdir's $newbasedir,
   hardlinks everything from $oldbasedir to $newbasedir,
-  runs git-fetch and git-reset --hard \$tag in the latter,
-  runs @make_cmd,
+  goes into $newbasedir
+    runs git-fetch and git-reset --hard \$tag,
+    runs @make_cmd,
   remembers time as time B,
   sleep 1,
   goes into $oldbasedir,
