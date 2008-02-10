@@ -146,7 +146,7 @@ for my $file (@args) {
 	    #my $less= Chj::IO::Command->new_receiver("less","-p",$key);
 	    #my $producer= Chj::IO::Command->new_receiver_w
 	    #hm hab i nis. da isch das mit pipeline.  (wie jene wohl schonwidr funzt?)
-	    xpipeline (["git-log", "--raw", "--no-abbrev"],
+	    xpipeline (["git-log", "--raw", "--no-abbrev", "-r"],
 		       ["less","-p",$key]);
 	} else {
 	    my $less= Chj::IO::Command->new_receiver("less");
