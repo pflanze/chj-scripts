@@ -12,6 +12,7 @@ sub chompingbacktick ( $ ) {
     $res
 }
 our $sessioncrashedfile_copy= "urls_".chompingbacktick("date_").".xml";
+our $sessioncrashedfile_copy_tmp= $sessioncrashedfile_copy."~";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -50,15 +51,15 @@ use Chj::xperlfunc;
 xxsystem("cp",
 	 #"-a", no. current mtime, ok?
 	 $sessioncrashedfile,
-	 $sessioncrashedfile_copy);
+	 $sessioncrashedfile_copy_tmp);
 
 use XML::LibXML;
 our $parser= XML::LibXML->new; # (notes about XML::LibXML{,::Parser} oddity stripped)
 
 $parser->line_numbers(1);
 
-our $doc = $parser->parse_file($sessioncrashedfile_copy)
-  or die "could not parse file '$sessioncrashedfile_copy' (os error?: $!)";
+our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
+  or die "could not parse file '$sessioncrashedfile_copy_tmp' (os error?: $!)";
 
 our $errors=0;
 our @urls=
@@ -98,6 +99,7 @@ if ($dryrun) {
 	make_sure("Do you want to download the above url's? ");
     }
     xxsystem "wget-page", @urls;
+    xrename $sessioncrashedfile_copy_tmp, $sessioncrashedfile_copy;
     print "$myname: done.\n";
 }
 #use Chj::ruse;
