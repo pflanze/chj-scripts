@@ -11,6 +11,7 @@ our @make_uninstall_cmd= qw(make prefix=/usr/local uninstall);
 our @make_cmd= qw(nice make prefix=/usr/local all doc info);
 our @make_install_cmd= qw(make prefix=/usr/local install install-doc install-info);
 our $builduser= "compile";
+our @copy_cmd= (qw(cp -rl --), "$oldbasedir/.git", "$newbasedir/"); #unbelievable but the parens around the whole thing are necessary.
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -23,15 +24,15 @@ sub usage {
   moves $newbasedir to $oldbasedir,
   remembers time as time A,
   mkdir's $newbasedir,
-  hardlinks everything from $oldbasedir to $newbasedir,
+  runs @copy_cmd,
   goes into $newbasedir
-    make sure that we're past A (sleep if not),
+    makes sure that we're past A (sleep if not),
     runs git-fetch and git-reset --hard \$tag,
     runs @make_cmd,
   remembers time as time B,
   goes into $oldbasedir,
     checks that no file is newer than A
-    make sure that we're past B (sleep if not),
+    makes sure that we're past B (sleep if not),
     runs @make_uninstall_cmd,
   goes back into $newbasedir,
     checks that no file is newer than B,
