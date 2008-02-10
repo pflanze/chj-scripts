@@ -66,7 +66,7 @@ sub xxpipeline {
 	    $writeerr->xclose;
 	    my $err= $readerr->xcontent;
 	    if ($err) {
-		croak __PACKAGE__."::xxpipeline: could not execute @$firstframe: $err";
+		croak __PACKAGE__."::xxpipeline: could not run subprocess: $err";
 	    }
 	    waitpid $pid,0;
 	    croak "xxpipeline: first child gave exit status (\$?) $?" unless $?==0;##endlich rausfinden wie ich das will genau, sollte doch stets splitted sein das h ding
@@ -75,11 +75,23 @@ sub xxpipeline {
 	    $out->xdup2(1);
 	    # ps zum glück kein close von $out nötig, sonst würde mir destructor mit seinem wait reinfunken? isch das ein mess.  todo mal überlegen ob wait dort raus oder was immer
 	    # to_do2: ev hier auch noch das err ding machen für rausfinden was failed  done tja
-
-	    no warnings;
-	    exec @$firstframe;
-	    $writeerr->xprint($!);
-	    exit;
+	    if (ref ($firstframe) eq "CODE") {
+		eval {
+		    &$firstframe()
+		};
+		my $e=$@;
+		if (ref $e or $e) {
+		    $writeerr->xprint($e);
+		} else {
+		    # seemed to work fine ? did it ?? just exit successfully
+		}
+		exit;
+	    } else {
+		no warnings;
+		exec @$firstframe;
+		$writeerr->xprint($!);
+		exit;
+	    }
 	}
     } elsif (@_==1) {
 	xxsystem @{$_[0]}
