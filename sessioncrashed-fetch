@@ -28,6 +28,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname
 
+  Fetch all pages you've got currently open in galeon.
+  Please close windows/frames you don't want to be fetched, first.
+
   Options:
   --from sessioncrashedfile  ('$sessioncrashedfile' by default)
   --to  copy_as_url_file  ('$sessioncrashedfile_copy' by default)
