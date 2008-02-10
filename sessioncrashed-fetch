@@ -4,6 +4,8 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+use Chj::FP::lazy;
+use Chj::xpipeline 'xxpipeline';
 
 our $sessioncrashedfile= "$ENV{HOME}/.galeon/session_crashed.xml";
 sub chompingbacktick ( $ ) {
@@ -11,8 +13,14 @@ sub chompingbacktick ( $ ) {
     chomp $res;
     $res
 }
+
 our $sessioncrashedfile_copy= "urls_".chompingbacktick("date_").".xml";
 our $sessioncrashedfile_copy_tmp= $sessioncrashedfile_copy."~";
+our $Sessioncrashedfile_log= Delay {
+    my $s= $sessioncrashedfile_copy;
+    $s=~ s/\.xml\z//;
+    $s.".log";
+};
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -23,6 +31,8 @@ sub usage {
   Options:
   --from sessioncrashedfile  ('$sessioncrashedfile' by default)
   --to  copy_as_url_file  ('$sessioncrashedfile_copy' by default)
+         (the wget-page logfile will be created from this name
+          with the (optional) .xml suffix stripped and .log appended)
 
   --dry-run   do only display the urls
   --force     do not ask for confirmation before downloading
@@ -95,7 +105,12 @@ if ($dryrun) {
 	&$prin;
 	make_sure("Do you want to download the above url's? ");
     }
-    xxsystem "wget-page", @urls;
+    my $logfile= Force $Sessioncrashedfile_log;
+    my $logfile_tmp= $logfile.".tmp";
+    die "logfile temp file '$logfile_tmp' already exists" if -e $logfile_tmp; #(well. we don't check the other one. but w'ever)
+    xxpipeline( [ "wget-page", @urls ],
+		[ "tee", "--append", "--ignore-interrupts", $logfile ] ); # append just for safety.?.
+    xrename $logfile_tmp, $logfile;
     xrename $sessioncrashedfile_copy_tmp, $sessioncrashedfile_copy;
     print "$myname: done.\n";
 }
