@@ -40,8 +40,8 @@ sub Main { #only to be called once!! (GetOptions)
     my $description= $$description{$name}
       or die "?? '$name'";
     my $usage= sub {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [--] cmd [args] '<>' [args]
+	print STDERR map{"$_\n"} @_ if @_;
+	print "$myname [--] cmd [args] '<>' [args]
 
   Reads records from stdin and runs cmd with args and the input record
   value substituted for the '<>' position.  If no '<>' is given, the
@@ -53,62 +53,62 @@ sub Main { #only to be called once!! (GetOptions)
 
   (Christian Jaeger <$email>)
 ";
-exit (@_ ? 1 : 0);
-};
+    exit (@_ ? 1 : 0);
+    };
 
-use Getopt::Long;
-our $verbose=0;
-GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{&$usage},
-	   ) or exit 1;
-&$usage unless @ARGV;
+    use Getopt::Long;
+    our $verbose=0;
+    GetOptions("verbose"=> \$verbose,
+	       "help"=> sub{&$usage},
+	       ) or exit 1;
+    &$usage unless @ARGV;
 
-my @cmd=@ARGV;
+    my @cmd=@ARGV;
 
-# find the <> argument position:
-our $pos;
-{
-    my $i=0;
-    for (@cmd) {
-	if ($_ eq '<>') {
-	    if (defined $pos) {
-		die "$myname: @cmd: multiple '<>' given\n";
+    # find the <> argument position:
+    our $pos;
+    {
+	my $i=0;
+	for (@cmd) {
+	    if ($_ eq '<>') {
+		if (defined $pos) {
+		    die "$myname: @cmd: multiple '<>' given\n";
+		}
+		$pos= $i;
 	    }
-	    $pos= $i;
+	    $i++
 	}
-	$i++
     }
-}
-defined $pos
-  or $pos= @cmd;
+    defined $pos
+      or $pos= @cmd;
 
-use Chj::IO::Command;
+    use Chj::IO::Command;
 
-my $recordsep="\n";
-local $/= $recordsep;
-#^- already prepare for changes.
+    my $recordsep="\n";
+    local $/= $recordsep;
+    #^- already prepare for changes.
 
-while (<STDIN>) {
-    chomp;
-    $cmd[$pos]=$_;
-    if ($name eq "map") {
-	# since we care about the record separator being output always
-	# correctly, we filter the output ourselves:
-	my $s= Chj::IO::Command->new_sender(@cmd);
-	$cmd[$pos]=undef; $_=undef; # save memory.
-	my $out= $s->xcontentref;
-	$s->xxfinish;
-	chomp $$out;
-	print $$out,$recordsep
-	  or die "$myname: error writing to stdout: $!\n";
-    } else { # filter
-	my $rv= xsystem(@cmd);
-	if ($rv==0) {
-	    print $_,$recordsep
+    while (<STDIN>) {
+	chomp;
+	$cmd[$pos]=$_;
+	if ($name eq "map") {
+	    # since we care about the record separator being output always
+	    # correctly, we filter the output ourselves:
+	    my $s= Chj::IO::Command->new_sender(@cmd);
+	    $cmd[$pos]=undef; $_=undef; # save memory.
+	    my $out= $s->xcontentref;
+	    $s->xxfinish;
+	    chomp $$out;
+	    print $$out,$recordsep
 	      or die "$myname: error writing to stdout: $!\n";
+	} else { # filter
+	    my $rv= xsystem(@cmd);
+	    if ($rv==0) {
+		print $_,$recordsep
+		  or die "$myname: error writing to stdout: $!\n";
+	    }
 	}
     }
-}
 
 }
 #use Chj::ruse;use Chj::Backtrace; use Chj::repl; repl;
