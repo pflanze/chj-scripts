@@ -13,7 +13,8 @@ sub usage {
 
   maps stdin to stdout, running cmd with args and the input record
   value substituted for the '<>' position, writing the output of the
-  cmd to stdout.
+  cmd to stdout. If no '<>' is given, the value is appended to the
+  argumet list.
 
   currently 'records' means 'lines'.
 
@@ -46,7 +47,7 @@ our $pos;
     }
 }
 defined $pos
-  or die "$myname: missing '<>'\n";
+  or $pos= @cmd;
 
 use Chj::IO::Command;
 
