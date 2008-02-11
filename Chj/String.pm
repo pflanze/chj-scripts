@@ -26,7 +26,7 @@ All have ucfirst names (to avoid method name clashes).
 package Chj::String;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
-@EXPORT_OK=qw(Chomp);
+@EXPORT_OK=qw(Chomp Identity);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -37,5 +37,8 @@ sub Chomp ( $ ) {
     $str
 }
 
+sub Identity ( $ ) {
+    $_[0]
+}
 
 1
