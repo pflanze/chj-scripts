@@ -24,7 +24,7 @@ sub usage {
   --to file   write to the given file instead of stdout.
               it is opened in append mode.
 #  --specify   add a column with 'E' for stderr and 'O' for stdout  not implemented, requires threads/multiple processes (ok best way) or select.
-#  --pid       add a column with the pid of the forked cmd  not implemented
+  --pid       add a column with the pid of the forked cmd  not implemented
 
   (Christian Jaeger <$email>)
 ";
@@ -37,6 +37,7 @@ my @args;
 my $DEBUG=0;
 our $opt_hires;
 our $opt_to;
+our $opt_pid;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -56,6 +57,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         } else {
             $opt_to=$ARGV[++$i] or usage "missing argument for '$_' option";
         }
+    } elsif (/^--?pid$/) {
+	$opt_pid=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -64,6 +67,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 
+if ($opt_pid) {
+    @args or usage "can't handle --pid option without a command";
+}
 
 use Fcntl qw(:DEFAULT :flock :seek :mode);
 
@@ -97,12 +103,13 @@ if ($opt_hires) {
 	my ($seconds, $microseconds) = Time::HiRes::gettimeofday();
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($seconds);
 	printf '%4d-%02d-%02d %02d:%02d:%02d.%06d %s',
-	  $year+1900, $mon, $mday, $hour,$min,$sec, $microseconds, $_
+	  $year+1900, $mon, $mday, $hour,$min,$sec, $microseconds, ($opt_pid ? "($pid) $_" : $_)
 	    or die "printing to stdout: $!";
     }
 } else {
     while (<STDIN>) {
-	print localtime()."  $_" or die "printing to stdout: $!";
+	print localtime()."  ".($opt_pid ? "($pid) $_" : $_)
+	  or die "printing to stdout: $!";
     }
 }
 
