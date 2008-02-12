@@ -106,15 +106,15 @@ if ($opt_hires) {
     }
 }
 
-close STDIN or die $!;
-close STDOUT
-  or die "$myname: closing ".($opt_to ? "'$opt_to'" : "stdout").": $!";
-
 if ($pid) {
     waitpid $pid,0
       or die "waitpid: $!";
-    $? == 0 ? exit(0) : die "$myname: subcommand exited with ".($? > 255 ? "status code ".($?>>8) : "signal $?")."\n";#well. just because I don't want to load much code?..
+    $? == 0 or warn "$myname: subcommand exited with ".($? > 255 ? "status code ".($?>>8) : "signal $?")."\n";#well. just because I don't want to load much code?..
 }
+
+close STDIN or die $!;
+close STDOUT
+  or die "$myname: closing ".($opt_to ? "'$opt_to'" : "stdout").": $!";
 
 
 #Thu Jun 28 15:18:22 2007  fewf
