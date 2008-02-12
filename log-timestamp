@@ -59,7 +59,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
-    	push @args, @ARGV[$i+1..$#ARGV];
+    	push @args, @ARGV[$i..$#ARGV];
     	last;
     }
 }
@@ -68,7 +68,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 use Fcntl qw(:DEFAULT :flock :seek :mode);
 
 if ($opt_to) {
-    sysopen STDOUT, $opt_to, O_APPEND|O_CREAT
+    sysopen STDOUT, $opt_to, O_WRONLY|O_APPEND|O_CREAT
       or die "$myname: openint log file '$opt_to': $!\n";
 }
 
@@ -82,8 +82,8 @@ if (@args) {
 	open STDIN,"<&READ" or die $;
     } else {
 	close READ or die $!;
+	open STDOUT,">&WRITE" or die $!;
 	open STDERR,">&STDOUT" or die $!;
-	print "exec @args\n";
 	exec @args
 	  or exit(127);#k?.
     }
@@ -105,6 +105,10 @@ if ($opt_hires) {
 	print localtime()."  $_" or die "printing to stdout: $!";
     }
 }
+
+close STDIN or die $!;
+close STDOUT
+  or die "$myname: closing ".($opt_to ? "'$opt_to'" : "stdout").": $!";
 
 if ($pid) {
     waitpid $pid,0
