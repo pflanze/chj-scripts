@@ -9,14 +9,22 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [ cmd arguments ]
 
   Prepend timestamps to each line.
   By default, use the localtime() format.
 
+  If no cmd is given, read from stdin and write to stdout.
+
+  If cmd is given, run it and read both it's stdout and stderr.
+
   Options:
   --hires|-H  output subseconds, use (almost) the same format as 'tai64|tai'
               (there are only 6 subsecond digits as opposed to 9)
+  --to file   write to the given file instead of stdout.
+              it is opened in append mode.
+#  --specify   add a column with 'E' for stderr and 'O' for stdout  not implemented, requires threads/multiple processes (ok best way) or select.
+#  --pid       add a column with the pid of the forked cmd  not implemented
 
   (Christian Jaeger <$email>)
 ";
@@ -28,6 +36,7 @@ $|++;
 my @args;
 my $DEBUG=0;
 our $opt_hires;
+our $opt_to;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -41,19 +50,44 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_hires=1;
     } elsif (/^-H$/) {
 	$opt_hires=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
+    } elsif (/^--?to(?:=(.*))?$/) {
+        if (defined $1) {
+            $opt_to=$1
+        } else {
+            $opt_to=$ARGV[++$i] or usage "missing argument for '$_' option";
+        }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
-    	push @args, $_
+    	push @args, @ARGV[$i+1..$#ARGV];
+    	last;
     }
 }
-usage if @args;
+
+
+use Fcntl qw(:DEFAULT :flock :seek :mode);
+
+if ($opt_to) {
+    sysopen STDOUT, $opt_to, O_APPEND|O_CREAT
+      or die "$myname: openint log file '$opt_to': $!\n";
+}
+
+my $pid;
+if (@args) {
+    pipe READ,WRITE or die "pipe: $!";
+    $pid= fork;
+    defined $pid or die "$myname: could not fork: $!\n";
+    if ($pid) {
+	close WRITE or die $!;
+	open STDIN,"<&READ" or die $;
+    } else {
+	close READ or die $!;
+	open STDERR,">&STDOUT" or die $!;
+	print "exec @args\n";
+	exec @args
+	  or exit(127);#k?.
+    }
+}
 
 if ($opt_hires) {
     require Time::HiRes;
@@ -71,6 +105,13 @@ if ($opt_hires) {
 	print localtime()."  $_" or die "printing to stdout: $!";
     }
 }
+
+if ($pid) {
+    waitpid $pid,0
+      or die "waitpid: $!";
+    $? == 0 ? exit(0) : die "$myname: subcommand exited with ".($? > 255 ? "status code ".($?>>8) : "signal $?")."\n";#well. just because I don't want to load much code?..
+}
+
 
 #Thu Jun 28 15:18:22 2007  fewf
 
