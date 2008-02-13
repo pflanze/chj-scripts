@@ -118,7 +118,16 @@ if ($runner_child= xfork) {
     exit 1;#never..
 }
 
-while (my $conn= $socket->accept) {
+while(1) {
+    my $conn= $socket->accept
+      or do {
+	  if ($! == 4) {## get constant from POSIX ~
+	      # OS error code   4:  Interrupted system call
+	      redo
+	  } else {
+	      die "accept: $!";
+	  }
+      };
     warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
     if ($numchildren < $maxchildren) {
 	if (my $pid= xfork) {
@@ -149,7 +158,7 @@ while (my $conn= $socket->accept) {
     }
     warn "going to accept again" if $DEBUG;
 }
-die "accept: $!";  #(maybe later on offer a quit command? but authentification?)
+
 
 
 #use Chj::ruse;
