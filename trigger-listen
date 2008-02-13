@@ -77,7 +77,9 @@ my $runner_child=-2;
 $SIG{CHLD}= do {
     my $pid;
     sub {
-	while (-1 != ($pid= waitpid -1,WNOHANG)) {
+	while (1) {
+	    $pid= waitpid -1,WNOHANG;
+	    last if (($pid == -1) or ($pid == 0)); #GRR somehow mis documented??!
 	    $numchildren--;
 	    if ($pid == $runner_child) {
 		die "runner_child died";
