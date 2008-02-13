@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 13 13:35:53 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname socketpath
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our $socketpath= shift @ARGV;
+
+use IO::Socket::UNIX;
+
+our $socket= IO::Socket::UNIX->new
+  (
+   Type=> SOCK_STREAM,
+   Peer=> $socketpath,
+  )
+  or die "opening socket '$socketpath': $!";#!
+
+$socket->send("trigger\n")
+  or die "send: $!";
+$socket->close
+  or die "close: $!";
+
