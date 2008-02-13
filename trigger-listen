@@ -1,0 +1,107 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 13 13:22:44 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+use Time::HiRes;
+
+our $sleeptime=1.0;
+our $maxchildren= 10;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname socketpath cmd [arguments]
+
+  Listens on socketpath, and expects senders to print a 'trigger'
+  line, and when that happens, after waiting for --sleep seconds
+  ($sleeptime by default), runs the given cmd / arguments. If new
+  triggers are being issued before the cmd finishes, it is being run
+  again (thus no triggers are being missed).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sleeptime"=> \$sleeptime,
+	   ) or exit 1;
+usage unless @ARGV >= 2;
+
+our $socketpath= shift @ARGV;
+our @cmd= @ARGV;
+
+use IO::Socket::UNIX;
+
+unlink $socketpath; #okay?  check for running daemons...
+our $socket= IO::Socket::UNIX->new
+  (
+   Type=> SOCK_STREAM,
+   Local=> $socketpath,
+   Listen=> 1,
+  )
+  or die "opening socket '$socketpath': $!";#!
+
+use Chj::xperlfunc;
+
+my $numchildren=0;
+
+use POSIX ":sys_wait_h"; # WNOHANG
+
+my $runner_child=-2;
+
+$SIG{CHLD}= do {
+    my $pid;
+    sub {
+	while (-1 != ($pid= waitpid -1,WNOHANG)) {
+	    $numchildren--;
+	    if ($pid == $runner_child) {
+		die "runner_child died";
+	    }
+	}
+    };
+};
+
+use Chj::xpipe;
+my ($read,$write)= xpipe;
+
+if ($runner_child= xfork) {
+    # k proceed below
+} else {
+    
+}
+
+while (my $conn= $socket->accept) {
+    warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
+    if ($numchildren < $maxchildren) {
+	if (my $pid= xfork) {
+	    warn "forked off child $pid" if $DEBUG;
+	    $numchildren++; ###btw race! (in the ++ itself) hehhe.
+	} else {
+	    while (<$conn>) {
+		chomp;
+		if ($_ eq "trigger") {
+		    warn "$$ got trigger" if $DEBUG;
+		    $write->xprint("trigger\n");
+		    $write->xflush;#(is xsysprint cheaper? e.g. does this involve more than flushing from userspace?)
+		} else {
+		    warn "$$ got unrecognized message '$_'" if $DEBUG;
+		}
+	    }
+	    exit 0;
+	}
+    } else {
+	warn "too many children, dropping connection" if $DEBUG;
+    }
+}
+die "accept: $!";  #(maybe later on offer a quit command? but authentification?)
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
