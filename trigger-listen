@@ -118,48 +118,51 @@ if ($runner_child= xfork) {
     exit 1;#never..
 }
 
-while(1) {
-    my $conn= $socket->accept
-      or do {
-	  if ($! == 4) {## get constant from POSIX ~
-	      # OS error code   4:  Interrupted system call
-	      redo
-	  } else {
-	      die "accept: $!";
-	  }
-      };
-    warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
-    if ($numchildren < $maxchildren) {
-	if (my $pid= xfork) {
-	    undef $conn;
-	    warn "forked off child $pid" if $DEBUG;
-	    $numchildren++; ###btw race! (in the ++ itself) hehhe.
-	} else {
-	    while (<$conn>) {
-		chomp;
-		if ($_ eq "trigger") {
-		    warn "$$ got trigger" if $DEBUG;
-		    if (kill "USR1", $runner_child) {
-			warn "$$ sent signal to runner_child" if $DEBUG;
+eval {
+    while(1) {
+	my $conn= $socket->accept
+	  or do {
+	      if ($! == 4) {## get constant from POSIX ~
+		  # OS error code   4:  Interrupted system call
+		  redo
+	      } else {
+		  die "accept: $!";
+	      }
+	  };
+	warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
+	if ($numchildren < $maxchildren) {
+	    if (my $pid= xfork) {
+		undef $conn;
+		warn "forked off child $pid" if $DEBUG;
+		$numchildren++; ###btw race! (in the ++ itself) hehhe.
+	    } else {
+		while (<$conn>) {
+		    chomp;
+		    if ($_ eq "trigger") {
+			warn "$$ got trigger" if $DEBUG;
+			if (kill "USR1", $runner_child) {
+			    warn "$$ sent signal to runner_child" if $DEBUG;
+			} else {
+			    die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
+			}
+			$conn->send("ok\n") or warn "$myname: $$ could not send ok back to sender: $!";
+			#(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
+			warn "$$ sent ok back to trigger-send" if $DEBUG;
 		    } else {
-			die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
+			warn "$$ got unrecognized message '$_'" if $DEBUG;
 		    }
-		    $conn->send("ok\n") or warn "$myname: $$ could not send ok back to sender: $!";
-		    #(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
-		    warn "$$ sent ok back to trigger-send" if $DEBUG;
-		} else {
-		    warn "$$ got unrecognized message '$_'" if $DEBUG;
 		}
+		exit 0;
 	    }
-	    exit 0;
+	} else {
+	    warn "$myname: too many children, dropping connection\n";##from ...
 	}
-    } else {
-	warn "$myname: too many children, dropping connection\n";##from ...
+	warn "going to accept again" if $DEBUG;
     }
-    warn "going to accept again" if $DEBUG;
-}
-
-
+};
+my $e=$@;
+kill 9, $runner_child;
+die $e;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
