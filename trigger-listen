@@ -4,7 +4,23 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
-use Time::HiRes;
+use Time::HiRes 'time','sleep';
+
+sub uninterrupted_sleep ( $ ) {
+    my ($sleeptime)=@_;
+    my $end= time + $sleeptime;
+    while (1) {
+	my $diff= $end - time;
+	if ($diff > 0) {
+	    #warn "going to sleep for $diff";
+	    sleep $diff;
+	} else {
+	    last
+	}
+    }
+}
+# ^- todo: move to some lib, finally.
+
 
 our $sleeptime=1.0;
 our $maxchildren= 10;
@@ -28,12 +44,14 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $DEBUG;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime"=> \$sleeptime,
+	   "debug"=> \$DEBUG,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
-
+$DEBUG||=$verbose;
 our $socketpath= shift @ARGV;
 our @cmd= @ARGV;
 
@@ -68,19 +86,41 @@ $SIG{CHLD}= do {
     };
 };
 
-use Chj::xpipe;
-my ($read,$write)= xpipe;
-
 if ($runner_child= xfork) {
     # k proceed below
 } else {
-    
+    my $flag=0;
+    $SIG{USR1}= sub {
+	warn "runner_child got signal" if $DEBUG;
+	$flag=1;
+    };
+    while (1) {
+	# use both interruptible and uninterruptible sleeps hehe
+	sleep 100000;
+	if ($flag) {
+	  RUNIT: {
+		warn "runner_child got request to run command" if $DEBUG;
+		uninterrupted_sleep $sleeptime;
+		warn "runner_child going to run command now" if $DEBUG;
+		$flag=0;
+		my $res= xsystem @cmd;
+		## todo: print if there was a problem  ?
+		if ($flag) {
+		    redo RUNIT;
+		}
+	    }
+	} else {
+	    warn "(runner_child: sleep timed out)" if $DEBUG;
+	}
+    }
+    exit 1;#never..
 }
 
 while (my $conn= $socket->accept) {
     warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
     if ($numchildren < $maxchildren) {
 	if (my $pid= xfork) {
+	    undef $conn;
 	    warn "forked off child $pid" if $DEBUG;
 	    $numchildren++; ###btw race! (in the ++ itself) hehhe.
 	} else {
@@ -88,8 +128,14 @@ while (my $conn= $socket->accept) {
 		chomp;
 		if ($_ eq "trigger") {
 		    warn "$$ got trigger" if $DEBUG;
-		    $write->xprint("trigger\n");
-		    $write->xflush;#(is xsysprint cheaper? e.g. does this involve more than flushing from userspace?)
+		    if (kill "USR1", $runner_child) {
+			warn "$$ sent signal to runner_child" if $DEBUG;
+		    } else {
+			die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
+		    }
+		    $conn->send("ok\n") or warn "$myname: $$ could not send ok back to sender: $!";
+		    #(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
+		    warn "$$ sent ok back to trigger-send" if $DEBUG;
 		} else {
 		    warn "$$ got unrecognized message '$_'" if $DEBUG;
 		}
@@ -97,8 +143,9 @@ while (my $conn= $socket->accept) {
 	    exit 0;
 	}
     } else {
-	warn "too many children, dropping connection" if $DEBUG;
+	warn "$myname: too many children, dropping connection\n";##from ...
     }
+    warn "going to accept again" if $DEBUG;
 }
 die "accept: $!";  #(maybe later on offer a quit command? but authentification?)
 
