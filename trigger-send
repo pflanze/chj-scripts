@@ -5,11 +5,16 @@
 
 use strict;
 
+our $timeout=10;
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname socketpath
+
+  Options:
+  --timeout seconds   instead of the default $timeout
 
   (Christian Jaeger <$email>)
 ";
@@ -20,12 +25,18 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "timeout"=> \$timeout,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
 our $socketpath= shift @ARGV;
 
 use IO::Socket::UNIX;
+
+$SIG{ALRM}= sub {
+    die "$myname on '$socketpath': timed out\n";
+};
+alarm $timeout;
 
 our $socket= IO::Socket::UNIX->new
   (
@@ -36,6 +47,10 @@ our $socket= IO::Socket::UNIX->new
 
 $socket->send("trigger\n")
   or die "send: $!";
+my $result= <$socket>;
+if ($result ne "ok\n") {
+    die "$myname: did not get an ok from the server, but: $result";
+}
 $socket->close
   or die "close: $!";
 
