@@ -73,6 +73,10 @@ Not yet much tested.
 
 - note that terminating a parent using ctl-c kills the child as well (it does not create a new process group (btw is this a danger in and it itself too already?)); it's not a daemon gerating thing. and not like su foo & in the shell, either, right? or how does sh handle it?
 
+- CAREFUL: you can't even use it (without exec) for checking file system acesses. Like this
+ perl -w -MChj::Unix::User=su -ne 'BEGIN{ su "fuu" } chomp; if (stat $_) { print "accessible: $_\n";} else { print "$! $_\n" }'
+run as the root user will say a path is accessible if the parent directory is owned by root (but not if owned by another user); seemingly the saved(?) uid which is still 0 does not have super power in this case but still does owner matching and then 'spoils' the 'access check'.
+
 =cut
 
 
