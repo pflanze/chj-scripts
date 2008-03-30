@@ -19,7 +19,8 @@ Chj::xrealpath
 
 Layer above Cwd::abs_path or Chj::Cwd::realpath::realpath, choosing
 the latter if the former doesn't implement the same functionality as
-the latter.
+the latter. -- Well actually *always* require the latter since the
+former doesn't require the last path segment to exist :/.
 
 =cut
 
@@ -58,7 +59,7 @@ BEGIN {
 	    defined ($res) ? $res : die "xrealpath('$path'): $!";
 	};
     } else {
-	warn "using Chj::Cwd::realpath::xrealpath";
+	#warn "using Chj::Cwd::realpath::xrealpath";
 	require Chj::Cwd::realpath;
 	*xrealpath= *Chj::Cwd::realpath::xrealpath;
     }
