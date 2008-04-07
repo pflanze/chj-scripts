@@ -31,14 +31,15 @@ my $last_line_was_nonunwrappable=0;
 
 while (<>) {
     ## hm problematic across files ?
-    if (/^\s*\z/s) {
+    if (/^\s*\z/s) { # an empty line
 	xprint "\n" unless $last_line_was_nonunwrappable;
 	xprint $_; # without checking whether it carries a newline at the end?
 	$last_line_was_nonunwrappable=1;
-    } elsif (not /^[\wäöüÄÖÜ]/) {
+    } elsif (not /^[\wäöüÄÖÜ]/) { # a nonunwrappable line, like '> ' or '- ' or indented
+	xprint "\n" unless $last_line_was_nonunwrappable;
 	xprint $_;
 	$last_line_was_nonunwrappable=1;
-    } else {
+    } else { # an unwrappable line
 	#chomp;
 	# hm and remove *any* trailing whitespace actually
 	s/\s+\z//s;
