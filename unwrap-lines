@@ -27,20 +27,24 @@ sub xprint {
     print @_ or die "stdout: $!";
 }
 
+my $last_line_was_nonunwrappable=0;
+
 while (<>) {
     ## hm problematic across files ?
     if (/^\s*\z/s) {
-	xprint "\n";
+	xprint "\n" unless $last_line_was_nonunwrappable;
 	xprint $_; # without checking whether it carries a newline at the end?
-	#} elsif (/^>/) { # not just /^>/ !
+	$last_line_was_nonunwrappable=1;
     } elsif (not /^[\w‰ˆ¸ƒ÷‹]/) {
 	xprint $_;
+	$last_line_was_nonunwrappable=1;
     } else {
 	#chomp;
 	# hm and remove *any* trailing whitespace actually
 	s/\s+\z//s;
 	xprint $_," ";
 	# hm and do nothing about leading whitespace on following line??  that whould should have to be checked really right? well don't care for now
+	$last_line_was_nonunwrappable=0;
     }
 }
 
