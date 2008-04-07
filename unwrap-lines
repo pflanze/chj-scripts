@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Mon Apr  7 19:22:53 MEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage if @ARGV;
+
+sub xprint {
+    print @_ or die "stdout: $!";
+}
+
+while (<>) {
+    ## hm problematic across files ?
+    if (/^\s*\z/s) {
+	xprint "\n";
+	xprint $_; # without checking whether it carries a newline at the end?
+	#} elsif (/^>/) { # not just /^>/ !
+    } elsif (not /^[\w‰ˆ¸ƒ÷‹]/) {
+	xprint $_;
+    } else {
+	#chomp;
+	# hm and remove *any* trailing whitespace actually
+	s/\s+\z//s;
+	xprint $_," ";
+	# hm and do nothing about leading whitespace on following line??  that whould should have to be checked really right? well don't care for now
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
