@@ -35,17 +35,17 @@ while (<>) {
 	xprint "\n" unless $last_line_was_nonunwrappable;
 	xprint $_; # without checking whether it carries a newline at the end?
 	$last_line_was_nonunwrappable=1;
-    } elsif (not /^[\wäöüÄÖÜ]/) { # a nonunwrappable line, like '> ' or '- ' or indented
-	xprint "\n" unless $last_line_was_nonunwrappable;
-	xprint $_;
-	$last_line_was_nonunwrappable=1;
-    } else { # an unwrappable line
+    } elsif (/^[\wäöüÄÖÜ]/) { # an unwrappable line
 	#chomp;
 	# hm and remove *any* trailing whitespace actually
 	s/\s+\z//s;
 	xprint $_," ";
 	# hm and do nothing about leading whitespace on following line??  that whould should have to be checked really right? well don't care for now
 	$last_line_was_nonunwrappable=0;
+    } else { # a nonunwrappable line, like '> ' or '- ' or indented
+	xprint "\n" unless $last_line_was_nonunwrappable;
+	xprint $_;
+	$last_line_was_nonunwrappable=1;
     }
 }
 
