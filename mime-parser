@@ -12,11 +12,14 @@ sub usage {
     print "$myname [file(s)]
   or stdin.
   Options:
-  -h headername   print header value(s?)
+  -h|--headers headername
+                  print header value(s?)
   --last-header headername
                   print the header appearing last in the head text
                   (but might be the one having been added to the head
                   as the first in time)
+  --first-header headername
+                  print the header appearing first in the head text
   --no-cleanup    do not remove temporary directory created by parser
 
   (Christian Jaeger <$email>)
@@ -26,11 +29,16 @@ exit @_ ? 1 : 0;
 
 use Getopt::Long;
 our $verbose=0;
-our ($opt_h,$opt_last_header,$opt_no_cleanup);
+our ($opt_h,
+     $opt_last_header,
+     $opt_no_cleanup,
+     $opt_first_header,
+    );
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "h|headers=s" => \$opt_h,
 	   "last-header=s" => \$opt_last_header,
+	   "first-header=s" => \$opt_first_header,
 	   "no-cleanup" => \$opt_no_cleanup,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -51,8 +59,17 @@ sub parsemsg {
     $ent
 }
 
-usage "don't give both -h and --last-header" if $opt_h && $opt_last_header;
-my $search_header= $opt_h || $opt_last_header;
+sub Count_true {
+    my $count;
+    for (@_) {
+	$count++ if $_;
+    }
+    $count
+}
+
+usage "only give one of -h, --last-header or --first-header"
+  if Count_true($opt_h, $opt_last_header, $opt_first_header)>1;
+my $search_header= $opt_h || $opt_last_header || $opt_first_header;
 
 if (@ARGV) {
     for (@ARGV) {
@@ -82,6 +99,8 @@ if (@ARGV) {
 		} else {
 		    if ($opt_last_header) {
 			print $vals[-1];
+		    } elsif ($opt_first_header) {
+			print $vals[0];
 		    } else {
 			if(@vals==1){
 			    &$show("one such header",$vals[0]);
