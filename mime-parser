@@ -53,13 +53,12 @@ usage "don't give both -h and --last-header" if $opt_h && $opt_last_header;
 my $search_header= $opt_h || $opt_last_header;
 
 if (@ARGV) {
-    for(@ARGV) {
+    for (@ARGV) {
 	print "File ".singlequote($_).":\n";
 	my $f=xopen_read $_;
 	my $ent=parsemsg($f);
-	##unfinished:
-	if ($search_header) {
-	    #show header
+
+	if ($search_header) { #show header
 	    my $head=$ent->head;
 	    my @vals= $head->get($search_header);
 	    if (@vals==0) {
@@ -79,7 +78,7 @@ if (@ARGV) {
 		    }
 		}
 	    }
-	}else {
+	} else {
 	    die "unknown command requested <--- unfinished";
 	}
     }
