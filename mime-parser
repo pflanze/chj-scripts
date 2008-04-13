@@ -19,32 +19,15 @@ sub usage {
 exit @_ ? 1 : 0;
 }
 
-my @args;
-my $DEBUG=0;
-my $opt_h;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (0) {
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-    } elsif (/^--?h(?:eader(?:=(.*))?)?$/) {
-         if (defined $1) {
-             $opt_h=$1
-         } else {
-             $opt_h=$ARGV[++$i] or usage "missing argument for '$_' option";
-         }
-    } elsif (/^--?h(elp)?$/) {
-    	usage
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-#usage unless @args;
+use Getopt::Long;
+our $verbose=0;
+our $opt_h;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "h|headers=s" => \$opt_h,
+	   ) or exit 1;
+usage unless @ARGV;
+
 
 use MIME::Parser;
 use Chj::xopen 'xopen_read';
@@ -61,8 +44,8 @@ sub parsemsg {
     $ent
 }
 
-if (@args) {
-    for(@args) {
+if (@ARGV) {
+    for(@ARGV) {
 	print "File ".singlequote($_).":\n";
 	my $f=xopen_read $_;
 	my $ent=parsemsg($f);
