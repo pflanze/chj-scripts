@@ -54,25 +54,38 @@ my $search_header= $opt_h || $opt_last_header;
 
 if (@ARGV) {
     for (@ARGV) {
-	print "File ".singlequote($_).":\n";
+	print "File ".singlequote($_).":\n" if $verbose;
 	my $f=xopen_read $_;
 	my $ent=parsemsg($f);
 
 	if ($search_header) { #show header
+	    my $show= sub {
+		my ($prefix,$maybe_value)=@_;
+		if ($verbose) {
+		    print $prefix." ".singlequote($search_header)
+		      .(defined ($maybe_value) ? ": ".singlequote($maybe_value) : "")
+			."\n";
+		} else {
+		    if (defined $maybe_value) {
+			print $maybe_value;
+		    }
+		}
+	    };
+
 	    my $head=$ent->head;
 	    my @vals= $head->get($search_header);
 	    if (@vals==0) {
-		print "no such header ".singlequote($opt_h)."\n";
+		&$show("no such header");
 	    } else {
 		if ($opt_last_header) {
 		    print $vals[-1];
 		} else {
 		    if(@vals==1){
-			print "one such header ".singlequote($opt_h).": ".singlequote($vals[0])."\n";
+			&$show("one such header",$vals[0]);
 		    } else {
 			my $i=0;
 			for(@vals){
-			    print "$i. header ".singlequote($opt_h).": ".singlequote($_)."\n";
+			    &$show("$i. header", $_);
 			    $i++;
 			}
 		    }
