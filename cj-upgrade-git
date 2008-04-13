@@ -1,0 +1,58 @@
+#!/usr/bin/perl -w
+
+# Sam Feb  9 23:18:54 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $oldbasedir= "/usr/src/GIT/git-old";
+our $newbasedir= "/usr/src/GIT/git-new";
+our @make_uninstall_cmd= qw(make prefix=/usr/local uninstall);
+our @make_cmd= qw(nice make prefix=/usr/local all doc info);
+our @make_install_cmd= qw(make prefix=/usr/local install install-doc install-info);
+our $builduser= "compile";
+our @copy_cmd= (qw(cp -rl --), "$oldbasedir/.git", "$newbasedir/"); #unbelievable but the parens around the whole thing are necessary.
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname tag
+
+  checks that there is no $oldbasedir,
+  checks that there are no open changes in $newbasedir,
+  moves $newbasedir to $oldbasedir,
+  remembers time as time A,
+  mkdir's $newbasedir,
+  runs @copy_cmd,
+  goes into $newbasedir
+    makes sure that we're past A (sleep if not),
+    runs git-fetch and git-reset --hard \$tag,
+    runs @make_cmd,
+  remembers time as time B,
+  goes into $oldbasedir,
+    checks that no file is newer than A
+    makes sure that we're past B (sleep if not),
+    runs @make_uninstall_cmd,
+  goes back into $newbasedir,
+    checks that no file is newer than B,
+    runs @make_install_cmd
+  removes $oldbasedir
+
+  Runs everything as user $builduser except for the uninstall and install parts
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	  ) or exit 1;
+usage unless @ARGV==1;
+our ($tag)=@ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

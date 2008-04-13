@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+# Son Apr  6 15:35:14 MEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  filter stdin to stdout
+  (there *is* some program by me for turning such filters to work onto a file incl backupping, right?)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+use HTML::Entities;
+
+while (<STDIN>) {
+    print decode_entities ($_)
+      or die "stdout: $!";
+}
+close STDIN or die $!;
+close STDOUT or die $!;

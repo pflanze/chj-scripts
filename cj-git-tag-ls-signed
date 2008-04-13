@@ -1,0 +1,94 @@
+#!/usr/bin/perl -w
+
+# Sam Feb  9 12:32:53 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  List all tags in the current git repository which are signed, sorted
+  by their creation date.
+
+  Options:
+  -v|--invert show tags which are *not* signed
+  -a|--all  show all tags
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+my $options={};
+GetOptions($options,
+	   "v|invert",
+	   "a|all",
+	   "help"=> sub{usage},
+	  )
+  or exit 1;
+usage if @ARGV;
+
+{
+    package Chj_App::ParsedTag;
+    use Class::Array -fields=> -publica=>
+      (qw(name maybe_contentrf maybe_unixtime maybe_tagger is_signed));
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
+    }
+    end Class::Array;
+}
+
+use Chj::IO::Command;
+
+sub parse_tag {
+    my ($name,$strrf)=@_;
+    my $is_signed= $$strrf=~ /^-----BEGIN PGP SIGNATURE-----$/m;
+    my ($maybe_unixtime,$maybe_tagger)= do {
+	if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger ([^\n]*) (\d+) [-+\d]\d+ *\n/s) {
+	    ($2,$1)
+	} else {
+	    warn "no match for tagger field in '$$strrf'";
+	    (undef,undef)
+	}
+    };
+    Chj_App::ParsedTag->new($name,$strrf,$maybe_unixtime,$maybe_tagger,$is_signed);
+}
+
+sub cat_file { # returns content ref
+    my ($type,$id)=@_;
+    my $t= Chj::IO::Command->new_sender("git","cat-file",$type,$id);
+    my $rf= $t->xcontentref;
+    $t->xxfinish;
+    $rf
+}
+
+sub cat_tag {
+    my ($id)=@_;
+    cat_file ("tag",$id)
+}
+
+sub getsignedtagsparsedandsorted {
+    my $ls= Chj::IO::Command->new_sender("git","tag","-l");
+    my $curried_xor= sub {
+	my ($v)=@_;
+	$$options{v} ? !$v : $v
+    };
+    my $res= [
+	      sort { $a->maybe_unixtime <=> $b->maybe_unixtime }
+	      grep { $$options{a} || &$curried_xor($_->is_signed) and $_->maybe_unixtime }
+	      map { chomp; parse_tag($_, cat_tag ($_)) }
+	      <$ls>
+	     ];
+    $ls->xxfinish;
+    $res
+}
+
+for (@{ getsignedtagsparsedandsorted() }) {
+    print localtime($_->maybe_unixtime)."\t".$_->name."\t".$_->maybe_tagger."\n";
+}

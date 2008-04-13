@@ -19,11 +19,8 @@ else
 END
 	echo -n '# ' >> "$1"
 	date >> "$1"
-	if [ "$USER" = "chris" ]; then
-		echo '(my $email='\''pflanze%gmx,ch'\'')=~ tr/%,/@./;' >> "$1"
-	else
-		echo '(my $email='\''XXX%YYY,ch'\'')=~ tr/%,/@./;' >> "$1"
-	fi
+	moddedmail="`perl -we '$v= ($ENV{EMAIL} || "XXX\@YYY.ch"); $v=~ tr/@./%,/; print $v'`"
+	echo '(my $email='\'"$moddedmail"\'')=~ tr/%,/@./;' >> "$1"
 	cat <<'END' >> "$1"
 
 use strict;
@@ -39,6 +36,10 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
+END
+	if false; then
+	    # old style
+	    cat <<'END' >> "$1"
 my @args;
 my $DEBUG=0;
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -65,7 +66,20 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @args;
 
 END
+	else
+	    # finally use Getopt
+	    cat <<'END' >> "$1"
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+END
+	fi
 	chmod +x "$1"
-	#nc -line 5 "$1"   ist mühsam weil es andere selektionen unselektiert
 	$EDITOR "$1"
 fi

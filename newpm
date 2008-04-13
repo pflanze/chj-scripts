@@ -59,6 +59,9 @@ for (@ARGV) {
 		# Benutzer hat wohl slashes statt :: verwendet.
 		$ns= $path;
 		$ns=~ s|^\./||;##vgl oben
+		# Assume that classes *always* start with an uppercase initial, remove lowercase path parts first:
+		$ns=~ s|^(?:[^A-Z/][^/]*/)+||s;
+		# Turn remaining path to namespace syntax
 		$ns=~ s|/|::|g;
 	    }
 	    $path.=".pm";
@@ -75,8 +78,8 @@ edit (24,\@additionaloptions, @paths);
 
 sub create {
     my ($path,$namespace)=@_; # global: $baseclass
-	
-    my $baseclassdefs= 
+
+    my $baseclassdefs=
       $baseclass ? "
 use $baseclass -extend=>
   -publica=>

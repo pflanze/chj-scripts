@@ -39,7 +39,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @files ==2;
 my ($old,$new)=@files;
 
-use lib "/root/extlib";
+use lib "/opt/chj/perllib";
 use fileutils qw(fetchfile writebackfile);
 
 my $PWFILE= "/etc/passwd";

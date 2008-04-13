@@ -32,12 +32,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
   }
 }
 usage unless @files;
-unless ($ENV{EDITOR}){ 
+unless ($ENV{EDITOR}){
   warn "Environmental variable \$EDITOR is not set.\n";
   usage;
 }
 
-use lib "/root/extlib"; ## (gar nicht nötig auf lombi)
+use lib "/opt/chj/perllib";
 use fileutils "createfile";
 
 my $datetime= `date -R`; #`date`;? hm. -R gibts nur in Englisch offenbar.
