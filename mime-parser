@@ -13,6 +13,10 @@ sub usage {
   or stdin.
   Options:
   -h headername   print header value(s?)
+  --last-header headername
+                  print the header appearing last in the head text
+                  (but might be the one having been added to the head
+                  as the first in time)
 
   (Christian Jaeger <$email>)
 ";
@@ -21,10 +25,11 @@ exit @_ ? 1 : 0;
 
 use Getopt::Long;
 our $verbose=0;
-our $opt_h;
+our ($opt_h,$opt_last_header);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "h|headers=s" => \$opt_h,
+	   "last-header=s" => \$opt_last_header,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -44,25 +49,34 @@ sub parsemsg {
     $ent
 }
 
+usage "don't give both -h and --last-header" if $opt_h && $opt_last_header;
+my $search_header= $opt_h || $opt_last_header;
+
 if (@ARGV) {
     for(@ARGV) {
 	print "File ".singlequote($_).":\n";
 	my $f=xopen_read $_;
 	my $ent=parsemsg($f);
 	##unfinished:
-	if ($opt_h){
+	if ($search_header) {
 	    #show header
 	    my $head=$ent->head;
-	    my @vals= $head->get($opt_h);
+	    my @vals= $head->get($search_header);
 	    if (@vals==0) {
 		print "no such header ".singlequote($opt_h)."\n";
-	    } elsif(@vals==1){
-		print "one such header ".singlequote($opt_h).": ".singlequote($vals[0])."\n";
 	    } else {
-		my $i=0;
-		for(@vals){
-		    print "$i. header ".singlequote($opt_h).": ".singlequote($_)."\n";
-		    $i++;
+		if ($opt_last_header) {
+		    print $vals[-1];
+		} else {
+		    if(@vals==1){
+			print "one such header ".singlequote($opt_h).": ".singlequote($vals[0])."\n";
+		    } else {
+			my $i=0;
+			for(@vals){
+			    print "$i. header ".singlequote($opt_h).": ".singlequote($_)."\n";
+			    $i++;
+			}
+		    }
 		}
 	    }
 	}else {
