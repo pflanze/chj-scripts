@@ -39,7 +39,7 @@ use Chj::xopen 'xopen_read';
 use Chj::singlequote;
 
 my $parser = new MIME::Parser;
-$parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd.
+$parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd. -- wondering: IS THIS really SAFE?
 
 sub parsemsg {
     my ($fh)=@_;
