@@ -7,6 +7,8 @@ if ($ENV{TRASHCAN}) {
 	$trash=$ENV{HOME}."/Desktop/Trash/";
 } elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
 	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} elsif (-e $ENV{HOME}."/.Trash/") {
+    $trash=$ENV{HOME}."/.Trash/";
 } else {
 	die "Konnte Deinen Trashcan nicht finden. ";
 }
