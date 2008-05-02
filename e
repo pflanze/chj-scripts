@@ -48,6 +48,9 @@ exit @_;
 }
 
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
+if (not -d $lockfilebase) {
+    mkdir $lockfilebase or die "$0: could not create lock dir '$lockfilebase': $!\n";
+}
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= do {
     local $^F=0;
