@@ -113,7 +113,10 @@ sub readandwrite {
 		}
 		if ($opt_parsedate and /^date:\s*(.*\d)/i) {
 		    ## hmm assumes that every msg does contain a date header (or it will miss that fact and not output the date at all). but ok that's ok and even reasonable for now.
-		    my $date= str2time($1) or die "unparseable Date header: '$1'";
+		    my $datestr= $1;
+		    # remove fluff like from 'Tue, 25 Jan 2005 11:16:11 -0500 (GMT-05:00)'; note that 'Tue, 24 Feb 2004 11:57:45 +0800 PHT' would be bad already if not requiring the \d above.
+		    $datestr=~ s/\(.*//s;
+		    my $date= str2time($datestr) or die "unparseable Date header: '$datestr'";
 		    if (($date - $maybe_parseddate) > $maxdatedifference) {
 			##no risk loosing data other than the date string itself? well it would have croaked above
 			$_= "Date: ".localtime($maybe_parseddate)."\n";
