@@ -9,6 +9,8 @@
 
 use strict;
 
+our $maxdatedifference = 60*60*24; # 1 day
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -25,6 +27,11 @@ sub usage {
             mailinglist identifyers. NOTE hack: only first line of
             subject is treated.. (tja. so comes when one does not use
             a library.)
+  --parsedate
+            parse the date from the 'From ' line and use this instead
+            of the Date: header if they differ by more than one day
+            (more precisely, if the latter is more than $maxdatedifference
+            seconds later than the former)
 
   (Christian Jaeger <$email>)
 ";
@@ -39,6 +46,7 @@ GetOptions($option,
 	   "create=s",
 	   "picky",
 	   "subject-modify=s",
+	   "parsedate",
 	  )
   or exit 1;# msg has already been printed.!
 usage unless @ARGV==2;
@@ -50,7 +58,12 @@ our ($path_mbox, $path_maildir)=@ARGV;
 use Chj::xopen 'xopen_read';
 use Chj::xsysopen ':all';  # Chj::xopen does not offer any excl option. Sigh still?. But doesn't matter?
 
-my $match= $$option{picky} ? qr/^From (?:\S+\s+)+(20|19)\d\d\s*$/ : qr/^From /; # ziemlich doof. richtig datumsparsen? wie?. tja. eben. ...huh...
+my $match=
+  $$option{parsedate} ? qr/^From (?:\S+\s+)+([A-Z][a-z]{2} [A-Z][a-z]{1,9} {1,2}\d+ \d{1,2}:\d{2}:\d{2} (?:20|19)\d\d)\s*$/
+  :
+  $$option{picky} ? qr/^From (?:\S+\s+)+(?:20|19)\d\d\s*$/
+  : qr/^From /;
+# ziemlich doof. richtig datumsparsen? wie?. tja. eben. ...huh...
 my $maybe_subject_run= do {
     if (my $code= $$option{"subject-modify"}) {
 	my $c= eval "sub { $code }";
@@ -61,6 +74,8 @@ my $maybe_subject_run= do {
     }
 };
 
+use Date::Parse;
+
 sub readandwrite {
     my $f= xopen_read($path_mbox);
     my $time=time;
@@ -70,8 +85,13 @@ sub readandwrite {
     my $n=0;
     my $out;
     my $in_head;
+    my $maybe_parseddate; # used if option parsedate is in effect
+    my $opt_parsedate= $$option{parsedate};
     while (defined($_= $f->xreadline)) {
 	if (/$match/) {
+	    if ($opt_parsedate) {
+		$maybe_parseddate= str2time($1) or die "unparseable date '$1'";
+	    }
 	    $out->xclose if $out;
 	    my $outpath= "$path_maildir/new/$time.${pid}_$n.mbox";
 	    $n++;
@@ -90,6 +110,14 @@ sub readandwrite {
 			&$maybe_subject_run();
 			$pre.$_.$post
 		    };
+		}
+		if ($opt_parsedate and /^date:\s*(.*\d)/i) {
+		    ## hmm assumes that every msg does contain a date header (or it will miss that fact and not output the date at all). but ok that's ok and even reasonable for now.
+		    my $date= str2time($1) or die "unparseable Date header: '$1'";
+		    if (($date - $maybe_parseddate) > $maxdatedifference) {
+			##no risk loosing data other than the date string itself? well it would have croaked above
+			$_= "Date: ".localtime($maybe_parseddate)."\n";
+		    }
 		}
 	    } else {
 		s/^>From /From /;

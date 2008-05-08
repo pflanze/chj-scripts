@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Mon Apr  7 19:22:53 MEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage if @ARGV;
+
+sub xprint {
+    print @_ or die "stdout: $!";
+}
+
+my $last_line_was_nonunwrappable=0;
+
+while (<>) {
+    ## hm problematic across files ?
+    if (/^\s*\z/s) { # an empty line
+	xprint "\n" unless $last_line_was_nonunwrappable;
+	xprint $_; # without checking whether it carries a newline at the end?
+	$last_line_was_nonunwrappable=1;
+    } elsif (/^[\wäöüÄÖÜ(]/) { # an unwrappable line
+	#chomp;
+	# hm and remove *any* trailing whitespace actually
+	s/\s+\z//s;
+	xprint $_," ";
+	# hm and do nothing about leading whitespace on following line??  that whould should have to be checked really right? well don't care for now
+	$last_line_was_nonunwrappable=0;
+    } else { # a nonunwrappable line, like '> ' or '- ' or indented
+	xprint "\n" unless $last_line_was_nonunwrappable;
+	xprint $_;
+	$last_line_was_nonunwrappable=1;
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

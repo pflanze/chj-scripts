@@ -12,46 +12,44 @@ sub usage {
     print "$myname [file(s)]
   or stdin.
   Options:
-  -h headername   print header value(s?)
+  -h|--headers headername
+                  print header value(s?)
+  --last-header headername
+                  print the header appearing last in the head text
+                  (but might be the one having been added to the head
+                  as the first in time)
+  --first-header headername
+                  print the header appearing first in the head text
+  --no-cleanup    do not remove temporary directory created by parser
 
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
 }
 
-my @args;
-my $DEBUG=0;
-my $opt_h;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (0) {
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-    } elsif (/^--?h(?:eader(?:=(.*))?)?$/) {
-         if (defined $1) {
-             $opt_h=$1
-         } else {
-             $opt_h=$ARGV[++$i] or usage "missing argument for '$_' option";
-         }
-    } elsif (/^--?h(elp)?$/) {
-    	usage
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-#usage unless @args;
+use Getopt::Long;
+our $verbose=0;
+our ($opt_h,
+     $opt_last_header,
+     $opt_no_cleanup,
+     $opt_first_header,
+    );
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "h|headers=s" => \$opt_h,
+	   "last-header=s" => \$opt_last_header,
+	   "first-header=s" => \$opt_first_header,
+	   "no-cleanup" => \$opt_no_cleanup,
+	   ) or exit 1;
+usage unless @ARGV;
+
 
 use MIME::Parser;
 use Chj::xopen 'xopen_read';
 use Chj::singlequote;
 
-my $parser = new MIME::Parser;
-$parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd.
+our $parser = new MIME::Parser;
+$parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd. -- wondering: IS THIS really SAFE?
 
 sub parsemsg {
     my ($fh)=@_;
@@ -61,30 +59,78 @@ sub parsemsg {
     $ent
 }
 
-if (@args) {
-    for(@args) {
-	print "File ".singlequote($_).":\n";
+sub Count_true {
+    my $count;
+    for (@_) {
+	$count++ if $_;
+    }
+    $count
+}
+
+usage "only give one of -h, --last-header or --first-header"
+  if Count_true($opt_h, $opt_last_header, $opt_first_header)>1;
+my $search_header= $opt_h || $opt_last_header || $opt_first_header;
+
+if (@ARGV) {
+    for (@ARGV) {
+	print "File ".singlequote($_).":\n" if $verbose;
 	my $f=xopen_read $_;
 	my $ent=parsemsg($f);
-	##unfinished:
-	if ($opt_h){
-	    #show header
-	    my $head=$ent->head;
-	    my @vals= $head->get($opt_h);
-	    if (@vals==0) {
-		print "no such header ".singlequote($opt_h)."\n";
-	    } elsif(@vals==1){
-		print "one such header ".singlequote($opt_h).": ".singlequote($vals[0])."\n";
-	    } else {
-		my $i=0;
-		for(@vals){
-		    print "$i. header ".singlequote($opt_h).": ".singlequote($_)."\n";
-		    $i++;
+	eval {
+
+	    if ($search_header) { #show header
+		my $show= sub {
+		    my ($prefix,$maybe_value)=@_;
+		    if ($verbose) {
+			print $prefix." ".singlequote($search_header)
+			  .(defined ($maybe_value) ? ": ".singlequote($maybe_value) : "")
+			    ."\n";
+		    } else {
+			if (defined $maybe_value) {
+			    print $maybe_value;
+			}
+		    }
+		};
+
+		my $head=$ent->head;
+		my @vals= $head->get($search_header);
+		if (@vals==0) {
+		    &$show("no such header");
+		} else {
+		    if ($opt_last_header) {
+			print $vals[-1];
+		    } elsif ($opt_first_header) {
+			print $vals[0];
+		    } else {
+			if(@vals==1){
+			    &$show("one such header",$vals[0]);
+			} else {
+			    my $i=0;
+			    for(@vals){
+				&$show("$i. header", $_);
+				$i++;
+			    }
+			}
+		    }
 		}
+	    } else {
+		die "unknown command requested <--- unfinished";
 	    }
-	}else {
-	    die "unknown command requested <--- unfinished";
+	};
+	my $e=$@;
+	unless ($opt_no_cleanup) {
+	    eval {
+		# btw not the $ent; *SICK*.
+		#warn "running purge";
+		#$parser->filer->purge;  WOW. does do nothing. and $ent does not have a filer method. -- ah only does not remove dir itself. ugh.
+		#use Chj::repl;repl;
+		my $filer= $parser->filer;
+		$filer->purge;
+		rmdir $filer->output_dir;
+	    };
+	    warn "error during cleanup: $@" if ref($@)||$@;
 	}
+	die $e if ref($e)||$e;
     }
 }
 else {
