@@ -57,9 +57,11 @@ use Chj::IO::Command;
 use Chj::xtmpfile;
 use Chj::xopen 'xopen_read';
 use Chj::xpipeline 'xreceiverpipeline_with_out_to';
+use Chj::xrealpath;
 
 sub uncompress {
     my ($file)=@_;
+    $file= xrealpath $file;
     my $c=  Chj::IO::Command->new_sender($filecmd,"--",$file);
     my $cnt=$c->xcontent;
     $c->xxfinish;
