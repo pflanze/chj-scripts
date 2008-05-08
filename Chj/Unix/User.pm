@@ -73,6 +73,9 @@ Not yet much tested.
 
 - note that terminating a parent using ctl-c kills the child as well (it does not create a new process group (btw is this a danger in and it itself too already?)); it's not a daemon gerating thing. and not like su foo & in the shell, either, right? or how does sh handle it?
 
+(- you *can* use it (without exec) for checking file system acesses. Like this
+ perl -w -MChj::Unix::User=su -ne 'BEGIN{ su "fuu" } chomp; $_="$_/config"; if (stat $_) { print "accessible: $_\n";} else { print "$! $_\n" }')
+
 =cut
 
 
