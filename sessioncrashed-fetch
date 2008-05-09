@@ -76,7 +76,7 @@ our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
 our $errors=0;
 our @urls=
   grep {
-      m|^https?://|s or do {
+      m|^https?://|is or do {
 	  warn "$myname: url '$_' does not look like something we can fetch\n";
 	  $errors++;
 	  0
@@ -93,12 +93,8 @@ sub make_sure ( $ ) {
     }
 }
 
-if ($errors) {
-    make_sure "Do you want to proceed with the remaining url's in spite of the above having been filtered out? "
-}
-
 our $prin= sub{
-    print map {"$_\n"} @urls
+    print map {"  $_\n"} @urls
       or die $!;
 };
 if ($dryrun) {
