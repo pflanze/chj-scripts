@@ -1,65 +1,14 @@
 #!/usr/bin/perl -w
 
 # Fre Apr 27 13:30:09 CEST 2007
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
 
-my $nfiles=3;
+use Chj::App::Maillogfilterapp;
 
-$0=~ /(.*?)([^\/]+)\z/s or die "?";
-my ($mydir, $myname)=($1,$2);
-sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
-
-  Options:
-  -n|--n-files n   use the n instead of $nfiles newest log files
-  -f               follow mode
-
-  (Christian Jaeger <$email>)
-";
-exit (@_ ? 1 : 0);
-}
-
-my @args;
-my $DEBUG=0;
-my $opt_f;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-    } elsif (/^--?f(ollow)?$/) {
-	$opt_f=1;
-    } elsif (/^--?n(?:files(?:=(.*))?)?$/) {
-        if (defined $1) {
-            $nfiles=$1
-        } else {
-            $nfiles=$ARGV[++$i] or usage "missing argument for '$_' option";
-        }
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-usage if @args;
-
-use Chj::xperlfunc;
-
-if ($opt_f) {
-    xexec
-      "fasttail /var/log/qmail/current| $mydir/maillogfilter --flush |tai";
-} else {
-    xexec
-      'myzcat `ls -rt /var/log/qmail/{current,@*}|tail -'
-      .$nfiles
-      .'`|'
-      .$mydir
-      .'/maillogfilter|tai|less';
-}
+maillogfilterapp (
+		  "/var/log/qmail/current",
+		  '/var/log/qmail/{current,@*}',
+		  "|tai",
+		  "--flush",
+		  );
