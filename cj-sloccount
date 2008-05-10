@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+
+# Sam Mär 15 21:52:10 CET 2008
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xopendir;
+use Chj::xperlfunc ':all';
+use Chj::xopen 'xopen_read';
+
+
+# those currently only work for hashes
+
+sub Coll_set ( $ $ $ ) {
+    my ($coll,$key,$val)=@_;
+    my $newcoll= {%$coll};
+    $$newcoll{$key}=$val;
+    $newcoll
+}
+
+sub Coll_modify ( $ $ $ ; $ ) {
+    my ($coll,$key,$fn, $maybe_default)=@_;
+    my $newcoll= {%$coll};
+    $$newcoll{$key}= &$fn(exists $$newcoll{$key} ? $$newcoll{$key} : $maybe_default);
+    $newcoll
+}
+
+sub Coll_to_pairarray ( $ ) {
+    my ($coll)=@_;
+    [
+     map {
+	 [ $_, $$coll{$_} ]
+     } keys %$coll
+    ]
+}
+
+
+sub _Add_to ( $ ) { # a curried +
+    my ($n1)=@_;
+    sub {
+	my ($n2)=@_;
+	$n1 + $n2
+    }
+}
+
+sub Array_fold ( $ $ $ ) {
+    my ($fn,$value,$array)=@_;
+    for my $v (@$array) {
+	$value=&$fn ($v,$value);
+    }
+    $value
+}
+
+
+our $subdir_is_tobeentered=sub {
+    my ($item)=@_;
+    not $item=~ /^\./
+};
+
+our $scandir;$scandir= sub {
+    my ($path, $loc_by_suffix)=@_;
+    my $d=xopendir $path;
+    my $lp;$lp= sub {
+	my ($loc_by_suffix)=@_;
+	if (defined (my $item= $d->xnread)) {
+	    my $path= $path."/".$item;
+	    if (my $s= Xlstat $path) {
+		if ($s->is_dir) {
+		    @_=(do {
+			if (&$subdir_is_tobeentered($item)) {
+			    &$scandir ($path, $loc_by_suffix)
+			} else {
+			    $loc_by_suffix
+			}
+		    }); goto $lp;
+		} elsif ($s->is_file) {
+		    my $suffix= $item; $suffix=~ s/.*\././; #functional regex wrappers still also?.
+		    my $f= xopen_read $path;
+		    my $nlines=0;
+		    while (<$f>) {
+			next if /^\s*;/; ## lisp / asm style comments only, todo
+			next if /^\s*\z/s;
+			$nlines++
+		    }
+		    @_=(Coll_modify($loc_by_suffix, $suffix, _Add_to($nlines), 0)); goto $lp;
+		} else {
+		    warn "ignoring '$path' (unknown type)";
+		    @_=($loc_by_suffix); goto $lp;
+		}
+	    } else {
+		warn "could not stat '$path': $!";
+		@_=($loc_by_suffix); goto $lp;
+	    }
+	} else {
+	    $loc_by_suffix
+	}
+    };
+    my $res= &$lp ($loc_by_suffix);
+    undef $lp;
+    $res
+};
+
+
+our $result= Array_fold $scandir, {}, \@ARGV;
+
+print(
+      map { $$_[1] . "\t" . $$_[0] . "\n" }
+      sort { $$a[1] <=> $$b[1] }
+      @{Coll_to_pairarray ($result)}
+     )
+  or die $!;
+
+#use Chj::ruse; use Chj::Backtrace; use Chj::repl; repl;

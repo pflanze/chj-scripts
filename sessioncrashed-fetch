@@ -7,7 +7,7 @@ use strict;
 use Chj::FP::lazy;
 use Chj::xpipeline 'xxpipeline';
 
-our $sessioncrashedfile= "$ENV{HOME}/.galeon/session_crashed.xml";
+our $sessioncrashedsourcefile_default= "$ENV{HOME}/.galeon/session_crashed.xml";
 sub chompingbacktick ( $ ) {
     my $res= `$_[0]`;
     chomp $res;
@@ -32,7 +32,7 @@ sub usage {
   Please close windows/frames you don't want to be fetched, first.
 
   Options:
-  --from sessioncrashedfile  ('$sessioncrashedfile' by default)
+  --from sessioncrashedfile  ('$sessioncrashedsourcefile_default' by default)
   --to  copy_as_url_file  ('$sessioncrashedfile_copy' by default)
          (the wget-page logfile will be created from this name
           with the (optional) .xml suffix stripped and .log appended)
@@ -49,10 +49,12 @@ use Getopt::Long;
 our $verbose=0;
 our $dryrun=0;
 our $force=0;
+our $sessioncrashedsourcefile= $sessioncrashedsourcefile_default;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$dryrun,
 	   "force"=> \$force,
+	   "from=s"=> \$sessioncrashedsourcefile, #nicht from|s  duh.
 	   ) or exit 1;
 usage if @ARGV;
 
@@ -60,7 +62,7 @@ use Chj::xperlfunc;
 
 xxsystem("cp",
 	 #"-a", no. current mtime, ok?
-	 $sessioncrashedfile,
+	 $sessioncrashedsourcefile,
 	 $sessioncrashedfile_copy_tmp);
 
 use XML::LibXML;
@@ -74,7 +76,7 @@ our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
 our $errors=0;
 our @urls=
   grep {
-      m|^https?://|s or do {
+      m|^https?://|is or do {
 	  warn "$myname: url '$_' does not look like something we can fetch\n";
 	  $errors++;
 	  0
@@ -91,12 +93,8 @@ sub make_sure ( $ ) {
     }
 }
 
-if ($errors) {
-    make_sure "Do you want to proceed with the remaining url's in spite of the above having been filtered out? "
-}
-
 our $prin= sub{
-    print map {"$_\n"} @urls
+    print map {"  $_\n"} @urls
       or die $!;
 };
 if ($dryrun) {
