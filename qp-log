@@ -37,14 +37,17 @@ usage if @ARGV;
 
 use Chj::xperlfunc;
 
+my $quoted_mydir= quotemeta $mydir;
+# just for the insane case where s.o. installs in a weird location.
+
 if ($opt_f) {
     xexec
-      "fasttail /var/log/qpsmtpd/qpsmtpd.log| $mydir/maillogfilter";
+      "fasttail /var/log/qpsmtpd/qpsmtpd.log| $quoted_mydir/maillogfilter";
 } else {
     xexec
       'myzcat `ls -rt /var/log/qpsmtpd/qpsmtpd.log*|tail -'
       .$nfiles
       .'`|'
-      .$mydir
+      .$quoted_mydir
       .'/maillogfilter|less';
 }
