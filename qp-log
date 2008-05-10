@@ -16,6 +16,8 @@ sub usage {
   Options:
   -n|--n-files n   use the n instead of $nfiles newest log files
   -f               follow mode
+  -H|--no-hide     do not hide (md5sum) mail adresses
+                   (only use with grep or similar)
 
   (Christian Jaeger <$email>)
 ";
@@ -26,12 +28,13 @@ use Getopt::Long;
 
 our $verbose=0;
 our $DEBUG=0;
-our $opt_f;
+our ($opt_f,$opt_nohide);
 GetOptions("verbose"=> \$verbose,
 	   "d|debug"=>\$DEBUG,
 	   "help"=> sub{usage},
 	   "f|follow"=> \$opt_f,
 	   "n|n-files=i"=> \$nfiles,
+	   "H|no-hide"=>\$opt_nohide,
 	   ) or exit 1;
 usage if @ARGV;
 
@@ -42,12 +45,16 @@ my $quoted_mydir= quotemeta $mydir;
 
 if ($opt_f) {
     xexec
-      "fasttail /var/log/qpsmtpd/qpsmtpd.log| $quoted_mydir/maillogfilter";
+      "fasttail /var/log/qpsmtpd/qpsmtpd.log".($opt_nohide ? "" : "| $quoted_mydir/maillogfilter");
 } else {
     xexec
-      'myzcat `ls -rt /var/log/qpsmtpd/qpsmtpd.log*|tail -'
-      .$nfiles
-      .'`|'
-      .$quoted_mydir
-      .'/maillogfilter|less';
+      (
+       'myzcat `ls -rt /var/log/qpsmtpd/qpsmtpd.log*|tail -'
+       .$nfiles
+       .'`'
+       .($opt_nohide ? ""
+	 : ('|'
+	    .$quoted_mydir
+	    .'/maillogfilter'))
+       .'|less');
 }
