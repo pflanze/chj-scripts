@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w
+
+# Sun May 11 00:49:10 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ one-of-the-governors ]
+
+  Utility to display and change cpu frequency scaling settings.
+
+  Without an argument or option, the current setting is displayed.
+
+  Options:
+
+  -l|--list   list available governors
+
+
+  (NOTE: does not do locking.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "l|list"=> sub { list (); exit; },
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+sub list {
+    for my $f
+      (glob '/sys/devices/system/cpu/cpu*/cpufreq/scaling_available_governors')
+	{
+	    $f=~ m|/cpu/(cpu\d+)/| or die "no match";
+	    print "$1: ".xfile_chomped_contents($f)."\n";
+	};
+}
+
+
+our ($maybe_governor)= @ARGV;
+
+our @governor_paths=
+  glob '/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor';
+
+@governor_paths
+  or die "$myname: didn't find sysfs files for scaling on this system\n";
+
+use Chj::Fileutil ":all";
+
+sub xfile_chomped_contents ($ ) {
+    my ($f)=@_;
+    my $n= xCatfile $f;
+    chomp $n;
+    $n
+}
+
+
+if (my $wish= $maybe_governor) {
+    for my $f (@governor_paths) {
+	my $cur= xfile_chomped_contents ($f);
+	#warn "state=$state,wish=$wish,ok?"; uff.
+	if ($cur eq $wish) {
+	    #Warn "cpu $f is already $wish";
+	} else {
+	    xDirectWritefileln ($wish, $f);
+	}
+    }
+
+} else {
+    for my $f (@governor_paths) {
+	$f=~ m|/cpu/(cpu\d+)/| or die "no match";
+	print "$1: ".xfile_chomped_contents($f)."\n";
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
