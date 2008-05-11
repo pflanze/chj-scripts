@@ -73,11 +73,7 @@ sub smp_msgfile {
     num_cpus > 1
       or warn "really need multi cpu machine for this test, "
 	."but running it anyway for now";
-    my $n=1e6; my $repetitions=10;
-    $SIG{CHLD}= sub {
-	die "SIGCHILD";
-	#xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
-    };
+    my $n=2e6;
     msgfile_write ("init");
     my $mk_sender= sub {
 	my ($msg)=@_;
@@ -85,11 +81,27 @@ sub smp_msgfile {
 	    for (1..$n) {
 		msgfile_write($msg);
 	    }
+	    print "child $msg is finished\n";
 	    0
 	}
     };
-    my $pid1=xfork_thunk (&$mk_sender ("child 1"));
-    my $pid2=xfork_thunk (&$mk_sender ("child 2"));
+    my ($pid1,$pid2);
+    $SIG{CHLD}= sub {
+	#die "SIGCHILD";
+	my $pid= xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
+	if ($pid1 and $pid == $pid1) {
+	    undef $pid1
+	} elsif ($pid2 and $pid == $pid2) {
+	    undef $pid2
+	} else {
+	    die "?? pid $pid";
+	}
+	unless ($pid1 or $pid2) {
+	    die "END\n";
+	}
+    };
+    $pid1=xfork_thunk (&$mk_sender ("child 1"));
+    $pid2=xfork_thunk (&$mk_sender ("child 2"));
 
     eval {
 	while (1) {
@@ -98,9 +110,13 @@ sub smp_msgfile {
 	    }
 	}
     };
-    print $@;
-    kill 9, $pid1,$pid2;
-    #print "ok\n"
+    if ($@ eq "END\n") {
+	print "ok\n"
+    } else {
+	print $@;
+	kill 9, $pid1,$pid2;
+	exit 1;
+    }
 }
 
 smp_msgfile;
