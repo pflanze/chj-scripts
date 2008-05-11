@@ -54,6 +54,15 @@ sub msgfile_read {
 	."in message '$msg'";
 }
 
+sub xfork_thunk ( $ ) {
+    my ($thunk)=@_;
+    my $pid=xfork;
+    if ($pid) {
+	$pid
+    } else {
+	&$thunk()
+    }
+}
 
 sub smp_msgfile {
     num_cpus > 1
@@ -62,31 +71,30 @@ sub smp_msgfile {
     my $n=1e6; my $repetitions=10;
     $SIG{CHLD}= sub {
 	die "SIGCHILD";
+	#xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
     };
     msgfile_write ("init");
-    my $pid=xfork;
-    if ($pid) {
-	for (1..$repetitions) {
+    my $mk_sender= sub {
+	my ($msg)=@_;
+	sub {
 	    for (1..$n) {
-		msgfile_write ("parent");
+		msgfile_write($msg);
 	    }
+	}
+    };
+    my $pid1=xfork_thunk (&$mk_sender ("child 1"));
+    my $pid2=xfork_thunk (&$mk_sender ("child 2"));
+
+    eval {
+	while (1) {
 	    for (1..$n) {
 		msgfile_read;
 	    }
 	}
-	xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
-    } else {
-	for (1..$repetitions) {
-	    for (1..$n) {
-		msgfile_read;
-	    }
-	    for (1..$n) {
-		msgfile_write("child");
-	    }
-	}
-	exit;
-    }
-    print "ok\n"
+    };
+    print $@;
+    kill 9, $pid1,$pid2;
+    #print "ok\n"
 }
 
 smp_msgfile;
