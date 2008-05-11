@@ -36,9 +36,10 @@ my $msgfile_path="/tmp/$ENV{USER}/msgfiletest";
 use Digest::MD5 qw(md5_hex);
 
 my $counter=0;
-sub msgfile_write {
+sub msgfile_write ( $ ) {
+    my ($mark)=@_;
     my $c= $counter++;
-    my $msg= $c."\n".md5_hex ($c);
+    my $msg= $c."\n$mark\n".md5_hex ($c)."\n";
     MsgfileWrite ($msgfile_path,
 		  $msg,
 		 );
@@ -46,7 +47,7 @@ sub msgfile_write {
 
 sub msgfile_read {
     my $msg= MsgfileRead ($msgfile_path,);
-    my ($c,$hash)= split "\n",$msg;
+    my ($c,$_foo,$hash)= split "\n",$msg;
     my $realhash= md5_hex($c);
     $realhash eq $hash
       or die "INCONSISTENT at counter $counter: $realhash vs $hash "
@@ -55,17 +56,19 @@ sub msgfile_read {
 
 
 sub smp_msgfile {
-    num_cpus > 1 or die "need multi cpu machine for this test";
+    num_cpus > 1
+      or warn "really need multi cpu machine for this test, "
+	."but running it anyway for now";
     my $n=1e6; my $repetitions=10;
     $SIG{CHLD}= sub {
 	die "SIGCHILD";
     };
-    msgfile_write;
+    msgfile_write ("init");
     my $pid=xfork;
     if ($pid) {
 	for (1..$repetitions) {
 	    for (1..$n) {
-		msgfile_write;
+		msgfile_write ("parent");
 	    }
 	    for (1..$n) {
 		msgfile_read;
@@ -78,7 +81,7 @@ sub smp_msgfile {
 		msgfile_read;
 	    }
 	    for (1..$n) {
-		msgfile_write;
+		msgfile_write("child");
 	    }
 	}
 	exit;
