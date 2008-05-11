@@ -40,6 +40,11 @@ terminated with a newline when writing):
 
 (In my tests with small messages bash did read them in one read call.)
 
+NOTE: MsgfileWrite and MsgfileRead now use flock. On SMP machines on
+Linux they *only* safe this way. So if you read from bash instead, you
+*should* be using flock locking, too. (The idea of "atomic writes"
+doesn't work anymore on smp.)
+
 =cut
 
 
@@ -146,15 +151,6 @@ our $maxmsgsize= 1000;
 # system ?
 
 # use POSIX; ..  sysconf _SC_PAGESIZE  ; if it's of use at all.
-# T ODO: try to test on an SMP machine once I have one..
-# ah:
-use Chj::num_cpus;
-{
-    my $n= num_cpus;
-    $n == 1
-      or warn "WARNING: your system has $n cpus, not 1, "
-	."Msgfile* functions probably won't be safe";
-}
 
 use Fcntl ":flock";
 
