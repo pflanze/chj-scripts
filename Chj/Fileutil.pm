@@ -53,8 +53,10 @@ package Chj::Fileutil;
 	      xUnlink
 	      _Realpath
 	      xWritefileln
+	      xDirectWritefileln
 	      MsgfileWrite
 	      MsgfileRead
+	      xCatfile
 	      xEditfileln
 	      xChecknolinks
 	      xChecklink
@@ -67,6 +69,7 @@ use strict;
 
 use Chj::xperlfunc;
 use Chj::singlequote qw(singlequote singlequote_many);
+use Chj::xopen ':all';
 
 our $verbose=1;
 
@@ -120,6 +123,16 @@ sub xWritefileln ($ $ ) {
     $f->xputback(0644);
 }
 
+sub xDirectWritefileln ($ $ ) {
+    my ($str,$path)=@_;
+    ##open feature: giving perms ?
+    #my $realpath= _Realpath ($path); why?
+    Warn "writing '$str' to '$path'";
+    my $f= xopen_write($path);
+    $f->xprint($str,"\n");
+    $f->xclose;
+}
+
 use Fcntl ':DEFAULT';
 use Encode '_utf8_off';
 
@@ -147,6 +160,7 @@ sub MsgfileWrite ($ $ ; $ ) {
     my ($path,$msg,$maybe_endchar)=@_;
     # ^ NOTE that the order of the path/contents arguments is reversed
     # compared with xWritefileln!
+    # expects the file to exist already
     _utf8_off($msg); # so we can reliably check the length. ok?
     $msg.= defined($maybe_endchar) ? $maybe_endchar : "\0";
     my $msglen= length ($msg);
@@ -179,7 +193,10 @@ sub MsgfileRead ($ ; $ ) {
     $msg
 }
 
-use Chj::xopen 'xopen_read';
+sub xCatfile ( $ ) {
+    my ($path)=@_;
+    xopen_read($path)->xcontent
+}
 
 sub xEditfileln ($ $ ) {
     my ($fn,$path)=@_;
@@ -187,7 +204,7 @@ sub xEditfileln ($ $ ) {
     # ^ ps da wo ich xEditfile benütze wird eh zuerst auf symlinks
     # geprüft.. also eigentlich unsinig 'aber egal'.
     Warn "editing '$realpath'";
-    my $newcontent= $fn->( xopen_read($realpath)->xcontent );
+    my $newcontent= $fn->( xCatfile ($realpath) );
     my $f= xtmpfile $realpath;
     $f->xprint ($newcontent);
     $f->xprint ("\n") unless $newcontent=~ /\n\z/s;
