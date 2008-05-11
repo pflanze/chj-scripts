@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rename 'use Encode ":all"; $_=encode "utf-8", (decode "latin1",$_)' "$@"
+
