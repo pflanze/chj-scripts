@@ -156,6 +156,8 @@ use Chj::num_cpus;
 	."Msgfile* functions probably won't be safe";
 }
 
+use Fcntl ":flock";
+
 sub MsgfileWrite ($ $ ; $ ) {
     my ($path,$msg,$maybe_endchar)=@_;
     # ^ NOTE that the order of the path/contents arguments is reversed
@@ -172,6 +174,8 @@ sub MsgfileWrite ($ $ ; $ ) {
       # |O_TRUNC is of no use. except to reclaim space, but would have
       # the drawback of the reader having to check for emptyness.
       or die "could not open file '$path' for writing: $!";
+    flock($out,LOCK_EX)
+      or die "could not get exclusive lock on '$path': $!";
     my $len= syswrite $out, $msg;
     defined $len or die "could not write to '$path': $!";
     $len == $msglen
@@ -185,6 +189,11 @@ sub MsgfileRead ($ ; $ ) {
     my $f;
     sysopen $f, $path, O_RDONLY
       or die "could not open '$path' for reading: $!";
+    flock($f,LOCK_SH)
+      or die "could not get shared lock on '$path': $!";
+    # ^ and yes, this is absolutely required on smp systems; flock in
+    # the writers alone doesn't guarantee messages being read back in
+    # whole pieces.
     my $msg;
     defined (sysread( $f,$msg, $maxmsgsize))
       or die "could not read from '$path': $!";
