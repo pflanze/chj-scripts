@@ -135,16 +135,12 @@ our $maxmsgsize= 1000;
 # use POSIX; ..  sysconf _SC_PAGESIZE  ; if it's of use at all.
 # T ODO: try to test on an SMP machine once I have one..
 # ah:
-eval {
-    require Linux::Cpuinfo;
-    my $n= Linux::Cpuinfo->new->num_cpus;
+use Chj::num_cpus;
+{
+    my $n= num_cpus;
     $n == 1
       or warn "WARNING: your system has $n cpus, not 1, "
 	."Msgfile* functions probably won't be safe";
-};
-if (ref $@ or $@) {
-    my $e="$@"; chomp $e;
-    warn "WARNING: could not test for the number of cpus ($e)";
 }
 
 sub MsgfileWrite ($ $ ; $ ) {
