@@ -32,7 +32,11 @@ use Chj::Fileutil ":all";
 use Chj::num_cpus;
 use Chj::xperlfunc;
 
-my $msgfile_path="/tmp/$ENV{USER}/msgfiletest";
+#my $msgfile_path="/tmp/$ENV{USER}/msgfiletest";
+
+my $msgfile_path="/dev/shm/msgfiletest";
+
+
 use Digest::MD5 qw(md5_hex);
 
 my $counter=0;
@@ -49,6 +53,7 @@ sub msgfile_read {
     my $msg= MsgfileRead ($msgfile_path,);
     my ($c,$_foo,$hash)= split "\n",$msg;
     my $realhash= md5_hex($c);
+    $counter++;
     $realhash eq $hash
       or die "INCONSISTENT at counter $counter: $realhash vs $hash "
 	."in message '$msg'";
@@ -60,7 +65,7 @@ sub xfork_thunk ( $ ) {
     if ($pid) {
 	$pid
     } else {
-	&$thunk()
+	exit(&$thunk());
     }
 }
 
@@ -80,6 +85,7 @@ sub smp_msgfile {
 	    for (1..$n) {
 		msgfile_write($msg);
 	    }
+	    0
 	}
     };
     my $pid1=xfork_thunk (&$mk_sender ("child 1"));
