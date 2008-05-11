@@ -1,5 +1,5 @@
-# Sun Feb 11 17:39:15 2007  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
+# Sun Feb 11 17:39:15 2007  Christian Jaeger, christian at jaeger mine nu
+#
 # Copyright 2004 by Christian Jaeger
 # Published under the same terms as perl itself
 #
@@ -99,7 +99,8 @@ sub _Realpath ($ ) {
     my ($path)=@_;
     realpath ($path) || do {
 	if (-l $path) {
-	    die "dangling symlink at '$path'"; #ps chdir ist eben essentiell dass ausgegeben wird..
+	    die "dangling symlink at '$path'";
+	    # ^ ps chdir ist eben essentiell dass ausgegeben wird..
 	} else {
 	    $path
 	}
@@ -122,16 +123,24 @@ sub xWritefileln ($ $ ) {
 use Fcntl ':DEFAULT';
 use Encode '_utf8_off';
 
-# overwrites existing file: with the guarantee so-I-hope that the resulting file always contains a valid $str message up to the given boundary even without locking.
+# overwrites existing file: with the guarantee so-I-hope that the
+# resulting file always contains a valid $str message up to the given
+# boundary even without locking.
 
-our $maxmsgsize= 1000; # including the delimiter; riel says "the writer locks the page". But does this guarantee anything about tail-merged etc. files on a file system ?
+our $maxmsgsize= 1000;
+# including the delimiter; riel says "the writer locks the page". But
+# does this guarantee anything about tail-merged etc. files on a file
+# system ?
+
 # use POSIX; ..  sysconf _SC_PAGESIZE  ; if it's of use at all.
 # T ODO: try to test on an SMP machine once I have one..
 # ah:
 eval {
     require Linux::Cpuinfo;
     my $n= Linux::Cpuinfo->new->num_cpus;
-    $n == 1 or warn "WARNING: your system has $n cpus, not 1, Msgfile* functions probably won't be safe";
+    $n == 1
+      or warn "WARNING: your system has $n cpus, not 1, "
+	."Msgfile* functions probably won't be safe";
 };
 if (ref $@ or $@) {
     my $e="$@"; chomp $e;
@@ -139,27 +148,36 @@ if (ref $@ or $@) {
 }
 
 sub MsgfileWrite ($ $ ; $ ) {
-    my ($path,$msg,$maybe_endchar)=@_; # NOTE that the order of the path/contents arguments is reversed compared with xWritefileln!
+    my ($path,$msg,$maybe_endchar)=@_;
+    # ^ NOTE that the order of the path/contents arguments is reversed
+    # compared with xWritefileln!
     _utf8_off($msg); # so we can reliably check the length. ok?
     $msg.= defined($maybe_endchar) ? $maybe_endchar : "\0";
     my $msglen= length ($msg);
     # be kind and already fail while writing, not only when reading:
-    $msglen<= $maxmsgsize or die "message exceeds maxmsgsize ($msglen instead of $maxmsgsize)";
+    $msglen<= $maxmsgsize
+      or die "message exceeds maxmsgsize ($msglen instead of $maxmsgsize)";
     my $out;
-    sysopen $out, $path, O_WRONLY  # |O_TRUNC is of no use. except to reclaim space, but would have the drawback of the reader having to check for emptyness.
+    sysopen $out, $path, O_WRONLY
+      # |O_TRUNC is of no use. except to reclaim space, but would have
+      # the drawback of the reader having to check for emptyness.
       or die "could not open file '$path' for writing: $!";
     my $len= syswrite $out, $msg;
     defined $len or die "could not write to '$path': $!";
-    $len == $msglen or die "could not write the whole message at once to '$path', only $len bytes of $msglen";
+    $len == $msglen
+      or die "could not write the whole message at once to '$path', "
+	."only $len bytes of $msglen";
     close ($out) or die "error closing '$path': $!";
 }
 
 sub MsgfileRead ($ ; $ ) {
     my ($path, $maybe_delim)=@_;
     my $f;
-    sysopen $f, $path, O_RDONLY or die "could not open '$path' for reading: $!";
+    sysopen $f, $path, O_RDONLY
+      or die "could not open '$path' for reading: $!";
     my $msg;
-    defined (sysread( $f,$msg, $maxmsgsize)) or die "could not read from '$path': $!";
+    defined (sysread( $f,$msg, $maxmsgsize))
+      or die "could not read from '$path': $!";
     my $delim= defined ($maybe_delim) ? $maybe_delim : "\0";
     $msg=~ s/${delim}.*//s or die "missing delimiter in '$path'";
     $msg
@@ -169,7 +187,9 @@ use Chj::xopen 'xopen_read';
 
 sub xEditfileln ($ $ ) {
     my ($fn,$path)=@_;
-    my $realpath= _Realpath ($path); #ps da wo ich xEditfile benütze wird eh zuerst auf symlinks geprüft.. also eigentlich unsinig 'aber egal'.
+    my $realpath= _Realpath ($path);
+    # ^ ps da wo ich xEditfile benütze wird eh zuerst auf symlinks
+    # geprüft.. also eigentlich unsinig 'aber egal'.
     Warn "editing '$realpath'";
     my $newcontent= $fn->( xopen_read($realpath)->xcontent );
     my $f= xtmpfile $realpath;
@@ -209,7 +229,8 @@ sub xChecklink($ $ ) {
     my ($path,$value)=@_;
     my $v= readlink ($path);
     defined $v or die "expecting '$path' to be a symlink, but it's not";
-    $v eq $value or die "expecting '$path' to be a symlink to '$value', but it's to '$v'";
+    $v eq $value
+      or die "expecting '$path' to be a symlink to '$value', but it's to '$v'";
 }
 
 sub xSymlink($ $ ) {
@@ -221,11 +242,16 @@ sub xSymlink($ $ ) {
 use Fcntl ':DEFAULT',':flock'; # DEFAULT already imported, though
 
 sub Getlock ($ ; $ ; $ ; $ ) {
-    my ($path,$maybe_waitingmsg, $maybe_create_mode, $flag_excl)=@_; # create_mode is actually umask exposed ("is subject to the current umask")
+    my ($path,$maybe_waitingmsg, $maybe_create_mode, $flag_excl)=@_;
+    # ^ create_mode is actually umask exposed ("is subject to the
+    # current umask")
     my $lck;
     do {
 	if (defined ($maybe_create_mode)) {
-	    sysopen $lck, $path, O_RDWR|O_CREAT|($flag_excl ? O_EXCL : 0), $maybe_create_mode;
+	    sysopen($lck,
+		    $path,
+		    O_RDWR|O_CREAT|($flag_excl ? O_EXCL : 0),
+		    $maybe_create_mode);
 	} else {
 	    sysopen $lck, $path, O_RDWR;
 	}
