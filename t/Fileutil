@@ -1,0 +1,94 @@
+#!/usr/bin/perl -w
+
+# Sun May 11 16:09:24 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::Fileutil ":all";
+
+
+# not yet using real test infrastructure sigh ~ just hacks ehr single
+# programs for now.
+
+use Chj::num_cpus;
+use Chj::xperlfunc;
+
+my $msgfile_path="/tmp/$ENV{USER}/msgfiletest";
+use Digest::MD5 qw(md5_hex);
+
+my $counter=0;
+sub msgfile_write {
+    my $c= $counter++;
+    my $msg= $c."\n".md5_hex ($c);
+    MsgfileWrite ($msgfile_path,
+		  $msg,
+		 );
+}
+
+sub msgfile_read {
+    my $msg= MsgfileRead ($msgfile_path,);
+    my ($c,$hash)= split "\n",$msg;
+    my $realhash= md5_hex($c);
+    $realhash eq $hash
+      or die "INCONSISTENT at counter $counter: $realhash vs $hash "
+	."in message '$msg'";
+}
+
+
+sub smp_msgfile {
+    num_cpus > 1 or die "need multi cpu machine for this test";
+    my $n=1e6; my $repetitions=10;
+    $SIG{CHLD}= sub {
+	die "SIGCHILD";
+    };
+    msgfile_write;
+    my $pid=xfork;
+    if ($pid) {
+	for (1..$repetitions) {
+	    for (1..$n) {
+		msgfile_write;
+	    }
+	    for (1..$n) {
+		msgfile_read;
+	    }
+	}
+	xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
+    } else {
+	for (1..$repetitions) {
+	    for (1..$n) {
+		msgfile_read;
+	    }
+	    for (1..$n) {
+		msgfile_write;
+	    }
+	}
+	exit;
+    }
+    print "ok\n"
+}
+
+smp_msgfile;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
