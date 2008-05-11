@@ -9,11 +9,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname on|off|single [| status ]
+    print "$myname on | off|single [| status ]
 
-  HACK to switch off core(s) to avoid swap+encryptedswap+nvidiaXserver
-  or so hang problem complex when swapping.
+  Utility to switch cpus on and off and display current state.
 
+  (NOTE: does not do locking.)
 
   (Christian Jaeger <$email>)
 ";
@@ -29,31 +29,43 @@ usage unless @ARGV<=1;
 
 our ($cmd)= @ARGV ? @ARGV : "status";
 
-our @othercores= "/sys/devices/system/cpu/cpu1/online";
-## todo better fore more than dual cores.
+our @othercores= glob '/sys/devices/system/cpu/cpu?*/online';
+
+@othercores
+  or die "$myname: didn't find any other cpu's on this system\n";
 
 use Chj::Fileutil ":all";
-
 
 our $mkswitch=sub {
     my ($on)=@_; #ein super Fall wo "?" wirklich passen würde. nicht p. he. !!
     sub {
-	my $msg= $on ? "1\n" : "0\n";
+	my $wish= $on ? "1" : "0";
 	for my $f (@othercores) {
-	    MsgfileWrite ($f,$msg,""); # do not end with \0
+	    my $state= file_cpu_onP ($f);
+	    #warn "state=$state,wish=$wish,ok?"; uff.
+	    if ($state eq $wish) {
+		Warn "cpu $f already $wish";
+	    } else {
+		xDirectWritefileln ($wish, $f);
+	    }
 	}
     }
 };
 
 our $on= &$mkswitch (1);
-our $off= &$mkswitch (1);
+our $off= &$mkswitch (0);
+
+sub file_cpu_onP ($ ) {
+    my ($f)=@_;
+    my $n= xCatfile $f;
+    chomp $n;
+    $n
+}
 
 our $status= sub {
     my $tot=1;
     for my $f (@othercores) {
-	my $n= MsgfileRead $f,"";# do not expect a \0 (sigh.. wrong funcs)
-	chomp $n;
-	$tot+= $n ? 1 : 0;
+	$tot+= file_cpu_onP ($f) ? 1 : 0;
     }
     print "number of active cpu's: $tot\n" or die;#xprint?...
 };
