@@ -54,7 +54,9 @@ use Mail::Sendmail;
 
 my %knownheaders= map { $_=>1 }
   qw( from to mailto
-      cc bcc subject smtp server mime retries delay tz debug);
+      cc bcc subject smtp server mime retries delay tz debug
+      date
+    );
 
 my $from_file= "$ENV{HOME}/.send_as_mail.from";
 
@@ -84,14 +86,14 @@ FILE: for my $file (@ARGV) {
 		if (/^([\w-]+):\s*(.*)/) {
 		    my ($key,$value)=($1,$2);
 		    if (not $knownheaders{lc($key)}) {
-			warn "Unknown header '$key'\n";
+			warn "Unknown header '$key', using it anyway\n";
 			$warn=1;
 		    }
 		    $args{lc($key)}=$value;
 		} elsif (/^bcc(?:toself)?\s*(?:=\s*1\s+)?$/si) {
 		    $flag_bcctoself=1;
 		} else {
-		    warn "Invalid header format of '$_'\n";
+		    warn "Invalid header format of '$_', ignoring\n";
 		    $warn=1;
 		}
 	    }
@@ -183,20 +185,25 @@ FILE: for my $file (@ARGV) {
 		$args{body}.= "\n--\n".(xopen($filename)->xcontent);
 	    }
 	}
+	close IN
+	  or die $!;
 	$|=1;
-	print "Send mail".($warn ? " anyway" : "")."? [y/n] ";
       ASK: {
+	    print "Send mail".($warn ? " anyway" : "")."? [y/n/d(ump)] ";
 	    my $ans= <STDIN>;
 	    if ($ans=~/^n/i) {
 		next FILE
 	    } elsif ($ans=~ /^[jy]/i) {
 		last ASK;
+	    } elsif ($ans=~ /^[dD]/i) {
+		use Data::Dumper;
+		print Dumper (\%args);
+		redo ASK;
 	    } else {
 		print "Please say y or no..: ";
 		redo ASK;
 	    }
 	}
-	close IN;
 	if ($flag_bcctoself){
 	    if ($args{bcc}) {
 		$args{bcc}.= ",".$args{from}
