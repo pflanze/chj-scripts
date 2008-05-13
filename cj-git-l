@@ -9,12 +9,10 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname
 
   git list added/modified/deleted files. (obviously the latter only if
   they are still there, ehr)
-
-  Like cg-status | grep '^[ADM]' | cut -c3- |myxargs_* l | cut ...off until date
 
   (Christian Jaeger <$email>)
 ";
@@ -26,10 +24,10 @@ my $DEBUG=0;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
-    	usage
+	usage
     } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
+	push @args, @ARGV[$i+1..$#ARGV];
+	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
@@ -39,9 +37,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 #             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
 #         }
     } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
+	usage("Unknown option '$_'\n");
     } else {
-    	push @args, $_
+	push @args, $_
     }
 }
 usage if @args;
@@ -60,14 +58,16 @@ sub files {
 	    last;
 	}
 	chomp;
-	if (/^#\s+(modified|deleted|added|new file):\s+(.*)/) { # hm it seems 'added' isn't used
+	if (/^#\s+(modified|deleted|added|new file):\s+(.*)/) {
+	    # ^ hm it seems 'added' isn't used
 	    my ($what,$path)=($1,$2);
 	    $files{$path}=$what;
 	}
     }
     my $rv= $g->xfinish;
     $rv==0 or $rv==1<<8  # (1 is when nothing's ready to commit)
-      or ($do_accept_pipeerror and $rv == 141<<8) # 141 is the exit code it seems to return in this case
+      or ($do_accept_pipeerror and $rv == 141<<8)
+	# 141 is the exit code it seems to return in this case
       or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
     \%files
 }
@@ -84,7 +84,8 @@ sub main {
     while (<$l>) {
 	chomp;
 	# chop off '-rw-r--r-- 1 clamavbuild clamavbuild 4119'
-	s/^([-l])[-rwSstx]{9} +\d+ +\S+ +\S+ +\d+ +// or die "line dos not match: '$_'";
+	s/^([-l])[-rwSstx]{9} +\d+ +\S+ +\S+ +\d+ +//
+	  or die "line dos not match: '$_'";
 	my $type= $1;
 	/^\S+ +\S+ +(.*)/ or die "line (date part) does not match: '$_'";
 	my $file=$1;
@@ -93,7 +94,9 @@ sub main {
 	}
 	my $kind= $$files{$file} or die "bug ('$file')";
 	{
-	    my $kind= $$modmap{$kind} or die "bug '$kind'";#need the my. or the die would print the new, undef, value. tja.
+	    my $kind= $$modmap{$kind}
+	      or die "bug '$kind'";
+	    #^need the my. or the die would print the new, undef, value. tja.
 	    print "$kind ",$_,"\n" or die "printing to stdout: $!";
 	    #^- in the case of symlinks, could print $file instead; $_
 	    #will still contain the " -> .." part. But maybe it's good
