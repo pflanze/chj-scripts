@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+# invoke gpg with all the keyrings that Debian (as of >etch) provides.
+
+my @debian_keyrings=
+  (
+   ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-role-keys.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.pgp"],
+  );
+for (@debian_keyrings) {
+    my ($pack,$path)=@$_;
+    -r $path
+      or die "can't read keyring '$path': $!; please apt-get install $pack";
+}
+
+exec(
+     "gpg",
+     (
+      map {
+	  my ($pack,$path)=@$_;
+	  ("--keyring", $path)
+      } @debian_keyrings
+     ),
+     @ARGV
+    );
+
