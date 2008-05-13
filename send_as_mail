@@ -26,6 +26,20 @@ exit;
 
 usage unless @ARGV;
 
+my $localsmtpconfig_host_file="/root/etc/smtpconfig/host";
+my $localsmtpconfig_port_file="/root/etc/smtpconfig/port";
+
+use Chj::Fileutil ":all";
+
+local $Mail::Sendmail::mailcfg{host}=
+  (MaybeChompCatfile ($localsmtpconfig_host_file)
+   || $Mail::Sendmail::mailcfg{host});
+local $Mail::Sendmail::mailcfg{port}=
+  (MaybeChompCatfile ($localsmtpconfig_port_file)
+   || $Mail::Sendmail::mailcfg{port});
+#not functionally solvable copypasting right?
+
+
 sub maybe_extend_with_fullname ( $ ) {
     my ($email)=@_;
     unless($ENV{MAILREALNAME}) {
