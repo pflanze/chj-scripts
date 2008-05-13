@@ -62,6 +62,9 @@ package Chj::Fileutil;
 	      MsgfileWrite
 	      MsgfileRead
 	      xCatfile
+	      MaybeCatfile
+	      xChompCatfile
+	      MaybeChompCatfile
 	      xEditfileln
 	      xChecknolinks
 	      xChecklink
@@ -202,6 +205,51 @@ sub xCatfile ( $ ) {
     my ($path)=@_;
     xopen_read($path)->xcontent
 }
+
+##todo move to a util lib!
+sub Maybeed ( $ ) {
+    my ($proc)=@_;
+    sub {
+	my ($path)=@_;
+	#[EVER same issue. with list context. ah no, I didn't overload it
+	# anyway, xcontent is not working for list context right.]
+	# hm but for the general case it will be an issue as ever.
+	#  [could that liststuff part be a util in itself?..]
+	my $res= eval {
+	    &$proc ($path)
+	};
+	my $e=$@; my $errno= $!+0;
+	if (ref $e or $e) {
+	    #if ($e =~ /no such file/i) { ##todo EWIG HACK of how should i do it. ah and parametrize it anyway for the general case!
+	    #and no it doesn't work anyway with different locales. no no no, larry w.
+	    if ($errno and $errno==2) { ## hardcode, fine fine.todo.
+		undef
+	    } else {
+		die $e
+	    }
+	} else {
+	    $res
+	}
+    }
+}
+
+##todo move to a util lib!
+sub Chomped ( $ ) {
+    my ($proc)=@_;
+    sub {
+	if(defined (my $res= &$proc (@_))) {
+	    #chomp $res; ps. NO NO NO, this is not like the shell backticks.
+	    $res=~ s/\s+\z//s;
+	    $res
+	} else {
+	    undef
+	}
+    }
+}
+
+*MaybeCatfile= Maybeed (\&xCatfile);
+*xChompCatfile= Chomped (\&xCatfile);
+*MaybeChompCatfile= Chomped (\&MaybeCatfile);
 
 sub xEditfileln ($ $ ) {
     my ($fn,$path)=@_;
