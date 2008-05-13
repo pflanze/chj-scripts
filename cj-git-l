@@ -66,7 +66,12 @@ sub files {
     }
     my $rv= $g->xfinish;
     $rv==0 or $rv==1<<8  # (1 is when nothing's ready to commit)
-      or ($do_accept_pipeerror and $rv == 141<<8)
+      or ($do_accept_pipeerror and
+	  ($rv == 141<<8
+	   or
+	   $rv == 13 # sigpipe
+	  ) #and warn "ignoring pipe err"
+	 )
 	# 141 is the exit code it seems to return in this case
       or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
     \%files
