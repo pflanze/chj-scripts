@@ -28,11 +28,10 @@ my $options={};
 GetOptions($options,
 	   "v|invert",
 	   "a|all",
+	   "help"=> sub{usage},
 	  )
   or exit 1;
 usage if @ARGV;
-
-use Data::Dumper; print Dumper $options;
 
 {
     package Chj_App::ParsedTag;

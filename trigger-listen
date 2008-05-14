@@ -1,0 +1,168 @@
+#!/usr/bin/perl -w
+
+# Mit Feb 13 13:22:44 CET 2008
+(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+
+use strict;
+use Time::HiRes 'time','sleep';
+
+sub uninterrupted_sleep ( $ ) {
+    my ($sleeptime)=@_;
+    my $end= time + $sleeptime;
+    while (1) {
+	my $diff= $end - time;
+	if ($diff > 0) {
+	    #warn "going to sleep for $diff";
+	    sleep $diff;
+	} else {
+	    last
+	}
+    }
+}
+# ^- todo: move to some lib, finally.
+
+
+our $sleeptime=1.0;
+our $maxchildren= 10;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname socketpath cmd [arguments]
+
+  Listens on socketpath, and expects senders to print a 'trigger'
+  line, and when that happens, after waiting for --sleep seconds
+  ($sleeptime by default), runs the given cmd / arguments. If new
+  triggers are being issued before the cmd finishes, it is being run
+  again (thus no triggers are being missed).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $DEBUG;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sleeptime"=> \$sleeptime,
+	   "debug"=> \$DEBUG,
+	   ) or exit 1;
+usage unless @ARGV >= 2;
+$DEBUG||=$verbose;
+our $socketpath= shift @ARGV;
+our @cmd= @ARGV;
+
+use IO::Socket::UNIX;
+
+unlink $socketpath; #okay?  check for running daemons...
+our $socket= IO::Socket::UNIX->new
+  (
+   Type=> SOCK_STREAM,
+   Local=> $socketpath,
+   Listen=> 1,
+  )
+  or die "opening socket '$socketpath': $!";#!
+
+use Chj::xperlfunc;
+
+my $numchildren=0;
+
+use POSIX ":sys_wait_h"; # WNOHANG
+
+my $runner_child=-2;
+
+$SIG{CHLD}= do {
+    my $pid;
+    sub {
+	while (1) {
+	    $pid= waitpid -1,WNOHANG;
+	    last if (($pid == -1) or ($pid == 0)); #GRR somehow mis documented??!
+	    $numchildren--;
+	    if ($pid == $runner_child) {
+		die "runner_child died";
+	    }
+	}
+    };
+};
+
+if ($runner_child= xfork) {
+    # k proceed below
+} else {
+    my $flag=0;
+    $SIG{USR1}= sub {
+	warn "runner_child got signal" if $DEBUG;
+	$flag=1;
+    };
+    while (1) {
+	# use both interruptible and uninterruptible sleeps hehe
+	sleep 100000;
+	if ($flag) {
+	  RUNIT: {
+		warn "runner_child got request to run command" if $DEBUG;
+		uninterrupted_sleep $sleeptime;
+		warn "runner_child going to run command now" if $DEBUG;
+		$flag=0;
+		my $res= xsystem @cmd;
+		## todo: print if there was a problem  ?
+		if ($flag) {
+		    redo RUNIT;
+		}
+	    }
+	} else {
+	    warn "(runner_child: sleep timed out)" if $DEBUG;
+	}
+    }
+    exit 1;#never..
+}
+
+eval {
+    while(1) {
+	my $conn= $socket->accept
+	  or do {
+	      if ($! == 4) {## get constant from POSIX ~
+		  # OS error code   4:  Interrupted system call
+		  redo
+	      } else {
+		  die "accept: $!";
+	      }
+	  };
+	warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
+	if ($numchildren < $maxchildren) {
+	    if (my $pid= xfork) {
+		undef $conn;
+		warn "forked off child $pid" if $DEBUG;
+		$numchildren++; ###btw race! (in the ++ itself) hehhe.
+	    } else {
+		while (<$conn>) {
+		    chomp;
+		    if ($_ eq "trigger") {
+			warn "$$ got trigger" if $DEBUG;
+			if (kill "USR1", $runner_child) {
+			    warn "$$ sent signal to runner_child" if $DEBUG;
+			} else {
+			    die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
+			}
+			$conn->send("ok\n") or warn "$myname: $$ could not send ok back to sender: $!";
+			#(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
+			warn "$$ sent ok back to trigger-send" if $DEBUG;
+		    } else {
+			warn "$$ got unrecognized message '$_'" if $DEBUG;
+		    }
+		}
+		exit 0;
+	    }
+	} else {
+	    warn "$myname: too many children, dropping connection\n";##from ...
+	}
+	warn "going to accept again" if $DEBUG;
+    }
+};
+my $e=$@;
+kill 9, $runner_child;
+die $e;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

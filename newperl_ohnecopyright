@@ -19,11 +19,8 @@ else
 END
 	echo -n '# ' >> "$1"
 	date >> "$1"
-	if [ "$USER" = "chris" ]; then
-		echo '(my $email='\''pflanze%gmx,ch'\'')=~ tr/%,/@./;' >> "$1"
-	else
-		echo '(my $email='\''XXX%YYY,ch'\'')=~ tr/%,/@./;' >> "$1"
-	fi
+	moddedmail="`perl -we '$v= ($ENV{EMAIL} || "XXX\@YYY.ch"); $v=~ tr/@./%,/; print $v'`"
+	echo '(my $email='\'"$moddedmail"\'')=~ tr/%,/@./;' >> "$1"
 	cat <<'END' >> "$1"
 
 use strict;

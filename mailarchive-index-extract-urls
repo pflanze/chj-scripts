@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Son Mai 11 19:13:01 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname index.html baseurl
+
+  Extract the .txt{,.gz} references out of index.html and print a list
+  of urls (to fetch them with wget)
+
+  e.g.
+  wget http://foo
+  $myname index.html http://foo | myxargs wget
+  cat *txt > box
+  cj-maildirmake ~/Maildir Moved/list/foo
+  cj-mbox2maildir --parsedate --picky box ~/Maildir/.Moved.list.foo
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($file,$baseurl)=@ARGV;
+
+use Chj::xopen ":all";
+
+sub get_hrefs {
+    my $cnt=xopen_read ($file)->xcontent;
+    my @res;
+    while ($cnt=~ /<a\s+([^>]*)/migs) {
+	my $bod=$1;
+	#warn "got '$bod'";
+	if ($bod=~ /href\s*=\s*"([^"]*)/is) {
+	    my $href=$1;
+	    if ($href=~ /^\w{3,6}:/) {
+		warn "ignoring external '$href'";
+	    } elsif ($href=~ /\.html?$/i) {
+		# ignore
+	    } elsif ($href=~ /\.txt(?:\.gz)?$/i) {
+		push @res,$href;
+	    } else {
+		warn "ignoring '$href'";
+	    }
+	}
+    }
+    @res
+}
+
+print map {
+    $baseurl.$_."\n"
+} get_hrefs;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
