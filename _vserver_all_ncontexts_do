@@ -12,7 +12,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname cmd ( cmd-arguments )
+
+  Run cmd in all (running) vservers' network and vserver contexts (but
+  in the host's filesystem context).
+  (Used by vshow_tcpconnections etc.)
 
   Options:
   -a|--all  show all running vservers, even those without open connections
@@ -30,7 +34,9 @@ GetOptions ("d|ebug"=> \$DEBUG,
 	    "a|ll"=> \$opt_all,
 	   )
   or exit 1;
-usage if @ARGV;
+usage unless @ARGV;
+
+our @cmd=@ARGV;
 
 use Chj::IO::Command;
 use Chj::xperlfunc;
@@ -46,7 +52,7 @@ while (<$stat>) {
     if (my ($ctx,$name)= /^(\d+)\s+.*?(\w+)$/) {
 	next if $ctx == 0;
 	print "-- $name: ".("-"x($width-4-3-length($name)))."\n";
-	xxsystem "ncontext --nid $ctx --migrate chcontext --ctx $ctx show_tcpconnections";
+	xxsystem "ncontext", "--nid", $ctx, "--migrate", "chcontext", "--ctx", $ctx, "--", @cmd;
 	#print "\n";
     } else {
 	die "invalid output '$_'";
