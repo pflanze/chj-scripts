@@ -29,13 +29,15 @@ exit @_ ? 1 : 0;
 use Getopt::Long;
 our $DEBUG=0;
 our $opt_all;
-GetOptions ("d|ebug"=> \$DEBUG,
-	    "h|elp"=> sub{usage},
-	    "a|ll"=> \$opt_all,
-	   )
-  or exit 1;
-usage unless @ARGV;
 
+if (@ARGV and $ARGV[0]=~ /^-/) {
+    GetOptions ("d|ebug"=> \$DEBUG,
+		"h|elp"=> sub{usage},
+		"a|ll"=> \$opt_all,
+	       )
+      or exit 1;
+    usage unless @ARGV;
+}
 our @cmd=@ARGV;
 
 use Chj::IO::Command;
