@@ -1,0 +1,3 @@
+#!/bin/sh
+
+_vserver_all_ncontexts_do show_listeners |less
