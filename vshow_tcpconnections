@@ -14,35 +14,23 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname
 
+  Options:
+  -a|--all  show all running vservers, even those without open connections
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
 }
 
-my @args;
-my $DEBUG=0;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-#usage unless @args;
+use Getopt::Long;
+our $DEBUG=0;
+our $opt_all;
+GetOptions ("d|ebug"=> \$DEBUG,
+	    "h|elp"=> sub{usage},
+	    "a|ll"=> \$opt_all,
+	   )
+  or exit 1;
+usage if @ARGV;
 
 use Chj::IO::Command;
 use Chj::xperlfunc;
