@@ -45,7 +45,7 @@ my $opt_dryrun= not $maybe_paragonfile;
 use Chj::xperlfunc;
 use Chj::IO::Command;
 #use Chj::Fileutil;
-use Chj::xopen 'xopen_read';
+use Chj::xopen ":all";
 use Chj::Unix::User 'su';
 ##^FRAGE: ist nun fork  noetig  oder  exec fuer richtige aufgabe GOFP namal
 use Chj::Backtrace;
@@ -126,7 +126,13 @@ sub xopen_write_as_user ( $ $ ) { ###GRR returns TWO fh's!!!
 	warn "process $$: parent, child is $pid";
 	$r->xclose;
 	$err_w->xclose;
-	xxwaitpid ($pid);
+	my $status= xwaitpid ($pid);
+	if ($status!=0) {
+	    my $cnt= $err_r->xcontent;
+	    chomp $cnt;#multichomp ?
+	    die "xopen_write_as_user ($user,$path) exited with status $status "
+	      ."and message: $cnt";
+	}
 	($w,$err_r)
     } else {
 	warn "in child $$";
