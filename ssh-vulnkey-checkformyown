@@ -1,0 +1,215 @@
+#!/usr/bin/perl -w
+
+# Thu May 15 02:24:57 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my %bad_ownkey=
+  (
+   "17:6e:e3:fa:72:7d:ff:7b:27:af:77:dd:56:ad:13:c4"=>  "alter chris key",
+   "63:8c:c1:4e:bc:8b:a9:64:7c:10:34:da:72:01:1a:f3"=>  "ALT/NEU/id_rsa.pub",
+  );
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [paragon-authorizedkey-file]
+
+
+  If paragon-authorizedkey-file is given, automatically copy this over
+  the files containing only
+   %bad_ownkey
+
+  If the files contain more than one, run vim on it as the (supposed)
+  respective user.
+
+  If no paragon-authorizedkey-file is given, do a dry run only.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV > 1;
+
+my ($maybe_paragonfile)= @ARGV;
+my $opt_dryrun= not $maybe_paragonfile;
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+#use Chj::Fileutil;
+use Chj::xopen 'xopen_read';
+use Chj::Unix::User 'su';
+##^FRAGE: ist nun fork  noetig  oder  exec fuer richtige aufgabe GOFP namal
+use Chj::Backtrace;
+
+my $vulnkey= Chj::IO::Command->new_sender ("ssh-vulnkey","-a");
+
+
+my @ownkey_paths;
+my @noproblem;
+while (<$vulnkey>) {
+    chomp;
+    my ($einstufung, $_size, $fingerprint, $path)=
+      m|^([^:]+): (\d+) ((?:[\da-f]+:)+[\da-f]+) (\S+)\z|
+	or die "non-matching line '$_'";
+    if ($einstufung=~ /COMPR/) {
+	die "still compromised key!: $_";
+    }
+    elsif ($einstufung=~ /Not blacklisted/) {
+	#my ($user)= $path=~ m|^/home/([^/]+)/.ssh/authorized_keys\z|
+	#  or die "what's this path?: '$path'";
+	if (my $who= $bad_ownkey{lc $fingerprint}) {
+	    push @ownkey_paths, $path; #[$user,$path];
+	} else {
+	    push @noproblem, $path; #[$user,$path];
+	}
+    }
+    else {
+	die "was ist das schon wieder für eine einstufung?: $_";
+    }
+}
+
+use Data::Dumper;
+print Data::Dumper->Dump([\@ownkey_paths, \@noproblem],
+			 [qw(@ownkey_paths @noproblem)]);
+# well heh '$@noproblem = ['..
+
+sub user_from_path ( $ ) {
+    my ($path)=@_;
+    my ($user)= $path=~ m|^/home/([^/]+)/.ssh/authorized_keys\z|
+      or die "what's this path?: '$path'";
+    $user
+}
+
+sub xfile_linecount ( $ ) {
+    my ($path)=@_;
+    my $f=xopen_read $path;
+    my $n=0;
+    $n++ while <$f>;
+    $f->xclose;
+    $n
+}
+
+my @auto;
+my @manual;
+for my $path (@ownkey_paths) {
+    my $user = user_from_path ($path);
+    my $n= xfile_linecount($path);
+    print "user $user, path $path, n $n\n";
+    my $pair=[$user,$path];
+    if ($n==1) {
+	push @auto, $pair;
+    } else {
+	push @manual, $pair;
+    }
+}
+
+use Chj::xpipe;
+sub xopen_write_as_user ( $ $ ) { ###GRR returns TWO fh's!!!
+    my ($user,$path)=@_;
+    ## $user being sth to be given to the Chj::Unix::User 'su',
+    ## i.e. string, right?
+    wantarray or die "expect two-value continuation!";#heh
+    ##or should i overload ehr sub  project ehr object it ?
+    my ($r,$w)=xpipe;
+    my ($err_r,$err_w)= xpipe;
+    my $pid= xfork;
+    if ($pid) {
+	warn "process $$: parent, child is $pid";
+	$r->xclose;
+	$err_w->xclose;
+	xxwaitpid ($pid);
+	($w,$err_r)
+    } else {
+	warn "in child $$";
+	eval {
+	    $w->xclose;
+	    warn "child $$: after xclose";
+	    $err_r->xclose;
+	    su $user;
+	    warn "child $$: after su";
+	    ##die's on error, right? hmm see notice in that file ther.sigh
+	    die "su not working?" if ($< ==0 or $> ==0);
+	    # fork again for making su safe, correct?
+	    my $pid= xfork;
+	    if ($pid) {
+		warn "child $$: parent, child is $pid";
+		exit(0);
+	    } else {
+		warn "child $$: second child";
+		my $f= xopen_write $path;
+		warn "child $$: after xopen_write";
+		#hmm hell and what do i do now -- no sending ehr direct connect?
+		$r->xsendfile_to ($f);
+		$r->xclose;
+		$f->xclose;
+		warn "child $$: all is ok";
+		# and how do we communicate errors please? so another pipe..
+		$err_w->xprint ("ok\n");
+		$err_w->xclose;
+		exit (0);
+	    }
+	};
+	#heh here comes hin only when error.
+	$err_w->xprint ($@);
+	exit(13); #but exit may be from different processes. heh.
+    }
+}
+
+sub as_user_xclose ( $ $ ) {
+    my ($w,$err_r)=@_;
+    $w->xclose;
+    my $cnt= $err_r->xcontent;
+    $err_r->xclose;
+    if ($cnt eq "ok\n") {
+	# ok
+    } else {
+	chomp $cnt;#k?  a way to stack errors anotherone  ?
+	#would i serializestuff in  termitalike?
+	die "as_user_xclose: $cnt";
+    }
+}
+
+
+if ($opt_dryrun) {
+    for (@auto) {
+	my ($user,$path)=@$_;
+	xxsystem "su","-s","/bin/cat",$user,$path;
+    }
+} else {
+    my $paragonfile= $maybe_paragonfile;
+
+    for (@auto) {
+	my ($user,$path)=@$_;
+	#xxsystem "su","-s","/usr/bin/perl","-w","-MChj::xopen=:all","-e",
+	#ne geht schon mal nicht weil -s nur ein pfad nimmt gell.  ist doch
+	# einfach ramsch?
+	my $f= xopen_read $paragonfile;
+	my ($w,$err)= xopen_write_as_user ($user,$path);
+	$f->xsendfile_to ($w);
+	##(heh 'overloading'/subcontractingehr objecting would require
+	## overload of the subobj to give the $w in such a context,still)
+	$f->xclose;
+	#$w->xclose; nope,
+	as_user_xclose($w,$err);
+    }
+
+    for (@manual) {
+	my ($user,$path)=@$_;
+	print "ready to edit multi-entry file of user $user (path '$path') "
+	  ."-- please hit enter..\n";
+	<STDIN>;
+	xxsystem "su","-s","/usr/bin/vim",$user,$path;
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
