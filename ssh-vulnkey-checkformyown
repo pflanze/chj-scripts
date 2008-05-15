@@ -48,6 +48,16 @@ use Chj::IO::Command;
 use Chj::xopen ":all";
 use Chj::Unix::User 'su';
 ##^FRAGE: ist nun fork  noetig  oder  exec fuer richtige aufgabe GOFP namal
+##HMM Answer: at least not running exec doesn't close the
+##close-on-exec fd's, so those remain accessible to the new user !!!
+##todo write in lib doc
+##AH and another one: actually *any* sensitive data in the process is still
+##there of course, and can thus be inspected by the corresponding user.
+##BAD ANYWAY.
+##HMMM but hey, how would you run exec anyway if you have to become the user
+## first, leaving open a race? or do you do like perl for this very reason
+## and NOT change *all* of the three uid values to the new ones (preventing
+## the user in question to attach to the process?)?
 use Chj::Backtrace;
 
 my $vulnkey= Chj::IO::Command->new_sender ("ssh-vulnkey","-a");
@@ -113,6 +123,7 @@ for my $path (@ownkey_paths) {
 }
 
 use Chj::xpipe;
+## CAREFUL: UNSAFE  securitywise. see fork vs exec discussion above
 sub xopen_write_as_user ( $ $ ) { ###GRR returns TWO fh's!!!
     my ($user,$path)=@_;
     ## $user being sth to be given to the Chj::Unix::User 'su',
