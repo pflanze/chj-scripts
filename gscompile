@@ -7,7 +7,8 @@ use strict;
 use Chj::xperlfunc;
 
 sub sys_is_x86 {
-    `uname -m` =~ /86/    # stimmts? ist jedenfalls ppc auf lombi.
+    my $sys= `uname -m`;
+    $sys =~ /86/ and not $sys=~/86_64/  # we actually don't want "-mpreferred-stack-boundary=2", that gives "error: -mpreferred-stack-boundary=2 is not between 4 and 12"
 }
 
 my @cflags= (
