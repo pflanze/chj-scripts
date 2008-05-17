@@ -121,6 +121,8 @@ Do "gcc",
   $linkfile,
   "-I/usr/local/Gambit-C/current/include",
   "-L/usr/local/Gambit-C/current/lib",
+  "-Wl,-rpath", "/usr/local/Gambit-C/current/lib",
+  # ^ so that the path needn't be in the ld.so.conf
   "-lgambc",
   # und, nur für linux aber nicht für macosx: (gem. doku)
   "-lm",
