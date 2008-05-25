@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w
+
+# Sun May 25 17:41:44 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+use Chj::xopen ':all';
+use Chj::xtmpfile;
+
+#hm Chj::IO::Command hat KEINE i/o umstell redirect dinger bevore
+#launch command dinger ?
+
+use Chj::xpipeline 'xreceiverpipeline_with_out_to';
+##AHHH Chj::IO::Pipeline man.
+
+our $pipeline_indent=
+  [
+   #[ "cat" ],
+   ["indent","-bad","-bap","-sob"],
+   # reintroduce spacing between procedures:
+   ["perl", "-wne", 'print or die; if ($_ eq "}\n") { print "\n" or die }'],
+  ];
+
+#our $pipeline_astyle=
+#hm no, seems that one can't do it.?
+our $pipeline_astyle=
+  [
+   ["astyle", "--style=linux"],
+  ];
+
+#our $pipeline= $pipeline_astyle;
+our $pipeline= $pipeline_indent;
+
+sub reformat {
+    my ($in,$out)=@_;
+    my $outcmd= xreceiverpipeline_with_out_to ($out,
+					       @$pipeline);
+    #$in->xsendfile_to ($outcmd); nope exactly NOT, whole reason for
+    #this script hey..
+    # Ignore line/file directives (from gcc -E I think)
+    while (<$in>) {
+	if (/^\# \d+ \"/
+	    or /^\s*\z/
+	   ) {
+	    next
+	} else {
+	    $outcmd->xprint($_)
+	}
+    }
+    $outcmd->xxfinish;
+    $in->xclose;
+    $out->xclose;#
+}
+
+sub reformat_from_to {
+    my ($inpath,$outpath)=@_;
+    my $in= xopen_read $inpath;
+    my $out= xtmpfile $outpath;
+    reformat ($in,$out);
+    $out->xputback (0644);# real perms, not umask'ed. (again)
+}
+
+reformat_from_to (@ARGV);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
