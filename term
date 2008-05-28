@@ -20,7 +20,10 @@ if ($pid) {
 } else {
     setsid or die $!;
 
-    exec "urxvt",  @ARGV
+    # setting to xterm seems to work? whereas without it
+    #  (older) debian (without urxvt installed) usually gives
+    # "Cannot find terminfo entry for 'rxvt-unicode'"
+    exec "urxvt", "-tn", "xterm", @ARGV
       or exit 127;
 }
 
