@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Tue May 27 22:45:05 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+#grr how can we give default values if user didn't specify any,
+# but not override his ?
+# suky?
+
+# don't. expect him to use .Xresources really.
+use POSIX qw(setsid);
+
+my $pid=fork;
+defined
+  $pid or die "fork: $!";
+if ($pid) {
+    exit 0;#well. bugg.buti dontcarenow
+} else {
+    setsid or die $!;
+
+    exec "urxvt",  @ARGV
+      or exit 127;
+}
+
+
+__END__
+exec "xterm",  @ARGV
+  or exit 127;
+
+__END__
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
