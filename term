@@ -23,7 +23,9 @@ if ($pid) {
     # setting to xterm seems to work? whereas without it
     #  (older) debian (without urxvt installed) usually gives
     # "Cannot find terminfo entry for 'rxvt-unicode'"
-    exec "urxvt", "-tn", "xterm", @ARGV
+    exec "urxvt", ("-tn", "xterm",
+		   ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+		   @ARGV)
       or exit 127;
 }
 
