@@ -5,11 +5,6 @@
 
 use strict;
 
-#grr how can we give default values if user didn't specify any,
-# but not override his ?
-# suky?
-
-# don't. expect him to use .Xresources really.
 use POSIX qw(setsid);
 
 my $pid=fork;
