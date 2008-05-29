@@ -30,28 +30,3 @@ if ($pid) {
 }
 
 
-__END__
-exec "xterm",  @ARGV
-  or exit 127;
-
-__END__
-$0=~ /(.*?)([^\/]+)\z/s or die "?";
-my ($mydir, $myname)=($1,$2);
-sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
-
-  (Christian Jaeger <$email>)
-";
-exit (@_ ? 1 : 0);
-}
-
-use Getopt::Long;
-our $verbose=0;
-GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   ) or exit 1;
-usage unless @ARGV;
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
