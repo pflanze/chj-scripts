@@ -1,6 +1,6 @@
 #!/bin/bash
 
-numberdefault=400
+numberdefault=1000
 
 if [ "$1" = '-N' ]; then
     number="$2"
