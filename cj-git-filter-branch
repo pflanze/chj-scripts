@@ -7,14 +7,6 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
-sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname --command [ commandarguments ]
-
-  (Christian Jaeger <$email>)
-";
-exit (@_ ? 1 : 0);
-}
 
 use Chj::xperlfunc;
 use Chj::singlequote "singlequote_sh";
@@ -44,9 +36,29 @@ our $removefiles= sub {
 	    );
 };
 
+sub CmdSetter ( $ );#heh
+our $cmds=
+  [
+   ["remove-files" => CmdSetter($removefiles),
+    "remove all given file paths from repo (including their commit if empty)"],
+  ];
 
-use Getopt::Long;
-our $verbose=0;
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    my $cmdsstr= join("",
+		      map {
+			  my ($nam,$ptr,$desc)=@$_;
+			  "   --$nam  $desc\n"
+		      }
+		      @$cmds);
+    print "$myname --command [ commandarguments ]
+
+$cmdsstr
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
 our $command;
 sub CmdSetter ( $ ) {
     my ($cmd)=@_;
@@ -57,9 +69,14 @@ sub CmdSetter ( $ ) {
 	$command= $cmd
     }
 }
+
+use Getopt::Long;
+our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "remove-files" => CmdSetter($removefiles),
+	   map {
+	       @$_[0,1]
+	   } @$cmds
 	  ) or exit 1;
 usage unless @ARGV;
 
