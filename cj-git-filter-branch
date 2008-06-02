@@ -37,11 +37,6 @@ our $removefiles= sub {
 		       "--remove ".singlequote_sh($_)
 		   } @ARGV)
 	     .' HEAD',
-	    );
-    _xxsystem "trash", ".git/refs/original/refs/heads/again";
-    _xxsystem(
-	     'git',
-	     'filter-branch',
 	     '--commit-filter',
 	     'if [ z"$1" = z`git rev-parse $3^{tree}` ]
       then skip_commit "$@"
