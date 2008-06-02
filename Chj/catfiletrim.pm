@@ -18,6 +18,9 @@ Chj::catfiletrim
 
 =head1 DESCRIPTION
 
+***NOTE: I think I'll depreciate this,
+   use Chj::Fileutil instead ***
+
 =head1 NOTE
 
 I'm not putting this into Chj::IO::File because I think it would be overload

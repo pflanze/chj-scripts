@@ -26,7 +26,7 @@ package Chj::Mailfrom;
 	     );
 
 use strict;
-use Chj::catfiletrim;
+use Chj::Fileutil qw(MaybeChompCatfile xChompCatfile);
 use Chj::username;
 
 sub maybe_name_from_gcos {
@@ -44,7 +44,7 @@ sub maybe_mailrealname {
     my ($maybe_path)=@_;
     $ENV{MAILREALNAME} || do {
 	$maybe_path||= "$ENV{HOME}/.mailrealname";
-	catfiletrim $maybe_path;
+	MaybeChompCatfile $maybe_path;
     } || do {
 	#my $user=$ENV{USER} and maybe_name_from_gcos ($user)   nope. it's 'recursive', not cond
 	my $user;
@@ -79,9 +79,9 @@ sub maybe_extend_with_realname ( $ ) {
 
 our $controlbase= "/var/qmail/control";
 sub mailfrom_from_qmail_configuration {
-    my $dom= catfiletrim("$controlbase/me");
+    my $dom= xChompCatfile("$controlbase/me");
     unless ($dom=~ /\./) {
-	$dom.= ".".catfiletrim("$controlbase/defaultdomain");
+	$dom.= ".".xChompCatfile("$controlbase/defaultdomain");
     }
     username.'@'.$dom
 }
@@ -91,7 +91,7 @@ sub mailfromaddress {
     $maybe_mail_path||= "$ENV{HOME}/.mailfrom";
     ($ENV{EMAIL}
      || $ENV{MAILFROM}
-     || catfiletrim($maybe_mail_path)
+     || MaybeChompCatfile($maybe_mail_path)
      || mailfrom_from_qmail_configuration)
 }
 
