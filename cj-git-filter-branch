@@ -19,9 +19,15 @@ exit (@_ ? 1 : 0);
 use Chj::xperlfunc;
 use Chj::singlequote "singlequote_sh";
 
+sub _xxsystem {
+    use Data::Dumper "Dumper";
+    print "xxsystem ", Dumper \@_;
+    xxsystem @_;
+}
+
 our $removefiles= sub {
     # @ARGV being the list of files to remove
-    xxsystem(
+    _xxsystem(
 	     'git',
 	     'filter-branch',
 	     '--index-filter',
@@ -30,7 +36,12 @@ our $removefiles= sub {
 		   map {
 		       "--remove ".singlequote_sh($_)
 		   } @ARGV)
-	     .'HEAD',
+	     .' HEAD',
+	    );
+    _xxsystem "trash", ".git/refs/original/refs/heads/again";
+    _xxsystem(
+	     'git',
+	     'filter-branch',
 	     '--commit-filter',
 	     'if [ z"$1" = z`git rev-parse $3^{tree}` ]
       then skip_commit "$@"
