@@ -19,7 +19,7 @@ sub _xxsystem {
 
 our $removefiles= sub {
     # @ARGV being the list of files to remove
-    _xxsystem(
+    xxsystem(
 	     'git',
 	     'filter-branch',
 	     '--index-filter',
@@ -30,7 +30,7 @@ our $removefiles= sub {
 		   } @ARGV)
 	     .' HEAD',
 	     '--commit-filter',
-	     'if [ z"$1" = z`git rev-parse $3^{tree}` ]
+	     'if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]
       then skip_commit "$@"
       else git commit-tree "$@"; fi',
 	    );
