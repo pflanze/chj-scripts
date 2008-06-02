@@ -53,12 +53,14 @@ sub turn {
 			while ($content=~ m{\bpackage +([\w:]+)}g) {
 			    my $namespace= $1;
 			    if ($class=~ m/\Q$namespace\E$/) {
-				warn "cutting '$class' down to '$namespace'\n" if $DEBUG;
+				warn "cutting '$class' down to '$namespace'\n"
+				  if $DEBUG;
 				$class= $namespace;
 				last CHECK;
 			    }
 			}
-			warn "could not find any package definition in '$path' matching it's path\n";
+			warn "could not find any package definition ".
+			  "in '$path' matching it's path\n";
 		    }
 		} else {
 		    warn "could not open '$path': $!\n";
