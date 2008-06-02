@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Mon Jun  2 15:02:18 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --command [ commandarguments ]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Chj::xperlfunc;
+use Chj::singlequote "singlequote_sh";
+
+our $removefiles= sub {
+    # @ARGV being the list of files to remove
+    xxsystem(
+	     'git',
+	     'filter-branch',
+	     '--index-filter',
+	     'git update-index '
+	     .join(' ',
+		   map {
+		       "--remove ".singlequote_sh($_)
+		   } @ARGV)
+	     .'HEAD',
+	     '--commit-filter',
+	     'if [ z"$1" = z`git rev-parse $3^{tree}` ]
+      then skip_commit "$@"
+      else git commit-tree "$@"; fi',
+	    );
+};
+
+
+use Getopt::Long;
+our $verbose=0;
+our $command;
+sub CmdSetter ( $ ) {
+    my ($cmd)=@_;
+    sub {
+	if ($command) {
+	    usage "can't give more than one command, currently";
+	}
+	$command= $cmd
+    }
+}
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "remove-files" => CmdSetter($removefiles),
+	  ) or exit 1;
+usage unless @ARGV;
+
+&$command;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
