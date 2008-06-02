@@ -46,9 +46,8 @@ sub maybe_mailrealname {
 	$maybe_path||= "$ENV{HOME}/.mailrealname";
 	MaybeChompCatfile $maybe_path;
     } || do {
-	#my $user=$ENV{USER} and maybe_name_from_gcos ($user)   nope. it's 'recursive', not cond
-	my $user;
-	$user=$ENV{USER} and maybe_name_from_gcos ($user)
+	my $user= $ENV{USER};
+	$user and maybe_name_from_gcos ($user)
     }
 }
 
