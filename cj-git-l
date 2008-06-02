@@ -21,6 +21,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+our $opt_show_deleted=1;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -84,8 +85,29 @@ my $modmap= {
 	    };
 sub main {
     my $files= files;
-    return unless keys %$files;
-    my $l= Chj::IO::Command->new_sender ("l", keys %$files);
+    my @deletedfiles= grep {
+	$$files{$_} eq "deleted"
+    }
+      keys %$files;
+    my @nondeletedfiles= grep {
+	$$files{$_} ne "deleted"
+    }
+      keys %$files;
+    #^gern wieder mal  split eines hashes nach bestimmten mustern.
+    # statt multiple greps.  'sigh?..'
+    return unless @nondeletedfiles;
+    if ($opt_show_deleted) {
+	for my $file (@deletedfiles) {
+	    my $kind= $$files{$file};
+	    #^ files variable should be called fileskind
+	    {
+		my $kind= $$modmap{$kind} or die;
+		print "$kind                  $file\n"
+		  or die "printing to stdout: $!";
+	    }
+	}
+    }
+    my $l= Chj::IO::Command->new_sender ("l", @nondeletedfiles);
     while (<$l>) {
 	chomp;
 	# chop off '-rw-r--r-- 1 clamavbuild clamavbuild 4119'
