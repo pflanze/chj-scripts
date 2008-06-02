@@ -14,36 +14,26 @@ sub usage {
   git list added/modified/deleted files. (obviously the latter only if
   they are still there, ehr)
 
+  Options:
+  --show-deleted   also show the deleted files (currently the default)
+  --no-show-deleted   do not show the deleted files
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
-my @args;
-my $DEBUG=0;
+use Getopt::Long;
+our $verbose=0;
 our $opt_show_deleted=1;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-	usage
-    } elsif ($_ eq '--') {
-	push @args, @ARGV[$i+1..$#ARGV];
-	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
-    } elsif (/^-./) {
-	usage("Unknown option '$_'\n");
-    } else {
-	push @args, $_
-    }
-}
-usage if @args;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "show-deleted"=> \$opt_show_deleted,
+	   # hm Getopt(::Long) does not support no-*?
+	   "no-show-deleted"=> sub{$opt_show_deleted=0},
+	   ) or exit 1;
+usage if @ARGV;
+
 
 use Chj::IO::Command;
 use Chj::Unix::exitcode;
