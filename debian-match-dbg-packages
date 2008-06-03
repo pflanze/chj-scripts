@@ -147,6 +147,9 @@ sub build_dbg_list {
 	    my $packagename= $1;
 	    my $pack= CHJADHOC::Apt::Packagedata->fetch ($packagename);
 	    if (my $source= $pack->maybe_get_value ("source")) {
+		# strip info stuff which is there sometimes:
+		$source=~ /^(\S+)/ or die;
+		$source= $1;
 		push @{$$source2dbg{$source}}, $packagename
 	    } else {
 		warn "package data for '$packagename' does not have a Source header, ignoring"
