@@ -1,0 +1,163 @@
+#!/usr/bin/perl -w
+
+# Tue Jun  3 05:27:47 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname package(s)
+
+  Find and print the -dbg package names for the given package(s).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc;
+use Chj::IO::Command;
+
+##hmm should use something better than this?
+{
+    package CHJADHOC::Apt::Packagedata;
+    use Chj::Unix::exitcode ();
+    #sub apt_package_data ( $ ) {
+    sub fetch {
+	my $class=shift;
+	my ($packagename)=@_;
+	my $in= Chj::IO::Command->new_sender (qw(apt-cache show),$packagename);
+	#hm, headers, hm.hh.
+	my $data={};
+	# lcheadername -> [ headername, [values]]; right, only ever one of those, multiple
+	# headers not supported?
+	my $do_accept_pipeerror;
+      OUTER: {
+	    while (<$in>) {
+		chomp;
+	      CONTINUE:
+		if (s/^([\w-]+):\s*//) {
+		    my $key=$1;
+		    my $lckey= lc $key;
+		    my @val= $_;
+		    die "apt-cache show '$packagename': multiple headers of name '$lckey'"
+		      if exists $$data{$lckey};
+		    my $finish= sub { $$data{$lckey}= [$key, \@val] };
+		  INNER: {
+			while (<$in>) {
+			    chomp;
+			    if (s/^ //) {
+				push @val,$_;
+			    } else {
+				&$finish;
+				#last INNER; nope.
+				goto CONTINUE;
+			    }
+			}
+			&$finish;
+			last OUTER;
+		    }
+		} elsif (/^$/) {
+		    # ignore, it's at the end of the output, sigh.  td check that it's at the end only?a
+		    #EHR  ***HACK***: end it. more packages to come if multiple distris in apt.sources
+		    # so we're just using the first for now. unstable probably. hh.
+		    # todo find right solution.
+		    $do_accept_pipeerror=1;
+		    last;
+		} else {
+		    die "apt-cache show '$packagename': unparseable line: $_";
+		}
+	    }
+	}
+	#basically COPY from cj-git-l script:
+	my $rv= $in->xfinish;
+	$rv==0 or $rv==1<<8  # (1 is when nothing's ready to commit)
+	  or ($do_accept_pipeerror and
+	      ($rv == 141<<8
+	       or
+	       $rv == 13 # sigpipe
+	      ) #and warn "ignoring pipe err"
+	     )
+	    # 141 is the exit code it seems to return in this case
+	  or die "command exited with an error (".Chj::Unix::exitcode($rv).")";
+	bless $data, $class
+    }
+    sub maybe_get_valuesref {
+	my $s=shift;
+	my ($key)=@_;
+	if (my $v= $$s{lc $key}) {
+	    $$v[1]
+	} else {
+	    return
+	      # is this list or scalar context forcing I don't remember
+	      # anymore..
+	}
+    }
+    sub xget_valuesref {
+	my $s=shift;
+	my ($key)=@_;
+	$s->maybe_get_valuesref($key) or die "missing value for key '$key'";
+    }
+    sub maybe_get_headername {
+	my $s=shift;
+	my ($key)=@_;
+	if (my $v= $$s{$key}) {
+	    $$v[0]
+	} else {
+	    return
+	}
+    }
+    #and more  olle old. parametr ? ?
+    #btw tco important actually - for such stuff - if it manages to be
+    #employed ehr employable for that.
+    sub maybe_get_value {
+	my $s=shift;
+	my ($key)=@_;
+	if (my $v= $s->maybe_get_valuesref($key)) {
+	    join "\n", @$v
+	} else {
+	    return
+	}
+    }
+    sub xget_value {
+	my $s=shift;
+	my ($key)=@_;
+	$s->maybe_get_value($key) or die "missing value for key '$key'";
+    }#uglycopypastereally..
+}
+
+
+sub build_dbg_list {
+    my $in= Chj::IO::Command->new_sender (qw(apt-cache search -n -- -dbg));
+    my $source2dbg={};
+    while (<$in>) {
+	chomp;
+	#warn "line '$_'";
+	if (/^(\S+) - /) {
+	    my $packagename= $1;
+	    my $pack= CHJADHOC::Apt::Packagedata->fetch ($packagename);
+	    if (my $source= $pack->maybe_get_value ("source")) {
+		push @{$$source2dbg{$source}}, $packagename
+	    } else {
+		warn "package data for '$packagename' does not have a Source header, ignoring"
+	    }
+	} else {
+	    warn "unparseable line from apt-cache search -n -- -dbg: '$_', ignoring";
+	}
+    }
+    $in->xxfinish;
+    $source2dbg
+}
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
