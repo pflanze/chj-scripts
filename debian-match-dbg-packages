@@ -27,6 +27,7 @@ usage unless @ARGV;
 
 use Chj::xperlfunc;
 use Chj::IO::Command;
+use Data::Dumper;
 
 ##hmm should use something better than this?
 {
@@ -137,7 +138,7 @@ use Chj::IO::Command;
 }
 
 
-sub build_dbg_list {
+sub build_source2dbg {
     my $in= Chj::IO::Command->new_sender (qw(apt-cache search -n -- -dbg));
     my $source2dbg={};
     while (<$in>) {
@@ -161,6 +162,29 @@ sub build_dbg_list {
     $in->xxfinish;
     $source2dbg
 }
+
+
+sub package_dependencies {
+    # return hash of dependency-packagename => version decl or empty string
+    my ($packagename)=@_;
+    my $pack= CHJADHOC::Apt::Packagedata->fetch ($packagename);
+    #print Dumper $pack;
+    if (my $v= $pack->maybe_get_valuesref ("depends")) {
+	my $res={};
+	for my $entry (split /\s*,\s*/s, join(" ",@$v)) {
+	    my $val= ($entry=~ s/\s*\((.*)\)\s*//s ? $1 : "");
+	    $$res{$entry}=$val;
+	}
+	$res
+    } else {
+	warn "package '$packagename' does not have a Depends field";
+	+{}
+    }
+}
+
+#our $source2dbg= build_source2dbg;
+
+
 
 #use Chj::ruse;
 use Chj::Backtrace; use Chj::repl; repl;
