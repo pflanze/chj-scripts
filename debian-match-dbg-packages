@@ -163,23 +163,55 @@ sub build_source2dbg {
     $source2dbg
 }
 
+{
+    package CHJADHOC::Deb::Dependencies;
+    use Class::Array -fields=>
+      -publica=>('byname','groups');
+    end Class::Array;
+}
+
+sub is_correct_packagename ( $ ) {
+    my ($str)=@_;
+    $str=~ /^[a-z][\w+-]*\w\z/
+}
+
+sub EitherJoinArrayJoin {
+    # take ALL defined ehr true values, join them ALL.
+    my $joinstring=shift;
+    join $joinstring, map {
+	$_ ? @$_ : ()
+    } @_
+}
 
 sub package_dependencies {
     # return hash of dependency-packagename => version decl or empty string
     my ($packagename)=@_;
     my $pack= CHJADHOC::Apt::Packagedata->fetch ($packagename);
     #print Dumper $pack;
-    if (my $v= $pack->maybe_get_valuesref ("depends")) {
-	my $res={};
-	for my $entry (split /\s*,\s*/s, join(" ",@$v)) {
-	    my $val= ($entry=~ s/\s*\((.*)\)\s*//s ? $1 : "");
-	    $$res{$entry}=$val;
+    my $byname={};
+    my $groups=[];
+    if (my $v= EitherJoinArrayJoin
+	(" ",
+	 $pack->maybe_get_valuesref ("depends"),
+	 $pack->maybe_get_valuesref ("pre-depends"))) {
+	for my $dependencytuple (split /\s*,\s*/s, $v) {
+	    my $tupleresult={};
+	    for my $dependencyunit (split /\s*\|\s*/s, $dependencytuple) {
+		my $val= ($dependencyunit=~ s/\s*\(([^(|,)]*)\)\s*\z//s ? $1 : "");
+		is_correct_packagename($dependencyunit)
+		  or die "not correct packagename: '$dependencyunit' in tuple '$dependencytuple'";
+		$$tupleresult{$dependencyunit}= $val;
+		$$byname{$dependencyunit}=$val;
+	    }
+	    push @$groups, $tupleresult;
 	}
-	$res
     } else {
 	warn "package '$packagename' does not have a Depends field";
-	+{}
     }
+    my $res= new CHJADHOC::Deb::Dependencies;
+    $res->set_byname ($byname);
+    $res->set_groups ($groups);
+    $res
 }
 
 #our $source2dbg= build_source2dbg;
