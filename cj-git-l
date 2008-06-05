@@ -52,6 +52,7 @@ sub git_unquote_path ( $ ) {
 	#for my $piece (@$s) {
 	#need $i+1 access.'doh'
 	my $len= @$s;
+	my $flag_last_was_backslash=0;
 	for (my $i=0; $i<$len; $i++) {
 	    my $piece= $$s[$i];
 	    if ($piece =~ s/^(\d+)//) {
@@ -80,10 +81,16 @@ sub git_unquote_path ( $ ) {
 		    }
 		} else {
 		    # okso it was a backslashed backslash, *except* if it's the last?
-		    if (length $$s[$i+1]) {
+		    if ($flag_last_was_backslash) {
 			push @$r, "\\";
+			$flag_last_was_backslash=0;
 		    } else {
-			die "backslash at end of string: '$str'";
+			if (length $$s[$i+1]) {
+			    push @$r, "\\";
+			    $flag_last_was_backslash=1;
+			} else {
+			    die "backslash at end of string: '$str'";
+			}
 		    }
 		}
 	    }
@@ -93,9 +100,6 @@ sub git_unquote_path ( $ ) {
 	$str   # correct, are thingies needing unquote always in double quotes?
     }
 }
-
-#use Chj::repl;repl;
-#__END__
 
 sub files {
     my $g= Chj::IO::Command->new_sender("git-status");
@@ -126,6 +130,10 @@ sub files {
       or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
     \%files
 }
+
+
+#use Chj::repl;repl;
+#__END__
 
 my $modmap= {
 	     modified=>"M",
@@ -168,6 +176,7 @@ sub main {
 	if ($type eq "l") {
 	    $file=~ s/ -> .*//s;
 	}
+	$file= decode_utf8($file); #right?. need to, for accessing the hash correctly.
 	my $kind= $$files{$file} or die "bug ('$file')";
 	{
 	    my $kind= $$modmap{$kind}
