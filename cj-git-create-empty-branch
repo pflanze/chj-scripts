@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+# Thu Jun  5 15:08:27 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname branchname
+
+  Create that branch and switch to it. right?.
+  Well, actually just change the HEAD pointer reference, that's all.
+   Well, should probably somehow remember that thing in git-reflog, hum, how?
+  (also this doesn't care about the index (neither other things) at all)
+
+  Actually, should rather call this cj-git-force-switch-branch or so.
+  It's nothing about *creating* anything. Or necessarily anything about *new*.
+   Nor about emptyness.
+
+  So,  DANGER be careful...
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($newbranchname)=@ARGV;
+
+use Chj::xtmpfile;
+
+# und wieder mal: gerne git MODULE, wennschon,
+my $gitbasedir= `whichgit`; chomp $gitbasedir;
+
+my $t= xtmpfile "$gitbasedir/HEAD";
+$t->xprint("ref: refs/heads/$newbranchname\n");
+$t->xclose;
+$t->xputback(0644);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
