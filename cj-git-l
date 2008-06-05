@@ -37,6 +37,65 @@ usage if @ARGV;
 
 use Chj::IO::Command;
 use Chj::Unix::exitcode;
+use Encode 'decode_utf8';
+
+sub git_unquote_path ( $ ) {
+    my ($str)=@_;
+    if ($str=~ /^\"/) {
+	my ($str2)= $str=~ m/^\"(.*)\"\s*\z/
+	  or die "invalid quoted string?: '$str'";
+	#####HACKY ABSOLUTELI UNCORRECLT fo rnow
+	my $s= [ split /\\/, $str2 ];
+	my $r= [];
+	push @$r, shift @$s;
+	# now have to split off the \d+ parts huh.
+	#for my $piece (@$s) {
+	#need $i+1 access.'doh'
+	my $len= @$s;
+	for (my $i=0; $i<$len; $i++) {
+	    my $piece= $$s[$i];
+	    if ($piece =~ s/^(\d+)//) {
+		push @$r, chr(oct $1), $piece;
+	    #} elsif $piece =~ m/^\\/  EHR that can  never happen right? here's the HACK/wrong bit.
+	    } else {
+		#hmm. ah yep if it is empty?
+		# (shoult put this test to above--but doesn't matter except for computational cost)
+		if (length $piece) {
+		    # backslash before text ? ah, \n and such uuhm.
+		    if ($piece=~ s/^([nrt])//) {
+			my $thing=$1;
+			push @$r, do {
+			    if ($thing eq "n") {
+				"\n"
+			    } elsif ($thing eq "r") {
+				"\r"
+			    } elsif ($thing eq "t") {
+				"\t"
+			    } else {
+				die "??"
+			    }
+			}, $piece
+		    } else {
+			die "unknown text after backslash: '$piece'";
+		    }
+		} else {
+		    # okso it was a backslashed backslash, *except* if it's the last?
+		    if (length $$s[$i+1]) {
+			push @$r, "\\";
+		    } else {
+			die "backslash at end of string: '$str'";
+		    }
+		}
+	    }
+	}
+	decode_utf8(join "", @$r)
+    } else {
+	$str   # correct, are thingies needing unquote always in double quotes?
+    }
+}
+
+#use Chj::repl;repl;
+#__END__
 
 sub files {
     my $g= Chj::IO::Command->new_sender("git-status");
@@ -52,7 +111,7 @@ sub files {
 	if (/^#\s+(modified|deleted|added|new file):\s+(.*)/) {
 	    # ^ hm it seems 'added' isn't used
 	    my ($what,$path)=($1,$2);
-	    $files{$path}=$what;
+	    $files{git_unquote_path($path)}=$what;
 	}
     }
     my $rv= $g->xfinish;
