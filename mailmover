@@ -241,7 +241,8 @@ sub conditional_move_file($ $ ) {
 			    next unless length;
 			    $sub= Chj::Maildir::Subfolder->new ($sub,$_);
 			}
-			$sub->create(1);
+			$sub->create(1)
+			  and warn "created new folder '$foldername'\n";# vielleicht in subject schreiben besser!!todo.
 			$sub
 		    }
 		};
