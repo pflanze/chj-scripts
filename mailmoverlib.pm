@@ -162,6 +162,27 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 	($s->headers(@_))[0]
     }
 
+    sub header_ignoringidenticalcopies {
+	my $s=shift;
+	my ($key)=@_;
+	if (my @v= $s->headers($key)) {
+	    if (@v > 1) {
+		my $first= shift @v;
+	      CHECK: {
+		    for (@v) {
+			if ($_ ne $first) {
+			    warn "header_ignoringidenticalcopies('$key'): multiple headers of key with *different* values exist";
+			    last CHECK;
+			}
+		    }
+		}
+	    }
+	    $v[0]
+	} else {
+	    return
+	}
+    }
+
     sub headers {
 	my $self=shift;
 	my ($key)=@_;
@@ -394,7 +415,7 @@ sub analyze_file($ ; $ ) {
 	warn "'$filename' is_spam: not scanned\n" if $verbose;
     }
 
-    my $from= $head->header("from"); #GRR do not play shit.w/o propr lazynss.
+    my $from= $head->header_ignoringidenticalcopies("from"); #GRR do not play shit.w/o propr lazynss.
     my $content;
     my $messageid;
     $messageid=do {
