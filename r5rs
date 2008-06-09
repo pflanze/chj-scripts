@@ -1,4 +1,6 @@
 #!/bin/sh
 
-#links /usr/lib/plt/collects/doc/r5rs/index.html
-links /usr/lib/plt/collects/doc/r5rs/r5rs-Z-H-2.html
+# requires: the Debian r5rs-doc package
+
+#links /usr/share/doc/r5rs-doc/r5rs/index.html
+info r5rs
