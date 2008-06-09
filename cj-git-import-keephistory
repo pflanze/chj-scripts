@@ -83,8 +83,9 @@ sub read_import_file {
     $commits
 }
 
-sub contains_newline ( $ ) {
+sub contains_multiple_lines ( $ ) {
     my ($str)=@_;
+    chomp $str;
     $str=~/\n/
 }
 
@@ -106,7 +107,7 @@ sub commit_message ($ ) {
 	      } @$files)
     };
     if ($maybe_mainmessage) {
-	if (contains_newline $maybe_mainmessage) {
+	if (contains_multiple_lines $maybe_mainmessage) {
 	    # then just use that one, right?
 	    $maybe_mainmessage
 	} else {
@@ -116,7 +117,7 @@ sub commit_message ($ ) {
     } else {
 	#&$messages_from_files  ##hmm what if it's multiline?
 	my $message= &$messages_from_files ("");##good idea to not indent here ?##probably not
-	if (contains_newline $message) {
+	if (contains_multiple_lines $message) {
 	    die "multiline message '$message'";## for now.
 	} else {
 	    $message
@@ -143,7 +144,7 @@ sub do_commits {
 
 #use Chj::ruse;
 use Chj::Backtrace;
-use Chj::repl; repl;
+#use Chj::repl; repl;
 
 do_commits read_import_file;
 
