@@ -15,7 +15,8 @@ sub usage {
 
 file-including-keepstuff.  <- start of line
 maybeanotherfile-dito
-   optional commitmessage (defaults to stuff from keepstuff (hmwhichtakeasfirstline?))
+   =commitmessage (optional, defaults to stuff from keepstuff (hmwhichtakeasfirstline?))
+                  (alternatively: +commitmessage, will use that as the first line but still add the keepmessages)
                            <- empty line to indicate 'commit'
 file-including-keepstuff
 ...
@@ -50,11 +51,12 @@ sub read_import_file {
     my $il= xopen_read $importlistfile;
 
     # whole
-    my $commits=[]; # [ [files], maybe_mainmessage ]
+    my $commits=[]; # [ [files], maybe_mainmessage, maybe_mainmessage_type ]
 
     # per commit
     my $files=[]; # of [ source, target, msg ]
     my $maybe_mainmessage;
+    my $maybe_mainmessage_type; # a char
     my $flag_expecting_commit_as_next;
 
     while (<$il>) {
@@ -69,7 +71,11 @@ sub read_import_file {
 	      if $flag_expecting_commit_as_next;
 	    $flag_expecting_commit_as_next=1;
 	    ##^hm, multiline comments shou mb be allowed
-	    $maybe_mainmessage= $1;
+	    my $str= $1;
+	    $str=~ s/^([+=])//
+	      or die "message does not start with a + or = character: '$str'";
+	    ($maybe_mainmessage_type,$maybe_mainmessage)= ($1,$2);
+
 	} else {
 	    # a file
 	    die "expected commit"
@@ -91,7 +97,7 @@ sub contains_multiple_lines ( $ ) {
 
 sub commit_message ($ ) {
     my ($commit)=@_;
-    my ($files,$maybe_mainmessage)= @$commit; #'code dup' as said below.
+    my ($files, $maybe_mainmessage, $maybe_mainmessage_type)= @$commit; #'code dup' as said below.
     my $messages_from_files= sub {
 	my ($indentation)=@_;
 	join ("",
@@ -107,12 +113,14 @@ sub commit_message ($ ) {
 	      } @$files)
     };
     if ($maybe_mainmessage) {
-	if (contains_multiple_lines $maybe_mainmessage) {
-	    # then just use that one, right?
+	if ($maybe_mainmessage_type eq "=") {
 	    $maybe_mainmessage
-	} else {
+	} elsif ($maybe_mainmessage_type eq "+") {
 	    $maybe_mainmessage."\n\n"
 	      .&$messages_from_files (" ");
+	} else {
+	    die "invalid type '$maybe_mainmessage_type'";
+	    # and yes pattern matching would make this more expicit (implicit? the 'message' of the code would make it through more explicitely; it's *purpose* I mean), easier to type, etc.
 	}
     } else {
 	#&$messages_from_files  ##hmm what if it's multiline?
@@ -129,7 +137,7 @@ sub do_commits {
     my ($commits)=@_;
     for my $commit (@$commits)
       {
-	  my ($files,$_maybe_mainmessage)= @$commit; #is this code duplication?.. of course. and yes oo does inhibit ehr so it. instead of matching. =copying. --actually not even using one of those now hehe.
+	  my ($files,$_maybe_mainmessage, $_maybe_mainmessage_type)= @$commit; #is this code duplication?.. of course. and yes oo does inhibit ehr so it. instead of matching. =copying. --actually not even using one of those now hehe.
 	  my $commit_message= commit_message ($commit);
 	  my $linked=[];
 	  eval {
