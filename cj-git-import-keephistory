@@ -132,14 +132,18 @@ sub do_commits {
 	  my ($files,$_maybe_mainmessage)= @$commit; #is this code duplication?.. of course. and yes oo does inhibit ehr so it. instead of matching. =copying. --actually not even using one of those now hehe.
 	  my $commit_message= commit_message ($commit);
 	  my $linked=[];
-	  for (@$files) {
-	      my ($source,$target,$_msg)=@$_; #of course again dup thing
-	      xlink ($source,$target);
-	      push @$linked,$target;
-	  }
-	  xxsystem "git","add", "--", @$linked;
-	  xxsystem "git","commit", "-m", $commit_message, "--", @$linked;
+	  eval {
+	      for (@$files) {
+		  my ($source,$target,$_msg)=@$_; #of course again dup thing
+		  xlink ($source,$target);
+		  push @$linked,$target;
+	      }
+	      xxsystem "git","add", "--", @$linked;
+	      xxsystem "git","commit", "-m", $commit_message, "--", @$linked;
+	  };
+	  my $e=$@;
 	  xunlink $_ for @$linked;
+	  die $e if ref $e or $e;
       }
 }
 
