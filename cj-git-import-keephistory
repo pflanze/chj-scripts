@@ -137,6 +137,7 @@ sub do_commits {
 	      xlink ($source,$target);
 	      push @$linked,$target;
 	  }
+	  xxsystem "git","add", "--", @$linked;
 	  xxsystem "git","commit", "-m", $commit_message, "--", @$linked;
 	  xunlink $_ for @$linked;
       }
