@@ -1,0 +1,87 @@
+#!/usr/bin/perl -w
+
+# Mon Jun  9 20:05:39 CEST 2008
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname importlistfile
+
+  Goes through importlistfile which has this format:
+
+file-including-keepstuff.  <- start of line
+maybeanotherfile-dito
+   optional commitmessage (defaults to stuff from keepstuff (hmwhichtakeasfirstline?))
+                           <- empty line to indicate 'commit'
+file-including-keepstuff
+...
+
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($importlistfile)=@ARGV;
+
+
+use Chj::xopen ":all";
+
+sub file_to_source_and_maybemsg ( $ ) {
+    my ($fullfile)=@_;
+    $fullfile=~ m/(.+)\.[1-9][0-9]*(?:_(.*))?\z/s
+      or die "not a versioned file: '$fullfile'"; #hm. good?
+    ($1,$2)
+}
+
+sub read_import_file {
+    my $il= xopen_read $importlistfile;
+
+    # whole
+    my $commits=[]; # [ [files], maybe_mainmessage ]
+
+    # per commit
+    my $files=[]; # of [ source, target, msg ]
+    my $maybe_mainmessage;
+    my $flag_expecting_commit_as_next;
+
+    while (<$il>) {
+	chomp;
+	if (/^\s*\z/s) {
+	    push @$commits, [$files, $maybe_mainmessage];
+	    $files=[];
+	    undef $maybe_mainmessage;
+	    undef $flag_expecting_commit_as_next;
+	} elsif (/^\s+(.*)/s) {
+	    die "already expected commit"
+	      if $flag_expecting_commit_as_next;
+	    $flag_expecting_commit_as_next=1;
+	    ##^hm, multiline comments shou mb be allowed
+	    $maybe_mainmessage= $1;
+	} else {
+	    # a file
+	    die "expected commit"
+	      if $flag_expecting_commit_as_next;
+	    my $file=$_;
+	    my ($target,$maybemsg)= file_to_source_and_maybemsg($file);
+	    push @$files,[ $_, $target, $maybemsg ]
+	}
+    }
+    $il->xclose;
+    $commits
+}
+
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
