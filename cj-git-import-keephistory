@@ -37,6 +37,7 @@ our ($importlistfile)=@ARGV;
 
 
 use Chj::xopen ":all";
+use Chj::xperlfunc;
 
 sub file_to_source_and_maybemsg ( $ ) {
     my ($fullfile)=@_;
@@ -82,6 +83,74 @@ sub read_import_file {
     $commits
 }
 
+sub contains_newline ( $ ) {
+    my ($str)=@_;
+    $str=~/\n/
+}
+
+sub commit_message ($ ) {
+    my ($commit)=@_;
+    my ($files,$maybe_mainmessage)= @$commit; #'code dup' as said below.
+    my $messages_from_files= sub {
+	my ($indentation)=@_;
+	join ("",
+	      map {
+		  my ($source,$target,$msg)=@$_; #again needless re-naming ("code dup" even dangerous..f course.)
+		  ## now what do we want exactly, "file => msg" or just the msg ?
+		  ## for now, just the latter and ignore if none.
+		  if (defined $msg) {
+		      "$indentation$msg\n"
+		  } else {
+		      ()
+		  }
+	      } @$files)
+    };
+    if ($maybe_mainmessage) {
+	if (contains_newline $maybe_mainmessage) {
+	    # then just use that one, right?
+	    $maybe_mainmessage
+	} else {
+	    $maybe_mainmessage."\n\n"
+	      .&$messages_from_files (" ");
+	}
+    } else {
+	#&$messages_from_files  ##hmm what if it's multiline?
+	my $message= &$messages_from_files ("");##good idea to not indent here ?##probably not
+	if (contains_newline $message) {
+	    die "multiline message '$message'";## for now.
+	} else {
+	    $message
+	}
+    }
+}
+
+sub do_commits {
+    my ($commits)=@_;
+    for my $commit (@$commits)
+      {
+	  my ($files,$_maybe_mainmessage)= @$commit; #is this code duplication?.. of course. and yes oo does inhibit ehr so it. instead of matching. =copying. --actually not even using one of those now hehe.
+	  my $commit_message= commit_message ($commit);
+	  my $linked=[];
+	  for (@$files) {
+	      my ($source,$target,$_msg)=@$_; #of course again dup thing
+	      xlink ($source,$target);
+	      push @$linked,$target;
+	  }
+	  xxsystem "git","commit", "-m", $commit_message, "--", @$linked;
+	  xunlink $_ for @$linked;
+      }
+}
 
 #use Chj::ruse;
-use Chj::Backtrace; use Chj::repl; repl;
+use Chj::Backtrace;
+use Chj::repl; repl;
+
+do_commits read_import_file;
+
+##ps. error checking was the idea for the early parse.
+## but now I'm doing erroring again during commit phase, right? the effort was futile right?
+## what's the use   of stream processing?
+## monads?
+## type checking.
+## and auto conversion.
+
