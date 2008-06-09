@@ -62,9 +62,10 @@ sub read_import_file {
     while (<$il>) {
 	chomp;
 	if (/^\s*\z/s) {
-	    push @$commits, [$files, $maybe_mainmessage];
+	    push @$commits, [$files, $maybe_mainmessage, $maybe_mainmessage_type];
 	    $files=[];
 	    undef $maybe_mainmessage;
+	    undef $maybe_mainmessage_type;
 	    undef $flag_expecting_commit_as_next;
 	} elsif (/^\s+(.*)/s) {
 	    die "already expected commit"
@@ -72,9 +73,9 @@ sub read_import_file {
 	    $flag_expecting_commit_as_next=1;
 	    ##^hm, multiline comments shou mb be allowed
 	    my $str= $1;
-	    $str=~ s/^([+=])//
+	    $str=~ s/^([\+=])//
 	      or die "message does not start with a + or = character: '$str'";
-	    ($maybe_mainmessage_type,$maybe_mainmessage)= ($1,$2);
+	    ($maybe_mainmessage_type,$maybe_mainmessage)= ($1,$str);
 
 	} else {
 	    # a file
