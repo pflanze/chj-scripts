@@ -29,6 +29,24 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage if @ARGV;
 
+{
+    package CHJ::Release;
+    use Class::Array -fields=> -publica=>
+      qw(name
+	 number
+	 release_date
+	 num_packages_binary
+	 num_packages_source
+	 num_developers);
+    sub new {
+	my $class=shift;
+	@_==6 or die;
+	bless [@_],$class
+    }
+    end Class::Array;
+}
+
+
 # where to get this information from? No, *not* from
 # http://www.us.debian.org/releases/
 # since that's cheating about the release date of the stable release,
@@ -38,11 +56,12 @@ usage if @ARGV;
 
 our $releases=
   [
+   map { new CHJ::Release @$_ }
    # name, number, release_date, num_packages_binary, num_packages_source,
    #    num_developers,
    ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+" ],
    #   ^ is the 1500+ number for binary packages really?
-   ["slink", "2.1", "1999-03-09", "~2250" ],
+   ["slink", "2.1", "1999-03-09", "~2250", undef, undef ],
    # ^ first to include apt; Alpha + Sparc
    ["potato", "2.2", "2000-08-15", "3900+", "2600+", "450+"],
    # ^ PowerPC and ARM
@@ -54,16 +73,31 @@ our $releases=
    #   'aptitude as the selected tool for package management'
    ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
    # ^ includes AMD64, but drops m68k (which was still in unstable, though)
-   ["lenny", ],
+   ["lenny", undef, undef, undef, undef, undef ],
   ];
 
-our $debian_versions=
-  +{
-    
-   };
+sub index_of_by {
+    my ($list)=@_;
+    sub {
+	my ($method)= @_;
+	+{
+	  map {
+	      my $k= $_->$method;
+	      (defined $k) ?
+		($k => $_)
+		  : ()
+	  } @$list
+	 }
+    }
+}
+*index_by= index_of_by($releases);
+
+our $release_by_name= index_by ("name");
+our $release_by_number= index_by ("number");
+
 
 #use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
+use Chj::Backtrace; use Chj::repl; repl;
 
 __END__
 
