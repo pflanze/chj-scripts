@@ -1,5 +1,4 @@
 #!/bin/sh
-#cj von http://fgouget.free.fr/sux/ 10.9.01
 
 # Written by Francois Gouget, fgouget@free.fr
 # With many thanks to Daniel Martin and Falk Hueffner for their help
@@ -188,7 +187,7 @@ then
   # xauth (below) will produce a pointless warning message.
   sux_tmpfile=`tempfile -p sux`
   xauth -q -f $sux_tmpfile generate $DISPLAY . $sux_untrusted $sux_timeout
-  sux_xauth_data=`xauth -f $sux_tmpfile nlist $DISPLAY`
+  sux_xauth_data=`xauth -f $sux_tmpfile nlist`
   rm -f $sux_tmpfile
 fi
 
@@ -201,7 +200,7 @@ then
 
   # If display is of the form "host:x.y" we may also need to get the 
   # cookies for "host/unix:x.y".
-  sux_unix_display=`echo $DISPLAY | sed -e 's#^\([a-zA-Z_.][a-zA-Z_.]*\):#\1/unix:#'`
+  sux_unix_display=`echo $DISPLAY | sed -e 's#^localhost:#:# ; s#^\([a-zA-Z_.][a-zA-Z_.]*\):#\1/unix:#'`
   if [ "$DISPLAY" = "$sux_unix_display" ]
   then
     sux_unix_display=""
@@ -304,7 +303,7 @@ else
   then
     if [ "$sux_got_minus" = "1" ]
     then
-      sux_cmd="sh -c \"exec -l \$SHELL\""
+      sux_cmd="sh -c \"exec \$SHELL -l\""
     else
       sux_cmd="\$SHELL"
     fi
@@ -322,7 +321,7 @@ unset XAUTHORITY
 # --preserve-environment special case
 if [ -n "$sux_preserve" -a -n "$sux_xauth_cmd" ]
 then
-  sux_home=`egrep "^$sux_username:" /etc/passwd | cut -d: -f6`
+  sux_home=`getent passwd $sux_username | cut -d: -f6`
   if [ -z "$sux_home" ]
   then
     echo "WARNING: --preserve-environment has been set, but no good value was found for XAUTHORITY, expect trouble" >&2
