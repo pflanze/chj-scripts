@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Tue Jun 10 18:06:11 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $file= "/etc/debian_version";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Reads the contents of $file and displays the result
+  as both the number, release name, and release date if it's
+  a stable release.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+# where to get this information from? No, *not* from
+# http://www.us.debian.org/releases/
+# since that's cheating about the release date of the stable release,
+# and the links to the older releases won't give any date at all.
+
+# http://www.debian.org/doc/manuals/project-history/ch-detailed.en.html
+
+our $releases=
+  [
+   # name, number, release_date, num_packages_binary, num_packages_source,
+   #    num_developers,
+   ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+" ],
+   #   ^ is the 1500+ number for binary packages really?
+   ["slink", "2.1", "1999-03-09", "~2250" ],
+   # ^ first to include apt; Alpha + Sparc
+   ["potato", "2.2", "2000-08-15", "3900+", "2600+", "450+"],
+   # ^ PowerPC and ARM
+   # Introduction of "Testing" distribution ("unstable" did already exist)
+   ["woody", "3.0", "2002-07-19", "~8500", undef, "900+" ],
+   # ^ first on DVD media
+   ["sarge", "3.1", "2005-06-06", "~15000", undef, "1500+" ],
+   # ^ *unofficial* AMD64 port; new installer (with RAID, XFS and LVM support)
+   #   'aptitude as the selected tool for package management'
+   ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
+   # ^ includes AMD64, but drops m68k (which was still in unstable, though)
+   ["lenny", ],
+  ];
+
+our $debian_versions=
+  +{
+    
+   };
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
+
+novo:~# cat /etc/debian_version
+lenny/sid
