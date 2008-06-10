@@ -51,7 +51,8 @@ usage if @ARGV;
     sub fullinfo {
 	my $s=shift;
 	($s->as_string
-	 .join(",",
+	 ." ["
+	 .join(", ",
 	       map {
 		   my $method=$_;
 		   if (my $v= $s->$method) {
@@ -63,7 +64,8 @@ usage if @ARGV;
 		    num_packages_binary
 		    num_packages_source
 		    num_developers)
-	       ))
+	      )
+	."]")
     }
     end Class::Array;
 }
