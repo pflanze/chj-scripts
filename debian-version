@@ -43,6 +43,28 @@ usage if @ARGV;
 	@_==6 or die;
 	bless [@_],$class
     }
+    sub as_string {
+	my $s=shift;
+	# should this give 'sid'? instead of lenny, for the name? OPEN
+	"$$s[Name] (".($$s[Number]||"unknown release number").")"
+    }
+    sub fullinfo {
+	my $s=shift;
+	($s->as_string
+	 .join(",",
+	       map {
+		   my $method=$_;
+		   if (my $v= $s->$method) {
+		       "$method: $v"
+		   } else {
+		       ()
+		   }
+	       } qw(release_date
+		    num_packages_binary
+		    num_packages_source
+		    num_developers)
+	       ))
+    }
     end Class::Array;
 }
 
@@ -73,6 +95,9 @@ our $releases=
    #   'aptitude as the selected tool for package management'
    ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
    # ^ includes AMD64, but drops m68k (which was still in unstable, though)
+
+   # The last entry must/should always be the sid distribution (check
+   # how it is being added as 'sid' to $release_by_name below) :
    ["lenny", undef, undef, undef, undef, undef ],
   ];
 
@@ -94,10 +119,42 @@ sub index_of_by {
 
 our $release_by_name= index_by ("name");
 our $release_by_number= index_by ("number");
+$$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
 
+use Chj::Fileutil 'xCatfile';
+
+sub maybe_find_release {
+    my ($key)= @_;
+    $$release_by_number{$key} || $$release_by_name{lc $key}
+}
+
+sub parsefile {
+    my $cnt= xCatfile $file;
+    $cnt=~ s/\s+\z//s;
+    $cnt=~ m/\s/s and die "'$file' contains whitespace not at the end";
+    my @parts= split /\//,$cnt;
+    @parts <= 2 or die "'$file' contains more than one slash";
+    my $r1= maybe_find_release ($parts[0]);
+    if (@parts==2) {
+	my $r2= maybe_find_release ($parts[1]);
+	if ($r1 eq $r2) {
+	    $r1
+	} else {
+	    die ("'$file' contains contradicting information, "
+		 ."leading to release "
+		 .$r1->as_string
+		 ." vs "
+		 .$r2->as_string)
+	}
+    } else {
+	$r1 or die "couldn't find release for key '$parts[0]'";
+    }
+}
+
+print parsefile->fullinfo,"\n";
 
 #use Chj::ruse;
-use Chj::Backtrace; use Chj::repl; repl;
+#use Chj::Backtrace; use Chj::repl; repl;
 
 __END__
 
