@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# ugly copy from find-pm
+
+set -eu
+
+if [ $# -lt 2 -o "${1-}" = "-h" -o "${1-}" = "--help" ]; then  #well die letzteren checks kann ich mir nun sparn da 2 args req..
+    echo "usage: $0 dir pattern"
+    exit
+fi
+
+dir="$1"
+shift
+find "$dir" -name "*.[ch]" -print0 | xargs -0 grep "$@"
+
