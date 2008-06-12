@@ -1,5 +1,13 @@
 #!/usr/bin/perl -w
-#cjaeger9.8.0000
+
+use strict;
+
+our $gvfs_trash= "/usr/bin/gvfs-trash";
+
+if (-x $gvfs_trash) {
+    exec $gvfs_trash, @ARGV;
+}
+
 my $name= 'trash';
 my $trash;
 if ($ENV{TRASHCAN}) {
@@ -37,7 +45,7 @@ if (@ARGV) {
       existing files in trash (appending localtime() string if needed).
     "} else {
 	if ($ARGV[0]=~ /^--$/) { shift @ARGV }
-	foreach $file (@ARGV) {
+	for my $file (@ARGV) {
 	    my $onlyname=$file;
 	    $onlyname=~s|/$||; # remove ending slash from directories
 	    $onlyname=~s|^.*/||;
