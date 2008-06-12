@@ -34,14 +34,29 @@ usage unless @ARGV==2;
 
 use Chj::IO::Command;
 
+# todo another thing to put in a Git lib of mine...:
+sub xgit_rev_parse ( $ ) {
+    my ($str)=@_;
+    my $in= Chj::IO::Command->new_combinedsender ('git','rev-parse', '--verify', $str);
+    my $cnt= $in->xcontent;
+    my $rv= $in->xfinish;
+    if ($rv == 0) {
+	chomp $cnt;
+	$cnt;
+    } elsif ($rv == 128<<8) {
+	#die "given revision '$str' could not be resolved (to a single commit)";
+	die "given revision '$str' could not be resolved"; ## strange that blobs also do parse successfully. anyway, leave it at that for now.
+	##is this a good message? "fatal: Needed a single revision" is what git-rev-parse returns
+    }
+}
+
 sub is_ancestor_of {
-    my ($commit1,$commit2)=@_;
+    my ($commit1,$commit2)= map { xgit_rev_parse $_ } @_;
     my $in= Chj::IO::Command->new_sender('git', 'log', '--pretty=format:%H %P', $commit2);
     while (<$in>) {
 	chomp;
 	for my $sha1 (split /\s+/, $_) {
 	    if ($commit1 eq $sha1) {
-		$in->xclose;
 		my $rv= $in->xfinish;
 		# bad, basically COPY from cj-git-l (and yep the state keeping there is weird hehe)
 		($rv == 0
@@ -56,12 +71,15 @@ sub is_ancestor_of {
     return 0;
 }
 
-my $is= is_ancestor_of (@ARGV);
+sub main {
+    my $is= is_ancestor_of (@ARGV);
 
-if (!$opt_quiet) {
-    print( ($is ? "yes" : "no"),"\n") or die;
+    if (!$opt_quiet) {
+	print( ($is ? "yes" : "no"),"\n") or die;
+    }
+    exit ($is ? 0 : 1);
 }
-exit ($is ? 0 : 1);
+main;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
