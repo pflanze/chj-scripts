@@ -14,6 +14,8 @@ sub usage {
   Returns true (and says so by default) if commit1 is in the history
   seen from commit2.
 
+  NOTE: gives true for the case of commit1 == commit2.
+
   Options:
   -q|--quiet   only use exit status to tell result, do not print anything
                unless errors happen (0=true, 1=false, other=error)
