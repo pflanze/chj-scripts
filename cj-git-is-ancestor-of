@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Don Jun 12 00:10:49 CEST 2008
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname commit1 commit2
+
+  Returns true (and says so by default) if commit1 is in the history
+  seen from commit2.
+
+  Options:
+  -q|--quiet   only use exit status to tell result, do not print anything
+               unless errors happen (0=true, 1=false, other=error)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_quiet=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "q|quiet"=> \$opt_quiet,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+use Chj::IO::Command;
+
+sub is_ancestor_of {
+    my ($commit1,$commit2)=@_;
+    my $in= Chj::IO::Command->new_sender('git', 'log', '--pretty=format:%H %P', $commit2);
+    while (<$in>) {
+	chomp;
+	for my $sha1 (split /\s+/, $_) {
+	    if ($commit1 eq $sha1) {
+		$in->xclose;
+		my $rv= $in->xfinish;
+		# bad, basically COPY from cj-git-l (and yep the state keeping there is weird hehe)
+		($rv == 0
+		 or $rv == 141<<8
+		 or $rv == 13)
+		  or die "git-log exited with status $rv";
+		return 1
+	    }
+	}
+    }
+    $in->xxfinish;
+    return 0;
+}
+
+my $is= is_ancestor_of (@ARGV);
+
+if (!$opt_quiet) {
+    print( ($is ? "yes" : "no"),"\n") or die;
+}
+exit ($is ? 0 : 1);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
