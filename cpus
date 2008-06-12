@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+# Sun May 11 00:49:10 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname on | off|single [| status ]
+
+  Utility to switch cpus on and off and display current state.
+
+  (NOTE: does not do locking.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+our ($cmd)= @ARGV ? @ARGV : "status";
+
+our @othercores= glob '/sys/devices/system/cpu/cpu?*/online';
+
+@othercores
+  or die "$myname: didn't find any other cpu's on this system\n";
+
+use Chj::Fileutil ":all";
+
+our $mkswitch=sub {
+    my ($on)=@_; #ein super Fall wo "?" wirklich passen würde. nicht p. he. !!
+    sub {
+	my $wish= $on ? "1" : "0";
+	for my $f (@othercores) {
+	    my $state= file_cpu_onP ($f);
+	    #warn "state=$state,wish=$wish,ok?"; uff.
+	    if ($state eq $wish) {
+		Warn "cpu $f already $wish";
+	    } else {
+		xDirectWritefileln ($wish, $f);
+	    }
+	}
+    }
+};
+
+our $on= &$mkswitch (1);
+our $off= &$mkswitch (0);
+
+sub file_cpu_onP ($ ) {
+    my ($f)=@_;
+    my $n= xCatfile $f;
+    chomp $n;
+    $n
+}
+
+our $status= sub {
+    my $tot=1;
+    for my $f (@othercores) {
+	$tot+= file_cpu_onP ($f) ? 1 : 0;
+    }
+    print "number of active cpu's: $tot\n" or die;#xprint?...
+};
+
+our $cmds=
+  {
+   on=> $on,
+   off=> $off,
+   single=> $off,
+   status=> $status,
+  }
+;
+
+my $c= $$cmds{$cmd} or usage "unknown command '$cmd'";
+
+&$c;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

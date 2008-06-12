@@ -13,14 +13,14 @@ if [ $# -gt 0 ]; then
 	tmp="$(tempfile -d "$(dirname "$file")")"
 	expand --tabs=$N < "$file" > "$tmp"  ## no quotes around $N?
 	PERMS="`perms-of "$file"`"
-	mvnumber -a "_vor_tab-expand" "$file"
+	mv "$file" "${file}~"
 	mv -i "$tmp" "$file" # should rather throw an error immediately.
 	chmod "$PERMS" "$file"
     done
 else
     echo "usage: $0 file(s)"
     echo "  expands file(s)'s tabs to spaces using tabstops $N,"
-    echo "  keeping old version using mvnumber."
+    echo "  keeping old version as based backup file (tilde appended) ."
     echo "  tabstops can be overridden by the env var TAB_EXPAND_N."
 fi
 

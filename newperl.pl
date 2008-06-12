@@ -10,7 +10,7 @@ sub copy {
     my $year= (localtime)[5]+1900;
     my $nameonly=$adr; $nameonly=~ s/,.*//s;
 	"# ".localtime()."  ".$adr."\n".
-	"# \n".
+	"#\n".
 	"# Copyright $year by $nameonly\n".
 	"# Published under the same terms as perl itself"
 }

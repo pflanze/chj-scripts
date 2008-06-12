@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+# invoke gpg with all the keyrings that Debian (as of >etch) provides.
+
+# By giving a comma separated list of numbers you can choose which
+# ones to take; by default all of them are taken.
+
+my @indexes= do {
+    if (@ARGV) {
+	my $first= $ARGV[0];
+	if ($first=~ /^(?:\d+,)*\d+\z/) {
+	    shift @ARGV;
+	    split /,/,$first
+	} else {
+	    ()
+	}
+    } else {
+	()
+    }
+};
+
+
+my @debian_keyrings=
+  (
+   ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-role-keys.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.pgp"],
+  );
+
+if (@indexes) {
+    @debian_keyrings= @debian_keyrings[@indexes];
+    use Data::Dumper;
+    print "taking keys:\n".Dumper(\@debian_keyrings);
+}
+
+for (@debian_keyrings) {
+    my ($pack,$path)=@$_;
+    -r $path
+      or die "can't read keyring '$path': $!; please apt-get install $pack";
+}
+
+exec(
+     "gpg",
+     (
+      map {
+	  my ($pack,$path)=@$_;
+	  ("--keyring", $path)
+      } @debian_keyrings
+     ),
+     @ARGV
+    );
+

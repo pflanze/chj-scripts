@@ -16,42 +16,31 @@ sub usage {
     'EL::Exception'
 
   Options:
-  +use     don't print 'use ' before each line and ';' afterwards.
+  --no-use     don't print 'use ' before each line and ';' afterwards.
   --load   print 'load my \$Bar= \"Foo::Bar\";' instead (use Chj::load first!).
 ";
 exit @_ ? 1 : 0;
 }
 
-my @files;
-my $DEBUG=0;
-my $opt_u;
-my $opt_load;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @files, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-    } elsif (/^--?l(oad)?$/) {
-	$opt_load=1;
-    } elsif (/^\+\+?u(se)?$/) {
-	$opt_u=1;
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @files, $_
-    }
-}
-
+use Getopt::Long;
+our $DEBUG;
+our $verbose=0;
+our $opt_no_use;
+our $opt_load;
+GetOptions("verbose"=> \$verbose,
+	   "debug"=> \$DEBUG,
+	   "help"=> sub{usage},
+	   "use"=> sub{$opt_no_use=0},
+	   "no-use"=> sub{$opt_no_use=1},
+	   "load"=> \$opt_load,
+	   ) or exit 1;
 
 sub turn {
     local $_= $_[0];
     if (m{(\S+\.pm)}) {
 	my $path=$1;
 	$path=~ s{^\./}{};
+	$path=~ s{^(?:.*/)?perllib/+}{};
 	my $class= $path;
 	$class=~ s/\.pm$//;
 	$class=~ s|/|::|sg;
@@ -65,12 +54,14 @@ sub turn {
 			while ($content=~ m{\bpackage +([\w:]+)}g) {
 			    my $namespace= $1;
 			    if ($class=~ m/\Q$namespace\E$/) {
-				warn "cutting '$class' down to '$namespace'\n" if $DEBUG;
+				warn "cutting '$class' down to '$namespace'\n"
+				  if $DEBUG;
 				$class= $namespace;
 				last CHECK;
 			    }
 			}
-			warn "could not find any package definition in '$path' matching it's path\n";
+			warn "could not find any package definition ".
+			  "in '$path' matching it's path\n";
 		    }
 		} else {
 		    warn "could not open '$path': $!\n";
@@ -79,7 +70,7 @@ sub turn {
 		warn "there is no such file as '$path'\n";
 	    }
 	}
-	$opt_u ?
+	$opt_no_use ?
 	  print "$class\n"
 	    :
 	      $opt_load ?
@@ -93,8 +84,8 @@ sub turn {
     }
 }
 
-if (@files) {
-    turn $_ for @files;
+if (@ARGV) {
+    turn $_ for @ARGV;
 } else {
     turn $_ while <STDIN>;
 }

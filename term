@@ -1,0 +1,27 @@
+#!/usr/bin/perl -w
+
+# Tue May 27 22:45:05 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+use POSIX qw(setsid);
+
+my $pid=fork;
+defined
+  $pid or die "fork: $!";
+if ($pid) {
+    exit 0;#well. bugg.buti dontcarenow
+} else {
+    setsid or die $!;
+
+    # setting to xterm seems to work? whereas without it
+    #  (older) debian (without urxvt installed) usually gives
+    # "Cannot find terminfo entry for 'rxvt-unicode'"
+    exec "urxvt", ("-tn", "xterm",
+		   ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+		   @ARGV)
+      or exit 127;
+}
+
+

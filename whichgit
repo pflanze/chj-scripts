@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# <pflanze> Is there a tool to output the path to the git repository directory currently being used?
+# <Pieter> git rev-parse --show-cdup
+# <Pieter> or --git-dir
+# <pflanze> ah the latter, yep, thanks
+# <pflanze> funny that this is in the revision parsing tool :)
+
+exec git rev-parse --git-dir

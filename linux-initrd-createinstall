@@ -1,0 +1,47 @@
+#!/usr/bin/perl -w
+
+# Wed Jun 11 07:01:16 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+# really f*cking fricking how I EVER so now never. this here to solve me.
+
+use strict;
+
+our $boot= "/boot";
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ -c ] kernel_version
+
+  Options:
+  -c  create, if none existed for this kernel version before
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_create;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "c"=> \$opt_create,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($kernel_version)=@ARGV;
+
+use Chj::xperlfunc;
+
+xxsystem "update-initramfs", ($opt_create ? "-c" : "-u"), "-k", $kernel_version;
+
+xsystem "mvnumber", "$boot/initrd.img.old";#well.
+xrename "$boot/initrd.img", "$boot/initrd.img.old";
+xsymlink "initrd.img-$kernel_version", "$boot/initrd.img";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

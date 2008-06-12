@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+# Sat May 31 00:30:45 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [files]
+
+  filter stdin (or the given files) to stdout, remove whitespace at
+  the end of every line and then add a new newline.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+while (<>) {
+    s/\s*\z//s;
+    print $_,"\n" or die "printing to stdout: $!";
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

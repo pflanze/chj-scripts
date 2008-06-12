@@ -164,9 +164,7 @@ strip_from_PATH quotemeta $path;
 # und nun das ulimit dings auch hier einbauen   oder ?
 # ja sinnvollerweise.
 
-#ulimit qw(-v 200000); # die Idee davon ist *rauf*setzen von 110000 oder so default.
-# cj Fri, 19 Aug 2005 16:29:35 +0200:
-ulimit qw(-v 400000); # die Idee davon ist *rauf*setzen von 110000 oder so default.
+ulimit qw(-v 1700000); # die Idee davon ist *rauf*setzen von 110000 oder so default.
 
 delete $ENV{MOZILLA_FIVE_HOME};
 

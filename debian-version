@@ -1,0 +1,164 @@
+#!/usr/bin/perl -w
+
+# Tue Jun 10 18:06:11 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $file= "/etc/debian_version";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Reads the contents of $file and displays the result
+  as both the number, release name, and release date if it's
+  a stable release.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+{
+    package CHJ::Release;
+    use Class::Array -fields=> -publica=>
+      qw(name
+	 number
+	 release_date
+	 num_packages_binary
+	 num_packages_source
+	 num_developers);
+    sub new {
+	my $class=shift;
+	@_==6 or die;
+	bless [@_],$class
+    }
+    sub as_string {
+	my $s=shift;
+	# should this give 'sid'? instead of lenny, for the name? OPEN
+	"$$s[Name] (".($$s[Number]||"unknown release number").")"
+    }
+    sub fullinfo {
+	my $s=shift;
+	($s->as_string
+	 ." ["
+	 .join(", ",
+	       map {
+		   my $method=$_;
+		   if (my $v= $s->$method) {
+		       "$method: $v"
+		   } else {
+		       ()
+		   }
+	       } qw(release_date
+		    num_packages_binary
+		    num_packages_source
+		    num_developers)
+	      )
+	."]")
+    }
+    end Class::Array;
+}
+
+
+# where to get this information from? No, *not* from
+# http://www.us.debian.org/releases/
+# since that's cheating about the release date of the stable release,
+# and the links to the older releases won't give any date at all.
+
+# http://www.debian.org/doc/manuals/project-history/ch-detailed.en.html
+
+our $releases=
+  [
+   map { new CHJ::Release @$_ }
+   # name, number, release_date, num_packages_binary, num_packages_source,
+   #    num_developers,
+   ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+" ],
+   #   ^ is the 1500+ number for binary packages really?
+   ["slink", "2.1", "1999-03-09", "~2250", undef, undef ],
+   # ^ first to include apt; Alpha + Sparc
+   ["potato", "2.2", "2000-08-15", "3900+", "2600+", "450+"],
+   # ^ PowerPC and ARM
+   # Introduction of "Testing" distribution ("unstable" did already exist)
+   ["woody", "3.0", "2002-07-19", "~8500", undef, "900+" ],
+   # ^ first on DVD media
+   ["sarge", "3.1", "2005-06-06", "~15000", undef, "1500+" ],
+   # ^ *unofficial* AMD64 port; new installer (with RAID, XFS and LVM support)
+   #   'aptitude as the selected tool for package management'
+   ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
+   # ^ includes AMD64, but drops m68k (which was still in unstable, though)
+
+   # The last entry must/should always be the sid distribution (check
+   # how it is being added as 'sid' to $release_by_name below) :
+   ["lenny", undef, undef, undef, undef, undef ],
+  ];
+
+sub index_of_by {
+    my ($list)=@_;
+    sub {
+	my ($method)= @_;
+	+{
+	  map {
+	      my $k= $_->$method;
+	      (defined $k) ?
+		($k => $_)
+		  : ()
+	  } @$list
+	 }
+    }
+}
+*index_by= index_of_by($releases);
+
+our $release_by_name= index_by ("name");
+our $release_by_number= index_by ("number");
+$$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
+
+use Chj::Fileutil 'xCatfile';
+
+sub maybe_find_release {
+    my ($key)= @_;
+    $$release_by_number{$key} || $$release_by_name{lc $key}
+}
+
+sub parsefile {
+    my $cnt= xCatfile $file;
+    $cnt=~ s/\s+\z//s;
+    $cnt=~ m/\s/s and die "'$file' contains whitespace not at the end";
+    my @parts= split /\//,$cnt;
+    @parts <= 2 or die "'$file' contains more than one slash";
+    my $r1= maybe_find_release ($parts[0]);
+    if (@parts==2) {
+	my $r2= maybe_find_release ($parts[1]);
+	if ($r1 eq $r2) {
+	    $r1
+	} else {
+	    die ("'$file' contains contradicting information, "
+		 ."leading to release "
+		 .$r1->as_string
+		 ." vs "
+		 .$r2->as_string)
+	}
+    } else {
+	$r1 or die "couldn't find release for key '$parts[0]'";
+    }
+}
+
+print parsefile->fullinfo,"\n";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
+
+novo:~# cat /etc/debian_version
+lenny/sid

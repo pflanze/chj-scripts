@@ -12,7 +12,8 @@ sub usage {
   lines at the top, pretty much just like normal mail =).
 
   If the From: address is missing, the following is tried in succession:
-  1. the MAILFROM environment variable (and MAILREALNAME if present for the full real name)
+  1. the MAILFROM environment variable (and MAILREALNAME if present
+     for the full real name)
   2. the contents of the ~/.send_as_mail.from file (..and MAILREALNAME ..)
   3. the EMAIL environment variable (and MAILREALNAME if present)
   3. the qmail configuration files (..and MAILREALNAME..)
@@ -24,6 +25,20 @@ exit;
 }
 
 usage unless @ARGV;
+
+my $localsmtpconfig_host_file="/root/etc/smtpconfig/host";
+my $localsmtpconfig_port_file="/root/etc/smtpconfig/port";
+
+use Chj::Fileutil ":all";
+
+local $Mail::Sendmail::mailcfg{host}=
+  (MaybeChompCatfile ($localsmtpconfig_host_file)
+   || $Mail::Sendmail::mailcfg{host});
+local $Mail::Sendmail::mailcfg{port}=
+  (MaybeChompCatfile ($localsmtpconfig_port_file)
+   || $Mail::Sendmail::mailcfg{port});
+#not functionally solvable copypasting right?
+
 
 sub maybe_extend_with_fullname ( $ ) {
     my ($email)=@_;
@@ -53,7 +68,9 @@ use Mail::Sendmail;
 
 my %knownheaders= map { $_=>1 }
   qw( from to mailto
-      cc bcc subject smtp server mime retries delay tz debug);
+      cc bcc subject smtp server mime retries delay tz debug
+      date
+    );
 
 my $from_file= "$ENV{HOME}/.send_as_mail.from";
 
@@ -61,48 +78,48 @@ my $from_file= "$ENV{HOME}/.send_as_mail.from";
 sub catfileline {
     my $file=shift;
     if (open CF,"<$file") {
-        local $/= "\n"; #hmmm....
-        $file=<CF>;
-        close CF;
-        chomp $file;
-        $file;
+	local $/= "\n"; #hmmm....
+	$file=<CF>;
+	close CF;
+	chomp $file;
+	$file;
     } else {
-        die "could not open file '$file' for reading: $!\n";
+	die "could not open file '$file' for reading: $!\n";
     }
 }
 
 FILE: for my $file (@ARGV) {
     if (open IN,"<$file") {
-        my (%args,$warn,$flag_bcctoself);
-        {
-            local $_; # hrmmmmm, while does not localize this!!
+	my (%args,$warn,$flag_bcctoself);
+	{
+	    local $_; # hrmmmmm, while does not localize this!!
 	  HEAD: while (<IN>) {
-                next if /^\s*\#/; # für kommentare; Sat, 17 Apr 2004 19:49:27 +0200
+		next if /^\s*\#/; # for comments
 		chomp;
-                last HEAD if /^\s*$/s;
-                if (/^([\w-]+):\s*(.*)/) {
-                    my ($key,$value)=($1,$2);
-                    if (not $knownheaders{lc($key)}) {
-                        warn "Unknown header '$key'\n";
-                        $warn=1;
-                    }
-                    $args{lc($key)}=$value;
-                } elsif (/^bcc(?:toself)?\s*(?:=\s*1\s+)?$/si) {
-                    $flag_bcctoself=1;
-                } else {
-                    warn "Invalid header format of '$_'\n";
-                    $warn=1;
-                }
-            }
-        }
-        if ($args{mailto}) {
-            if ($args{to}) {
-                warn "Given both mailto: and to: addresses, overriding to:!\n";
-                $warn=1;
-            }
-            $args{to}=$args{mailto};
-            delete $args{mailto}; #!sigh, sonst wirds als header gesendet
-        }
+		last HEAD if /^\s*$/s;
+		if (/^([\w-]+):\s*(.*)/) {
+		    my ($key,$value)=($1,$2);
+		    if (not $knownheaders{lc($key)}) {
+			warn "Unknown header '$key', using it anyway\n";
+			$warn=1;
+		    }
+		    $args{lc($key)}=$value;
+		} elsif (/^bcc(?:toself)?\s*(?:=\s*1\s+)?$/si) {
+		    $flag_bcctoself=1;
+		} else {
+		    warn "Invalid header format of '$_', ignoring\n";
+		    $warn=1;
+		}
+	    }
+	}
+	if ($args{mailto}) {
+	    if ($args{to}) {
+		warn "Given both mailto: and to: addresses, overriding to:!\n";
+		$warn=1;
+	    }
+	    $args{to}=$args{mailto};
+	    delete $args{mailto}; #!sigh, sonst wirds als header gesendet
+	}
 	if ($args{'message-id'}) {
 	    warn "Using given message-id '$args{'message-id'}'\n";
 	} else {
@@ -115,116 +132,114 @@ FILE: for my $file (@ARGV) {
 	      };
 	    warn "Using new message-id '$messageid'\n";
 	    $args{'message-id'}= $messageid;
-	    # könnte, wenn ich wirklich wollte, noch messageid an den filenamen beim rename anhängen. doch wird ev gefahrlich m laenge.
+	    # könnte, wenn ich wirklich wollte, noch messageid an den
+	    # filenamen beim rename anhängen. doch wird ev gefahrlich
+	    # m laenge.
 	}
-        unless ($args{to}) {
-            warn "Missing To: address.\n";
-            $warn=1
-        }
-        unless ($args{subject}) {
-            warn "Missing subject.\n";
-            $warn=1
-        }
-        unless ($args{from}) {
-            print STDERR "Missing 'from' - ";
-            if ($ENV{MAILFROM}) {
-                warn "using env var MAILFROM ($ENV{MAILFROM})\n";
-                $args{from}= maybe_extend_with_fullname($ENV{MAILFROM});
-            } elsif (do {
-                my $from;
-                eval{
-                    $from= catfileline($from_file);
-                    warn "using .send_as_mail.from ($from)\n";
-                    $args{from}= maybe_extend_with_fullname($from);
-                };
-                if ($@) {
-                    warn $@;
-                    if ($! != 2) {#no such file, kein datei
-                        die $@;
-                    }
-                }
-                $from
-            }) {
-                # ok
-            } else {
-                # # # NEIN ich HASSE das  das Teil weigert sich namenlos zu senden. Und nicht mal $USER allein stellts zufrieden. ARGH.
-                my $from= do {
+	unless ($args{to}) {
+	    warn "Missing To: address.\n";
+	    $warn=1
+	}
+	unless ($args{subject}) {
+	    warn "Missing subject.\n";
+	    $warn=1
+	}
+	unless ($args{from}) {
+	    print STDERR "Missing 'from' - ";
+	    if ($ENV{MAILFROM}) {
+		warn "using env var MAILFROM ($ENV{MAILFROM})\n";
+		$args{from}= maybe_extend_with_fullname($ENV{MAILFROM});
+	    } elsif (do {
+		my $from;
+		eval{
+		    $from= catfileline($from_file);
+		    warn "using .send_as_mail.from ($from)\n";
+		    $args{from}= maybe_extend_with_fullname($from);
+		};
+		if ($@) {
+		    warn $@;
+		    if ($! != 2) {#no such file, kein datei
+			die $@;
+		    }
+		}
+		$from
+	    }) {
+		# ok
+	    } else {
+		# "NEIN ich HASSE das das Teil weigert sich namenlos
+		# zu senden. Und nicht mal $USER allein stellts
+		# zufrieden. ARGH."
+		my $from= do {
 		    if (my $from= $ENV{EMAIL}) {
 			warn "using \$EMAIL == '$from'\n";
 			maybe_extend_with_fullname($from)
 		    } else {
 			my $from= catfileline("/etc/qmail/me");
 			unless ($from=~ /\./) {
-			    $from.= ".".catfileline("/etc/qmail/defaultdomain");
+			    $from.= "."
+			      .catfileline("/etc/qmail/defaultdomain");
 			}
 			$from= $ENV{USER}.'@'.$from;
 			warn "created from user/qmail config: '$from'.\n";
 			maybe_extend_with_fullname($from)
 		    }
-                };
-                $args{from}= $from;
-            }
-            warn "using From: $args{from}\n";
-            $warn=1
-        }
-        {
-            local $/;
-            $args{body}=<IN>;
-            if ($args{body}=~ s|\n-- *(\w+)\s*$||s) {
-                my $filename= "signature_$1";
-                print "Appending signaturefile $filename\n";
-                $warn++;
-                $args{body}.= "\n--\n".(xopen($filename)->xcontent);
-            }
+		};
+		$args{from}= $from;
+	    }
+	    warn "using From: $args{from}\n";
+	    $warn=1
 	}
-	#if ($warn) {
+	{
+	    local $/;
+	    $args{body}=<IN>;
+	    if ($args{body}=~ s|\n-- *(\w+)\s*$||s) {
+		my $filename= "signature_$1";
+		print "Appending signaturefile $filename\n";
+		$warn++;
+		$args{body}.= "\n--\n".(xopen($filename)->xcontent);
+	    }
+	}
+	close IN
+	  or die $!;
 	$|=1;
-	#print "Send mail (anyway)? [y/n] ";
-	print "Send mail".($warn ? " anyway" : "")."? [y/n] ";
       ASK: {
+	    print "Send mail".($warn ? " anyway" : "")."? [y/n/d(ump)] ";
 	    my $ans= <STDIN>;
 	    if ($ans=~/^n/i) {
 		next FILE
 	    } elsif ($ans=~ /^[jy]/i) {
 		last ASK;
+	    } elsif ($ans=~ /^[dD]/i) {
+		use Data::Dumper;
+		print Dumper (\%args);
+		redo ASK;
 	    } else {
 		print "Please say y or no..: ";
 		redo ASK;
 	    }
 	}
-        #}
-        close IN;
-        if ($flag_bcctoself){
-            if ($args{bcc}) {
-                $args{bcc}.= ",".$args{from}
-            } else {
-                $args{bcc}=$args{from}
-            }
-        }
-        sendmail(%args)
+	if ($flag_bcctoself){
+	    if ($args{bcc}) {
+		$args{bcc}.= ",".$args{from}
+	    } else {
+		$args{bcc}=$args{from}
+	    }
+	}
+	sendmail(%args)
 	  or die "Error trying to send file '$file': $Mail::Sendmail::error";
-        print "OK file '$file' sent: $Mail::Sendmail::log\n";
-        #RENAM:{
-        #   for ('', 1, 2, 3, 4, 5) {
-        #       next if -e "$file.sent$_";
-        #       if (!rename $file,"$file.sent$_") {
-        #           warn "**WARNING**: could not rename $file to $file.sent$_: $!\n";
-        #       }
-        #       last RENAM;
-        #   }
-        #   warn "**WARNING**: could not rename $file because I didn't find an unused .sent[..5] filename\n";
-        #}
-        #my $rento= "sent ".localtime();$rento=~ tr/ /_/; $rento=~ s/://sg; print $rento
-        my $renameto= "$file.sent ".`date`; # gibt deutsche ME[S]T
-        chomp $renameto;#!
-        if (-e $renameto) {
-            warn "**WARNING**: could not rename '$file' to '$renameto' since the latter already exists.\n";
-        } else {
-            if (!rename $file,$renameto) {
-                warn "**WARNING**: could not rename '$file' to '$renameto': $!\n";
-            }
-        }
+	print "OK file '$file' sent: $Mail::Sendmail::log\n";
+	my $renameto= "$file.sent ".`date`; # gibt deutsche ME[S]T
+	chomp $renameto;#!
+	if (-e $renameto) {
+	    warn "**WARNING**: could not rename '$file' to '$renameto' "
+	      ."since the latter already exists.\n";
+	} else {
+	    if (!rename $file,$renameto) {
+		warn "**WARNING**: could not rename '$file' to '$renameto': "
+		  ."$!\n";
+	    }
+	}
     } else {
-        warn "Could not open '$file': $!";
+	warn "Could not open '$file': $!";
     }
 }

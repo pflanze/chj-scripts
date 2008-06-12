@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+
+TMPDIR=cj-git-targz-import-tempdir
+
+if [ $# -ne 1 ]; then
+	echo "usage: $0 suffix"
+	echo "  import all *\"\$suffix\" tar(gz/bz2) files in the current directory"
+	echo "  into a git repo in a newly created subdir '$TMPDIR'"
+	echo "  suffix should probably be .tar.gz or .tgz or .tar.bz2 (inluding"
+	echo "  the leading dot)"
+	exit 1
+fi
+
+SUFFIX="$1"
+
+mkdir "$TMPDIR"
+cd "$TMPDIR"
+cj-git-init
+
+for f in `ls -rt ../*"$SUFFIX"`; do
+    rm -rf *
+    tar xf "$f"  # relies on tar finding out decompression scheme by itself
+    dir=`ls -d *`
+    mv -i "$dir"/* .
+    rmdir "$dir"  # assumes there are not dot files
+    file=$(basename "$f")
+    filedate=$(
+	cd ..
+	l "$file" | perl -wne 'chomp; m/(200\d-\d+-\d+ \d+:\d+) / or die "no match: $_"; print $1 or die'
+    )
+    name=$(basename "$f" "$SUFFIX")
+    echo "$name  ($filedate)" > .git/_cjmsg
+    echo >> .git/_cjmsg
+    git-add .
+    g-l >> .git/_cjmsg
+    #cat .git/_cjmsg
+
+    git-commit -a -m "$(cat .git/_cjmsg)"
+done
