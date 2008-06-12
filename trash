@@ -17,51 +17,51 @@ if ($ENV{TRASHCAN}) {
 {
     my $localtime;
     sub _localtime {
-    $localtime||=do {
-        "".localtime()
-    }
+	$localtime||=do {
+	    "".localtime()
+	}
     }
 }
 {
     my $n;
     sub _appendi {
-    my $oldn= $n++;
-    _localtime . (defined ($oldn) ? "\#$oldn" : "");
+	my $oldn= $n++;
+	_localtime . (defined ($oldn) ? "\#$oldn" : "");
     }
 }
 
 if (@ARGV) {
     if ($ARGV[0]=~ /^--?h(elp)?$/) {
-        die "$name files .. 
+	die "$name files ..
       Move each file to ~/Desktop/Trash, taking care not to overwrite
       existing files in trash (appending localtime() string if needed).
     "} else {
-        if ($ARGV[0]=~ /^--$/) { shift @ARGV }
-        foreach $file (@ARGV) {
-            my $onlyname=$file; 
-            $onlyname=~s|/$||; # remove ending slash from directories
-            $onlyname=~s|^.*/||;
-            if ($onlyname eq '.') {
-                warn "Ignoring '.'\n";
-                next;
-            }
-            if ($onlyname eq '..') {
-                warn "Ignoring '..'\n";
-                next;
-            }
-            if (-e $trash.$onlyname) {
-                mv( $file, $trash.$onlyname." (trashed "._appendi.")");
-            } else {
-                mv($file, $trash);
-            }
-        }
+	if ($ARGV[0]=~ /^--$/) { shift @ARGV }
+	foreach $file (@ARGV) {
+	    my $onlyname=$file;
+	    $onlyname=~s|/$||; # remove ending slash from directories
+	    $onlyname=~s|^.*/||;
+	    if ($onlyname eq '.') {
+		warn "Ignoring '.'\n";
+		next;
+	    }
+	    if ($onlyname eq '..') {
+		warn "Ignoring '..'\n";
+		next;
+	    }
+	    if (-e $trash.$onlyname) {
+		mv( $file, $trash.$onlyname." (trashed "._appendi.")");
+	    } else {
+		mv($file, $trash);
+	    }
+	}
     }
 }
 
 sub mv { #rename would give 'Invalid cross-device link'
     if (fork) {
-        wait;
+	wait;
     } else {
-        exec '/bin/mv', '--', @_
+	exec '/bin/mv', '--', @_
     }
 }
