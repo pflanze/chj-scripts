@@ -30,7 +30,6 @@ package Chj::Git::Functions;
 
 use strict;
 
-use Chj::IO::Command;
 use Chj::singlequote "singlequote_many";
 use Carp;
 sub _UndefThrowing ( $ $ ) {
@@ -42,6 +41,7 @@ sub _UndefThrowing ( $ $ ) {
     }
 }
 
+use Chj::IO::Command;
 
 sub maybe_git_rev_parse ( $ ) {
     my ($str)=@_;
@@ -83,12 +83,17 @@ sub xgit_name_rev ( $ ) {
 
 sub is_ancestor_of {
     my ($commit1,$commit2,$verbose)=@_;
-    ($commit1,$commit2)= map { xgit_rev_parse ($_) } ($commit1,$commit2);
+    ($commit1,$commit2)=
+      map { xgit_rev_parse ($_) }
+	($commit1,$commit2);
+
     if ($verbose) {
 	print( "     searching for: ".xgit_name_rev($commit1)."\n".
 	       " in the history of: ".xgit_name_rev($commit2), "\n");# or die;
     }
-    my $in= Chj::IO::Command->new_sender('git', 'log', '--pretty=format:%H %P', $commit2);
+
+    my $in= Chj::IO::Command->new_sender('git', 'log',
+					 '--pretty=format:%H %P', $commit2);
     ## ^ HMMMM could just have used git rev-list instead ?! (ok my %P
     ## trick will short cut it a bit in some cases)
     while (<$in>) {
@@ -96,7 +101,8 @@ sub is_ancestor_of {
 	for my $sha1 (split /\s+/, $_) {
 	    if ($commit1 eq $sha1) {
 		my $rv= $in->xfinish;
-		# bad, basically COPY from cj-git-l (and yep the state keeping there is weird hehe)
+		# bad, basically COPY from cj-git-l (and yep the state
+		# keeping there is weird hehe)
 		($rv == 0
 		 or $rv == 141<<8
 		 or $rv == 13)
