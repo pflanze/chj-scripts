@@ -46,5 +46,9 @@ $t->xprint("ref: refs/heads/$newbranchname\n");
 $t->xclose;
 $t->xputback(0644);
 
+
+use Chj::xperlfunc;
+xxsystem "git","read-tree","HEAD";
+
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
