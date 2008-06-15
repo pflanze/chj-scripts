@@ -3,14 +3,7 @@
 if ! which e 2>/dev/null; then
     # being started from Gnome panel or some such
     # set up PATH and other pieces of the environment:
-    # (sigh, senseless slow shell startup)
-    echo $PATH
-    # -> /usr/local/bin:/usr/bin:/bin:/usr/games
     source ~/.bash_profile
-    echo $PATH
-    #  -> /home/chris/bin:/usr/local/bin:/usr/bin:/bin:/usr/games
-    #gosh.
-    #ah. 'If not running interactively, don't do anything' line in .bashrc GRR.
 fi
 
 if [ "$1" ]; then
