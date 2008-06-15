@@ -1,5 +1,42 @@
-#!/bin/sh
+#!/usr/bin/perl -w
 
-#exec date|tr ' :' '_-'
-date|perl -wne 's/://sg; s/ /_/sg; print'
+use strict;
 
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [date]
+
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV > 1;
+
+our ($maybe_date)=@ARGV;
+
+if ($maybe_date) {
+    # how to parse? other longstanding problem
+    my $datestr= do {
+	if ($maybe_date=~ /^\d{8,}\z/) {
+	    localtime($maybe_date);
+	} else {
+	    $maybe_date
+	}
+    };
+    die if $datestr=~ /\'/;
+    exec q{date --date='}.$datestr.q{'|perl -wne 's/://sg; s/ /_/sg; print'}
+} else {
+    exec q{date|perl -wne 's/://sg; s/ /_/sg; print'}
+      or die $!;
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
