@@ -40,7 +40,20 @@ use Chj::xperlfunc;
 
 xxsystem "git","symbolic-ref","-m",$myname,"HEAD","refs/heads/$newbranchname";
 
-xxsystem "git","read-tree","HEAD";
+use Chj::Git::Functions 'maybe_git_rev_parse';
+use Chj::IO::Command;
+
+if (my $commit= maybe_git_rev_parse "HEAD") {
+    print "reading index from HEAD commit $commit\n";
+    xxsystem "git","read-tree","HEAD";
+} else {
+    print "initializing empty index\n";
+    my $out= Chj::IO::Command->new_receiver
+      ("git","update-index","--index-info");
+    $out->xxfinish;
+    #xxsystem   then what to read in  something new ?
+}
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
