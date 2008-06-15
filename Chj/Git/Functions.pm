@@ -25,6 +25,8 @@ package Chj::Git::Functions;
 	      xgit_rev_parse
 	      xgit_name_rev
 	      is_ancestor_of
+	      maybe_git_dir
+	      xgit_dir
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -116,5 +118,24 @@ sub is_ancestor_of {
 }
 
 
+sub maybe_git_dir () {
+    my @cmd= qw(git rev-parse --git-dir);
+    my $in= Chj::IO::Command->new_combinedsender(@cmd);
+    my $cnt= $in->xcontent;
+    my $rv= $in->xfinish;
+    # again this dispatch, hm.
+    if ($rv == 0) {
+	chomp $cnt;
+	$cnt
+    } elsif ($rv == 128<<8) {
+	$cnt=~ /not a git rep/i or die "non-expected failure message '$cnt'";
+	undef
+    } else {
+	die "command @cmd failed with exit code $rv";
+    }
+}
+
+*xgit_dir= _UndefThrowing (\&maybe_git_dir,
+			   "not a git repository");
 
 1
