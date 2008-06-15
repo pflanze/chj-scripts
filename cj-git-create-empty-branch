@@ -36,18 +36,10 @@ usage unless @ARGV==1;
 
 our ($newbranchname)=@ARGV;
 
-use Chj::xtmpfile;
-
-# und wieder mal: gerne git MODULE, wennschon,
-my $gitbasedir= `whichgit`; chomp $gitbasedir;
-
-my $t= xtmpfile "$gitbasedir/HEAD";
-$t->xprint("ref: refs/heads/$newbranchname\n");
-$t->xclose;
-$t->xputback(0644);
-
-
 use Chj::xperlfunc;
+
+xxsystem "git","symbolic-ref","-m",$myname,"HEAD","refs/heads/$newbranchname";
+
 xxsystem "git","read-tree","HEAD";
 
 #use Chj::ruse;
