@@ -7,3 +7,5 @@
 # <pflanze> funny that this is in the revision parsing tool :)
 
 exec git rev-parse --git-dir
+
+# there is now also xgit_dir in Chj::Git::Functions (doing the same)
