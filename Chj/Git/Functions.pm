@@ -32,12 +32,13 @@ use strict;
 
 use Chj::IO::Command;
 use Chj::singlequote "singlequote_many";
+use Carp;
 sub _UndefThrowing ( $ $ ) {
     my ($routine, $message)= @_;
     sub {
 	# assuming scalar context
 	my $res= &$routine; # Oerr..but not the function I wrote there..
-	defined ($res) ? $res : die $message.singlequote_many(@_)
+	defined ($res) ? $res : croak $message.singlequote_many(@_)
     }
 }
 
@@ -56,7 +57,7 @@ sub maybe_git_rev_parse ( $ ) {
 	## leave it at that for now.
 	undef
     } else {
-	die "git rev-parse exited with error $rv"
+	croak "git rev-parse exited with error $rv"
     }
 }
 
@@ -76,7 +77,7 @@ sub xgit_name_rev ( $ ) {
 	chomp $cnt;
 	$cnt;
     } else {
-	die "git name-rev exited with error $rv"
+	croak "git name-rev exited with error $rv"
     }# actually *shold* do as nice as above right.
 }
 
