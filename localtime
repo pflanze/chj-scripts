@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname seconds-since-epoch
+
+  Print localtime
+
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($seconds_since_epoch)=@ARGV;
+print localtime($seconds_since_epoch)."\n"
+  or die $!;
