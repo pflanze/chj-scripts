@@ -15,6 +15,9 @@ sub usage {
   The working tree is not changed.
   The index is adapted to the given branch, though.
 
+  BUG?: reflog recording does not really seem to work,
+      looks like it removes other entries out of the log??
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
