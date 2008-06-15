@@ -11,16 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname branchname
 
-  Create that branch and switch to it. right?.
-  Well, actually just change the HEAD pointer reference, that's all.
-   Well, should probably somehow remember that thing in git-reflog, hum, how?
-  (also this doesn't care about the index (neither other things) at all)
-
-  Actually, should rather call this cj-git-force-switch-branch or so.
-  It's nothing about *creating* anything. Or necessarily anything about *new*.
-   Nor about emptyness.
-
-  So,  DANGER be careful...
+  Switch to a branch, which does not need to exist.
+  The working tree is not changed.
+  The index is adapted to the given branch, though.
 
   (Christian Jaeger <$email>)
 ";
@@ -54,5 +47,3 @@ if (my $commit= maybe_git_rev_parse "HEAD") {
 }
 
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
