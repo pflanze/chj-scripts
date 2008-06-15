@@ -21,6 +21,7 @@ package Chj::Git::Functions;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
 @EXPORT_OK=qw(
+	      maybe_git_rev_parse
 	      xgit_rev_parse
 	      xgit_name_rev
 	      is_ancestor_of
@@ -30,23 +31,40 @@ package Chj::Git::Functions;
 use strict;
 
 use Chj::IO::Command;
+use Chj::singlequote "singlequote_many";
+sub _UndefThrowing ( $ $ ) {
+    my ($routine, $message)= @_;
+    sub {
+	# assuming scalar context
+	my $res= &$routine; # Oerr..but not the function I wrote there..
+	defined ($res) ? $res : die $message.singlequote_many(@_)
+    }
+}
 
-sub xgit_rev_parse ( $ ) {
+
+sub maybe_git_rev_parse ( $ ) {
     my ($str)=@_;
-    my $in= Chj::IO::Command->new_combinedsender ('git','rev-parse', '--verify', $str);
+    my $in= Chj::IO::Command->new_combinedsender
+      ('git','rev-parse', '--verify', $str);
     my $cnt= $in->xcontent;
     my $rv= $in->xfinish;
     if ($rv == 0) {
 	chomp $cnt;
 	$cnt;
     } elsif ($rv == 128<<8) {
-	#die "given revision '$str' could not be resolved (to a single commit)";
-	die "given revision '$str' could not be resolved"; ## strange that blobs also do parse successfully. anyway, leave it at that for now.
-	##is this a good message? "fatal: Needed a single revision" is what git-rev-parse returns
+	## strange that blobs also do parse successfully. anyway,
+	## leave it at that for now.
+	undef
     } else {
 	die "git rev-parse exited with error $rv"
     }
 }
+
+*xgit_rev_parse= _UndefThrowing(\&maybe_git_rev_parse,
+				"given revision could not be resolved");
+##is this a good message? "fatal: Needed a single revision" is what
+##git-rev-parse returns
+
 
 ##grr almost copy-paste of the above:
 sub xgit_name_rev ( $ ) {
@@ -64,7 +82,7 @@ sub xgit_name_rev ( $ ) {
 
 sub is_ancestor_of {
     my ($commit1,$commit2,$verbose)=@_;
-    ($commit1,$commit2)= map { xgit_rev_parse $_ } ($commit1,$commit2);
+    ($commit1,$commit2)= map { xgit_rev_parse ($_) } ($commit1,$commit2);
     if ($verbose) {
 	print( "     searching for: ".xgit_name_rev($commit1)."\n".
 	       " in the history of: ".xgit_name_rev($commit2), "\n");# or die;
