@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Mon Jun 16 13:34:09 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Leaves the original back with a ~ appendix.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+#use Chj::IO::Command;
+#^nope doesn't have the with_out_to stuff. hm ah but it has xlaunch3
+#hm naw, now:
+use Chj::IO::CommandStandalone;
+
+sub recode_file ( $ ) {
+    my ($path)=  @_;
+    my $in= xopen_read ($path);
+    #" once again with copying instead of os direct stuff ?.
+    #  but at least not deadlock  so one side direct."
+    #or now with newlywritten new_xlaunch3:
+    my $out= xtmpfile ($path);
+    my $recode= Chj::IO::CommandStandalone->new_xlaunch3
+      ($in,$out,undef,
+       "iconv", "--from=latin1", "--to=utf8");
+    $recode->xxfinish;
+    $in->xclose;
+    $out->xclose;
+    $out->xputback;
+}
+
+recode_file $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace;
+#use Chj::repl; repl;
