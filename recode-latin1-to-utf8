@@ -27,17 +27,11 @@ usage unless @ARGV;
 
 use Chj::xtmpfile;
 use Chj::xopen 'xopen_read';
-#use Chj::IO::Command;
-#^nope doesn't have the with_out_to stuff. hm ah but it has xlaunch3
-#hm naw, now:
 use Chj::IO::CommandStandalone;
 
 sub recode_file ( $ ) {
     my ($path)=  @_;
     my $in= xopen_read ($path);
-    #" once again with copying instead of os direct stuff ?.
-    #  but at least not deadlock  so one side direct."
-    #or now with newlywritten new_xlaunch3:
     my $out= xtmpfile ($path);
     my $recode= Chj::IO::CommandStandalone->new_xlaunch3
       ($in,$out,undef,
@@ -50,6 +44,3 @@ sub recode_file ( $ ) {
 
 recode_file $_ for @ARGV;
 
-#use Chj::ruse;
-#use Chj::Backtrace;
-#use Chj::repl; repl;
