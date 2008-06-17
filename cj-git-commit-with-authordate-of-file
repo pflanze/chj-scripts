@@ -30,7 +30,7 @@ use Chj::xperlfunc;# 'xstat';
 
 my $s= xstat $file;
 
-$ENV{GIT_AUTHOR_DATE}= $s->mtime;
+$ENV{GIT_AUTHOR_DATE}= localtime($s->mtime)."";
 
 xexec "git","commit", @ARGV;
 
