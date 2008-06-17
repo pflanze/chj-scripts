@@ -24,7 +24,15 @@ while (<STDIN>) {
 }
 
 if (@args) {
-    exec @ARGV,@args
-      or die "$myname: could not exec @ARGV: $!\n";
+    do {
+	no warnings;
+	exec @ARGV,@args
+    } or do {
+	require Chj::singlequote;
+	die ("$myname: could not exec "
+	     .Chj::singlequote::singlequote_many(@ARGV)
+	     ." with "
+	     .@args." additional arguments of total size $tot_size: $!\n");
+    }
 }
 
