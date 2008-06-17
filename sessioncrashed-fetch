@@ -74,7 +74,7 @@ our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
   or die "could not parse file '$sessioncrashedfile_copy_tmp' (os error?: $!)";
 
 use URI;
-sub url_canonize {
+sub url_canonicalize {
     my ($str)=@_;
     my $uri= URI->new($str);
     $uri->canonical->as_string
@@ -104,7 +104,7 @@ our @urls=
 	       0
 	   })
       }
-      map { url_canonize($_ ->getAttribute("url")) }
+      map { url_canonicalize($_ ->getAttribute("url")) }
       $doc ->findnodes ("/session/window/embed");
   };
 
