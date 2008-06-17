@@ -87,16 +87,19 @@ our @urls=
       my $seen={};
       grep {
 	  (m|^https?://|is ?
-	   (exists $$seen{$_} ?
-	    do {
-		warn "$myname: ignoring double of url '$_'\n";
-		0
-	    }
-	    :
-	    do {
-		$$seen{$_}=undef;
-		1
-	    })
+	   do {
+	       my $canonical= url_canonicalize ($_);
+	       (exists $$seen{$canonical} ?
+		do {
+		    warn "$myname: ignoring url '$_' because it's a double\n";
+		    0
+		}
+		:
+		do {
+		    $$seen{$canonical}=undef;
+		    1
+		})
+	   }
 	   :
 	   do {
 	       warn "$myname: url '$_' does not look like something we can fetch\n";
@@ -104,7 +107,7 @@ our @urls=
 	       0
 	   })
       }
-      map { url_canonicalize($_ ->getAttribute("url")) }
+      map { $_ ->getAttribute("url") }
       $doc ->findnodes ("/session/window/embed");
   };
 
