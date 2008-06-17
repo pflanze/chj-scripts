@@ -4,6 +4,27 @@ use strict;
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
+# symlink based argument processing:
+our $no_run_if_empty=1;
+
+{
+    my $name= $myname;
+    $name=~ s/^([^-]+)// or die "I'm given an in valid name '$myname'";
+    #my $onlyname= $1;
+    if ($name) {
+	my $optionpart=$name;
+	if ($name=~ s/-run-if-empty//) {
+	    $no_run_if_empty=0;
+	}
+	#if ($name=~ s/-oneinvocation//) {
+	# well, we'll assume this always anyway, right? why not.
+	if ($name) {
+	    die "don't understand option part '$optionpart'";
+	}
+    }
+}
+
+
 our $max_args= 1e6;##for now
 our $max_size= 20e6;# bytes ##for now
 
@@ -23,7 +44,7 @@ while (<STDIN>) {
     push @args,$_;
 }
 
-if (@args) {
+if (!$no_run_if_empty or @args) {
     do {
 	no warnings;
 	exec @ARGV,@args
