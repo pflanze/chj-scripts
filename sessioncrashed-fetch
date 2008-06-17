@@ -75,15 +75,30 @@ our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
 
 our $errors=0;
 our @urls=
-  grep {
-      m|^https?://|is or do {
-	  warn "$myname: url '$_' does not look like something we can fetch\n";
-	  $errors++;
-	  0
+  do {
+      my $seen={};
+      grep {
+	  (m|^https?://|is ?
+	   (exists $$seen{$_} ?
+	    do {
+		warn "$myname: ignoring double of url '$_'\n";
+		0
+	    }
+	    :
+	    do {
+		$$seen{$_}=undef;
+		1
+	    })
+	   :
+	   do {
+	       warn "$myname: url '$_' does not look like something we can fetch\n";
+	       $errors++;
+	       0
+	   })
       }
-  }
-  map { $_ ->getAttribute("url") }
-  $doc ->findnodes ("/session/window/embed");
+      map { $_ ->getAttribute("url") }
+      $doc ->findnodes ("/session/window/embed");
+  };
 
 use Chj::Util::AskYN;
 sub make_sure ( $ ) {
