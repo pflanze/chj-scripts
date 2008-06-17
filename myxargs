@@ -5,7 +5,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 our $max_args= 1e6;##for now
-our $max_size= 1e7;# bytes ##for now
+our $max_size= 20e6;# bytes ##for now
 
 
 my @args;
