@@ -46,22 +46,36 @@ sub ren {
     #print "fol=$folder, fn=$filename\n";
     #(# well, . und .. wär noch eventualkritisch.  ?)
 
-    if (defined(my $to= $rl->readline("rename: ",$filename))){
-	if (length($to)) {
-	    if ($to ne $filename) {
-		my $newpath= "$folder$to";
-		#print "newpath='$newpath'\n";
-		if (lstat $newpath) {
-		    die "target exists - unfinished, ask user here";###unfini
-		    if(!1){
-			return
+    my $newname= $filename;
+  REDO: {
+	if (defined($newname= $rl->readline("rename: ",$newname))){
+	    if (length($newname)) {
+		if ($newname ne $filename) {
+		    my $newpath= "$folder$newname";
+		    #print "newpath='$newpath'\n";
+		    if (lstat $newpath) {
+			die "target exists - unfinished, ask user here";###unfini
+			if(!1){
+			    return
+			}
 		    }
-		}
-		if ($path_is_d) {
-		    xrename $path,$newpath;
-		} else {
-		    # be unrisky to race conds
-		    xlinkunlink $path,$newpath;
+		    eval {
+			if ($path_is_d) {
+			    xrename $path,$newpath;
+			} else {
+			    # be unrisky to race conds
+			    xlinkunlink $path,$newpath;
+			}
+		    };
+		    my $e=$@;
+		    if (ref $e or $e) {
+			if ($e=~ /too long/) {
+			    print "$e";
+			    redo REDO;
+			} else {
+			    die $e
+			}
+		    }
 		}
 	    }
 	}
