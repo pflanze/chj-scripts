@@ -28,11 +28,12 @@ if (@args) {
 	no warnings;
 	exec @ARGV,@args
     } or do {
+	my $err="$!";
 	require Chj::singlequote;
 	die ("$myname: could not exec "
 	     .Chj::singlequote::singlequote_many(@ARGV)
 	     ." with "
-	     .@args." additional arguments of total size $tot_size: $!\n");
+	     .@args." additional arguments of total size $tot_size: $err\n");
     }
 }
 
