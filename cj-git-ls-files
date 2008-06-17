@@ -30,5 +30,18 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
+use Chj::IO::Command;
+
+sub ls_files {
+    my $in= Chj::IO::Command->new_sender ("git","ls-files","-z");
+    my @files;
+    local $/="\0";
+    while (<$in>) {
+	chomp;
+	push @files,$_
+    }
+    \@files
+}
+
 #use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
+use Chj::Backtrace; use Chj::repl; repl;
