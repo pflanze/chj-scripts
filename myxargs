@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+
+use strict;
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+our $max_args= 1e6;##for now
+our $max_size= 1e7;# bytes ##for now
+
+
+my @args;
+my $tot_size;
+while (<STDIN>) {
+    if (@args >= $max_args) {
+	die "$myname: input exceeds maximum number of arguments ($max_args)\n";
+    }
+    chomp;
+    $tot_size+=length($_);
+    if ($tot_size > $max_size) {
+	die "$myname: input exceeds maximum total length of arguments "
+	  ."($max_size bytes)\n";
+    }
+    push @args,$_;
+}
+
+if (@args) {
+    exec @ARGV,@args
+      or die "$myname: could not exec @ARGV: $!\n";
+}
+
