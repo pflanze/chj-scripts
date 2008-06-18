@@ -73,17 +73,43 @@ $parser->line_numbers(1);
 our $doc = $parser->parse_file($sessioncrashedfile_copy_tmp)
   or die "could not parse file '$sessioncrashedfile_copy_tmp' (os error?: $!)";
 
+use URI;
+sub url_canonicalize {
+    my ($str)=@_;
+    my $uri= URI->new($str);
+    $uri->canonical->as_string
+}
+#use Chj::Backtrace; use Chj::repl; repl;
+#__END__
 our $errors=0;
 our @urls=
-  grep {
-      m|^https?://|is or do {
-	  warn "$myname: url '$_' does not look like something we can fetch\n";
-	  $errors++;
-	  0
+  do {
+      my $seen={};
+      grep {
+	  (m|^https?://|is ?
+	   do {
+	       my $canonical= url_canonicalize ($_);
+	       (exists $$seen{$canonical} ?
+		do {
+		    warn "$myname: ignoring url '$_' because it's a double\n";
+		    0
+		}
+		:
+		do {
+		    $$seen{$canonical}=undef;
+		    1
+		})
+	   }
+	   :
+	   do {
+	       warn "$myname: url '$_' does not look like something we can fetch\n";
+	       $errors++;
+	       0
+	   })
       }
-  }
-  map { $_ ->getAttribute("url") }
-  $doc ->findnodes ("/session/window/embed");
+      map { $_ ->getAttribute("url") }
+      $doc ->findnodes ("/session/window/embed");
+  };
 
 use Chj::Util::AskYN;
 sub make_sure ( $ ) {
@@ -104,7 +130,7 @@ if ($dryrun) {
 	# just do it
     } else {
 	&$prin;
-	make_sure("Do you want to download the above url's? ");
+	make_sure("Do you want to download the above ".@urls." url's? ");
     }
     my $logfile= Force $Sessioncrashedfile_log;
     my $logfile_tmp= $logfile.".tmp";
@@ -120,5 +146,3 @@ if ($dryrun) {
     xrename $sessioncrashedfile_copy_tmp, $sessioncrashedfile_copy;
     print "$myname: done.\n";
 }
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;

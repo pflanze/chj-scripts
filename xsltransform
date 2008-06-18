@@ -55,6 +55,7 @@ my $xslfile= shift @files;
 
 use XML::LibXSLT;
 use XML::LibXML;
+use Chj::xtmpfile;
 
 my $parser = XML::LibXML->new();
 my $stylesheet;
@@ -65,9 +66,12 @@ my $stylesheet;
 
 if (@files) {
     for (@files) {
-	my $source= $opt_html ? $parser->parse_html_file($_) : $parser->parse_file($_) or die "error parsing file $_";
+	my $source=
+	  ($opt_html ?
+	   $parser->parse_html_file($_)
+	   : $parser->parse_file($_))
+	    or die "error parsing file $_";
 	my $results= $stylesheet->transform($source) or die "çç";
-	#print "Kriegte results '$results'\n";  'XML::LibXML::Document=SCALAR(0x100ed344)'
 	my $outfile= $_;
 	if ($opt_s) {
 	    $outfile=~ s/\..*//s;
@@ -85,10 +89,11 @@ if (@files) {
 	    $outfile=~ s{^(?:.*/)?}{$opt_folder/};
 	}
 
-	open OUT,">$outfile" or die "Could not open '$outfile' for writing: $!. Terminating";
-	print OUT $stylesheet->output_string($results) or die "Error writing to '$outfile': $!. Terminating"; # SUPER strange. Warum nicht $results->output_string ?
-	#print OUT $results->output_string; Can't locate object method "output_string" via package "XML::LibXML::Document"
-	close OUT or die "Error closing '$outfile': $!. Terminating";
+	my $t= xtmpfile $outfile;
+	$t->xprint( $stylesheet->output_string($results) );
+	$t->xclose;
+	$t->xputback(0644);
+	##todo        ^^ somehow better just still want need wait for it
     }
 }
 else {
@@ -96,10 +101,6 @@ else {
     my $source= $opt_html ? $parser->parse_html_string(<STDIN>) :
       $parser->parse_string(<STDIN>) or die "error parsing stdin";
     my $results= $stylesheet->transform($source) or die "çç";
-    #warn "Kriegte results '$results'\n";
-    print $stylesheet->output_string($results) or die "Error writing to STDOUT: $!. Terminating";
+    print $stylesheet->output_string($results)
+      or die "Error writing to STDOUT: $!. Terminating";
 }
-__END__
-  Wed, 30 Apr 2003 15:21:09 +0200
-  ps. es gebe segfaults wenn er das xml nicht finde das man angebe  (oder kein xsl nur xmls ? ne dan motze er richtig)
-

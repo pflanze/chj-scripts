@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Thu Jun  5 15:08:27 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname branchname
+
+  Switch to a branch, which does not need to exist.
+  The working tree is not changed.
+  The index is adapted to the given branch, though.
+
+  BUG?: reflog recording does not really seem to work,
+      looks like it removes other entries out of the log??
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($newbranchname)=@ARGV;
+
+use Chj::xperlfunc;
+
+xxsystem "git","symbolic-ref","-m",$myname,"HEAD","refs/heads/$newbranchname";
+
+use Chj::Git::Functions 'maybe_git_rev_parse','xgit_name_rev','xgit_dir';
+use Chj::IO::Command;
+
+if (my $commit= maybe_git_rev_parse "HEAD") {
+    print "non-empty branch, reading index from HEAD commit "
+      .xgit_name_rev($commit)."\n";
+    xxsystem "git","read-tree","HEAD";
+} else {
+    print "empty branch, removing index\n";
+    my $git_dir= xgit_dir;
+    xxsystem "trash", "$git_dir/index";
+}
+
+

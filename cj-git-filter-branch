@@ -22,17 +22,20 @@ our $removefiles= sub {
     xxsystem(
 	     'git',
 	     'filter-branch',
+
 	     '--index-filter',
-	     'git update-index '
-	     .join(' ',
-		   map {
-		       "--remove ".singlequote_sh($_)
-		   } @ARGV)
-	     .' HEAD',
+	     ('git update-index '
+	      .join(' ',
+		    map {
+			"--remove ".singlequote_sh($_)
+		    } @ARGV)
+	      .' HEAD'),
+
 	     '--commit-filter',
-	     'if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]
+	     ('if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]
       then skip_commit "$@"
-      else git commit-tree "$@"; fi',
+      else git commit-tree "$@"; fi'
+	     ),
 	    );
 };
 

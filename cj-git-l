@@ -63,7 +63,7 @@ sub git_unquote_path ( $ ) {
 		# (shoult put this test to above--but doesn't matter except for computational cost)
 		if (length $piece) {
 		    # backslash before text ? ah, \n and such uuhm.
-		    if ($piece=~ s/^([nrt])//) {
+		    if ($piece=~ s/^([nrt\"])//) {
 			my $thing=$1;
 			push @$r, do {
 			    if ($thing eq "n") {
@@ -72,6 +72,8 @@ sub git_unquote_path ( $ ) {
 				"\r"
 			    } elsif ($thing eq "t") {
 				"\t"
+			    } elsif ($thing eq '"') {
+				$thing
 			    } else {
 				die "??"
 			    }

@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+# Tue Jun 17 23:45:08 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file [ other-arguments ]
+
+  Takes the mtime of file (stat, not lstat) and runs git-commit with
+  that time as authordate.
+
+  other-arguments are passed on to git-commit.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+
+our $file =shift @ARGV;
+usage if $file eq "-h" or $file eq "--help";
+
+use Chj::xperlfunc;# 'xstat';
+
+my $s= xstat $file;
+
+$ENV{GIT_AUTHOR_DATE}= localtime($s->mtime)."";
+
+xexec "git","commit", @ARGV;
+

@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+use strict;
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+# symlink based argument processing:
+our $no_run_if_empty=1;
+
+{
+    my $name= $myname;
+    $name=~ s/^([^-]+)// or die "I'm given an in valid name '$myname'";
+    #my $onlyname= $1;
+    if ($name) {
+	my $optionpart=$name;
+	if ($name=~ s/-run-if-empty//) {
+	    $no_run_if_empty=0;
+	}
+	#if ($name=~ s/-oneinvocation//) {
+	# well, we'll assume this always anyway, right? why not.
+	if ($name) {
+	    die "don't understand option part '$optionpart'";
+	}
+    }
+}
+
+
+our $max_args= 1e6;##for now
+our $max_size= 20e6;# bytes ##for now
+
+
+my @args;
+my $tot_size;
+while (<STDIN>) {
+    if (@args >= $max_args) {
+	die "$myname: input exceeds maximum number of arguments ($max_args)\n";
+    }
+    chomp;
+    $tot_size+=length($_);
+    if ($tot_size > $max_size) {
+	die "$myname: input exceeds maximum total length of arguments "
+	  ."($max_size bytes)\n";
+    }
+    push @args,$_;
+}
+
+if (!$no_run_if_empty or @args) {
+    do {
+	no warnings;
+	exec @ARGV,@args
+    } or do {
+	my $err="$!";
+	require Chj::singlequote;
+	die ("$myname: could not exec "
+	     .Chj::singlequote::singlequote_many(@ARGV)
+	     ." with "
+	     .@args." additional arguments of total size $tot_size: $err\n");
+    }
+}
+

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# cj Tue, 07 Mar 2006 13:59:10 +0100
+# ugly copy from find-pm
 
 set -eu
 
@@ -11,5 +11,5 @@ fi
 
 dir="$1"
 shift
-find "$dir" -name "*pm" -print0 | xargs -0 grep "$@"
+find "$dir" -name "*.[ch]" -print0 | xargs -0 grep "$@"
 
