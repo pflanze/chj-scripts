@@ -2,74 +2,30 @@
 
 use strict;
 
-our $gvfs_trash= "/usr/bin/gvfs-trash";
+use Chj::App::Trash;
+our $trash= new Chj::App::Trash;
 
-if (-x $gvfs_trash) {
-    exec $gvfs_trash, @ARGV;
-}
-
-my $name= 'trash';
-my $trash;
-if ($ENV{TRASHCAN}) {
-    $trash= $ENV{TRASHCAN}
-} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
-    $trash=$ENV{HOME}."/Desktop/Trash/";
-} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
-    $trash=$ENV{HOME}."/Desktop/Mülleimer/";
-} elsif (-e $ENV{HOME}."/.Trash/") {
-    $trash=$ENV{HOME}."/.Trash/";
-} else {
-    die "Konnte Deinen Trashcan nicht finden. ";
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    my $dir= $trash->trashdir;
+    print "usage: $myname [ --help | --] files
+     Move each file to a trashdir ('$dir' in your case, depends
+     on which dirs exist and whether the TRASHDIR environment variable
+     is set), taking care not to overwrite existing files in trash
+     (appending localtime() string if needed).
+";
+    exit;
 }
 
-{
-    my $localtime;
-    sub _localtime {
-	$localtime||=do {
-	    "".localtime()
-	}
-    }
-}
-{
-    my $n;
-    sub _appendi {
-	my $oldn= $n++;
-	_localtime . (defined ($oldn) ? "\#$oldn" : "");
-    }
-}
+use Getopt::Long;
 
-if (@ARGV) {
-    if ($ARGV[0]=~ /^--?h(elp)?$/) {
-	die "$name files ..
-      Move each file to ~/Desktop/Trash, taking care not to overwrite
-      existing files in trash (appending localtime() string if needed).
-    "} else {
-	if ($ARGV[0]=~ /^--$/) { shift @ARGV }
-	for my $file (@ARGV) {
-	    my $onlyname=$file;
-	    $onlyname=~s|/$||; # remove ending slash from directories
-	    $onlyname=~s|^.*/||;
-	    if ($onlyname eq '.') {
-		warn "Ignoring '.'\n";
-		next;
-	    }
-	    if ($onlyname eq '..') {
-		warn "Ignoring '..'\n";
-		next;
-	    }
-	    if (-e $trash.$onlyname) {
-		mv( $file, $trash.$onlyname." (trashed "._appendi.")");
-	    } else {
-		mv($file, $trash);
-	    }
-	}
-    }
-}
+#our $verbose=0;
+GetOptions(
+	   #"verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	  ) or exit 1;
 
-sub mv { #rename would give 'Invalid cross-device link'
-    if (fork) {
-	wait;
-    } else {
-	exec '/bin/mv', '--', @_
-    }
-}
+#use Chj::repl;repl;
+$trash->trash(@ARGV);
+
