@@ -55,11 +55,9 @@ sub trashdir {
 		    $res=$_; last TRY;
 		}
 	    }
-	    ##$res || $$trash_alternatives[$trash_to_create_index]
-	    ##nope,
 	    $res= $$trash_alternatives[$trash_to_create_index]
 	}
-	$res ##grr forgotten.
+	$res
     }
 }
 
@@ -67,7 +65,6 @@ sub trashdir {
 sub maybe_create_trashdir {
     my $s=shift;
     my $path= $s->trashdir;
-    ##if (mkdir $path, 077) {
     if (mkdir $path, 0700) {
 	1
     } else {
@@ -81,8 +78,6 @@ sub maybe_create_trashdir {
 }
 
 use Chj::FP::Memoize "memoize_thunk";
-#use Chj::Path::Calc 'Filename';
-#ichdepp,
 use Chj::xperlfunc 'dirname', 'basename';
 
 sub Mv { #rename would give 'Invalid cross-device link'
@@ -111,7 +106,6 @@ sub trash {
     };
 
     for my $path (@_) {
-	#my $onlyname= Filename($path);  ##bwt bad name 
 	my $onlyname= basename $path;
 	if ($onlyname eq '.') {
 	    warn "Ignoring '.'\n";
