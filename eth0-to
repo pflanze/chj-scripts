@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ $# -ne 1 -o "$1" == "--help" -o "$1" == "-h" ]; then
+	echo "usage: $0 where"
+	echo "  where 'where' is anything that whereami accepts."
+	exit
+fi
+	
+
+where="$1"
+
+ifdown eth0
+whereami -s "$where"
+ifup eth0
+
