@@ -87,7 +87,14 @@ for my $var (@env) {
 }
 
 # take parameters:
-{
+if (defined $maybe_bindings) {
+    # check for the number of arguments:
+    $prog->xprint('if [ $# -ne '
+		  .@bindings.
+		  ' ]; then echo "$0: wrong number of arguments, expecting '
+		  .@bindings.
+		  ', got $#" >&2; exit 1; fi;'
+		 );
     my $z=1;
     for my $var (@bindings) {
 	# here without 'export' clause? or with? hm. nested lambdas expect
@@ -96,6 +103,8 @@ for my $var (@env) {
 	$prog->xprint("export $var=\$$z;");
 	$z++
     }
+} else {
+    # do not do anything whatsoever, the code is expected to look at $@ itself then.
 }
 $prog->xprint($code);
 $prog->xclose;
