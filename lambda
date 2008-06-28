@@ -100,7 +100,7 @@ if (defined $maybe_bindings) {
 	# here without 'export' clause? or with? hm. nested lambdas expect
 	# to see it?. but it may clobber stuff, and even be unsecure,
 	# hmmmmmmmm.
-	$prog->xprint("export $var=\"\$$z\";");
+	$prog->xprint("export $var=\$$z;");
 	$z++
     }
 } else {
