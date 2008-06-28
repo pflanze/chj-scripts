@@ -1,0 +1,110 @@
+#!/usr/bin/perl -w
+
+# Sat Jun 28 17:29:02 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname env bindings code
+
+  Generate a temporary program with the given code and possibly
+  environment value capturing, and output it's path to stdout.
+
+  env is a list of identifiers which are to be preserved -- the set of
+  environment variables to be closed over. (The values are being kept
+  by serializing the dynamic environment upon lambda creation and
+  deserializing it upon lambda calling.)
+
+  bindings is a list of identifiers into which positional arguments
+  are being stored as environment variables when the lambda is being
+  invoked.
+
+  code is the shell (for now?) code to be run.
+
+  Options:
+#  -p|--perl    code is given in perl --to be done
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+# The idea to use <( ) for using fd's doesn't work.  Also, the "after
+# reading the path once, it will automatically be unlinked." idea
+# would not be a good one anyway (even if the kernel reading the
+# shebang line and the shell possibly seeking around would be an issue
+# anyway), since the 'closure' wants possibly to be callable multiple
+# times anyway. So we're back to manual free. No gc in shell, except
+# for time based tmp cleaning.
+
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_perl;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"perl"=> \$opt_perl,
+	   ) or exit 1;
+usage unless @ARGV==3;
+
+our ($env,$bindings,$code)=@ARGV;
+
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+use Chj::singlequote 'singlequote_sh';
+
+sub Split {
+    my ($str)=@_;
+    my @v= split /\s+/,$str;
+    for (@v) {
+	/^\w+\z/ or die "invalid variable name syntax '$_'"
+    }
+    @v
+}
+
+my @env= Split $env;
+my @bindings= Split $bindings;
+
+
+#my $codefile=xtmpfile;
+#my $wrapperfile=xtmpfile;
+#or put both parts into one?.
+
+my $prog= xtmpfile;
+
+# assume shell coding:
+
+$prog->xprint("#!/bin/bash\nset -eu; ");
+
+# serialize env:
+for my $var (@env) {
+    $prog->xprint("export $var=".singlequote_sh($ENV{$var}).";");
+}
+
+# take parameters:
+{
+    my $z=1;
+    for my $var (@bindings) {
+	# here without 'export' clause? or with? hm. nested lambdas expect
+	# to see it?. but it may clobber stuff, and even be unsecure,
+	# hmmmmmmmm.
+	$prog->xprint("export $var=\$$z;");
+	$z++
+    }
+}
+$prog->xprint($code);
+$prog->xclose;
+$prog->autoclean(0);
+
+my $path= $prog->path;
+xchmod 0700, $path;
+
+print $path
+  or die "printing path to stdout: $!";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
