@@ -9,10 +9,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname env bindings code
+    print "$myname code [env [bindings]]
 
   Generate a temporary program with the given code and possibly
   environment value capturing, and output it's path to stdout.
+
+  code is the shell (for now?) code to be run.
 
   env is a list of identifiers which are to be preserved -- the set of
   environment variables to be closed over. (The values are being kept
@@ -22,8 +24,6 @@ sub usage {
   bindings is a list of identifiers into which positional arguments
   are being stored as environment variables when the lambda is being
   invoked.
-
-  code is the shell (for now?) code to be run.
 
   Options:
 #  -p|--perl    code is given in perl --to be done
@@ -49,9 +49,9 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"perl"=> \$opt_perl,
 	   ) or exit 1;
-usage unless @ARGV==3;
+usage unless @ARGV>=1 and @ARGV<=3;
 
-our ($env,$bindings,$code)=@ARGV;
+our ($code,$maybe_env,$maybe_bindings)=@ARGV;
 
 use Chj::xtmpfile;
 use Chj::xperlfunc;
@@ -59,6 +59,7 @@ use Chj::singlequote 'singlequote_sh';
 
 sub Split {
     my ($str)=@_;
+    return () unless defined $str;
     my @v= split /\s+/,$str;
     for (@v) {
 	/^\w+\z/ or die "invalid variable name syntax '$_'"
@@ -66,8 +67,8 @@ sub Split {
     @v
 }
 
-my @env= Split $env;
-my @bindings= Split $bindings;
+my @env= Split $maybe_env;
+my @bindings= Split $maybe_bindings;
 
 
 #my $codefile=xtmpfile;
