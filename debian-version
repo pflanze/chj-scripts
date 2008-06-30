@@ -11,11 +11,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [ versionstring ]
 
-  Reads the contents of $file and displays the result
-  as both the number, release name, and release date if it's
-  a stable release.
+  Reads the contents of $file (or takes versionstring instead)
+  and displays the result as both the number, release name, and
+  release date if it's a stable release.
 
   (Christian Jaeger <$email>)
 ";
@@ -27,7 +27,7 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   ) or exit 1;
-usage if @ARGV;
+usage if @ARGV > 1;
 
 {
     package CHJ::Release;
@@ -130,11 +130,14 @@ sub maybe_find_release {
     $$release_by_number{$key} || $$release_by_name{lc $key}
 }
 
-sub parsefile {
-    my $cnt= xCatfile $file;
-    $cnt=~ s/\s+\z//s;
-    $cnt=~ m/\s/s and die "'$file' contains whitespace not at the end";
-    my @parts= split /\//,$cnt;
+sub parseversion {
+    my ($versionstring,$maybe_file)=@_;
+    $versionstring=~ s/\s+\z//s;
+    $versionstring=~ m/\s/s
+      and die ("'"
+	       .($file||$versionstring)
+	       ."' contains whitespace not at the end");
+    my @parts= split /\//,$versionstring;
     @parts <= 2 or die "'$file' contains more than one slash";
     my $r1= maybe_find_release ($parts[0]);
     if (@parts==2) {
@@ -153,7 +156,13 @@ sub parsefile {
     }
 }
 
-print parsefile->fullinfo,"\n";
+print do {
+    if (@ARGV) {
+	parseversion ($ARGV[0])
+    } else {
+	parseversion (xCatfile $file)
+    }
+}->fullinfo,"\n";
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
