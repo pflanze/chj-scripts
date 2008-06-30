@@ -53,8 +53,6 @@ sub absolutize($$) {  ## could be much better: check for symlinks in paths in fi
 if (@files==1 or @files==2) {
   WITHOUT:
     my ($without,$suffix)=@files;
-    #$DB::single=1;
-    local our ($without,$suffix)=@files;
     if (!defined_and_length $suffix) {
 	my $tmp;
 	(($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
