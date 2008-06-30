@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-#!/usr/bin/perl -w -d:ptkdb
 
 # Mon Dez 30 01:06:18 MET 2002
 
@@ -30,17 +29,17 @@ my $DEBUG=0;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
-    	usage
+	usage
     } elsif ($_ eq '--') {
-    	push @files, @ARGV[$i+1..$#ARGV];
-    	last;
+	push @files, @ARGV[$i+1..$#ARGV];
+	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
     } elsif (/^-/) {
-    	warn "Unknown option '$_'\n";
-    	usage(1)
+	warn "Unknown option '$_'\n";
+	usage(1)
     } else {
-    	push @files, $_
+	push @files, $_
     }
 }
 
@@ -58,11 +57,12 @@ if (@files==1 or @files==2) {
     local our ($without,$suffix)=@files;
     if (!defined_and_length $suffix) {
 	my $tmp;
-	($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
-	  or ($tmp,$suffix)= $without=~ /^([^-]+)(-[^-]+)$/s
-	    or ($tmp,$suffix)= $without=~ /^(.*\.[^_]+)(_[^_]+)$/s
-	    or ($tmp,$suffix)= $without=~ /^(.*\.[^-]+)(-[^-]+)$/s
-	    or usage "exactly one underscore or minus expected, which is not the case in '$without'";
+	(($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
+	 or ($tmp,$suffix)= $without=~ /^([^-]+)(-[^-]+)$/s
+	 or ($tmp,$suffix)= $without=~ /^(.*\.[^_]+)(_[^_]+)$/s
+	 or ($tmp,$suffix)= $without=~ /^(.*\.[^-]+)(-[^-]+)$/s
+	 or usage ("exactly one underscore or minus expected, "
+		   ."which is not the case in '$without'"));
 	$without= $tmp; # perfectly clean coding
     }
     my $with= "$without$suffix";
@@ -72,9 +72,7 @@ if (@files==1 or @files==2) {
     if (! -e $with) {
 	warn "warning: symlink target '$with' does not exist.\n";
     }
-    ## cj 8.5.04: 1. ist es gar ned race los; 2. war es bisher immer full path dabei isches sinnlos langer pfad und im relativ falle war es doch sogar FALSCH?!!  well, in dem fall hätts in meisten fällen oben einen warning gegeben immerhin  naja. NEIN nich mal ein warning heheheh  plain falsch
-    ##symlink $with,$without or die "could not create symlink '$without': $!";
-    $with=~ s|.*/||;## das isch safe, oder? ja jedenfalls besser
+    $with=~ s|.*/||;
     symlink $with,$without or die "could not create symlink '$without': $!";
 } elsif (@files==3) {
     my ($without,$suffix1,$suffix2)=@files;
@@ -94,7 +92,9 @@ if (@files==1 or @files==2) {
 	    goto WITHOUT;
 	} else {
 	    if ($curtargetabs ne $target2abs) {
-		warn "warning: current target '$curtargetabs' does not match with either given suffix; choosing first version.\n";
+		warn "warning: current target '$curtargetabs' "
+		  ."does not match with either given suffix; "
+		    ."choosing first version.\n";
 	    }
 	    # link to target1
 	    @files= (@files[0,1]);
@@ -103,7 +103,7 @@ if (@files==1 or @files==2) {
     } else {
 	# make link to first
 	goto WITHOUT; # I like spaghetti
-    }	
+    }
 }
 else {
     usage;
