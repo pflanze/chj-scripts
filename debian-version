@@ -17,17 +17,14 @@ sub usage {
   and displays the result as both the number, release name, and
   release date if it's a stable release.
 
+  Options:
+  --list    list all known releases instead of picking the one from
+            $file or the versionstring argument
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
-
-use Getopt::Long;
-our $verbose=0;
-GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   ) or exit 1;
-usage if @ARGV > 1;
 
 {
     package CHJ::Release;
@@ -155,6 +152,24 @@ sub parseversion {
 	$r1 or die "couldn't find release for key '$parts[0]'";
     }
 }
+
+sub list_releases {
+    for my $r (@$releases) {
+	print $r->fullinfo,"\n"
+	  or die $!;
+    }
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "list"=> sub {
+	       list_releases();
+	       exit;
+	   },
+	   ) or exit 1;
+usage if @ARGV > 1;
 
 print do {
     if (@ARGV) {
