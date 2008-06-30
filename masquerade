@@ -3,18 +3,14 @@
 if [ "$1" == "on" ]; then
 	iptables -t nat -A POSTROUTING -p all -s 192.168.0.0/255.255.0.0 -d ! 192.168.0.0/255.255.0.0 -j MASQUERADE
 	iptables -t nat -A POSTROUTING -p all -s 10.0.1.128/255.255.255.128 -d ! 10.0.1.128/255.255.255.128 -j MASQUERADE
-	# nein, besser subsubnetzrouting den ipmasken überlassen - dann wird subsubnetz querverkehr unmaskiert geroutet
-	# AAaaber: dafür sollt ichs in interfaces files ein tragen damit rechte routing entries. nicht ifconfig murks.  todo.
-	# hey: bei ihm einfach netmask anders setzen so dass subnetz überhaupt nicht geroutet!
-	#iptables -t nat -A POSTROUTING -p all -s 10.0.1.0/255.255.255.0 -d ! 10.0.1.128/255.255.255.128 -j MASQUERADE
-	#echo ein
 	echo 1 > /proc/sys/net/ipv4/ip_forward
+
 elif [ "$1" == "off" ]; then
 	iptables -t nat -D POSTROUTING -p all -s 192.168.0.0/255.255.0.0 -d ! 192.168.0.0/255.255.0.0 -j MASQUERADE
 	iptables -t nat -D POSTROUTING -p all -s 10.0.1.128/255.255.255.128 -d ! 10.0.1.128/255.255.255.128 -j MASQUERADE
-	#echo aus
 	echo 0 > /proc/sys/net/ipv4/ip_forward
+
 else
-	echo "Bitte on oder off angeben"
+	echo "usage: $0 on|off"
 fi
 
