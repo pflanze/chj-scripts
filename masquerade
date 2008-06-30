@@ -1,16 +1,25 @@
 #!/bin/bash
 
+masq_() {
+    iptables -t nat "$1" POSTROUTING -p all -s "$2" -d ! "$2" -j MASQUERADE
+}
+
+masq() {
+    # $1 == -D/-A
+    masq_ "$1" 192.168.0.0/255.255.0.0
+    masq_ "$1" 10.0.1.128/255.255.255.128
+}
+
 if [ "$1" == "on" ]; then
-	iptables -t nat -A POSTROUTING -p all -s 192.168.0.0/255.255.0.0 -d ! 192.168.0.0/255.255.0.0 -j MASQUERADE
-	iptables -t nat -A POSTROUTING -p all -s 10.0.1.128/255.255.255.128 -d ! 10.0.1.128/255.255.255.128 -j MASQUERADE
-	echo 1 > /proc/sys/net/ipv4/ip_forward
+    masq -A
+    echo 1 > /proc/sys/net/ipv4/ip_forward
 
 elif [ "$1" == "off" ]; then
-	iptables -t nat -D POSTROUTING -p all -s 192.168.0.0/255.255.0.0 -d ! 192.168.0.0/255.255.0.0 -j MASQUERADE
-	iptables -t nat -D POSTROUTING -p all -s 10.0.1.128/255.255.255.128 -d ! 10.0.1.128/255.255.255.128 -j MASQUERADE
-	echo 0 > /proc/sys/net/ipv4/ip_forward
+    masq -D
+    echo 0 > /proc/sys/net/ipv4/ip_forward
 
 else
-	echo "usage: $0 on|off"
+    echo "usage: $0 on|off"
+
 fi
 
