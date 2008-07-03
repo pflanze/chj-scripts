@@ -25,16 +25,16 @@ my $DEBUG=0;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
-    	usage
+	usage
     } elsif ($_ eq '--') {
-    	push @files, @ARGV[$i+1..$#ARGV];
-    	last;
+	push @files, @ARGV[$i+1..$#ARGV];
+	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
     } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
+	usage("Unknown option '$_'\n");
     } else {
-    	push @files, $_
+	push @files, $_
     }
 }
 usage if @files;
@@ -51,7 +51,8 @@ while (<STDIN>){
 	$fn=~ s|/$||s or $fn=~ s|\*$||s ; # or ..
 	if (length($fn)>0){
 	    if ($fn eq '.' or $fn eq '..') {
-		warn "$myname: ignoring '$fn' item.\n"; # well, manchmal will man diese ja, z.b. für chown oder so?
+		warn "$myname: ignoring '$fn' item.\n";
+		# well, manchmal will man diese ja, z.b. für chown oder so?
 	    } else {
 		print "$fn\n"
 	    }
