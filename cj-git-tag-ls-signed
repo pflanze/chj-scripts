@@ -17,6 +17,7 @@ sub usage {
   Options:
   -v|--invert show tags which are *not* signed
   -a|--all  show all tags
+  --verbose   show some warning(s)
 
   (Christian Jaeger <$email>)
 ";
@@ -29,9 +30,12 @@ GetOptions($options,
 	   "v|invert",
 	   "a|all",
 	   "help"=> sub{usage},
+	   "verbose",
+	   #"debug",
 	  )
   or exit 1;
 usage if @ARGV;
+our $verbose= $$options{verbose};
 
 {
     package Chj_App::ParsedTag;
@@ -53,7 +57,8 @@ sub parse_tag {
 	if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger ([^\n]*) (\d+) [-+\d]\d+ *\n/s) {
 	    ($2,$1)
 	} else {
-	    warn "no match for tagger field in '$$strrf'";
+	    warn "no match for tagger field in '$$strrf'"
+	      if $verbose;
 	    (undef,undef)
 	}
     };
