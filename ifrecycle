@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ $# -gt 1 -o "$1" == "-h" -o "$1" == "--help" ]; then
+	echo "usage: $0 [ interface ]"
+	echo "  down and up the interface or eth0 if none given"
+	exit 1
+fi
+
+iface="${1:-eth0}"
+
+ifdown "$iface"
+ifup "$iface"
