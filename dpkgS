@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Chj::backtick qw/xbacktick xsystem/;
+use Chj::backtick qw/xbacktick/;
+use Chj::xperlfunc;
 
 sub usage {
     print "usage: dpkgS commandname|file/path
@@ -10,6 +11,9 @@ sub usage {
 }
 
 usage unless @ARGV;
+
+my $errors=0;
+
 for (@ARGV) {
     if (/^-/) {
 	usage
@@ -25,7 +29,9 @@ for (@ARGV) {
 	my $realpath= xbacktick("chase",$_);
 	if ($? == 0) {
 	    chop $realpath;
-	    xsystem "dpkg", "-S", $realpath;
+	    if (not 0== xsystem "dpkg", "-S", $realpath) {
+		$errors++;
+	    }
 	} else {
 	    # a message has already been printed by chase
 	    exit 1
@@ -33,3 +39,4 @@ for (@ARGV) {
     }
 }
 
+exit ($errors? 1 : 0);
