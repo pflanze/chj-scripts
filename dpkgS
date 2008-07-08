@@ -12,17 +12,17 @@ sub usage {
 usage unless @ARGV;
 for (@ARGV) {
     if (/^-/) {
-        usage
+	usage
     } else {
-        local $/;
-        if (! /\//) { # it could be a command
-            my $path= xbacktick("which",$_);
-            if ($? == 0) {
-                chop $path;
-                $_=$path 
-            }
-        }
-        my $realpath= xbacktick("chase",$_);
+	local $/;
+	if (! /\//) { # it could be a command
+	    my $path= xbacktick("which",$_);
+	    if ($? == 0) {
+		chop $path;
+		$_=$path
+	    }
+	}
+	my $realpath= xbacktick("chase",$_);
 	if ($? == 0) {
 	    chop $realpath;
 	    xsystem "dpkg", "-S", $realpath;
