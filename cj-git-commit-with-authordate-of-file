@@ -5,25 +5,132 @@
 
 use strict;
 
+## todo move to library
+
+use Chj::IO::Command;
+
+# sub RunCommand_z_list {
+#     my (@cmd)=@_;
+#     my @res;
+#     my $in= Chj::IO::Command->new_sender (@cmd);
+#     local $/="\0";
+#     while (<$in>) {
+# 	chomp;
+# 	push @res;
+#     }
+#     $in->xxfinish;
+#     \@res
+# }
+
+# sub git_diff_files_list {
+#     # returns list of files changed in working tree but *not* added to index,
+#     # i.e. *changed compared to index*
+#     # (necessary with opt_a, in addition to the result from
+#     #  git_diff_index_list)
+#     RunCommand_z_list
+#       ("git", "diff-files", "--name-only", "-z")
+# }
+
+# sub git_diff_index_list {
+#     # returns list of files changed in index compared to HEAD
+#     RunCommand_z_list
+#       ("git", "diff-index", "--cached", "HEAD", "--name-only", "-z")
+# }
+
+sub MkRunCommand_z_coll {
+    my (@cmd)=@_;
+    sub {
+	my ($opt_res)=@_;
+	my $res= $opt_res||{};
+	my $in= Chj::IO::Command->new_sender (@cmd);
+	local $/="\0";
+	while (<$in>) {
+	    chomp;
+	    $$res{$_}++;
+	}
+	$in->xxfinish;
+	$res
+    }
+}
+
+# returns list of files changed in working tree but *not* added to index,
+# i.e. *changed compared to index*
+# (necessary with opt_a, in addition to the result from
+#  git_diff_index_list)
+*git_diff_files_coll= MkRunCommand_z_coll
+  ("git", "diff-files", "--name-only", "-z");
+
+# returns list of files changed in index compared to HEAD
+*git_diff_index_coll= MkRunCommand_z_coll
+  ("git", "diff-index", "--cached", "HEAD", "--name-only", "-z");
+
+
+## /todo
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname file [ other-arguments ]
+    print "$myname [ file [ other-arguments ]]
 
   Takes the mtime of file (stat, not lstat) and runs git-commit with
   that time as authordate.
 
   other-arguments are passed on to git-commit.
 
+  If no file argument is given (no arguments at all), checks through
+  git-status that only one file is to be committed and takes the mtime
+  of that file.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
-usage unless @ARGV;
+use Getopt::Long;
+our $verbose=0;
+our $opt_all=0;  # to *also* be passed on to git commit actually
 
-our $file =shift @ARGV;
+# only check the first argument for options for us.
+our @otherargs=@ARGV;
+if (@ARGV) {
+    #@ARGV=$oldargv[0]; ehr no. up to the first non-argument, gr.
+    @ARGV=();
+    #for (@oldargv) {
+    while (@otherargs) {
+	$_= shift @otherargs; #yep, forgot to put it into $_ at first...
+	push @ARGV, $_;
+	if (/^-/) {
+	    # carry on
+	} else {
+	    last
+	}
+    }
+    GetOptions("verbose"=> \$verbose,
+	       "help"=> sub{usage},
+	       "all"=> \$opt_all,
+	      ) or exit 1;
+}
+
+our $file = do {
+    if (@ARGV) {
+	shift @ARGV; #well, the only item in it anyway now
+    } else {
+	# find out which files are to be committed.
+	my $files= git_diff_index_coll();
+	if ($opt_all) {
+	    git_diff_files_coll($files)
+	}
+	my $n= keys(%$files);
+	if ($n==1) {
+	    (keys(%$files))[0]
+	} else {
+	    die "$myname: ".
+	      "need exactly 1 to-be-committed file, whereas I see $n\n";
+	}
+    }
+};
+
 usage if $file eq "-h" or $file eq "--help";
 
 use Chj::xperlfunc;# 'xstat';
@@ -32,5 +139,5 @@ my $s= xstat $file;
 
 $ENV{GIT_AUTHOR_DATE}= localtime($s->mtime)."";
 
-xexec "git","commit", @ARGV;
+xexec "git","commit", ($opt_all ? "-a" : ()), @otherargs;
 
