@@ -130,7 +130,7 @@ our $file = do {
 	}
     }
 };
-warn "file=$file";
+
 usage if $file eq "-h" or $file eq "--help";
 
 use Chj::xperlfunc;# 'xstat';
