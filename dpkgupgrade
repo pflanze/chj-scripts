@@ -6,8 +6,8 @@ $0=~ /([^\/]+)$/s;
 my $me= $1;
 sub usage {
   die "$me  list of packages to upgrade
-  Checks each package whether it is really installed, and if yes,
-  apt-get install's it.
+  Checks each package whether it is already installed, and if yes,
+  dpkg --install's it.
 ";
   exit;
 }
@@ -19,20 +19,20 @@ my %packs= map { chomp; $_=>1 } `dpkglist -i`; # dpkglist is from me too
 $|=1;
 my (@packfiles,@packnames);
 for (@ARGV) {
-  if (/^-/) {
-    usage
-  } else {
-    my ($packname)= /^([^_]+)/;
-    if ($packs{$packname}) {
-      push @packfiles,$_;
-      push @packnames,$packname;
+    if (/^-/) {
+	usage
     } else {
-      print "$me: package '$packname' is not installed.\n";
+	my ($packname)= /^([^_]+)/;
+	if ($packs{$packname}) {
+	    push @packfiles,$_;
+	    push @packnames,$packname;
+	} else {
+	    print "$me: package '$packname' is not installed.\n";
+	}
+	print "\n";
     }
-    print "\n";
-  }
 }
 if (@packfiles) {
-  print "$me: installing ".(join ", ",@packnames)."...\n";
-  system qw(dpkg -i),@packfiles;
+    print "$me: installing ".(join ", ",@packnames)."...\n";
+    system qw(dpkg -i),@packfiles;
 }
