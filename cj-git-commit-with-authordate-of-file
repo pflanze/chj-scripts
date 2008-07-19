@@ -58,11 +58,11 @@ sub MkRunCommand_z_coll {
 # (necessary with opt_a, in addition to the result from
 #  git_diff_index_list)
 *git_diff_files_coll= MkRunCommand_z_coll
-  ("git", "diff-files", "--name-only", "-z");
+  ("git", "diff-files", "--relative", "--name-only", "-z");
 
 # returns list of files changed in index compared to HEAD
 *git_diff_index_coll= MkRunCommand_z_coll
-  ("git", "diff-index", "--cached", "HEAD", "--name-only", "-z");
+  ("git", "diff-index", "--relative", "--cached", "HEAD", "--name-only", "-z");
 
 
 ## /todo
@@ -130,7 +130,7 @@ our $file = do {
 	}
     }
 };
-
+warn "file=$file";
 usage if $file eq "-h" or $file eq "--help";
 
 use Chj::xperlfunc;# 'xstat';
