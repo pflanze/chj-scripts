@@ -15,7 +15,19 @@ sub usage {
 usage unless @ARGV;
 
 # get list of installed packages
-my %packs= map { chomp; $_=>1 } `dpkglist -i`; # dpkglist is from me too
+my $packs= do {
+    # since backticks don't check the return code:
+    my $h={};
+    use Chj::IO::Command;
+    my $in= Chj::IO::Command->new_sender("dpkglist","-i");
+    while (<$in>) {
+	chomp;
+	$$h{$_}=1
+    }
+    $in->xxfinish;#!
+    $h
+};
+
 $|=1;
 my (@packfiles,@packnames);
 for (@ARGV) {
@@ -23,13 +35,12 @@ for (@ARGV) {
 	usage
     } else {
 	my ($packname)= /^([^_]+)/;
-	if ($packs{$packname}) {
+	if ($$packs{$packname}) {
 	    push @packfiles,$_;
 	    push @packnames,$packname;
 	} else {
 	    print "$me: package '$packname' is not installed.\n";
 	}
-	print "\n";
     }
 }
 if (@packfiles) {
