@@ -96,7 +96,10 @@ sub run {
 
     while ( defined (my $input = &$myreadline) ) {
 	chomp $input and warn "DID in fact remove newline?";
-	xsystem("xmms2 $input");
+	my @cmds= split /;/, $input; ##todo care about quoting...
+	for (@cmds) {
+	    xsystem("xmms2 $_");
+	}
     }
     #use Chj::Backtrace; use Chj::repl; repl;
 }
