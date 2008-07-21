@@ -19,6 +19,8 @@ our $commitmsg_body= sub {
     }
 };
 
+our $sort_by= "mtime"; # a CHJ_CJGITIMPORT::Entry method
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname files
@@ -69,6 +71,10 @@ use Chj::xperlfunc ':all';
 	 'version', # can be "current"
 	 'maybe_message'
 	);
+    sub mtime {#und schon hab ich n delegate
+	my $s=shift;
+	$$s[Stat]->mtime
+    }
     end Class::Array;
 }
 
@@ -92,8 +98,10 @@ our $entries=
 	       ], "CHJ_CJGITIMPORT::Entry"
 	   } else {
 	       if ($seen_unversioned_item) {
-		   die "more than one item without a versionnumber: '$_'";
+		   die "more than one item without a versionnumber: "
+		     ."'$seen_unversioned_item' and '$_'";
 	       } else {
+		   $seen_unversioned_item=$_;
 		   bless [
 		    $_,
 		    $stat,
@@ -108,10 +116,17 @@ our $entries=
   };
 
 # check that everything is of the same file:
-for (@$entries) {
-    
+{
+    my $first_basename= $$entries[0]->basename;
+    for (@$entries[1..$#$entries]) {
+	my $current_basename= $_->basename;
+	$current_basename eq $first_basename
+	  or die "not all files are of the same basename: "
+	    ."'$first_basename' vs. '$current_basename'";
+    }
+}
 
-# sort by mtime
+#for (sort { $a->$sort_by )
 
 
 
