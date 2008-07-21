@@ -1,0 +1,18 @@
+#!/bin/bash
+
+export HISTFILE=~/.xmms2-shell-history
+export PATH="/opt/chj/bin/xmms2-shell-helpers:$PATH"
+#export PS1="xmms2-shell"
+#export PS2='foo ' EHR???
+export PS1='xmms2-shell$ '
+#unset PROMPT_COMMAND
+#export PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME} xmms2-shell: ${PWD/$HOME/~}\007"'
+ #huh  not even with --norc wil this work now he?
+#grr doesn't work.
+#chris@novo:~$ bash -c 'export HISTFILE=~/.xmms2-shell-history; export PATH="/opt/chj/bin/xmms2-shell-helpers:$PATH";' -i -s -
+#doesn't either
+#and there's no "enter repl now" command right.
+
+#exec bash
+exec bash --norc
+#grrr todo
