@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Mon Jul 21 13:09:34 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+our $commitmsg_body= sub {
+    my ($maybe_commitmsg, $versionnumber)=@_;
+    # careful: $versionnumber can also be a string ("current")
+    my $body= "(version: $versionnumber; imported by $myname)";
+    if ($maybe_commitmsg) {
+	chompspace($maybe_commitmsg)."\n\n".$body
+    } else {
+	$body
+    }
+};
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname files
+
+  Give all kept files of one file; it will commit them in order and
+  with AUTHOR_TIME set to their mtime.
+
+  Only works for one file at a time (maybe create a new empty branch
+  using cj-git-fast-switch-branch and merge afterwards). See
+  cj-git-import-keephistory for another more complicated approach.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+
+##*modified* COPY from cj-git-import-keephistory
+sub file_to_source_versionnumber_maybemsg ( $ ) {
+    my ($fullfile)=@_;
+    if ($fullfile=~ m/(.+)\.([1-9][0-9]*)(?:_(.*))?\z/s) {
+	($1,$2,$3)
+    } else {
+	()
+    }
+}
+
+##/COPY
+
+use Chj::chompspace;
+use Chj::xperlfunc ':all';
+
+# slurp in data
+our $entries=
+  do {
+      my $seen_unversioned_item;
+      [
+       # filepath, basename, maybe_versionnumber, maybe_msg, statobject
+       # basename should be identical for all files; check for this afterwards.
+       map {
+	   my $stat= xlstat ($_);
+	   if (my ($basename,$vers,$msg)=
+	       file_to_source_versionnumber_maybemsg ($_)) {
+	       [
+		$_,
+		$stat,
+		$basename,
+		$vers,
+		$msg,
+	       ]
+	   } else {
+	       if ($seen_unversioned_item) {
+		   die "more than one item without a versionnumber: '$_'";
+	       } else {
+		   [
+		    $_,
+		    $stat,
+		    $_,
+		    "current", #undef,
+		    undef #"current", ##
+		   ]
+	       }
+	   }
+       } @ARGV
+      ]
+  };
+
+# check that everything is of the same file:
+for (@$entries) {
+    
+
+# sort by mtime
+
+
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
