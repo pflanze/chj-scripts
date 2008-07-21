@@ -58,6 +58,20 @@ sub file_to_source_versionnumber_maybemsg ( $ ) {
 use Chj::chompspace;
 use Chj::xperlfunc ':all';
 
+{
+    package CHJ_CJGITIMPORT::Entry;
+    use Class::Array -fields=>
+      -publica=>
+	(
+	 'path',
+	 'stat',
+	 'basename',
+	 'version', # can be "current"
+	 'maybe_message'
+	);
+    end Class::Array;
+}
+
 # slurp in data
 our $entries=
   do {
@@ -69,24 +83,24 @@ our $entries=
 	   my $stat= xlstat ($_);
 	   if (my ($basename,$vers,$msg)=
 	       file_to_source_versionnumber_maybemsg ($_)) {
-	       [
+	       bless [
 		$_,
 		$stat,
 		$basename,
 		$vers,
 		$msg,
-	       ]
+	       ], "CHJ_CJGITIMPORT::Entry"
 	   } else {
 	       if ($seen_unversioned_item) {
 		   die "more than one item without a versionnumber: '$_'";
 	       } else {
-		   [
+		   bless [
 		    $_,
 		    $stat,
 		    $_,
 		    "current", #undef,
 		    undef #"current", ##
-		   ]
+		   ], "CHJ_CJGITIMPORT::Entry"
 	       }
 	   }
        } @ARGV
