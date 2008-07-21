@@ -43,6 +43,7 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $dry_run;
+our $opt_git_force=1; #will I ever want it to be off?
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$dry_run,
@@ -154,6 +155,7 @@ if ($dry_run) {
 	    }
 	    xxsystem("git",
 		     "add",
+		     ($opt_git_force ? "-f" :()),
 		     "--",
 		     $basename);
 	    xxsystem("cj-git-commit-with-authordate-of-file",
