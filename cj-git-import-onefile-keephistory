@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Mon Jul 21 13:09:34 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
 
 use strict;
 
@@ -20,6 +20,9 @@ our $commitmsg_body= sub {
 };
 
 our $sort_by= "mtime"; # a CHJ_CJGITIMPORT::Entry method
+our $sort_cmp= sub { #non first class prl.5anywy.
+    $_[0] <=> $_[1]
+};
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
@@ -39,8 +42,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $dry_run;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "dry-run"=> \$dry_run,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -67,13 +72,17 @@ use Chj::xperlfunc ':all';
 	(
 	 'path',
 	 'stat',
-	 'basename',
+	 'basename', ## eigentlich falscher name!!. basepath?
 	 'version', # can be "current"
 	 'maybe_message'
 	);
     sub mtime {#und schon hab ich n delegate
 	my $s=shift;
 	$$s[Stat]->mtime
+    }
+    sub is_current {
+	my $s=shift;
+	$s->path eq $s->basename
     }
     end Class::Array;
 }
@@ -116,19 +125,57 @@ our $entries=
   };
 
 # check that everything is of the same file:
+my $basename= $$entries[0]->basename; # also used further below.
 {
-    my $first_basename= $$entries[0]->basename;
     for (@$entries[1..$#$entries]) {
 	my $current_basename= $_->basename;
-	$current_basename eq $first_basename
+	$current_basename eq $basename
 	  or die "not all files are of the same basename: "
-	    ."'$first_basename' vs. '$current_basename'";
+	    ."'$basename' vs. '$current_basename'";
     }
 }
 
-#for (sort { $a->$sort_by )
+my $sortedentries=
+  [ sort { $sort_cmp->($a->$sort_by, $b->$sort_by) } @$entries ];
 
+if ($dry_run) {
+    for (@$sortedentries) {
+	print $_->path,"\n";
+    }
+} else {
+    my $tmppath= $basename."_tmp_".rand;
+    xlinkunlink $basename, $tmppath;
+    eval {
+	for my $entry (@$sortedentries) {
+	    if ($entry->is_current) {
+		xlink $tmppath, $basename;
+	    } else {
+		xlink $entry->path, $basename;
+	    }
+	    xxsystem("git",
+		     "add",
+		     "--",
+		     $basename);
+	    xxsystem("cj-git-commit-with-authordate-of-file",
+		     $basename,
+		     "-m",
+		     &$commitmsg_body(
+				      $entry->maybe_message,
+				      $entry->version,
+				     ),
+		     "--",
+		     $basename);
+	    xunlink $basename;
+	}
+    };
+    my $e=$@;
+    unlink $basename; #safe, right?
+    xlinkunlink $tmppath, $basename;
+    if (ref $e or $e) {
+	die $e
+    }
+}
 
 
 #use Chj::ruse;
-use Chj::Backtrace; use Chj::repl; repl;
+#use Chj::Backtrace; use Chj::repl; repl;
