@@ -24,6 +24,8 @@ if ($ENV{TRASHCAN}) {
 	$trash=$ENV{HOME}."/Desktop/Trash/";
 } elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
 	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} elsif (-e $ENV{HOME}."/.trash/") {
+    $trash=$ENV{HOME}."/.trash/";
 } elsif (-e $ENV{HOME}."/.Trash/") {
     $trash=$ENV{HOME}."/.Trash/";
 } else {
