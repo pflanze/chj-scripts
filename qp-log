@@ -10,5 +10,5 @@ maillogfilterapp (
 		  "/var/log/qpsmtpd/qpsmtpd.log",
 		  "/var/log/qpsmtpd/qpsmtpd.log*",
 		  "",
-		  "",
+		  "--flush", # here too, since I could be postprocessing using grep or so..
 		 );
