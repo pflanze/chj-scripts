@@ -5,6 +5,8 @@
 
 use strict;
 
+our $fileregex= qr/\.txt(?:\.gz)?$/i;
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -21,6 +23,10 @@ sub usage {
   cj-maildirmake ~/Maildir Moved/list/foo
   cj-mbox2maildir --parsedate --picky box ~/Maildir/.Moved.list.foo
 
+
+  Options:
+  --file-regex regex   regex to match paths against (default: '$fileregex')
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -30,6 +36,7 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "file-regex=s"=> \$fileregex,
 	   ) or exit 1;
 usage unless @ARGV==2;
 
@@ -47,10 +54,10 @@ sub get_hrefs {
 	    my $href=$1;
 	    if ($href=~ /^\w{3,6}:/) {
 		warn "ignoring external '$href'";
+	    } elsif ($href=~ m/$fileregex/) {
+		push @res,$href;
 	    } elsif ($href=~ /\.html?$/i) {
 		# ignore
-	    } elsif ($href=~ /\.txt(?:\.gz)?$/i) {
-		push @res,$href;
 	    } else {
 		warn "ignoring '$href'";
 	    }
