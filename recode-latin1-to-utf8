@@ -13,6 +13,9 @@ sub usage {
 
   Leaves the original back with a ~ appendix.
 
+  Options:
+  --reverse   do the other way round, utf-8 to latin1
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -20,8 +23,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_reverse;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "reverse"=>\$opt_reverse,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -35,7 +40,10 @@ sub recode_file ( $ ) {
     my $out= xtmpfile ($path);
     my $recode= Chj::IO::CommandStandalone->new_xlaunch3
       ($in,$out,undef,
-       "iconv", "--from=latin1", "--to=utf8");
+       "iconv",
+       $opt_reverse ?
+       ("--from=utf8", "--to=latin1")
+       : "--from=latin1", "--to=utf8");
     $recode->xxfinish;
     $in->xclose;
     $out->xclose;
