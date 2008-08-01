@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+# Sat Aug  2 00:05:24 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname range(s)
+
+  Expects fromminutes-tominues, where both values can be floating
+  point (not minutes:seconds); will first seek to the first position,
+  then sleep for the duration of the difference of both times.
+
+  (Feel free to also use the loop 'prefix' program.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::chompspace;
+
+sub playrange {
+    my ($str)=@_;
+    my @times= map { chompspace $_ } split /-/,$str;
+    @times==2
+      or die "expecting a range (i.e. two numbers with a minus inbetween),"
+	." got: '$str'";
+    for (@times) {
+	/^\d+(?:\.\d*)?\z/ or die "not a number: '$_'";
+    }
+    # that was parsing. separate it?
+    my $sleeptime= $times[1]-$times[0];
+    if ($sleeptime >= 0) {
+	xxsystem "seek", $times[0];
+	sleep $sleeptime;
+    } else {
+	die "latter number is smaller than former: $times[0],$times[1]";
+	## should I just reverse and reapply?
+    }
+    ## todo: parse things first. *then* do the work. rithe. monadic.~
+}
+
+for (@ARGV) {
+    playrange $_
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
