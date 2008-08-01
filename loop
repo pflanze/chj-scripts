@@ -14,10 +14,19 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [ options ] [--] command
 
+  Command is interpreted by perl's system call, thus a single one
+  could be a shell script. (D'oh?)
+
   Options:
   -e   exit on errors (default: proceed even if command exits
        uncleanly / with non-zero status, although upon non-existing
        commands the program will stop anyway)
+
+  (PS: as every perl script (and also shell?) works, this will not
+  stop when signals are coming in while running the given command but
+  just let through the signal to the running command (by trapping
+  signals, or is this realy handled by the kernel?), but will if hit
+  during sleep (or running the loop code).)
 
   (Christian Jaeger <$email>)
 ";
