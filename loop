@@ -58,6 +58,7 @@ usage unless @$command;
 
 use Time::HiRes 'time','sleep';
 use Chj::xperlfunc;
+use Chj::Unix::exitcode;
 
 my $time=time;
 while (1)
@@ -67,9 +68,7 @@ while (1)
 	    my $res= xsystem @$command;
 	    if (!($res==0) and $opt_e)
 	      {
-		  print STDERR "$myname: @$command exited with status $res\n";
-		  ## I *have* the signal etc thing... (pity about costs?)
-		  exit 1;
+		  die "$myname: @$command exited with ".exitcode($res)."\n";
 	      }
 	}
       my $t=time;
