@@ -1,16 +1,86 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-# for now, simple (e.g. do not take options yet)
+# Sat Aug  2 00:32:52 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-# but employ 'burst mode': react quickly a number of times, but then
-# sleep enough for not being a problem in the endless termination
-# case.
+use strict;
 
-nburst=5
+our $nburst=5; #number of immediate loopings
+our $burstdelaytime=5; #seconds
 
-while true; do
-    for i in `seq 1 "$nburst"`; do
-	"$@"
-    done
-    sleep "$nburst"
-done
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ options ] [--] command
+
+  Options:
+  -e   exit on errors (default: proceed even if command exits
+       uncleanly / with non-zero status, although upon non-existing
+       commands the program will stop anyway)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+# split @ARGV into command and options part:
+my ($options,$command)= do {
+    my (@pre,@post);
+    # simplicistic: assumes that no options need option
+    # arguments. sigh.. ever waiting to write my own Getopt?
+    while (@ARGV) {
+	local $_=shift @ARGV; #vergessen.
+	if ($_ eq '--') {
+	    @post=@ARGV;
+	    last
+	} elsif (/^-/) {
+	    push @pre,$_;
+	} else {
+	    @post=($_,@ARGV);
+	    last #fast vergessen..
+	}
+    }
+    (\@pre,\@post)
+};
+
+@ARGV=@$options;
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_e;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "e"=> \$opt_e,
+	   ) or exit 1;
+usage if @ARGV;
+usage unless @$command;
+
+use Time::HiRes 'time','sleep';
+use Chj::xperlfunc;
+
+my $time=time;
+while (1)
+  {
+      for (1..$nburst)
+	{
+	    my $res= xsystem @$command;
+	    if (!($res==0) and $opt_e)
+	      {
+		  print STDERR "$myname: @$command exited with status $res\n";
+		  ## I *have* the signal etc thing... (pity about costs?)
+		  exit 1;
+	      }
+	}
+      my $t=time;
+      my $wait= ($time+$burstdelaytime)-$t;
+      if ($wait>0)
+	{
+	    sleep $wait;
+	}
+      $time=time;#forgot it
+  }
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
