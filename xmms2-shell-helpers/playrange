@@ -17,6 +17,9 @@ sub usage {
 
   (Feel free to also use the loop 'prefix' program.)
 
+  Options:
+  --dry-run   enter repl instead of calling programs
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -24,14 +27,30 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "dry-run"=>\$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
 use Chj::chompspace;
 
-sub playrange {
+{
+    package CHJ::_Playrange;
+    use Class::Array -fields=>
+      -publica=> ("from", "to");
+    sub new {
+	my $class=shift;
+	bless [ @_ ],$class
+    }
+    sub diff {
+	my $s=shift;
+	$$s[To]-$$s[From]
+    }
+}
+
+sub parserange {
     my ($str)=@_;
     my @times= map { chompspace $_ } split /-/,$str;
     @times==2
@@ -40,21 +59,27 @@ sub playrange {
     for (@times) {
 	/^\d+(?:\.\d*)?\z/ or die "not a number: '$_'";
     }
-    # that was parsing. separate it?
     my $sleeptime= $times[1]-$times[0];
     if ($sleeptime >= 0) {
-	xxsystem "seek", $times[0];
-	sleep $sleeptime;
+	CHJ::_Playrange->new (@times)
     } else {
 	die "latter number is smaller than former: $times[0],$times[1]";
 	## should I just reverse and reapply?
     }
-    ## todo: parse things first. *then* do the work. rithe. monadic.~
 }
 
-for (@ARGV) {
-    playrange $_
+sub playrange {
+    my ($range)=@_;
+    xxsystem "seek", $range->from;
+    sleep $range->diff;
 }
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
+our @ranges= map { parserange $_ } @ARGV;
+if ($opt_dry) {
+    #use Chj::Backtrace;
+    require Chj::repl; Chj::repl::repl;
+} else {
+    for (@ranges) {
+	playrange $_
+    }
+}
