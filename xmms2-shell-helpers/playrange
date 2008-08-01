@@ -70,10 +70,12 @@ sub parserange {
     }
 }
 
+use Time::HiRes 'sleep';
+
 sub playrange {
     my ($range)=@_;
-    xxsystem "seek", $range->from;
-    sleep $range->diff;
+    xxsystem "seek", $range->from * 60;
+    sleep $range->diff * 60;
 }
 
 our @ranges= map { parserange $_ } @ARGV;
