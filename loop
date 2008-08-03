@@ -57,8 +57,10 @@ my ($options,$command)= do {
 
 use Getopt::Long;
 our $debug=0;
+our $verbose;
 our $opt_e;
-GetOptions("debug"=> \$debug,
+GetOptions("verbose"=>\$verbose,
+	   "debug"=> \$debug,
 	   "help"=> sub{usage},
 	   "e"=> \$opt_e,
 	   ) or exit 1;
@@ -86,6 +88,9 @@ while (1)
       warn "wait=$wait" if $debug;
       if ($wait>0)
 	{
+	    if ($verbose) {
+		warn "$myname: too frequent restarts, sleeping for $wait seconds..\n";
+	    }
 	    sleep $wait;
 	}
       if ($debug) {require Data::Dumper; print Data::Dumper::Dumper( $times); }
