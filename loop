@@ -77,8 +77,6 @@ use Chj::Unix::exitcode;
 # it does have those, when being honest) and assume it's already done
 # right.
 my $times= [(0)x($max_in_window-1)];
-# -1 since it's the intermediate ones only. one off errors lurk in
-# many places.
 
 
 while (1)
@@ -90,10 +88,8 @@ while (1)
 	}
       my $t=time;
       push @$times, $t;
-      #my $first_t= pop @$times;
       my $first_t= shift @$times;
 
-      #my $wait= ($t - $first_t) - $time_window;
       my $wait= $time_window - ($t - $first_t);
       warn "wait=$wait" if $debug;
       if ($wait>0)
