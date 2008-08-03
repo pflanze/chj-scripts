@@ -69,15 +69,7 @@ use Time::HiRes 'time','sleep';
 use Chj::xperlfunc;
 use Chj::Unix::exitcode;
 
-#my $times= [(undef)x$max_in_window];
-#my $times_pointer=0; #index
-
-# really use push and pop. that's about the interface we want (well,
-# except it's missing get-but-not-modify accessors -- well, actually
-# it does have those, when being honest) and assume it's already done
-# right.
 my $times= [(0)x($max_in_window-1)];
-
 
 while (1)
   {
@@ -99,6 +91,3 @@ while (1)
       if ($debug) {require Data::Dumper; print Data::Dumper::Dumper( $times); }
   }
 
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
