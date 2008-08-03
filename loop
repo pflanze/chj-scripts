@@ -5,8 +5,8 @@
 
 use strict;
 
-our $nburst=5; #number of immediate loopings
-our $burstdelaytime=5; #seconds
+our $max_in_window=5; #max number of loopings allowed in time_window
+our $time_window=5; #seconds
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -56,9 +56,9 @@ my ($options,$command)= do {
 @ARGV=@$options;
 
 use Getopt::Long;
-our $verbose=0;
+our $debug=0;
 our $opt_e;
-GetOptions("verbose"=> \$verbose,
+GetOptions("debug"=> \$debug,
 	   "help"=> sub{usage},
 	   "e"=> \$opt_e,
 	   ) or exit 1;
@@ -69,24 +69,38 @@ use Time::HiRes 'time','sleep';
 use Chj::xperlfunc;
 use Chj::Unix::exitcode;
 
-my $time;
+#my $times= [(undef)x$max_in_window];
+#my $times_pointer=0; #index
+
+# really use push and pop. that's about the interface we want (well,
+# except it's missing get-but-not-modify accessors -- well, actually
+# it does have those, when being honest) and assume it's already done
+# right.
+my $times= [(0)x($max_in_window-1)];
+# -1 since it's the intermediate ones only. one off errors lurk in
+# many places.
+
+
 while (1)
   {
-      $time=time;
-      for (1..$nburst)
+      my $res= xsystem @$command;
+      if (!($res==0) and $opt_e)
 	{
-	    my $res= xsystem @$command;
-	    if (!($res==0) and $opt_e)
-	      {
-		  die "$myname: @$command exited with ".exitcode($res)."\n";
-	      }
+	    die "$myname: @$command exited with ".exitcode($res)."\n";
 	}
       my $t=time;
-      my $wait= ($time+$burstdelaytime)-$t;
+      push @$times, $t;
+      #my $first_t= pop @$times;
+      my $first_t= shift @$times;
+
+      #my $wait= ($t - $first_t) - $time_window;
+      my $wait= $time_window - ($t - $first_t);
+      warn "wait=$wait" if $debug;
       if ($wait>0)
 	{
 	    sleep $wait;
 	}
+      if ($debug) {require Data::Dumper; print Data::Dumper::Dumper( $times); }
   }
 
 
