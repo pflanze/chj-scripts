@@ -7,17 +7,18 @@ use strict;
 
 our $max_in_window=5; #max number of loopings allowed in time_window
 our $time_window=5; #seconds
+our $shell= $ENV{SHELL}||"/bin/bash";
+our $shell_execute_flag= "-c";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [ options ] [--] command
-
-  Command is interpreted by perl's system call, thus a single one
-  could be a shell script. (D'oh?)
+    print "$myname [ options ] [--] command [arguments]
 
   Options:
+  -s|--shell  pass command to $shell (overrideable through \$SHELL)
+              with an $shell_execute_flag flag, and with arguments as arguments
   -e   exit on errors (default: proceed even if command exits
        uncleanly / with non-zero status, although upon non-existing
        commands the program will stop anyway)
@@ -59,10 +60,12 @@ use Getopt::Long;
 our $debug=0;
 our $verbose;
 our $opt_e;
+our $opt_shell;
 GetOptions("verbose"=>\$verbose,
 	   "debug"=> \$debug,
 	   "help"=> sub{usage},
 	   "e"=> \$opt_e,
+	   "shell"=> \$opt_shell,
 	   ) or exit 1;
 usage if @ARGV;
 usage unless @$command;
@@ -71,11 +74,17 @@ use Time::HiRes 'time','sleep';
 use Chj::xperlfunc;
 use Chj::Unix::exitcode;
 
+our $call= $opt_shell ? sub {
+    xsystem_safe $shell, $shell_execute_flag, @_;
+} : sub {
+    xsystem_safe @_
+};
+
 my $times= [(0)x($max_in_window-1)];
 
 while (1)
   {
-      my $res= xsystem @$command;
+      my $res= &$call(@$command);
       if (!($res==0) and $opt_e)
 	{
 	    die "$myname: @$command exited with ".exitcode($res)."\n";
