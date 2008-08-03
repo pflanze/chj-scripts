@@ -284,9 +284,7 @@ sub xxsystem {
 
 sub xsystem_safe {
     @_>0 or croak "xsystem_safe: missing arguments";
-    use Data::Dumper; warn "xsystem_safe called with ",Dumper(@_);
     no warnings;
-    #(system { $_[0] } @_[1..$#_])>=0
     (system { $_[0] } @_)>=0
       or croak "xsystem_safe: could not start command '$_[0]': $!";
     $?
