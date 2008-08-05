@@ -38,6 +38,9 @@ $ git merge -s ours --no-commit ${Bproject}/master
 #            merge is always the current branch head. It is meant to be
 #            used to supersede old development history of side branches.
 #also ist es jetzt im index, right.?. oder im working dir? nein index scheint
+# -> "Automatic merge went well; stopped before committing as requested"
+#git-status zeigt immer noch nichts. ah eben es wird im branch gespeichert?
+#git-branch -av zeigt aber nichts.
 
 #       git-read-tree - Reads tree information into the index
 #hm welchen index?? wenn hier ein branch angegeben wird ? umgekehrt??
@@ -53,9 +56,22 @@ $ git read-tree --prefix=${dir-B/} -u ${Bproject}/master
 #        -u
 #            After a successful merge, update the files in the work tree
 #            with the result of the merge.
+# -> silent.
+#git-status immer noch nichts. dito mit git-branch -av.
+#HMMMM mit --prefix=.  wenn cwd=${dir-B} geht NICHT? commit ist LEER?
+#obwohl dort steht, im neuen commit:
+# Merge: f4dbc5e... 7eebb5a...
+#und das die beiden parents sind jeweils der originalen(!) repositories.
+
 
 #wohin wird das committet? wenn doch nach her pull, ok aus master? ?
 $ git commit -m "Merge B project as our subdirectory"
+#im editor kommt er mit "Merge commit '${Bproject}/master'"
+#und Anzeige:
+# It looks like you may be committing a MERGE.
+# If this is not correct, please remove the file
+#       .git/MERGE_HEAD
+#dort wird das also gespeichert. und von git-status nicht gezeigt.?
 
 $ git pull -s subtree ${Bproject} master
 #       git-pull <options> <repository> <refspec>...
@@ -67,6 +83,7 @@ $ git pull -s subtree ${Bproject} master
 #            adjusted to match the tree structure of A, instead of
 #            reading the trees at the same level. This adjustment is
 #            also done to the common ancestor tree.
+
 
 Danach removen des remotes:
  hm?
