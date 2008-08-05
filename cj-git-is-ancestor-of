@@ -19,6 +19,7 @@ sub usage {
   Options:
   -q|--quiet   only use exit status to tell result, do not print anything
                unless errors happen (0=true, 1=false, other=error)
+  -a|--both    show ancestority (ehr?) both ways.
 
   (Christian Jaeger <$email>)
 ";
@@ -28,9 +29,11 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_quiet=0;
+our $opt_both=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "q|quiet"=> \$opt_quiet,
+	   "a|both"=> \$opt_both,
 	   ) or exit 1;
 usage unless @ARGV==2;
 
@@ -38,15 +41,32 @@ our ($commit1,$commit2)=@ARGV;
 
 use Chj::Git::Functions 'is_ancestor_of';
 
-sub main {
+sub show_ancestority ( $ $ $ ) {
+    my ($show_prelude,$commit1,$commit2)=@_;
     my $is= is_ancestor_of ($commit1,$commit2,$verbose);
-
     if (!$opt_quiet) {
-	print( ($is ? "yes" : "no"),"\n") or die;
+	print(($show_prelude ? "is '$commit1' ancestor of '$commit2'?: " : ""),
+	      ($is ? "yes" : "no"),
+	      "\n")
+	  or die;
     }
+    $is
+}
+sub main_both {
+    my $is1= show_ancestority (1,$commit1,$commit2);
+    my $is2= show_ancestority (1,$commit2,$commit1);
+    exit (($is1 or $is2) ? 0 : 1);
+}
+sub main_one {
+    my $is= show_ancestority (0,$commit1,$commit2);
     exit ($is ? 0 : 1);
 }
-main;
+
+if ($opt_both) {
+    main_both
+} else {
+    main_one
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
