@@ -25,7 +25,11 @@ GetOptions("verbose"=> \$verbose,
 #usage unless @ARGV;
 }
 
-print <<'END';
+use Chj::IO::Command;
+$ENV{LESSCHARSET}="latin1";
+my $less= Chj::IO::Command->new_receiver("less",#"-R"
+					);
+$less->xprint( <<'END');
 Für den Moment nur Hinweise:
 
 $ git remote add -f ${Bproject} ${/path/to/B}
