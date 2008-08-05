@@ -57,11 +57,10 @@ $ git read-tree --prefix=${dir-B/} -u ${Bproject}/master
 #            After a successful merge, update the files in the work tree
 #            with the result of the merge.
 # -> silent.
-#git-status immer noch nichts. dito mit git-branch -av.
-#HMMMM mit --prefix=.  wenn cwd=${dir-B} geht NICHT? commit ist LEER?
-#obwohl dort steht, im neuen commit:
-# Merge: f4dbc5e... 7eebb5a...
-#und das die beiden parents sind jeweils der originalen(!) repositories.
+# -> git-status *zeigt jetzt das neue file an*, wenn nicht ging was schief.
+#    z.B. --prefix=. (wenn cwd=${dir-B}) geht NICHT! ?
+#    (evtl. fehlte aber nur der endslash? war es ev wirklich ein .* file,
+#    ev. im top dir? Und nicht gesehen.)
 
 
 #wohin wird das committet? wenn doch nach her pull, ok aus master? ?
@@ -72,7 +71,14 @@ $ git commit -m "Merge B project as our subdirectory"
 # If this is not correct, please remove the file
 #       .git/MERGE_HEAD
 #dort wird das also gespeichert. und von git-status nicht gezeigt.?
+# -> git-status zeigt wieder clean,
+#    git-branch zeigt *master mit neuer commit message,
+#    die Datei ist immer noch dort,
+#    git-log --raw  zeigt aber keine Datei an.
+#  Der commit hat immer noch die beiden originalen commit id's: ah das erlaubt
+#  git dann später zu mergen vom originalen Ort (rename on the fly).
 
+#[
 $ git pull -s subtree ${Bproject} master
 #       git-pull <options> <repository> <refspec>...
 #also wie ${Bproject}/master ??.oder?.warum hier getrennt? (git-merge ist
@@ -83,14 +89,30 @@ $ git pull -s subtree ${Bproject} master
 #            adjusted to match the tree structure of A, instead of
 #            reading the trees at the same level. This adjustment is
 #            also done to the common ancestor tree.
+# -> zeigt "From ${/path/to/B}
+#           * branch            master     -> FETCH_HEAD
+#           Already up-to-date."
+#klar, vermutlich eben nur bei 'upstream' changes.
+#]
 
+#bleibt unklarheit warum man im commit keine files sieht mit git-log --raw.
+#mit git version 1.5.6.1.2.g5fa3
+#mit 1.5.6.GIT ebenfalls; gitk aber, ja wie letztesmal, zeigt brauchbare sachen
+#an. (sogar patch für adden am neuen ort, obwohl einer der parent commits
+#ja das file schon hat, dieses removing zeigt es nid, nja is bissel
+#eigenartig.)
 
+[
 Danach removen des remotes:
- hm?
+ hm? (just git remote rm?)
+]
 
 END
 
-
+#hmm wie ich das in git-svn rein krieg ?  muss dort dann faken und
+# jeden Pfad rückwirkend schon in jenes Directory schieben, gell?
+# weil sonst würd es auftauchen in einem Verzeichnis (toplevel) wo
+# andre sachen sind, gell.
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
