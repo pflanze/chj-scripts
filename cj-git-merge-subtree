@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+# Wed Aug  6 00:12:55 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+if(0){
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage unless @ARGV;
+}
+
+print <<'END';
+Für den Moment nur Hinweise:
+
+$ git remote add -f ${Bproject} ${/path/to/B}
+#            With -f option, git fetch <name> is run immediately after
+#            the remote information is set up.
+
+$ git merge -s ours --no-commit ${Bproject}/master
+#        ours
+#            This resolves any number of heads, but the result of the
+#            merge is always the current branch head. It is meant to be
+#            used to supersede old development history of side branches.
+#also ist es jetzt im index, right.?. oder im working dir? nein index scheint
+
+#       git-read-tree - Reads tree information into the index
+#hm welchen index?? wenn hier ein branch angegeben wird ? umgekehrt??
+#aha,von git db into index. nix working tree.
+#ok hier wird ebenfalls in den index dies gelesen.
+$ git read-tree --prefix=${dir-B/} -u ${Bproject}/master
+#        --prefix=<prefix>/
+#            Keep the current index contents, and read the contents of
+#            named tree-ish under directory at <prefix>. The original
+#            index file cannot have anything at the path <prefix>
+#            itself, and have nothing in <prefix>/ directory. Note that
+#            the <prefix>/ value must end with a slash.
+#        -u
+#            After a successful merge, update the files in the work tree
+#            with the result of the merge.
+
+#wohin wird das committet? wenn doch nach her pull, ok aus master? ?
+$ git commit -m "Merge B project as our subdirectory"
+
+$ git pull -s subtree ${Bproject} master
+#       git-pull <options> <repository> <refspec>...
+#also wie ${Bproject}/master ??.oder?.warum hier getrennt? (git-merge ist
+#ja auch nicht so)
+#        subtree
+#            This is a modified recursive strategy. When merging trees A
+#            and B, if B corresponds to a subtree of A, B is first
+#            adjusted to match the tree structure of A, instead of
+#            reading the trees at the same level. This adjustment is
+#            also done to the common ancestor tree.
+
+Danach removen des remotes:
+ hm?
+
+END
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
