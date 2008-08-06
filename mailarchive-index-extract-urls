@@ -36,7 +36,10 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "file-regex=s"=> \$fileregex,
+	   "file-regex=s"=> sub {
+	       my ($s)=@_;
+	       $fileregex= qr/$s/;
+	   },
 	   ) or exit 1;
 usage unless @ARGV==2;
 
