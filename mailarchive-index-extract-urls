@@ -11,10 +11,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname index.html baseurl
+    print "$myname index.html [ baseurl ]
 
   Extract the .txt{,.gz} references out of index.html and print a list
-  of urls (to fetch them with wget)
+  of urls (to fetch them with wget). Baseurl is required unless
+  --url-convert is given.
 
   e.g.
   wget http://foo
@@ -32,9 +33,9 @@ sub usage {
                            'external' uris (uris with a protocol) and
                            uris ending in .html, as well as those not
                            matching the file-regex (which is in
-                           \$fileregex). Overrides --file-regex
-                           (unless the given perlcode makes use of
-                           \$fileregex).
+                           \$fileregex), and then prepend the given
+                           baseurl. Overrides --file-regex (unless the
+                           given perlcode makes use of \$fileregex).
 
   (Christian Jaeger <$email>)
 ";
@@ -52,7 +53,12 @@ GetOptions("verbose"=> \$verbose,
 	   },
 	   "url-convert=s"=> \$opt_urlconvert,
 	   ) or exit 1;
-usage unless @ARGV==2;
+usage unless @ARGV==2 or @ARGV==1;
+
+usage "baseurl is required unless --url-convert is given"
+  unless (@ARGV==2 or $opt_urlconvert);
+#warn "$myname: baseurl is not necessary if --url-convert is given\n";
+# well maybe the user-provided perlcode will use it.
 
 our ($file,$baseurl)=@ARGV;
 
@@ -63,7 +69,7 @@ our $default_urlconvert = sub ($ ) {
     if ($href=~ /^\w{3,6}:/) {
 	undef # warn "ignoring external '$href'";
     } elsif ($href=~ m/$fileregex/) {
-	$href
+	$baseurl.$href
     } elsif ($href=~ /\.html?$/i) {
 	undef # ignore
     } else {
@@ -97,7 +103,7 @@ sub get_hrefs {
 }
 
 print map {
-    $baseurl.$_."\n"
+    $_."\n"
 } get_hrefs;
 
 #use Chj::ruse;
