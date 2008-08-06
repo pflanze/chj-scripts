@@ -25,27 +25,58 @@ sub usage {
 
 
   Options:
-  --file-regex regex   regex to match paths against (default: '$fileregex')
+  --file-regex regex       regex to match paths against (default: '$fileregex')
+  --url-convert perlcode   perlcode receives the url as 1st argument and in \$_
+                           and should return it or a derivate or undef
+                           to ignore it. Default is to ignore all
+                           'external' uris (uris with a protocol) and
+                           uris ending in .html, as well as those not
+                           matching the file-regex (which is in
+                           \$fileregex). Overrides --file-regex
+                           (unless the given perlcode makes use of
+                           \$fileregex).
 
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
-
+use Chj::Backtrace;
 use Getopt::Long;
 our $verbose=0;
+our $opt_urlconvert;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "file-regex=s"=> sub {
 	       my ($s)=@_;
 	       $fileregex= qr/$s/;
 	   },
+	   "url-convert=s"=> \$opt_urlconvert,
 	   ) or exit 1;
 usage unless @ARGV==2;
 
 our ($file,$baseurl)=@ARGV;
 
 use Chj::xopen ":all";
+
+our $default_urlconvert = sub ($ ) {
+    my ($href)=@_;
+    if ($href=~ /^\w{3,6}:/) {
+	undef # warn "ignoring external '$href'";
+    } elsif ($href=~ m/$fileregex/) {
+	$href
+    } elsif ($href=~ /\.html?$/i) {
+	undef # ignore
+    } else {
+	undef # warn "ignoring '$href'";
+    }
+};
+
+our $urlconvert = $opt_urlconvert ? do {
+    my $sub= eval 'sub { local $_=$_[0]; '.$opt_urlconvert.' }';
+    die $@ if $@;
+    $sub
+} :
+  $default_urlconvert;
 
 sub get_hrefs {
     my $cnt=xopen_read ($file)->xcontent;
@@ -54,15 +85,11 @@ sub get_hrefs {
 	my $bod=$1;
 	#warn "got '$bod'";
 	if ($bod=~ /href\s*=\s*"([^"]*)/is) {
-	    my $href=$1;
-	    if ($href=~ /^\w{3,6}:/) {
-		warn "ignoring external '$href'";
-	    } elsif ($href=~ m/$fileregex/) {
+	    my $href1=$1;
+	    if (defined (my $href= &$urlconvert($href1))) {
 		push @res,$href;
-	    } elsif ($href=~ /\.html?$/i) {
-		# ignore
 	    } else {
-		warn "ignoring '$href'";
+		warn "$myname: ignoring '$href1'\n";
 	    }
 	}
     }
