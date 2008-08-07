@@ -10,7 +10,7 @@ if [ -e ".git" ]; then
     exit 1
 fi
 
-git-init "$@"
+git init "$@"
 
 if [ -d ".git" ]; then
     if ! locale| grep -q UTF-8; then

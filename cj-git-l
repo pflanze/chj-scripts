@@ -104,7 +104,7 @@ sub git_unquote_path ( $ ) {
 }
 
 sub files {
-    my $g= Chj::IO::Command->new_sender("git-status");
+    my $g= Chj::IO::Command->new_sender("git", "status");
 
     my %files;
     my $do_accept_pipeerror;

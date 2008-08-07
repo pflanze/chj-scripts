@@ -73,13 +73,13 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [ file [ other-arguments ]]
 
-  Takes the mtime of file (stat, not lstat) and runs git-commit with
+  Takes the mtime of file (stat, not lstat) and runs git commit with
   that time as authordate.
 
-  other-arguments are passed on to git-commit.
+  other-arguments are passed on to git commit.
 
   If no file argument is given (no arguments at all), checks through
-  git-status that only one file is to be committed and takes the mtime
+  git status that only one file is to be committed and takes the mtime
   of that file.
 
   (Christian Jaeger <$email>)

@@ -31,7 +31,7 @@ usage unless @args;
 
 use Chj::IO::Command;
 
-my $c= Chj::IO::Command->new_sender ("git-diff", @args);
+my $c= Chj::IO::Command->new_sender ("git", "diff", @args);
 
 our @files;
 while (<$c>) {

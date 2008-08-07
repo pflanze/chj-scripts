@@ -68,7 +68,7 @@ our ($commitid,$path)=@args;
 
 sub git_cat_file {
     my ($id)=@_;
-    my $cmd= Chj::IO::Command->new_sender ("git-cat-file","-p",$id);
+    my $cmd= Chj::IO::Command->new_sender ("git", "cat-file","-p",$id);
     my $cnt= $cmd->content;
     $cmd->xxfinish;
     $cnt
@@ -113,7 +113,7 @@ sub treeid_find_subpath {#returns id as usual
 
 if (my $treeid= (commit_2_tree (git_cat_file $commitid))) {
     if (my $id= treeid_find_subpath $treeid, $path) {
-	xexec "git-cat-file","blob",$id
+	xexec "git", "cat-file","blob",$id
     } else {
 	warn "$myname: could not find path '$path' in commit '$commitid'\n";
 	exit 1

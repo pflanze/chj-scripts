@@ -33,9 +33,9 @@ for f in `ls -rt ../*"$SUFFIX"`; do
     name=$(basename "$f" "$SUFFIX")
     echo "$name  ($filedate)" > .git/_cjmsg
     echo >> .git/_cjmsg
-    git-add .
+    git add .
     g-l >> .git/_cjmsg
     #cat .git/_cjmsg
 
-    git-commit -a -m "$(cat .git/_cjmsg)"
+    git commit -a -m "$(cat .git/_cjmsg)"
 done
