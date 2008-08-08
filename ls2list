@@ -16,12 +16,16 @@ sub usage {
   Vorerst wirklich bloss mal abschneiden vorne.
   Könnte:  checken obs die files wirklich gibt, und ob datum und so stimmt.
   heuristik um kaputte pastings trotzdem zu matchen.
+
+  Options:
+   -f|--flush   flush output for every item (aka line)
 ";
 exit @_ ? 1 : 0;
 }
 
 my @files;
 my $DEBUG=0;
+our $opt_flush;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -31,6 +35,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?f(lush)?$/) {
+	$opt_flush=1;
     } elsif (/^-./) {
 	usage("Unknown option '$_'\n");
     } else {
@@ -38,6 +44,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 usage if @files;
+
+$|++ if $opt_flush;
 
 while (<STDIN>){
     if (m/^[-dlps][-rwsxtSTcb]{9}\s+\d+\s+[\w-]+\s+\w+\s+\d+
