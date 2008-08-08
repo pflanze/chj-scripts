@@ -1,6 +1,5 @@
 #!/bin/sh
 
-#if ! grep -q -i 'Christian.*Jaeger' debian/changelog ; then
 if ! grep '^ -- ' debian/changelog | head -1 | grep -q -i "$USER" ; then
     if [ "$1" = "-f" ]; then
 	shift
