@@ -10,4 +10,4 @@ if ! grep '^ -- ' debian/changelog | head -1 | grep -q -i "$USER" ; then
     fi
 fi
 
-exec nice dpkg-buildpackage -uc -us -b -rfakeroot "$@"
+exec nice dpkg-buildpackage -uc -us -b -r'fakeroot -u' "$@"
