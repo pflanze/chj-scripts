@@ -80,17 +80,21 @@ do {
     if ($len==0) {
 	last;
     } elsif ($len == $metainterval) {
+	#$pos_shrunk+= $out->xprint ($buf);  NOPE that's wrong. grr todo fix my lib?
 	$out->xprint ($buf);
+	$pos_shrunk+=length($buf);
 	# now skip until \0 found. or capture if you want
 	local our ($str)= read_icy_data ($in);
-	if (length $str and $str=~ /^.*StreamTitle/i) { #hmm was isch da davor und so ?
-	    print STDERR "metadata: '$str'\n";
+	if (length $str and $str=~ /StreamTitle='(.*?)';/i) { #hmm was isch da davor und so ?
+	    print STDERR "$pos_shrunk\t$1\n";
 	}
 	#use Chj::Backtrace; use Chj::repl; repl if length $str;
     } else {
 	warn "nearing end of file? only got $len bytes ".
 	  "(after outputting $pos_shrunk bytes)";
+	#$pos_shrunk+= $out->xprint ($buf);
 	$out->xprint ($buf);
+	$pos_shrunk+=length($buf);
 	## set flag which makes us terminate if it proceeds?.
 	## well or just <> here and expect eof.
     }
