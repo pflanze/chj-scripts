@@ -1,0 +1,101 @@
+#!/usr/bin/perl -w
+
+# Sat Aug  9 22:54:05 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file
+
+  writes the file, which is a captured http stream *including the http
+  reply headers*, to stdout with the headers and metadata stripped.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+our ($file)=@ARGV;
+
+# read how, bytewise? or just normal buffered functions all
+# through?. well latter since anyway blah.
+
+use Chj::xopen 'xopen_read';
+use Chj::chompspace;
+
+local our $in=xopen_read $file;
+local our $headers={};
+while (<$in>) {
+    s/[\r\n]+\z//s;
+    if (/^\z/) {
+	last; ##hm are both \r and \n consumed at that point or only one?
+    }
+    if (/^HTTP\//i) {
+	# ignore
+    } else {
+	my ($key,$val)= split /:/,$_,2
+	  or die "non-header?: '$_'";
+	#well that wasn't a guarantee yet for 2 fields grr.?. anyway.
+	defined $val or die "invalid header: '$_'";
+	$$headers{lc(chompspace $key)}= chompspace($val);
+    }
+}
+
+use Chj::xperlfunc;
+
+sub read_icy_data ( $ ) {
+    my ($in)=@_;
+    my $str="";
+    my $ch;
+    do {
+	#my  nope no my here. mnsch.
+	$ch= getc $in; defined $ch or die "read error?: $!";
+	##or *do* I have xgetc in my lib?
+	#last if $ch eq "\0"; FIUCKSAFDSF   "Exiting subroutine via last"?????
+	$str.=$ch;
+	#} until ($ch eq "\0");
+    } while(1);
+    $str
+}
+
+local our $metainterval= $$headers{'icy-metaint'}
+  or die "no icy-metaint header, thus no icy metadata present, right?";
+
+local our $out= bless *STDOUT{IO},"Chj::IO::File";#usual crack
+
+my $buf;
+my $pos_shrunk=0;
+do {
+    my $len= $in->xread($buf, $metainterval);
+    if ($len==0) {
+	last;
+    } elsif ($len == $metainterval) {
+	$out->xprint ($buf);
+	# now skip until \0 found. or capture if you want
+	local our ($str)= read_icy_data ($in);
+	#use Data::Dumper; warn "metadata: ".Dumper ($str);
+	use Chj::Backtrace; use Chj::repl; repl;
+    } else {
+	warn "nearing end of file? only got $len bytes ".
+	  "(after outputting $pos_shrunk bytes)";
+	$out->xprint ($buf);
+	## set flag which makes us terminate if it proceeds?.
+	## well or just <> here and expect eof.
+    }
+} while (1);
+
+$out->xclose;
+$in->xclose;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
