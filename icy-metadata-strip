@@ -53,26 +53,17 @@ while (<$in>) {
 
 use Chj::xperlfunc;
 
+# http://www.smackfu.com/stuff/programming/shoutcast.html
 sub read_icy_data ( $ ) {
     my ($in)=@_;
-    my @str;
-    while(1) {
-	my $str="";
-	my $ch;
-	while (1) {
-	    #my  nope no my here. mnsch.
-	    $ch= getc $in; defined $ch or die "read error?: $!";
-	    ##or *do* I have xgetc in my lib?
-	    last if $ch eq "\0";
-	    $str.=$ch;
-	    #} until ($ch eq "\0");
-	}
-	if (length $str) {
-	    push @str,$str
-	} else {
-	    return @str
-	}
-    }
+    my $len= do {
+	my $ch= getc $in; defined $ch or die "read error?: $!";
+	16 * ord $ch
+    };
+    #warn "len=$len";
+    my $buf;
+    $in->xread($buf,$len);
+    $buf
 }
 
 local our $metainterval= $$headers{'icy-metaint'}
@@ -91,8 +82,9 @@ do {
 	$out->xprint ($buf);
 	$pos_shrunk+=length($buf);
 	# now skip until \0 found. or capture if you want
-	if (local our @str= read_icy_data ($in)) {
-	    if ($str[0]=~ /StreamTitle='(.*?)';/i) {
+	local our $str= read_icy_data ($in);
+	if (length $str) {
+	    if ($str=~ /StreamTitle='(.*?)';/i) {
 		print STDERR "$pos_shrunk\t$1\n";
 	    } else {
 		use Chj::Backtrace; use Chj::repl; repl
