@@ -73,7 +73,7 @@ local our $out= bless *STDOUT{IO},"Chj::IO::File";#usual crack
 
 my $buf;
 my $pos_shrunk=0;
-do {
+while (1) {
     my $len= $in->xread($buf, $metainterval);
     if ($len==0) {
 	last;
@@ -99,7 +99,7 @@ do {
 	## set flag which makes us terminate if it proceeds?.
 	## well or just <> here and expect eof.
     }
-} while (1);
+}
 
 $out->xclose;
 $in->xclose;
