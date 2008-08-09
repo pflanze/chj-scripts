@@ -83,8 +83,8 @@ do {
 	$out->xprint ($buf);
 	# now skip until \0 found. or capture if you want
 	local our ($str)= read_icy_data ($in);
-	#use Data::Dumper; warn "metadata: ".Dumper ($str);
-	use Chj::Backtrace; use Chj::repl; repl;
+	use Data::Dumper; print STDERR "metadata: ".Dumper ($str) if length $str;
+	#use Chj::Backtrace; use Chj::repl; repl if length $str;
     } else {
 	warn "nearing end of file? only got $len bytes ".
 	  "(after outputting $pos_shrunk bytes)";
