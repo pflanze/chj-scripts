@@ -12,7 +12,11 @@ sub usage {
     print "$myname file
 
   writes the file, which is a captured http stream *including the http
-  reply headers*, to stdout with the headers and metadata stripped.
+  reply headers*, to stdout with the headers and metadata stripped;
+  additionally it prints the titles and their byte positions in the output.
+
+  Example:
+   icy-metadata-strip foo.mp3httpstream > /tmp/chris/foo.mp3 2> foo.list
 
   (Christian Jaeger <$email>)
 ";
