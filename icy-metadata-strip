@@ -57,14 +57,14 @@ sub read_icy_data ( $ ) {
     my ($in)=@_;
     my $str="";
     my $ch;
-    do {
+    while (1) {
 	#my  nope no my here. mnsch.
 	$ch= getc $in; defined $ch or die "read error?: $!";
 	##or *do* I have xgetc in my lib?
-	#last if $ch eq "\0"; FIUCKSAFDSF   "Exiting subroutine via last"?????
+	last if $ch eq "\0";
 	$str.=$ch;
 	#} until ($ch eq "\0");
-    } while(1);
+    }
     $str
 }
 
