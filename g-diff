@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+
+# Sat Aug  9 13:43:20 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+# git 1.6 does not ship with git-* binaries anymore in the normal PATH
+# location. I don't like having to use shell automatisms (they cost
+# memory, and well, for now I don't like them), and adding the path is
+# a slight disturbance (for now, until I clean shell init script
+# handling centrally). So, what's left? Symlinking all of the
+# /usr/libexec/git-core/* programs to here would be a no-no, since on
+# some of my systems those don't exist yet. So an additional exec is
+# due anyway, and once I do that, why not just call "git" and rely on
+# PATH again? heh.
+
+# We also name these g* so that's easier for me to type (maybe that
+# makes those shell completions look lame in comparison?)
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+#my $start= "g"; # not even require a dash smile. ok?
+#hm no not a good idea I think. Would sometimes complete to non-git commands.
+my $start= "g-";
+
+$myname=~ /^$start(.*)/
+  or die "we were called as '$myname', which is not starting with '$start'";
+
+exec "git", $1, @ARGV
+  or die "could not exec 'git': $!";
