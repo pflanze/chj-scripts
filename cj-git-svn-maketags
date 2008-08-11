@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Mon Aug 11 03:34:02 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+my $mainbranch= "trunk";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Create git tags from the tags/ branches imported by git svn
+  --stdlayout, and do so for the branch points where the tags/
+  branches diverted from the main branch '$mainbranch' (so that gitk
+  without the --all option will show them).
+
+  quite a hack currently, i.e. does not check whether a tag already
+  exists and is the same (it should give a warning then, though).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::xperlfunc;
+
+use Chj::IO::Command;
+
+my $branches= Chj::IO::Command->new_sender ("git","branch","-av");
+
+while (<$branches>) {
+    if (my ($name,$id)= m|^\s*tags/(\S+)\s+(\S+)|) {
+	my @ancest=`g-merge-base --all $mainbranch $id`; chomp @ancest;
+	if(@ancest==1) {
+	    xsystem "g-tag",$name,$ancest[0]
+	} else {
+	    my $str= (@ancest==0) ? "no" : "more than one";
+	    warn "$str common ancestor for $mainbranch and tags/$name ($id)";
+	    # not tags/$name/HEAD  btw, that one doesn't exist
+	}
+    }
+}
+
+$branches->xxfinish;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
