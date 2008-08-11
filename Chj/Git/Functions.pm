@@ -27,6 +27,7 @@ package Chj::Git::Functions;
 	      is_ancestor_of
 	      maybe_git_dir
 	      xgit_dir
+	      git_merge_base__all
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -137,5 +138,17 @@ sub maybe_git_dir () {
 
 *xgit_dir= _UndefThrowing (\&maybe_git_dir,
 			   "not a git repository");
+
+
+sub git_merge_base__all ($ $ ) {
+    my ($a,$b)=@_;
+    my $cmd= Chj::IO::Command->new_sender
+      ("git", "merge-base", "--all", $a, $b);
+    my @ancest= <$cmd>;
+    chomp @ancest;
+    my $res= $cmd->xfinish;
+    $res==0 or $res==256 or die "merge-base gave $res";
+    @ancest
+}
 
 1
