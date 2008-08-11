@@ -42,15 +42,7 @@ my $branches= Chj::IO::Command->new_sender ("git","branch","-av");
 
 while (<$branches>) {
     if (my ($name,$id)= m|^\s*tags/(\S+)\s+(\S+)|) {
-	my @ancest= do {
-	    my $cmd= Chj::IO::Command->new_sender
-	      ("git", "merge-base", "--all", "$mainbranch", "$id");
-	    my @ancest= <$cmd>;
-	    chomp @ancest;
-	    my $res= $cmd->xfinish;
-	    $res==0 or $res==256 or die "merge-base gave $res";
-	    @ancest
-	};
+	my @ancest= git_merge_base__all ($mainbranch, $id);
 	if(@ancest==1) {
 	    my $ancest= $ancest[0];
 	    if (my $exists= maybe_git_rev_parse ($name)) {
