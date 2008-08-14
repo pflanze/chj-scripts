@@ -157,10 +157,11 @@ sub git_merge_base__all ($ $ ) {
 # functions for querying which just return what the git commands return:
 
 # should be a library function, is just a (curried) safe backtick.
+# well re curried: also allow additional arguments to be given.
 sub mk_xcommand_output {
     my @cmd=@_;
-    sub () {
-	my $cmd= Chj::IO::Command->new_sender (@cmd);
+    sub {
+	my $cmd= Chj::IO::Command->new_sender (@cmd,@_);
 	my $cnt= $cmd->xcontent;
 	$cmd->xxfinish;
 	chomp $cnt;
@@ -171,7 +172,7 @@ sub mk_xcommand_output {
 *xgit_describe= mk_xcommand_output ("git","describe");
 
 sub xgit_describe_debianstyle {
-    my $desc= xgit_describe();
+    my $desc= xgit_describe(@_);
     $desc=~ s/^v//
       or die "missing v at the beginning of expected tag name: '$desc'";
     $desc=~ s/-/./sg;
