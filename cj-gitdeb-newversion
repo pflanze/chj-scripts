@@ -1,0 +1,36 @@
+#!/usr/bin/perl -w
+
+# Thu Aug 14 10:42:31 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Create new changelog entry in debian/changelog with the version
+  taken from git describe.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::Git::Functions ':all';
+use Chj::xperlfunc;
+
+xexec "debchange", "--newversion", xgit_describe_debianstyle();
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
