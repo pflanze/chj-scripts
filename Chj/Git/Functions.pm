@@ -28,6 +28,8 @@ package Chj::Git::Functions;
 	      maybe_git_dir
 	      xgit_dir
 	      git_merge_base__all
+	      xgit_describe
+	      xgit_describe_debianstyle
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -149,6 +151,31 @@ sub git_merge_base__all ($ $ ) {
     my $res= $cmd->xfinish;
     $res==0 or $res==256 or die "merge-base gave $res";
     @ancest
+}
+
+
+# functions for querying which just return what the git commands return:
+
+# should be a library function, is just a (curried) safe backtick.
+sub mk_xcommand_output {
+    my @cmd=@_;
+    sub () {
+	my $cmd= Chj::IO::Command->new_sender (@cmd);
+	my $cnt= $cmd->xcontent;
+	$cmd->xxfinish;
+	chomp $cnt;
+	$cnt
+    }
+}
+
+*xgit_describe= mk_xcommand_output ("git","describe");
+
+sub xgit_describe_debianstyle {
+    my $desc= xgit_describe();
+    $desc=~ s/^v//
+      or die "missing v at the beginning of expected tag name: '$desc'";
+    $desc=~ s/-/./sg;
+    $desc
 }
 
 1
