@@ -9,11 +9,14 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname file
+    print "$myname file [outfile]
 
   (Specialized tool for elvis-mail handling: strip headers from mails
   from delivery through elvis-smtp, so that the mail look again as if
   they were coming in right at elvis-smtp.)
+
+  If outfile is not given, print to stdout. (If given, outfile is
+  written as tmpfile first.)
 
   (Christian Jaeger <$email>)
 ";
@@ -25,9 +28,9 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   ) or exit 1;
-usage unless @ARGV==1;
+usage unless @ARGV==1 or @ARGV==2;
 
-our ($file)=@ARGV;
+our ($file,$maybe_outfile)=@ARGV;
 
 our $oldest_acceptable_mail= 1176240568; # Tue Apr 10 23:29:28 2007,
                                          # this is the first
@@ -40,6 +43,7 @@ our $oldest_acceptable_mail= 1176240568; # Tue Apr 10 23:29:28 2007,
 use Chj::Mail::Striphead;
 use Chj::xopen 'xopen_read';
 use Chj::xperlfunc 'basename';
+use Chj::xtmpfile;
 use Chj::Mail::Detectoutgoing;
 our $detectoutgoing= new Chj::Mail::Detectoutgoing;
 
@@ -73,14 +77,19 @@ our $sh= Chj::Mail::Striphead->new_with_hosts
   );
 
 #repl;
-
-our $out= bless *STDOUT{IO},"Chj::IO::File";
+our $out= do {
+    if ($maybe_outfile) {
+	xtmpfile $maybe_outfile
+    } else {
+	bless *STDOUT{IO},"Chj::IO::File";
+    }
+};
 $out->xprint($sh->stripped_head_string($head));
 $in->xprintfile_to($out);
 $out->xclose;
 $in->xclose;
 
-#^- schlecht mit stdout weil on error  is draussen bereits file angelegt  besser intern  mit gutem tmpfile hdlr.
-
-#(excns gut weil  arbeiten ohne was weis ich denkn    ?)
+if ($maybe_outfile) {
+    $out->xputback (0600); #ok?
+}
 
