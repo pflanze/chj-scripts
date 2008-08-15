@@ -122,7 +122,7 @@ if ($opt_dir) {
     my $d= xopendir $inbase;
     my $outbase= $maybe_outfile;
     while (defined (my $item= $d->xnread)) {
-	if (/^\d/) {
+	if ($item=~ /^\d/) {
 	    eval {
 		mailreduce "$inbase/$item", "$outbase/$item"
 	    };
