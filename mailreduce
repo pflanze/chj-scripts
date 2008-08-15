@@ -18,6 +18,11 @@ sub usage {
   If outfile is not given, print to stdout. (If given, outfile is
   written as tmpfile first.)
 
+  Options:
+  --dir file and outfile are dir and outdir instead, try to convert
+        all files in dir to outdir. (In case of errors just print the
+        error but continue.)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -25,12 +30,19 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_dir;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "directory"=> \$opt_dir,
 	   ) or exit 1;
 usage unless @ARGV==1 or @ARGV==2;
 
 our ($file,$maybe_outfile)=@ARGV;
+
+if ($opt_dir and not $maybe_outfile) {
+    usage "requiring outdir argument if --dir option is given"
+}
+
 
 our $oldest_acceptable_mail= 1176240568; # Tue Apr 10 23:29:28 2007,
                                          # this is the first
@@ -44,52 +56,83 @@ use Chj::Mail::Striphead;
 use Chj::xopen 'xopen_read';
 use Chj::xperlfunc 'basename';
 use Chj::xtmpfile;
+use Chj::xopendir;
 use Chj::Mail::Detectoutgoing;
+
+sub Warn {
+    print STDERR "$myname: @_\n";
+}
+
+
 our $detectoutgoing= new Chj::Mail::Detectoutgoing;
 
-our $bn= basename $file;
-if ($bn=~ /^(\d{9,10})\./) {
-    my $filetime= $1;
-    if ($filetime >= $oldest_acceptable_mail) {
-	#ok
-    } else {
-	die "$myname: file '$bn' too old\n";
+
+sub mailreduce {
+    my ($file,$maybe_outfile)= @_;
+    local our $bn= basename $file;
+    if ($bn=~ /^(\d{9,10})\./) {
+	my $filetime= $1;
+	if ($filetime >= $oldest_acceptable_mail) {
+	    #ok
+	} else {
+	    die "$myname: file '$bn' too old\n";
+	}
     }
-}
-#^- muss hier/an ort gehen wo filename überhaupt bekannt ist. ok könnte noch deliverydates in headers an schauen.
+    #^- muss hier/an ort gehen wo filename überhaupt bekannt ist. ok könnte noch deliverydates in headers an schauen.
 
 
-our $in= xopen_read $file;
-our $head= Chj::Mail::SimpleHead->new_from_fh ($in);
+    local our $in= xopen_read $file;
+    local our $head= Chj::Mail::SimpleHead->new_from_fh ($in);
 
-#if (not $head->headers("received")) {
-#    die "$myname: file '$bn' is outgoing, or at least not incoming mail\n";
-#^- so einfach dass ich keine klass dafür hah. --- doch dann doch nid. hah.
-if ($detectoutgoing->head_is_outgoing($head)) {
-    die "$myname: file '$bn' is outgoing, not incoming, mail\n";
-}
+    #if (not $head->headers("received")) {
+    #    die "$myname: file '$bn' is outgoing, or at least not incoming mail\n";
+    #^- so einfach dass ich keine klass dafür hah. --- doch dann doch nid. hah.
+    if ($detectoutgoing->head_is_outgoing($head)) {
+	die "$myname: file '$bn' is outgoing, not incoming, mail\n";
+    }
 
 
-our $sh= Chj::Mail::Striphead->new_with_hosts
-  (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
-   'elvis-jaeger.mine.nu' => ['LAST', 2],
-   'ethlife-dev.ethz.ch' => ['SINGLE', 1],
-  );
+    local our $sh= Chj::Mail::Striphead->new_with_hosts
+      (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
+       'elvis-jaeger.mine.nu' => ['LAST', 2],
+       'ethlife-dev.ethz.ch' => ['SINGLE', 1],
+      );
 
-#repl;
-our $out= do {
+    #repl;
+    local our $out= do {
+	if ($maybe_outfile) {
+	    xtmpfile $maybe_outfile
+	} else {
+	    bless *STDOUT{IO},"Chj::IO::File";
+	}
+    };
+    $out->xprint($sh->stripped_head_string($head));
+    $in->xprintfile_to($out);
+    $out->xclose;
+    $in->xclose;
+
     if ($maybe_outfile) {
-	xtmpfile $maybe_outfile
-    } else {
-	bless *STDOUT{IO},"Chj::IO::File";
+	$out->xputback (0600); #ok?
     }
-};
-$out->xprint($sh->stripped_head_string($head));
-$in->xprintfile_to($out);
-$out->xclose;
-$in->xclose;
-
-if ($maybe_outfile) {
-    $out->xputback (0600); #ok?
 }
 
+if ($opt_dir) {
+    my $inbase= $file;
+    my $d= xopendir $inbase;
+    my $outbase= $maybe_outfile;
+    while (defined (my $item= $d->xnread)) {
+	if (/^\d/) {
+	    eval {
+		mailreduce "$inbase/$item", "$outbase/$item"
+	    };
+	    if (ref $@ or $@) {
+		Warn "file '$item': $@"
+	    }
+	} else {
+	    Warn "ignoring file '$item'"
+	}
+    }
+    # ^such wrapping should be generic. once again etc usw.
+} else {
+    mailreduce $file, $maybe_outfile
+}
