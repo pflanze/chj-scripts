@@ -11,6 +11,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname file
 
+  (Specialized tool for elvis-mail handling: strip headers from mails
+  from delivery through elvis-smtp, so that the mail look again as if
+  they were coming in right at elvis-smtp.)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
