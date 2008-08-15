@@ -88,7 +88,8 @@ sub mailreduce {
     #    die "$myname: file '$bn' is outgoing, or at least not incoming mail\n";
     #^- so einfach dass ich keine klass dafür hah. --- doch dann doch nid. hah.
     if ($detectoutgoing->head_is_outgoing($head)) {
-	die "$myname: file '$bn' is outgoing, not incoming, mail\n";
+	die "$myname: file '$bn' is not incoming mail\n";
+	#todo: fix method name head_is_outgoing, since it can't detect outgoing, just if it's not real incoming.right?.
     }
 
 
