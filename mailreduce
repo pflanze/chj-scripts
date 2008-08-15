@@ -70,6 +70,12 @@ our $striphead= Chj::Mail::Striphead->new_with_hosts
   (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
    'elvis-jaeger.mine.nu' => ['LAST', 2],
    'ethlife-dev.ethz.ch' => ['SINGLE', 1],
+   # [for some reasons I've got mails in my INBOX which do not carry
+   #  any of the above but just:
+   # Delivered-To: christian.jaeger@ethlife.ethz.ch
+   #  and this in e.g. 27 Jun 2007 13:15:10
+   #  (1182950110.14978.ethlife-a:* AH: that was seemingly moved here
+   #  -- ah then it's all ok actually??) bisschen strange aber lass diese also sein.]
   );
 
 
