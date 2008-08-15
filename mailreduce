@@ -66,6 +66,12 @@ sub Warn {
 
 our $detectoutgoing= new Chj::Mail::Detectoutgoing;
 
+our $striphead= Chj::Mail::Striphead->new_with_hosts
+  (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
+   'elvis-jaeger.mine.nu' => ['LAST', 2],
+   'ethlife-dev.ethz.ch' => ['SINGLE', 1],
+  );
+
 
 sub mailreduce {
     my ($file,$maybe_outfile)= @_;
@@ -92,13 +98,6 @@ sub mailreduce {
 	#todo: fix method name head_is_outgoing, since it can't detect outgoing, just if it's not real incoming.right?.
     }
 
-
-    local our $sh= Chj::Mail::Striphead->new_with_hosts
-      (# the names of the hosts I'm expecting my incoming smtp server to have in it's qmail 'me' file
-       'elvis-jaeger.mine.nu' => ['LAST', 2],
-       'ethlife-dev.ethz.ch' => ['SINGLE', 1],
-      );
-
     #repl;
     local our $out= do {
 	if ($maybe_outfile) {
@@ -107,7 +106,7 @@ sub mailreduce {
 	    bless *STDOUT{IO},"Chj::IO::File";
 	}
     };
-    $out->xprint($sh->stripped_head_string($head));
+    $out->xprint($striphead->stripped_head_string($head));
     $in->xprintfile_to($out);
     $out->xclose;
     $in->xclose;
