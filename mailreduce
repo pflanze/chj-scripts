@@ -16,32 +16,14 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-my @args;
-my $DEBUG=0;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-usage unless @args==1;
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
 
-our ($file)=@args;
+our ($file)=@ARGV;
 
 our $oldest_acceptable_mail= 1176240568; # Tue Apr 10 23:29:28 2007,
                                          # this is the first
