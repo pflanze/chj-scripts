@@ -62,6 +62,7 @@ usage unless @ARGV;
 	    my $path= join("/", @{$$s[Dirstack]}, $item);
 	    my $stat= xlstat $path;
 	    if ($stat->is_dir) {
+		local $$s[Curfd]= xopendir $path;
 		# (missing linked lists here of course)
 		local $$s[Dirstack]= [ @{$$s[Dirstack]}, $item ];
 		local $$s[Fdstack]= [ @{$$s[Fdstack]}, $$s[Curfd] ];
