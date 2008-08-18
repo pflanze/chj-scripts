@@ -14,6 +14,9 @@ sub usage {
   Create new changelog entry in debian/changelog with the version
   taken from git describe.
 
+  Options:
+  -b  force (passed to debchange)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -21,15 +24,20 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_b;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "b"=> \$opt_b,
 	   ) or exit 1;
 usage if @ARGV;
 
 use Chj::Git::Functions ':all';
 use Chj::xperlfunc;
 
-xexec "debchange", "--newversion", xgit_describe_debianstyle();
+xexec("debchange",
+      ($opt_b ? "-b" : ()),
+      "--newversion",
+      xgit_describe_debianstyle());
 
 
 #use Chj::ruse;
