@@ -5,7 +5,7 @@
 
 use strict;
 
-our $nfiles= 30000;
+our $nfiles= 10000; # 30000; hm is already too long "??" why can myxargs use 1e6 then?
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -83,10 +83,33 @@ usage unless @ARGV;
 #use Chj::ruse;
 use Chj::Backtrace; use Chj::repl; #repl;
 
+use Chj::xperlfunc;
+
 sub addmanyfiles ( $ ) {
     my ($path)=@_;
     our $stream= CJGIT::Filestream->new($path);
-    repl;
+    while (1) {
+	# collect files:
+	my $files=[];
+	my $is_last_partialcommit;
+      LP: {
+	    while(defined (my $file= $stream->next_path)) {
+		push @$files,$file;
+		if (@$files== $nfiles) {
+		    last LP;
+		} elsif (@$files > $nfiles) {
+		    die "???"
+		}
+	    }
+	    $is_last_partialcommit=1;
+	};
+	xxsystem "git", "add", "--", @$files;
+	xxsystem "git", "commit", "-m", "PARTIALCOMMIT\n\n(created by $myname)";
+	xxsystem "git", "repack", "-d";
+	last if $is_last_partialcommit;
+    }
+
+    # UNFINISHED HERE.
 }
 
 
