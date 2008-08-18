@@ -39,10 +39,7 @@ usage unless @ARGV;
     # (depth-first)
     use Class::Array -fields=>
       -publica=>
-	("curfd",
-	 #"dirstack", ehr
-	 "fdstack",
-	 #ah still need dirstack. for giving paths out of next_path
+	("fdstack",
 	 "dirstack",
 	);
     use Chj::xopendir;
@@ -51,27 +48,34 @@ usage unless @ARGV;
 	my $class=shift;
 	our ($basedir)=@_;
 	my $s= $class->SUPER::new;
-	$$s[Curfd]= xopendir $basedir;
-	$$s[Fdstack]= [];
+	$$s[Fdstack]= [ scalar xopendir $basedir ];
 	$$s[Dirstack]= [$basedir];
 	$s
     }
+    sub curfd {
+	my $s=shift;
+	$$s[Fdstack][-1]
+    }
     sub next_path {
 	my $s=shift;
-	if (defined (my $item= $$s[Curfd]->xnread)) {
+	if (defined (my $item= $s->curfd->xnread)) {
 	    my $path= join("/", @{$$s[Dirstack]}, $item);
 	    my $stat= xlstat $path;
 	    if ($stat->is_dir) {
-		local $$s[Curfd]= xopendir $path;
-		# (missing linked lists here of course)
-		local $$s[Dirstack]= [ @{$$s[Dirstack]}, $item ];
-		local $$s[Fdstack]= [ @{$$s[Fdstack]}, $$s[Curfd] ];
+		push @{$$s[Dirstack]}, $item;
+		push @{$$s[Fdstack]}, scalar xopendir $path;
 		$s->next_path
 	    } else {
 		$path
 	    }
 	} else {
-	    undef
+	    pop @{$$s[Dirstack]};
+	    pop @{$$s[Fdstack]};
+	    if (@{$$s[Fdstack]}) {
+		$s->next_path
+	    } else {
+		undef
+	    }
 	}
     }
 }
