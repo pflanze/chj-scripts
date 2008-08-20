@@ -54,7 +54,7 @@ usage unless @ARGV;
 ##*modified* COPY from cj-git-import-keephistory
 sub file_to_source_versionnumber_maybemsg ( $ ) {
     my ($fullfile)=@_;
-    if ($fullfile=~ m/(.+)\.([1-9][0-9]*)(?:_(.*))?\z/s) {
+    if ($fullfile=~ m/(.+)\.([0-9][0-9]*)(?:_(.*))?\z/s) {
 	($1,$2,$3)
     } else {
 	()
