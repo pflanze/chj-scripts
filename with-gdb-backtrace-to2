@@ -29,6 +29,7 @@ set logging redirect on
 bt full
 EOF
 
+set +e
 gdb -x "$cmdfile" -batch "$program"
 ##todo how to pass arguments.
 exitcode="$?"
