@@ -4,6 +4,8 @@ set -eu
 
 if [ $# -lt 2 ]; then
 	echo "usage: $0 outfile program arguments"
+	echo "  runs program with arguments and outputs gdb log to"
+	echo "  \${outfile}.log and the backtrace to \${outfile}_backtrace.txt"
 	exit 1
 fi
 
@@ -18,13 +20,13 @@ cmdfile=`tempfile`
 ##[todo: how to do if / else around the run command to only do "bt full" if it segfaulted?]
 cat <<EOF > "$cmdfile"
 set pagination off
-set logging file $outfile.prerun
+set logging file ${outfile}.log
 set logging on
 set logging redirect on
 run
 set logging off
 set logging redirect off
-set logging file $outfile
+set logging file ${outfile}_backtrace.txt
 set logging on
 set logging redirect on
 bt full
