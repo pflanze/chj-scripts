@@ -18,6 +18,15 @@ cmdfile=`tempfile`
 logfile="${outfile}.log"
 backtracefile="${outfile}_backtrace.txt"
 
+moveold () {
+    if test -e "$1"; then
+	mvnumber "$1" || true
+    fi
+}
+
+moveold "$logfile"
+moveold "$backtracefile"
+
 ##todo: can't use quotes in cmd files. but what about files with spaces?...
 ##[todo: how to do if / else around the run command to only do "bt full" if it segfaulted?]
 cat <<EOF > "$cmdfile"
