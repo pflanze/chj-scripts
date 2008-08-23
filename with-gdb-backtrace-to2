@@ -15,27 +15,29 @@ program="$1"
 shift
 
 cmdfile=`tempfile`
+logfile="${outfile}.log"
+backtracefile="${outfile}_backtrace.txt"
 
 ##todo: can't use quotes in cmd files. but what about files with spaces?...
 ##[todo: how to do if / else around the run command to only do "bt full" if it segfaulted?]
 cat <<EOF > "$cmdfile"
 set pagination off
-set logging file ${outfile}.log
+set logging file $logfile
 set logging on
 set logging redirect on
 run
 set logging off
 set logging redirect off
-set logging file ${outfile}_backtrace.txt
+set logging file $backtracefile
 set logging on
 set logging redirect on
 bt full
 quit
 EOF
 
-set +e
 gdb -x "$cmdfile" -batch-silent "$program"
 ##todo how to pass arguments.
-exitcode="$?"
 rm "$cmdfile"
-exit "$exitcode"
+
+# produce a success/error exit code:
+tail -1 "$logfile" | grep --quiet "Program exited normally"
