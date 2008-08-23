@@ -44,8 +44,7 @@ bt full
 quit
 EOF
 
-gdb -x "$cmdfile" -batch-silent "$program"
-##todo how to pass arguments.
+gdb -x "$cmdfile" -batch-silent --args "$program" "$@"
 rm "$cmdfile"
 
 if [ "No stack." == "`cat "$backtracefile"`" ]; then
