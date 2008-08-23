@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Sat Aug 23 11:57:32 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname outfile program [args]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+# use Getopt::Long;
+# our $verbose=0;
+# GetOptions("verbose"=> \$verbose,
+# 	   "help"=> sub{usage},
+# 	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our ($outfile, $program, @args)=@ARGV;
+
+use threads;
+# ^ required if I want to -use-threads, *and needs to be done before
+#   loading Devel::GDB!
+use Devel::GDB;
+
+our $gdb= Devel::GDB->new (
+			   #'-use-threads' => 1,
+			   -params=> [ $program ],
+			  )
+  or die;#?.
+
+$gdb->send_cmd ("run");##
+
+## HOW  to  say, if you get segv, tell me, associate a callback. Which sends "bt full" and receives the result. howhowhow.
+
+$gdb->end;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
