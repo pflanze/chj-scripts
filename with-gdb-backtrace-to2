@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -eu
+
+if [ $# -lt 2 ]; then
+	echo "usage: $0 outfile program arguments"
+	exit 1
+fi
+
+outfile="$1"
+shift
+program="$1"
+shift
+
+cmdfile=`tempfile`
+
+##todo: can't use quotes in cmd files. but what about files with spaces?...
+##[todo: how to do if / else around the run command to only do "bt full" if it segfaulted?]
+cat <<EOF > "$cmdfile"
+set logging file $outfile.prerun
+set logging on
+set logging redirect on
+run
+set logging off
+set logging redirect off
+set logging file $outfile
+set logging on
+set logging redirect on
+bt full
+EOF
+
+gdb -x "$cmdfile" -batch "$program"
+##todo how to pass arguments.
+exitcode="$?"
+rm "$cmdfile"
+exit "$exitcode"
