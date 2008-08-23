@@ -27,6 +27,7 @@ set logging file $outfile
 set logging on
 set logging redirect on
 bt full
+quit
 EOF
 
 set +e
