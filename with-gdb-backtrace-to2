@@ -32,7 +32,7 @@ quit
 EOF
 
 set +e
-gdb -x "$cmdfile" -batch "$program"
+gdb -x "$cmdfile" -batch-silent "$program"
 ##todo how to pass arguments.
 exitcode="$?"
 rm "$cmdfile"
