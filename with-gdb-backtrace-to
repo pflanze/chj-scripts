@@ -1,48 +1,59 @@
-#!/usr/bin/perl -w
+#!/bin/bash
 
-# Sat Aug 23 11:57:32 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+# by christian at jaeger mine nu, put into the public domain
+# thanks go to tromey on #gdb
 
-use strict;
+set -eu
 
-$0=~ /(.*?)([^\/]+)\z/s or die "?";
-my ($mydir, $myname)=($1,$2);
-sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname outfile program [args]
+if [ $# -lt 2 ]; then
+	echo "usage: $0 outfile program arguments"
+	echo "  runs program with arguments and outputs gdb log to"
+	echo "  \${outfile}.log and the backtrace to \${outfile}_backtrace.txt"
+	exit 1
+fi
 
-  (Christian Jaeger <$email>)
-";
-exit (@_ ? 1 : 0);
+outfile="$1"
+shift
+program="$1"
+shift
+
+cmdfile=`tempfile`
+logfile="${outfile}.log"
+backtracefile="${outfile}_backtrace.txt"
+
+moveold () {
+    if test -e "$1"; then
+	mvnumber "$1" || true
+    fi
 }
 
-# use Getopt::Long;
-# our $verbose=0;
-# GetOptions("verbose"=> \$verbose,
-# 	   "help"=> sub{usage},
-# 	   ) or exit 1;
-usage unless @ARGV>=2;
+moveold "$logfile"
+moveold "$backtracefile"
 
-our ($outfile, $program, @args)=@ARGV;
+##todo: can't use quotes in cmd files. but what about files with spaces?...
+cat <<EOF > "$cmdfile"
+set pagination off
+set logging file $logfile
+set logging on
+set logging redirect on
+run
+set logging off
+set logging redirect off
+set logging file $backtracefile
+set logging on
+set logging redirect on
+bt full
+quit
+EOF
 
-use threads;
-# ^ required if I want to -use-threads, *and needs to be done before
-#   loading Devel::GDB!
-use Devel::GDB;
+gdb -x "$cmdfile" -batch-silent --args "$program" "$@"
+rm "$cmdfile"
 
-our $gdb= Devel::GDB->new (
-			   #'-use-threads' => 1,
-			   -params=> [ $program ],
-			  )
-  or die;#?.
+if [ "No stack." == "`cat "$backtracefile"`" ]; then
+    rm "$backtracefile"
+else
+    echo "$0: application generated a backtrace" >&2
+fi
 
-$gdb->send_cmd ("run");##
-
-## HOW  to  say, if you get segv, tell me, associate a callback. Which sends "bt full" and receives the result. howhowhow.
-
-$gdb->end;
-
-
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
+# produce a success/error exit code:
+tail -1 "$logfile" | grep --quiet "Program exited normally"
