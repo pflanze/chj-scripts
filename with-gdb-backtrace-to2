@@ -49,6 +49,8 @@ rm "$cmdfile"
 
 if [ "No stack." == "`cat "$backtracefile"`" ]; then
     rm "$backtracefile"
+else
+    echo "$0: application generated a backtrace" >&2
 fi
 
 # produce a success/error exit code:
