@@ -17,6 +17,7 @@ cmdfile=`tempfile`
 ##todo: can't use quotes in cmd files. but what about files with spaces?...
 ##[todo: how to do if / else around the run command to only do "bt full" if it segfaulted?]
 cat <<EOF > "$cmdfile"
+set pagination off
 set logging file $outfile.prerun
 set logging on
 set logging redirect on
