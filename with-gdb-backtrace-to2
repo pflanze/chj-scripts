@@ -39,5 +39,9 @@ gdb -x "$cmdfile" -batch-silent "$program"
 ##todo how to pass arguments.
 rm "$cmdfile"
 
+if [ "No stack." == "`cat "$backtracefile"`" ]; then
+    rm "$backtracefile"
+fi
+
 # produce a success/error exit code:
 tail -1 "$logfile" | grep --quiet "Program exited normally"
