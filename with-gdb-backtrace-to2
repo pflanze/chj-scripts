@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# by christian at jaeger mine nu, put into the public domain
+# thanks go to tromey on #gdb
+
 set -eu
 
 if [ $# -lt 2 ]; then
