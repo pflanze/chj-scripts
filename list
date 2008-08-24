@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for v in "$@"; do
+    echo "$v"
+done
+
+#well, will need a -z flag some time.
