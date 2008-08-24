@@ -5,8 +5,10 @@
 
 set -eu
 
+myname=`basename "$0"`
+
 if [ $# -lt 2 ]; then
-	echo "usage: $0 outfile program arguments"
+	echo "usage: $myname outfile program arguments"
 	echo "  runs program with arguments and outputs gdb log to"
 	echo "  \${outfile}.log and the backtrace to \${outfile}_backtrace.txt"
 	exit 1
@@ -52,7 +54,7 @@ rm "$cmdfile"
 if [ "No stack." == "`cat "$backtracefile"`" ]; then
     rm "$backtracefile"
 else
-    echo "$0: application generated a backtrace" >&2
+    echo "$myname: application generated a backtrace" >&2
 fi
 
 # produce a success/error exit code:
