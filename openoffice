@@ -1,6 +1,4 @@
 #!/bin/sh
 
-#war auf 300000, würde ev sogar reichen, aber machen wir doch gleich sicher
-#ulimit -S -v 600000
-ulimit -S -v 1000000
+ulimit -S -v 1400000
 /usr/bin/openoffice "$@"
