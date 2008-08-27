@@ -1,0 +1,61 @@
+#!/usr/bin/perl -w
+
+# Thu Aug 28 00:02:51 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Create /tmp/\$USER if it doesn't exist already (checking whether
+  \$USER matches uid in getpwent data), or check whether it's owned by
+  the current user. Return with success if everything's fine (for cd
+  to enter and use the dir).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+sub Die {
+    die "$myname: @_\n";
+}
+
+our $uid= $>; ##correct right?
+our $usernam= do {
+    my $nam= $ENV{USER};
+    defined (my $expected_uid= getpwnam $nam)
+      or Die "couldn't look up user '$nam'";
+    $expected_uid == $uid
+      or Die "uid for user '$nam' doesn't match the current uid";
+#    $nam=~ /
+    $nam
+};
+our $tmp_owner_dir= "/tmp/$usernam";
+
+use Chj::xperlfunc ':all';
+
+if (my $s= Xlstat $tmp_owner_dir) {
+    $s->uid == $uid
+      or Die "item '$tmp_owner_dir' is not owned by you";
+    # no need to check whether it's a symlink or dir, right? since if
+    # it's a symlink, the followup check is "racy" anyway (hm in which
+    # sense?) but anyway, cd will then fail, 'as easy as that', k?
+} else {
+    xmkdir $tmp_owner_dir, 0700;
+    # done.
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
