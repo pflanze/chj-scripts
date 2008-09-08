@@ -8,6 +8,12 @@ use Chj::Cwd::realpath ;
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 use Chj::Unix::exitcode;
 use Chj::oerr;
+sub xfork {
+    my $p=fork;
+    defined $p or die "Could not fork: $!";
+    $p
+}
+
 
 $|++;
 
@@ -82,8 +88,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 sub reachable {
     warn "$$ checking reachability.." if $verbose;
-    my $p=fork;
-    defined $p or die "Could not fork: $!";
+    my $p=xfork;
     my $res= do {
 	if ($p){
 	    wait;
@@ -103,6 +108,8 @@ sub reachable {
 }
 
 sub rungnuclientwithargs {
+    # This is the normal run routine (always taken) after xemacs has
+    # been started up in the background.
     alarm 0; # switch off previously set up alarms. #hacky?
     my @args;
     for (@ARGV) {
