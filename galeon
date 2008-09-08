@@ -9,13 +9,8 @@ use strict;
 use URI::Escape 'uri_escape';
 use Chj::ulimit;
 use Chj::Cwd;
-use Chj::xperlfunc;
+use Chj::xperlfunc ":all";
 
-sub basename {
-    my $str=shift;
-    $str=~ s|.*/||s;
-    $str
-}
 
 # if (@ARGV) {
 #     next if /^-/;
@@ -62,14 +57,15 @@ my @args=
       my $ret;#hackhacknonfunc
       #warn "res=$res";
       #if ($res > 40) { ECH
-      if (length(basename($res))>80  and not $res=~ m/^(?:http|ftp|mailto|nntp|telnet):/i) { # cj 21.11.04 das protokollanschauen angefügt. mann spaghetti
+      my $res_basename= basename($res);
+      if (length($res_basename)>80  and not $res=~ m/^(?:http|ftp|mailto|nntp|telnet):/i) { # cj 21.11.04 das protokollanschauen angefügt. mann spaghetti
 	TRY:{
 	      my $lastpath;
 	      for (1..3) {
 		  my $randomname= ".randomlink_".int(rand(400100));
 		  my $rndpath= "$dir$randomname";
 		  $lastpath= $rndpath;
-		  print STDERR "$0: might be too long filename, linking it to a short one: $randomname\n";
+		  print STDERR "$0: '$res_basename' might be too long filename, linking it to a short one: $randomname\n";
 		  link $origpath,$rndpath and #last TRY;#och. return $rndpath  och.
 		    do {
 			$ret=$rndpath;
