@@ -122,6 +122,9 @@ sub rungnuclientwithargs {
 	$SIG{ALRM}= sub {
 	    alarm 0;
 	    startup_unlock;
+	    # ah uhm. and because of this we cannot just exec, and
+	    # there is a perl process around for as long as the window
+	    # is open, bad. (ok it's bad because it's perl and takes up 4+ MB RSS)
 	};
 	alarm $TIME_TO_GIVE_XEMACS;
 	wait;
