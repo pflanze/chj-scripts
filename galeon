@@ -48,7 +48,7 @@ my @args=
 
       my $res=do {
 	  if (not /^-/ and not /^(http|ftp|gopher|telnet|file):/i) {
-	      m|^/| ? "file://".uri_escape($_) : uri_escape "file://".cwd."/".$_
+	      m|^/| ? "file://".$_ :  "file://".cwd."/".$_
 	  } else {
 	      $_
 	  }
