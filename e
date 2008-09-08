@@ -121,31 +121,37 @@ sub rungnuclientwithargs {
 	    }
 	};
     }
-    my $p=fork;
-    defined $p or die "Could not fork: $!";
+    # do a double fork and capture the first child exit so that we
+    # don't risk delivering a sigchild to the gnuclient. whatever.
+    pipe PID_READ, PID_WRITE
+      or die "pipe: $!";
+    my $p=xfork;
     if ($p) {
-	# now either we return soon enough to justify holding on to
-	# the lock, or just unlock after that certain time:
-	$SIG{ALRM}= sub {
-	    alarm 0;
-	    startup_unlock;
-	    # ah uhm. and because of this we cannot just exec, and
-	    # there is a perl process around for as long as the window
-	    # is open, bad. (ok it's bad because it's perl and takes up 4+ MB RSS)
-	};
-	alarm $TIME_TO_GIVE_XEMACS;
-	wait;
-	# does the alarm make us continue w/o having really waited? (I think perl does reenter, right?)
-	warn "$$ returned from wait for gnuclient" if $verbose;
-	# propagate errors --- OLD missing stuff...
-	if ($? == 0) {
-	    exit 0
-	} else {
-	    warn "$myname: gnuclient exited with ".exitcode($?)."\n";
-	    exit 1;
-	}
+	# wait for the intermediate child:
+	wait; $? == 0 or die "hm, first child gave $?";
+	# send our pid to the doubly forked child:
+	close PID_READ or die "close: $!";
+	print PID_WRITE $$ or die "print: $!";
+	close PID_WRITE or die "close: $!";
+	exec $gnuclient, @args
+	  or die $!;
     } else {
-	exec $gnuclient, @args;
+	if (xfork) {
+	    exit 0;
+	} else {
+	    # In the doubly forked child:
+	    close PID_WRITE or die "close: $!";
+	    my $parentpid= <PID_READ>; chomp $parentpid;
+	    close PID_READ or die "close: $!";
+	    # now either we return soon enough to justify holding on to
+	    # the lock, or just unlock after that certain time:
+	    for (1..$TIME_TO_GIVE_XEMACS) {
+		last unless kill 0, $parentpid; # stop waiting if the process vanished, need polling now.
+		sleep 1;
+	    }
+	    startup_unlock;
+	    exit 0; # nobody is waiting for us, right? uhm. hope so. mb need double fork?
+	}
     }
 }
 
