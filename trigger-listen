@@ -37,6 +37,12 @@ sub usage {
   triggers are being issued before the cmd finishes, it is being run
   again (thus no triggers are being missed).
 
+  Options:
+  --sleep n    sleep n instead of $sleeptime  (I don't remember the
+               use of the sleeptime right now)
+  --umask val  use umask instead of the current one (relevant for
+               creating the socket file)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -45,10 +51,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $DEBUG;
+our $umask;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime=s"=> \$sleeptime,
 	   "debug"=> \$DEBUG,
+	   "umask"=> \$umask,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
@@ -56,6 +64,12 @@ our $socketpath= shift @ARGV;
 our @cmd= @ARGV;
 
 use IO::Socket::UNIX;
+
+if (defined $umask) {
+    umask $umask
+      or die "umask: $!";
+    warn "did set umask";
+}
 
 unlink $socketpath; #okay?  check for running daemons...
 our $socket= IO::Socket::UNIX->new
