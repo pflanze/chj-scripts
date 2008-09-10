@@ -47,7 +47,7 @@ our $verbose=0;
 our $DEBUG;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "sleeptime"=> \$sleeptime,
+	   "sleeptime=s"=> \$sleeptime,
 	   "debug"=> \$DEBUG,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
