@@ -56,7 +56,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime=s"=> \$sleeptime,
 	   "debug"=> \$DEBUG,
-	   "umask"=> \$umask,
+	   "umask=s"=> \$umask,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
@@ -66,9 +66,8 @@ our @cmd= @ARGV;
 use IO::Socket::UNIX;
 
 if (defined $umask) {
-    umask $umask
+    umask oct($umask)
       or die "umask: $!";
-    warn "did set umask";
 }
 
 unlink $socketpath; #okay?  check for running daemons...
