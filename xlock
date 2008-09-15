@@ -2,7 +2,9 @@
 
 # Verwendet xscreensaver als xlock
 
-system "killall gnome-screensaver; nice nice xscreensaver &";
+system "killall gnome-screensaver";
+my $gnome_screensaver_was_running= $? == 0;
+system "nice nice xscreensaver &";
 #sleep 3; # 1 scheint zuwenig (Sat,  4 May 2002 01:30:55 +0200), shit es gibt keinen weg rauszufinden ob er bereit ist?
 	# Ah, kann einfach xscreensaver-command: no screensaver is running on display :0.0 testen unten
 
@@ -30,6 +32,8 @@ while (<READ>) {
 		system "xscreensaver-command -exit";
 		kill 3, $chpid or die "Could not terminate child: $!";
 		print "OK!\n";
+		system "gnome-screensaver"
+		  if $gnome_screensaver_was_running;
 		exit;
 	}
 }
