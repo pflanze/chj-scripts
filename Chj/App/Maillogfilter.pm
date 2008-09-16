@@ -27,7 +27,7 @@ use strict;
 
 use Digest::MD5 'md5_hex';
 
-our $MAILRE= qr/(?:\w+(?:[+.=-]\w+)?)+\@\w+(?:[.-]\w+)+/; ###  todo  real one; well the good thing is that adresses like 'ethlifedev-chrismail@[192.168.8.1]' are getting through which is perhaps what I want when looking at qmail (not qpsmtp, which are different) logs (using qm-log).
+our $MAILRE= qr/(?:\w+(?:[+.=-]\w+)?)+\@\w+(?:[.-]\w+)*/; ###  todo  real one; well the good thing is that adresses like 'ethlifedev-chrismail@[192.168.8.1]' are getting through which is perhaps what I want when looking at qmail (not qpsmtp, which are different) logs (using qm-log).
 
 
 sub map_line {
