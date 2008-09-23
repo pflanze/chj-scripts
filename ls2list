@@ -19,6 +19,8 @@ sub usage {
 
   Options:
    -f|--flush   flush output for every item (aka line)
+   -s|--star|--starred  remove * characters at the end of the line
+                        (as present in some ls output formats)
 ";
 exit @_ ? 1 : 0;
 }
@@ -26,6 +28,7 @@ exit @_ ? 1 : 0;
 my @files;
 my $DEBUG=0;
 our $opt_flush;
+our $opt_starred;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -37,6 +40,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?f(lush)?$/) {
 	$opt_flush=1;
+    } elsif (/^--?s(tar(red)?)?$/) {
+	$opt_starred=1;
     } elsif (/^-./) {
 	usage("Unknown option '$_'\n");
     } else {
@@ -56,7 +61,10 @@ while (<STDIN>){
 	/sx) {
 	my $fn=$1;
 	chomp $fn;
-	$fn=~ s|/$||s or $fn=~ s|\*$||s ; # or ..
+	$fn=~ s|/$||s;
+	if ($opt_starred) {
+	    $fn=~ s|\*$||s
+	}
 	if (length($fn)>0){
 	    if ($fn eq '.' or $fn eq '..') {
 		warn "$myname: ignoring '$fn' item.\n";
