@@ -46,7 +46,8 @@ our ($file2,
 
 use Chj::xperlfunc;
 
-xexec "tkdiff", $file1,$file2;
+xsystem "tkdiff", $file1,$file2;
+# ^ instead of xexec, since git diff issues a warning if we don't exit true. (and yep, not xxsystem heh)
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
