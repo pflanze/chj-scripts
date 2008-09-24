@@ -70,6 +70,7 @@ END
 \newpage
 END
 	$out->xprint (<<"END");
+\\vspace*{0.01cm}
 \\includegraphics[width=20cm,height=28.28cm]{img_$i.png}
 END
     }
