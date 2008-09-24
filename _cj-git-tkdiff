@@ -32,8 +32,21 @@ exit (@_ ? 1 : 0);
 # 	   ) or exit 1;
 usage unless @ARGV==7;
 
-use Data::Dumper;
-print Dumper @ARGV;
+#use Data::Dumper;
+#print Dumper @ARGV;
+
+our ($file2,
+     $file1,
+     $sha1_1,
+     $perms_X,
+     $hmunknownwhyagainfile2,
+     $sha1_2,
+     $perms_Y
+    )= @ARGV;
+
+use Chj::xperlfunc;
+
+xexec "tkdiff", $file1,$file2;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
