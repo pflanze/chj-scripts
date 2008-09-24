@@ -1,0 +1,90 @@
+#!/usr/bin/perl -w
+
+# Wed Sep 24 19:05:37 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [-n outbasename] scanfiles
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $outbasename= "pdf";
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "n=s"=> sub {
+	       my ($n)=@_;
+	       $n=~ m|/| and usage "no slashes allowed in outbasename";
+	       $outbasename=$n
+	   },
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xtmpdir;
+use Chj::xperlfunc ':all'; # :all for basename
+use Chj::xrealpath;
+use Chj::xtmpfile;
+
+my $outdir= xtmpdir;
+
+#xchdir $outdir;
+
+#assume we are converting everything everything to png.
+my $i=0;
+for my $file (@ARGV) {
+    my $_bn= basename $file;
+    my ($bn, $suffix)= $_bn=~ /(.*)\.([^.]+)\z/s
+      or die "missing suffix in file '$file'";
+    my $lcsuffix= lc $suffix;
+    my $outpath= "$outdir/img_$i.png";
+    if ($lcsuffix eq 'png') {
+	my $abspath= xrealpath $file;
+	xsymlink $abspath, $outpath;
+    } else {
+	xxsystem "convert", $file, $outpath;
+    }
+    $i++
+}
+
+{
+    my $outfile= "$outdir/$outbasename.tex";
+    my $out= xtmpfile $outfile;
+    $out->xprint (<<'END');
+\documentclass[a4paper]{article}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}\pagestyle{empty}
+\usepackage[margin=0.1cm,noheadfoot]{geometry}
+\begin{document}
+END
+    for my $i (0..($i-1)) {
+	$out->xprint (<<'END') if $i;
+\newpage
+END
+	$out->xprint (<<"END");
+\\includegraphics[width=20cm,height=28.28cm]{img_$i.png}
+END
+    }
+    $out->xprint (<<'END');
+\end{document}
+END
+    $out->xclose;
+    $out->xputback (0666 & ~umask);
+
+    xchdir "$outdir";
+    xxsystem ("pdflatex", "$outbasename.tex");
+}
+
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
