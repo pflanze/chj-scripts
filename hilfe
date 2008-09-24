@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "
-Kleine Übersicht von Befehlen auf diesem Rechner:
+Kleine Ãœbersicht von Befehlen auf diesem Rechner:
 ----------------------------------------------------------------
 w           wer ist eingeloggt?
 who         +- dasselbe
@@ -12,13 +12,13 @@ cd Ordner   change directory: wechsle Standort in 'Ordner' hinein
             (kann auch ein ganzer '/Pfad/nach/irgendwo' sein)
 cd ..       aus dem aktuellen Ordner herausgehen
 pwd         Aktueller Standort (\"print working directory\")
-less Datei  Zeigt Inhalt der 'Datei' an. Scrollen ist möglich (PageUp/
+less Datei  Zeigt Inhalt der 'Datei' an. Scrollen ist mÃ¶glich (PageUp/
             Down oder 'w'/Space);  Textsuche durch Eingabe von '/' 
             und suchtext.
             Mit 'q' wird less wieder verlassen.
 mv quelle ziel    
             Datei verschieben oder umbenennen
-rm datei    Datei löschen
+rm datei    Datei lÃ¶schen
 man Befehl  manual: zeigt Hilfestellung zu 'Befehl' an. Bedienung
             analog zu 'less'
 apropos Stichwort  
@@ -26,22 +26,22 @@ apropos Stichwort
             von 'Stichwort' die Rede ist.
 mail        Simples Mailprogramm, um die Systemmails (Meldungen etc)
             anzusehen. Mit '?' kriegt man eine Liste der Befehle.
-            (Mit der Eingabetaste kann man die Mails durchblättern,
-            mit q verlässt man das Programm.)
-passwd      Passwort ändern (frägt interaktiv ab)
+            (Mit der Eingabetaste kann man die Mails durchblÃ¤ttern,
+            mit q verlÃ¤sst man das Programm.)
+passwd      Passwort Ã¤ndern (frÃ¤gt interaktiv ab)
 
 
 Tips:
 ----
 * Mit Control-C lassen sich die meisten Programme abbrechen.
 * Mit der Tabulatortaste lassen sich angefangene Befehle, Pfadangaben 
-  etc. automatisch vervollständigen. Zweimaliges drücken von Tab zeigt 
-  eine Liste der möglichen Vervollständigungen, falls es mehrere gibt.
-* Mit den Pfeil-nach-oben/unten-Tasten können alte Eingabezeilen 
-  zurückgeholt werden. (Mit Ctrl-r und tippen von Buchstaben
+  etc. automatisch vervollstÃ¤ndigen. Zweimaliges drÃ¼cken von Tab zeigt 
+  eine Liste der mÃ¶glichen VervollstÃ¤ndigungen, falls es mehrere gibt.
+* Mit den Pfeil-nach-oben/unten-Tasten kÃ¶nnen alte Eingabezeilen 
+  zurÃ¼ckgeholt werden. (Mit Ctrl-r und tippen von Buchstaben
   wird die letzte Zeile mit diesen Buchstaben gesucht; weitere Ctrl-r
-  zum weiter zurückgehen.)
-* Bewegen in der Eingabezeile ist möglich mit home/end-Tasten, Cmd-f/b 
+  zum weiter zurÃ¼ckgehen.)
+* Bewegen in der Eingabezeile ist mÃ¶glich mit home/end-Tasten, Cmd-f/b 
   (word forward/back) und anderen;  Ctrl-/ ist Undo.
 * Die meisten Befehle zeigen eine kurze Hilfestellung an, wenn man sie
   mit '-h' oder '--help' als Argument aufruft (z.B. 'mv --help')
