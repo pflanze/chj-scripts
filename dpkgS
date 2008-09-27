@@ -27,6 +27,7 @@ sub xsymlinkresolve ( $ ) {
 		# yep now really needs somehow turning to xrealpath right?
 		# doh?.
 		xrealpath $path
+		  #well todo, could manually checkandresolve as long as it doesn't hm. it needs an xrealpath which only resolves up to those points right. hm
 	    }
 	}
     } else {
