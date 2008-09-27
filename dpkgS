@@ -3,6 +3,7 @@
 use strict;
 use Chj::backtick qw/xbacktick/;
 use Chj::xperlfunc;
+use Chj::xrealpath;
 
 sub usage {
     print "usage: dpkgS commandname|file/path
@@ -33,15 +34,9 @@ for my $command_or_path (@ARGV) {
 		}
 	    }
 	};
-	my $realpath= xbacktick("chase",$path);
-	if ($? == 0) {
-	    chop $realpath;
-	    if (not 0== xsystem "dpkg", "-S", $realpath) {
-		$errors++;
-	    }
-	} else {
-	    # a message has already been printed by chase
-	    exit 1
+	my $realpath= xrealpath $path;
+	if (not 0== xsystem "dpkg", "-S", $realpath) {
+	    $errors++;
 	}
     }
 }
