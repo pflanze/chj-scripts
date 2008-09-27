@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+
+# Sat Sep 27 21:24:32 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname packagename
+
+  Uses 'apt-cache rdepends' and 'dpkglist' to only list the rdepends
+  which are locally installed.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($packagename)=@ARGV;
+
+use Chj::IO::Command;
+
+our $packagename_installed= do {
+    my $h={};
+    my $in= Chj::IO::Command->new_sender ("dpkglist");
+    while (<$in>) {
+	chomp;
+	$$h{$_}=1;
+    }
+    $in->xxfinish;
+    $h
+};
+
+use Chj::singlequote;
+
+sub packagename_rdepends {
+    my ($packagename)=@_;
+    my $in= Chj::IO::Command->new_sender ("apt-cache","rdepends","--",$packagename);
+    my $cnt=$in->xcontent;
+    $in->xxfinish;
+    my $die= sub {
+	die join ("",@_,": ",singlequote($cnt));
+    };
+    $cnt=~ s/^$packagename\s+//s
+      or &$die("was expecting packagename in output first");
+    $cnt=~ s/^Reverse Depends:\s+//s
+      or &$die("was expecting 'Reverse Depends:' in output");
+    my @dep= split /\s+/, $cnt;
+    [
+     map {
+	 my $is_or= s/^\|//;
+	 /^[\w-]+\z/
+	   or die "hm invalid packagename or not?: '$_'";
+	 bless [ $is_or ? "|" : "", $_ ], "CHJ_::Package"   #'gib ihm', asap, n type...~.
+     } @dep
+    ]
+}
+
+{
+    package CHJ_::Package;
+    use Class::Array -fields=>
+      -publica=>
+	('is_or',
+	 'packagename');
+    end Class::Array;
+}
+
+sub packagename_rdepends_local {
+    my ($packagename)=@_;
+    my $rdepends= packagename_rdepends ($packagename);
+    [
+     grep {
+	 $$packagename_installed { $_->packagename }
+     } @$rdepends
+    ]
+}
+
+#hm and  uniq'ify the list right doh first maybe -  .
+
+#'starting to get type obsessed'"?"
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
