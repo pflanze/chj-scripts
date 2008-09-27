@@ -2,8 +2,40 @@
 
 use strict;
 use Chj::backtick qw/xbacktick/;
-use Chj::xperlfunc;
+use Chj::xperlfunc ':all';
 use Chj::xrealpath;
+
+# a manual symlink resolver, but only the last path segment (unlike
+# xrealpath or chase):
+
+use Chj::singlequote;
+
+sub xsymlinkresolve ( $ ); # even if I'm using parens below, this is necessary. ~gr.
+sub xsymlinkresolve ( $ ) {
+    my ($path)=@_;
+    my $s= xlstat $path;
+    if ($s->is_link) {
+	my $l= xreadlink $path;
+	if ($l=~ m|^/|) {
+	    xsymlinkresolve ($l)
+	} else {
+	    # need path resolving, hum. and not based on path actually.
+	    # well the simple case is easy:
+	    if (not $l=~ m|/|) {
+		xsymlinkresolve( dirname ($path)."/".$l )
+	    } else {
+		# yep now really needs somehow turning to xrealpath right?
+		# doh?.
+		xrealpath $path
+	    }
+	}
+    } else {
+	$path=~ s|//+|/|sg;
+	$path=~ m{(?:^|/)..(?:\z|/)}
+	  and die "path contains '..' segments: ".singlequote ($path);
+	$path
+    }
+}
 
 sub usage {
     print "usage: dpkgS commandname|file/path
@@ -34,8 +66,8 @@ for my $command_or_path (@ARGV) {
 		}
 	    }
 	};
-	my $realpath= xrealpath $path;
-	if (not 0== xsystem "dpkg", "-S", $realpath) {
+	my $symlinkresolved_path= xsymlinkresolve $path;
+	if (not 0== xsystem "dpkg", "-S", $symlinkresolved_path) {
 	    $errors++;
 	}
     }
