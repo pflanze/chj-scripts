@@ -14,19 +14,26 @@ usage unless @ARGV;
 
 my $errors=0;
 
-for (@ARGV) {
-    if (/^-/) {
+for my $command_or_path (@ARGV) {
+    if ($command_or_path=~ /^-/) {
 	usage
     } else {
 	local $/;
-	if (! /\//) { # it could be a command
-	    my $path= xbacktick("which",$_);
-	    if ($? == 0) {
-		chop $path;
-		$_=$path
+	my $path= do {
+	    if ($command_or_path=~ /\//) {
+		$command_or_path
+	    } else {
+		# it could be a command
+		my $path= xbacktick("which",$command_or_path);
+		if ($? == 0) {
+		    chop $path;
+		    $path
+		} else {
+		    $command_or_path
+		}
 	    }
-	}
-	my $realpath= xbacktick("chase",$_);
+	};
+	my $realpath= xbacktick("chase",$path);
 	if ($? == 0) {
 	    chop $realpath;
 	    if (not 0== xsystem "dpkg", "-S", $realpath) {
