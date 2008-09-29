@@ -16,5 +16,5 @@ export PS1='xmms2-shell$ '
 settitle xmms2-shell
 
 #exec bash
-exec bash --norc
+exec bash --norc "$@"
 #grrr todo
