@@ -1,0 +1,4 @@
+#!/bin/bash
+
+ulimit -S -v unlimited
+LANG=C daemonize --stop make "$@"
