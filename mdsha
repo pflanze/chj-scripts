@@ -3,4 +3,5 @@
 for f in "$@"; do
     md5sum "$f"
     sha1sum "$f"
+    sha256sum "$f"
 done
