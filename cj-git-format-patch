@@ -1,0 +1,78 @@
+#!/usr/bin/perl -w
+
+# Sat Oct 18 21:06:55 CEST 2008
+(my $_email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname format-patch-options
+
+  (Christian Jaeger <$_email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+#use Getopt::Long;
+#our $verbose=0;
+#GetOptions("verbose"=> \$verbose,
+#	   "help"=> sub{usage},
+#	   ) or exit 1;
+#usage unless @ARGV;
+usage if (not(@ARGV)
+	  or
+	  (@ARGV==1 and ($ARGV[0] eq "--help" or $ARGV[0] eq "-h")));
+
+use Chj::Mailfrom 'mailfromaddress';
+our $email= mailfromaddress;
+use Sys::Hostname;
+my $hostname=hostname;
+$email=~ s/-$hostname\@/\@/;# always ok?
+
+print "
+[Creating patch with the following data:
+  EMAIL=$email (for Signed-off-by; From is not being changed by this!)
+  -s  (--signoff, using committer identity)
+  --thread
+  -M
+  -C
+
+Don't forget to give the following options if necessary!:
+  --in-reply-to
+  --cc
+
+Also you could use:
+  --cover-letter
+  --attach
+
+Be careful that To and Return-Path are set. Example .git/config entry:
+[format]
+        numbered = auto
+        headers = \"To: git\@vger.kernel.org\\nReturn-Path: <christian\@jaeger.mine.nu>\\n\"
+]
+
+";
+
+
+$ENV{EMAIL}= $email;
+
+use Chj::xperlfunc;
+
+xexec ("git",
+       "format-patch",
+       #"--inline",####?spielzeug? am ende aber nicht?
+       #"--attach", ### vs obig? spielzeug
+       "--thread", # always?
+       "-s",
+       "-M", "-C", # always?
+       # --in-reply-to=...
+       # --cc=...
+       #"--cover-letter",#?
+       # aber diese kann ich ja normal angeben.
+       @ARGV);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
