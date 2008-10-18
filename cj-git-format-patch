@@ -26,15 +26,22 @@ usage if (not(@ARGV)
 	  or
 	  (@ARGV==1 and ($ARGV[0] eq "--help" or $ARGV[0] eq "-h")));
 
-use Chj::Mailfrom 'mailfromaddress';
-our $email= mailfromaddress;
 use Sys::Hostname;
 my $hostname=hostname;
-$email=~ s/-$hostname\@/\@/;# always ok?
+sub mogrify_email {
+    my ($email)=@_;
+    $email=~ s/-$hostname\@/\@/;# always ok?
+    $email
+}
+
+use Chj::Mailfrom 'mailfromaddress';
+our $orig_email= mailfromaddress;
+our $email= mogrify_email $orig_email;
+
 
 print "
 [Creating patch with the following data:
-  EMAIL=$email (for Signed-off-by; From is not being changed by this!)
+  email (signed-off-by, From): $email
   -s  (--signoff, using committer identity)
   --thread
   -M
@@ -60,8 +67,11 @@ Be careful that To and Return-Path are set. Example .git/config entry:
 $ENV{EMAIL}= $email;
 
 use Chj::xperlfunc;
+use Chj::IO::Command;
+use Chj::Chomp;
 
-xexec ("git",
+our $fmt= Chj::IO::Command->new_sender
+ ("git",
        "format-patch",
        #"--inline",####?spielzeug? am ende aber nicht?
        #"--attach", ### vs obig? spielzeug
@@ -73,6 +83,33 @@ xexec ("git",
        #"--cover-letter",#?
        # aber diese kann ich ja normal angeben.
        @ARGV);
+
+our @files= map { Chomp $_ } <$fmt>;
+$fmt->xxfinish;
+
+use Chj::Fileutil qw(xCatfile xWritefileln);
+
+#$|++;  well. since it's multiline because of Fileutil sh* handling functions anyway, I'll just do everything per line.
+
+sub mogrify_file {
+    my ($path)=@_;
+    print "Editing file '$path'..\n";
+    my $cnt= xCatfile $path;
+    $cnt=~ sé^(From: .*<)([^\s\@<>]+\@[^\s\@<>]+)(>.*)é
+      my ($pre,$orig_email,$post)=($1,$2,$3);
+      my $email= mogrify_email ($orig_email);
+      if ($email ne $orig_email) {
+	  print "From: changing '$orig_email' to '$email'.\n";
+      }
+      $pre.$email.$post
+    éme;
+    xWritefileln( $cnt,$path);
+    #print "done.\n\n";
+}
+
+mogrify_file $_ for @files;
+
+print "\ndone.\n";
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
