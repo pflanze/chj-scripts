@@ -126,7 +126,7 @@ sub xWritefileln ($ $ ) {
     Warn "writing to '$realpath'";
     my $f= xtmpfile $realpath;
     $f->xprint ($str);
-    $f->xprint ("\n") unless $str=~ /\n\bz/s;
+    $f->xprint ("\n") unless $str=~ /\n\z/s;
     $f->xclose;
     $f->xputback(0644);
 }
