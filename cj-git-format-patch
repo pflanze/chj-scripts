@@ -59,6 +59,9 @@ Be careful that To and Return-Path are set. Example .git/config entry:
 [format]
         numbered = auto
         headers = \"To: git\@vger.kernel.org\\nReturn-Path: <christian\@jaeger.mine.nu>\\n\"
+
+NOTE: the Date: headers are those from the commit messages! Consider
+using --cover-letter or I don't know what.
 ]
 
 ";
@@ -99,7 +102,9 @@ sub mogrify_file {
       my ($pre,$orig_email,$post)=($1,$2,$3);
       my $email= mogrify_email ($orig_email);
       if ($email ne $orig_email) {
-	  print "From: changing '$orig_email' to '$email'.\n";
+	  print "From: changing from '$orig_email' to '$email'.\n";
+      } else {
+	  print "From: leave it at '$email'.\n";
       }
       $pre.$email.$post
     éme;
