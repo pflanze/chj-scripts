@@ -30,8 +30,13 @@ while (length($pwd)) {
     if (open my $in, "<", $path) {
 	defined(my $kind= <$in>)
 	  or die "'$path' is empty";
+	my $maybe_email= <$in>;
 	close $in or die $!;
 	chomp $kind;
+	if (defined $maybe_email) {
+	    chomp $maybe_email;
+	    $ENV{EMAIL}= $maybe_email if $maybe_email;
+	}
 	xexeckind ($kind);
     }
     $pwd=~ s|/+[^/]+\z||s or die "?? '$pwd'";
