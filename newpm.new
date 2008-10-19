@@ -126,7 +126,7 @@ $baseclassdefs
 
 __PACKAGE__->__fields__
   (
-   path=> 'r',
+   #id=> 'r',
   );
 
 END
