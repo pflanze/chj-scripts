@@ -31,9 +31,8 @@ for (my $i=0; $i<@ARGV; $i++) {
 	$baseclass= $ARGV[$i+1] or usage();
 	splice @ARGV, $i,2;
 	$i--;
-	$baseclass=~ s|^\./||;##MANN  warum habe ich unten dann sep  isch doch genau dasselbe?!!!!
-	$baseclass=~ s|/|::|sg;
-	$baseclass=~ s|\.pm$||;
+ 	my $thing= CHJ::Newperl::Path->new($baseclass);
+ 	$baseclass= $thing->namespace;
     }
     elsif ($ARGV[$i]=~ /^--?h(elp)?$/) {
 	usage();
@@ -51,25 +50,9 @@ for (@ARGV) {
     if (/^--?h(elp)?$/) {
 	usage();
     } else {
-	# welches ist der pfad, welches der Namespace?
-	if ( /(.*?)((?:\w+::)*\w+)(?:\.pm)?$/ ) {
-	    my ($path,$ns)=($1,$2);
-	    $path.=join("/",split(/::/,$ns));
-	    if ($ns!~ /::/ and $path!~ /^\//) {
-		# Benutzer hat wohl slashes statt :: verwendet.
-		$ns= $path;
-		$ns=~ s|^\./||;##vgl oben
-		# Assume that classes *always* start with an uppercase initial, remove lowercase path parts first:
-		$ns=~ s|^(?:[^A-Z/][^/]*/)+||s;
-		# Turn remaining path to namespace syntax
-		$ns=~ s|/|::|g;
-	    }
-	    $path.=".pm";
-	    create ($path,$ns);
-	} else {
-	    warn "Weiss nicht was mit '$_' anfanden.\n";
-	    usage();
-	}
+	my $thing= CHJ::Newperl::Path->new($_);
+	create ($thing->path,
+		$thing->namespace);
     }
 }
 
