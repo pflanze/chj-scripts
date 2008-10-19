@@ -24,16 +24,17 @@ sub usage {
 
 usage() unless @ARGV;
 
-my $baseclass="";
+my @baseclasses;
 my @additionaloptions;
 for (my $i=0; $i<@ARGV; $i++) {
     if ($ARGV[$i]=~ /^--?b(ase)?(class)?$/) {
-	$baseclass= $ARGV[$i+1] or usage();
+	my $baseclass= $ARGV[$i+1] or usage();
 	splice @ARGV, $i,2;
 	$i--;
 	$baseclass=~ s|^\./||;##MANN  warum habe ich unten dann sep  isch doch genau dasselbe?!!!!
 	$baseclass=~ s|/|::|sg;
 	$baseclass=~ s|\.pm$||;
+	push @baseclasses,$baseclass;
     }
     elsif ($ARGV[$i]=~ /^--?h(elp)?$/) {
 	usage();
@@ -77,20 +78,11 @@ edit (24,\@additionaloptions, @paths);
 
 
 sub create {
-    my ($path,$namespace)=@_; # global: $baseclass
+    my ($path,$namespace)=@_; # global: @baseclasses
 
-    my $baseclassdefs=
-      $baseclass ? "
-use $baseclass -extend=>
-  -publica=>
-  ;
-" : "
-use Class::Array -fields=>
-  -publica=>
-  ;
-";
+    my $baseclassdefs= 'use base qw('.join(" ", @baseclasses ? @baseclasses : "Chj::Class").');';
     my $exporterdefs=
-      $baseclass ? ""
+      @baseclasses ? ""
 	:
 	  "#\@ISA=\"Exporter\"; require Exporter;
 #\@EXPORT=qw();
@@ -125,7 +117,6 @@ use Class::Array -fields=>
 	    print OUT <<"END" or warn "Fehler beim Schreiben: $!";
 $copy
 #
-# \$Id\$
 
 =head1 NAME
 
@@ -140,25 +131,14 @@ $namespace
 
 
 package $namespace;
-${exporterdefs}
-use strict;
+${exporterdefs}use strict;
 $baseclassdefs
 
-# sub new {
-#     my \$class=shift;
-#     my \$s= \$class->SUPER::new;
-#     (\@\$s[])=\@_;
-#     \$s
-# }
+__PACKAGE__->__fields__
+  (
+   path=> 'r',
+  );
 
-#sub DESTROY {
-#    my \$s=shift;
-#    local \$@;
-#    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
-#    \$s->SUPER::DESTROY;
-#}
-
-end Class::Array;
 END
 #end $namespace;
 # Könnte noch  use vars qw{$VERSION};  und  $VERSION = '0.00'; reintun. Aber naja?
