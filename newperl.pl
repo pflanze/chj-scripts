@@ -8,10 +8,8 @@ my %adresse = (
 sub copy {
     my $adr= $adresse{$ENV{USER}} or die "Kenne Dich ($ENV{USER}) nicht. Bitte Christian sagen.\n";
     my $year= (localtime)[5]+1900;
-    my $nameonly=$adr; $nameonly=~ s/,.*//s;
-	"# ".localtime()."  ".$adr."\n".
 	"#\n".
-	"# Copyright $year by $nameonly\n".
+	"# Copyright $year by $adr\n".
 	"# Published under the same terms as perl itself"
 }
 
