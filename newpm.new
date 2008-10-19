@@ -7,17 +7,20 @@ BEGIN {
     require 'newperl.pl';
 }
 
-
+our $BASECLASS= "Chj::Class";
 
 sub usage {
     $0=~ /([^\/]*)$/;
     print "$1 Some::Module | som/where/Some::Module | Some/Module[.pm] | /some/path/mymodule
       [ -b[ase] Some::Baseclass | Some/BaseClass[.pm] ]
+      or  -B
 
   Macht neues Perlmodul-File im \$EDITOR (ist zurzeit '$ENV{EDITOR}') auf.
   Im letzten Fall wird Namespace 'mymodule' angenommen (Du musst 
   /some/path::mymodule angeben wenn Du es anders willst).
   Optional kann Basisklasse vom Typ Class::Array angegeben werden.
+
+  -B sagt einfach das $BASECLASS als baseclass verwendet werden soll (kein exporter zeug)
 ";
 	exit;
 }
@@ -35,6 +38,11 @@ for (my $i=0; $i<@ARGV; $i++) {
 	$baseclass=~ s|/|::|sg;
 	$baseclass=~ s|\.pm$||;
 	push @baseclasses,$baseclass;
+    }
+    elsif ($ARGV[$i] eq '-B') {
+	push @baseclasses, $BASECLASS;
+	splice @ARGV, $i,2;
+	$i--;
     }
     elsif ($ARGV[$i]=~ /^--?h(elp)?$/) {
 	usage();
@@ -80,7 +88,7 @@ edit (24,\@additionaloptions, @paths);
 sub create {
     my ($path,$namespace)=@_; # global: @baseclasses
 
-    my $baseclassdefs= 'use base qw('.join(" ", @baseclasses ? @baseclasses : "Chj::Class").');';
+    my $baseclassdefs= 'use base qw('.join(" ", @baseclasses ? @baseclasses : $BASECLASS).');';
     my $exporterdefs=
       @baseclasses ? ""
 	:
