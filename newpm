@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# Sun Oct 19 15:59:52 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+# determine which kind of newpm is to be used. by going up from pwd
+# and looking for a file named .newpm
+
+my $pwd= `pwd`;
+chomp $pwd; #!!!! this is not the shell d'oh.
+
+$pwd=~ m|^/| or die "?? '$pwd'";
+
+# pwd never ends in a slash except if it's "/" right? check it?.
+($pwd=~ m|/\z| and die "?? '$pwd'") if length ($pwd) > 1;
+
+sub xexeckind {
+    my ($kind)=@_;
+    my $prog= "newpm.$kind";
+    #warn "running '$prog'";#
+    exec $prog, @ARGV
+      or exit 127;#?
+}
+
+while (length($pwd)) {
+    #warn "going to try '$pwd/.newpm'";#
+    my $path= "$pwd/.newpm";
+    if (open my $in, "<", $path) {
+	defined(my $kind= <$in>)
+	  or die "'$path' is empty";
+	close $in or die $!;
+	chomp $kind;
+	xexeckind ($kind);
+    }
+    $pwd=~ s|/+[^/]+\z||s or die "?? '$pwd'";
+}
+
+# haven't found any file, so:
+xexeckind ("old");
+
