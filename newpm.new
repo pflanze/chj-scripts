@@ -39,7 +39,7 @@ for (my $i=0; $i<@ARGV; $i++) {
     }
     elsif ($ARGV[$i] eq '-B') {
 	push @baseclasses, $BASECLASS;
-	splice @ARGV, $i,2;
+	splice @ARGV, $i,1;
 	$i--;
     }
     elsif ($ARGV[$i]=~ /^--?h(elp)?$/) {
