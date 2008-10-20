@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Mon Oct 20 13:37:10 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname basedir-for-outfiles upgrade|dist-upgrade [further apt stuff]
+
+  Logs the current, then the afterwards installed package list/versions,
+  and the listeners before and after.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our ($basedir, @upgrade)=@ARGV;##hm todo  -d  not trigger GetOptions as always echt .
+
+use Chj::xperlfunc;
+use Chj::singlequote 'singlequote_sh'; #statt quotemeta, wirklich notwendig?
+
+our $logdir= do {
+    # wieder mal..:?:
+    my $subdir= `date_`; chomp $subdir; $subdir or die;
+    "$basedir/$subdir/"
+};
+
+xmkdir $logdir;
+
+sub dpkgli {
+    my ($beforeafter)=@_;
+    my $path= "$logdir/packages_$beforeafter.gz";
+    xxsystem "COLUMNS=1000 dpkgli '*' | gzip > ".singlequote_sh($path);
+    $path
+}
+
+sub listeners {
+    my ($beforeafter)=@_;
+    my $path= "$logdir/listeners_".$beforeafter;
+    xxsystem "show_listeners -w > ".singlequote_sh ($path);
+    $path
+}
+
+
+my $dpkglibefore= dpkgli ("before");
+my $listenersbefore= listeners ("before");
+
+xxsystem "apt-get", @upgrade;#
+#^ sollt ich tee machen ?
+#  geht das brhpt?
+
+my $dpkgliafter= dpkgli ("before");
+my $listenersafter= listeners ("before");
+
+xsystem "tkdiff", $dpkglibefore, $dpkgliafter;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
