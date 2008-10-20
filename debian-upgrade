@@ -61,10 +61,10 @@ xxsystem "apt-get", @upgrade;#
 #^ sollt ich tee machen ?
 #  geht das brhpt?
 
-my $dpkgliafter= dpkgli ("before");
-my $listenersafter= listeners ("before");
+my $dpkgliafter= dpkgli ("after");
+my $listenersafter= listeners ("after");
 
-xsystem "tkdiff", $dpkglibefore, $dpkgliafter;
+xsystem "tkdiff", $listenersbefore, $listenersafter;
 
 
 #use Chj::ruse;
