@@ -53,17 +53,30 @@ usage if @files;
 $|++ if $opt_flush;
 
 while (<STDIN>){
-    if (m/^[-dlps][-rwsxtSTcb]{9}\s+\d+\s+[\w-]+\s+\w+\s+\d+
+    if (m/^([-dlps])[-rwsxtSTcb]{9}\s+\d+\s+[\w-]+\s+\w+\s+\d+
 	#17. Feb 02:05
 	# 1. Jan 1970
 	.{15}\d*\ 
 	(.+)
 	/sx) {
-	my $fn=$1;
+	my ($type,$fn)=($1,$2);
 	chomp $fn;
-	$fn=~ s|/$||s;
-	if ($opt_starred) {
-	    $fn=~ s|\*$||s
+	if ($type eq 'l') {
+	    my @parts= split / -> /, $fn;
+	    if (@parts==2) {
+		$fn= $parts[0];
+	    } elsif (@parts==1) {
+		# leave it as is. maybe ls is set not to show the targets
+	    } else {
+		warn "$myname: symlink item has more than one ' -> ' part in it, ignoring: '$fn'\n";
+		next; #ok this works right?. am i good in Perl?
+	    }
+	} else {
+	    # is it correct that all these only ever apply to non-symlinks?
+	    $fn=~ s|/$||s;
+	    if ($opt_starred) {
+		$fn=~ s|\*$||s
+	    }
 	}
 	if (length($fn)>0){
 	    if ($fn eq '.' or $fn eq '..') {
