@@ -61,18 +61,9 @@ if ($@) {
     die "Konnte regex nicht parsen: $@";
 }
 
-my $trash; ###hmm, ~copy from trash
-if ($ENV{TRASHCAN}) {
-    $trash= $ENV{TRASHCAN}
-} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
-    $trash=$ENV{HOME}."/Desktop/Trash/";
-} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
-    $trash=$ENV{HOME}."/Desktop/Mülleimer/";
-} elsif (-e $ENV{HOME}."/.Trash/") {
-    $trash=$ENV{HOME}."/.Trash/";
-} else {
-    die "Konnte Deinen Trashcan nicht finden. ";
-}
+use Chj::App::Trash;
+our $trasher= new Chj::App::Trash;
+our $trash= $trasher ->trashdir; #naja geht nur jetzt noch. so lang dass ich nicht auf perpartition wechsle. aber dann .. eben hier wieder anpassen.
 
 if ($mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks wirklich nicht? und werd ich nie mount --bind machen? NA: odersogar normaler ichdummkopfeinfacher mount innerhalb tree reicht für change. todo. na, einfach auf EXDEV testen unten und in jedem solchen Falle nachfragen sigh. todo also eher: aufräumen,streamlinen.
  {
