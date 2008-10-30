@@ -18,6 +18,7 @@ sub usage {
 
   Options:
   -c  create, if none existed for this kernel version before
+  -v  verbose
 
   (Christian Jaeger <$email>)
 ";
@@ -37,8 +38,19 @@ our ($kernel_version)=@ARGV;
 
 use Chj::xperlfunc;
 
-xxsystem "update-initramfs", ($opt_create ? "-c" : "-u"), "-k", $kernel_version;
+our @cmd=("update-initramfs",
+	  ($opt_create ? "-c" : "-u"),
+	  ($verbose ? "-v" : ()),
+	  "-k",
+	  $kernel_version);
 
+if ($verbose) {
+    use Chj::singlequote 'singlequote_many';
+    print STDERR "running ".singlequote_many (@cmd)."..\n";
+}
+xxsystem @cmd;
+
+## also add verbosity here  ?
 xsystem "mvnumber", "$boot/initrd.img.old";#well.
 xrename "$boot/initrd.img", "$boot/initrd.img.old";
 xsymlink "initrd.img-$kernel_version", "$boot/initrd.img";
