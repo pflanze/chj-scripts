@@ -13,7 +13,7 @@ sub usage {
 
   Skip n lines of input, output the rest.
 
-  Only an hour later, I've been told that tail +$((n+1)) also does the job.
+  Only an hour later, I've been told that tail +\$((n+1)) also does the job.
 
   (Christian Jaeger <$email>)
 ";
