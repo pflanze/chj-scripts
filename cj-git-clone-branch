@@ -41,6 +41,16 @@ our $typemap=
     bool=> ["--bool"],
    };
 
+# dies hier macht zwar auch dies 'wieder' rein
+# +[remote "origin"]
+# +	url = /home/chris/Projekte/spielzeug/SmartToys/.git
+# +	fetch = +refs/heads/*:refs/remotes/origin/*
+#hm
+
+xxsystem qw(git remote add), "origin", $origurl;
+# OHNE -f damits noch nichts holt right?
+
+
 sub config ( $ $ $ ) {
     my ($type, $key,$value)=@_;
     my $t= $$typemap{$type}
@@ -58,21 +68,20 @@ sub config ( $ $ $ ) {
 #            git config [<file-option>] --unset-all name [value_regex]
 #   etc.
 
-config "string", "remote.origin.url", $origurl;
+# config "string", "remote.origin.url", $origurl;
 config "string", "remote.origin.fetch",
   "+refs/heads/${branch}:refs/remotes/origin/${branch}";
 
-config "string", "branch.master.remote", "origin";
-config "string", "branch.master.merge", "refs/heads/master";
+# config "string", "branch.master.remote", "origin";
+# config "string", "branch.master.merge", "refs/heads/master";
 
-# dies hier macht zwar auch dies 'wieder' rein
-# +[remote "origin"]
-# +	url = /home/chris/Projekte/spielzeug/SmartToys/.git
-# +	fetch = +refs/heads/*:refs/remotes/origin/*
-#hm
+#^^ probably all of those except for the fetch one are  unnecessary.
 
-xxsystem qw(git remote add), "-f", "origin", $origurl;
+xxsystem "git","remote","update";
 
+#and now there is nothing in working tree yet
+
+xxsystem "git","checkout","-b", $branch, "origin/$branch";
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
