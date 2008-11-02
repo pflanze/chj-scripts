@@ -50,8 +50,12 @@ while (<$in>) {
 	my ($key,$val)= split /:/,$_,2
 	  or die "non-header?: '$_'";
 	#well that wasn't a guarantee yet for 2 fields grr.?. anyway.
-	defined $val or die "invalid header: '$_'";
-	$$headers{lc(chompspace $key)}= chompspace($val);
+	if (defined $val) {
+	    $$headers{lc(chompspace $key)}= chompspace($val);
+	} else {
+	    warn "invalid header: '$_'"
+	      unless /^ICY 200 OK/; # di.fm sends these
+	}
     }
 }
 
