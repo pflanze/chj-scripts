@@ -1,0 +1,78 @@
+#!/usr/bin/perl -w
+
+# Sun Nov  2 15:37:39 CET 2008
+(my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir origurl branchname
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==3;
+
+our ($dir,$origurl,$branch)=@ARGV;
+
+use Chj::xperlfunc ":all";
+
+xmkdir $dir;
+xchdir $dir;
+
+xxsystem "git","init";
+
+# dann hacken mit .git/config oder  wie gins. git config
+
+our $typemap=
+  +{
+    string=> [],
+    int=> ["--int"],
+    bool=> ["--bool"],
+   };
+
+sub config ( $ $ $ ) {
+    my ($type, $key,$value)=@_;
+    my $t= $$typemap{$type}
+      or die "invalid type '$type'";
+    xxsystem "git","config", @$t, $key,$value
+}
+
+#            git config [<file-option>] [type] [-z|--null] name [value [value_regex]]
+#            git config [<file-option>] [type] --add name value
+#            git config [<file-option>] [type] --replace-all name [value [value_regex]]
+#            git config [<file-option>] [type] [-z|--null] --get name [value_regex]
+#            git config [<file-option>] [type] [-z|--null] --get-all name [value_regex]
+#            git config [<file-option>] [type] [-z|--null] --get-regexp name_regex [value_regex]
+#            git config [<file-option>] --unset name [value_regex]
+#            git config [<file-option>] --unset-all name [value_regex]
+#   etc.
+
+config "string", "remote.origin.url", $origurl;
+config "string", "remote.origin.fetch",
+  "+refs/heads/${branch}:refs/remotes/origin/${branch}";
+
+config "string", "branch.master.remote", "origin";
+config "string", "branch.master.merge", "refs/heads/master";
+
+# dies hier macht zwar auch dies 'wieder' rein
+# +[remote "origin"]
+# +	url = /home/chris/Projekte/spielzeug/SmartToys/.git
+# +	fetch = +refs/heads/*:refs/remotes/origin/*
+#hm
+
+xxsystem qw(git remote add), "-f", "origin", $origurl;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
