@@ -18,7 +18,8 @@ sub usage {
   heuristik um kaputte pastings trotzdem zu matchen.
 
   Options:
-   -f|--flush   flush output for every item (aka line)
+   -f|--flush   flush output for every item (aka line), now default
+   -F|--no-flush   do not flush output for every item (aka line)
    -s|--star|--starred  remove * characters at the end of the line
                         (as present in some ls output formats)
 ";
@@ -27,7 +28,7 @@ exit @_ ? 1 : 0;
 
 my @files;
 my $DEBUG=0;
-our $opt_flush;
+our $opt_flush=1;
 our $opt_starred;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -40,6 +41,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?f(lush)?$/) {
 	$opt_flush=1;
+    } elsif ($_ eq "-F" or /^--?no-f(lush)?$/) {
+	$opt_flush=0;
     } elsif (/^--?s(tar(red)?)?$/) {
 	$opt_starred=1;
     } elsif (/^-./) {
