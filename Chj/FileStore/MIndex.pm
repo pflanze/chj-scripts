@@ -118,6 +118,43 @@ sub add { # returns 0= (key,val) already existed. 1=new entry of val to existing
     $new_key ? 2 : 1;
 }
 
+sub mget { #(get; did I call some such mget instead? in thea anyway. hm yeah call it mget)
+    my $s=shift;
+    @_==1 or croak "expecting 1 argument";
+    my ($key)=@_;
+    my $k=_escape_key $key;
+    if (my $d= do {
+	# weil ich nur xopendir habe. und nid mal richtige exns
+	# ach. hm.xopendir "$$self[Basedir]/$k/";
+	my $res= eval {
+	    xopendir "$$s[Basedir]/$k/"
+	};
+	my $e=$@; my $errno= $!+0;
+	if (ref $e or $e) {
+	    if ("$e"=~ /^xopendir/ and $errno == ENOENT) {
+		undef
+	    } else {
+		die $e
+	    }
+	} else {
+	    $res
+	}
+    }) {
+	map {
+	    # (( ignore items ending in ~ ? *No* of course. heh. ))
+	    # but, ignore those not starting in = right? because of left-over tmp files.!
+	    #should _unescape croak in such cases instead of blindingly doing substr? TODO
+	    if (/^=/) {
+		_unescape ($_)
+	    } else {
+		()
+	    }
+	} $d->xnread
+    } else {
+	()
+    }
+}
+
 sub remove {# returns true on successful removal, false if non removed.
     my $self=shift;
     @_==2 or croak "remove needs two arguments: (self,key,val)";
