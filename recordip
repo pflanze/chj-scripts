@@ -63,20 +63,33 @@ sub _resolveadd ($ ) {
     package CHJ::recordip::ifaces;
     use Class::Array -fields=>
       -publica=>
-	('hash');
+	(
+	 'opt_iface_selection',
+	 'hash',
+	);
     use Chj::is_if_up 'is_if_up';
     sub new_now {
 	my $class=shift;
+	my $opt_iface_selection = @_ ? +{ map { $_=>1 } @_ } : undef;
 	my $s= $class->new;
+	$$s[Opt_iface_selection]= $opt_iface_selection;
 	$s->init;
 	$s
     }
     sub init {
 	my $s=shift;
+	my $opt_iface_selection = $$s[Opt_iface_selection];
 	my $hash=
 	  +{
 	    map {
-		@$_
+		my ($name,$ip)=@$_;
+		(($opt_iface_selection ?
+		  $$opt_iface_selection{$name}
+		  :
+		  $s->is_relevant_interface ($name)) ?
+		 @$_
+		 :
+		 ())
 	    } is_if_up
 	   };
 	#^ ok doesn't check for doubles. but *should* not happen right?
@@ -85,9 +98,7 @@ sub _resolveadd ($ ) {
     }
     sub interfacenames {
 	my $s=shift;
-	grep {
-	    $s->is_relevant_interface ($_)
-	} keys %{$$s[Hash]}
+	keys %{$$s[Hash]}
     }
     sub ips {
 	my $s=shift;
