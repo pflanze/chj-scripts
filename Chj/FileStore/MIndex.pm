@@ -77,7 +77,7 @@ sub _escape_val {
     "=".$str
 }
 
-sub _unescape {
+sub _unescape { ##todo should that die if receiving something not starting with a = ?
     my ($str)=@_;
     $str=~ s|\%0a|\n|sg;
     $str=~ s|\%00|\0|sg;
@@ -184,7 +184,7 @@ sub remove_all {##not yet tested or used
     #} for whatever reason dis did not work
     {
 	my $dirpath="$$self[Basedir]/$k";
-	my $d=xopendir $dirpath;
+	my $d=xopendir $dirpath;###TODO bug right?: dies if none there!
 	while (defined(my$item=$d->xnread)){
 	    unlink "$dirpath/$item"
 	      or die "remove_all: could not unlink '$dirpath/$item': $!";
