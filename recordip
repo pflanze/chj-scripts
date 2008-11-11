@@ -57,10 +57,79 @@ sub _resolveadd ($ ) {
 		    ip_reverse_lookup($ip));
 }
 
-use Chj::is_if_up 'is_if_up';
+# use the list mode of is_if_up, but filter out irrelevant entries right.
+#multiple methods. thusmake it a package.blessedobj.
+{
+    package CHJ::recordip::ifaces;
+    use Class::Array -fields=>
+      -publica=>
+	('hash');
+    use Chj::is_if_up 'is_if_up';
+    sub new_now {
+	my $class=shift;
+	my $s= $class->new;
+	$s->init;
+	$s
+    }
+    sub init {
+	my $s=shift;
+	my $hash=
+	  +{
+	    map {
+		@$_
+	    } is_if_up
+	   };
+	#^ ok doesn't check for doubles. but *should* not happen right?
+	# well perl _should_ have a hash constructor which complains.(...)
+	$$s[Hash]=$hash;
+    }
+    sub interfacenames {
+	my $s=shift;
+	grep {
+	    $s->is_relevant_interface ($_)
+	} keys %{$$s[Hash]}
+    }
+    sub ips {
+	my $s=shift;
+	map {
+	    $$s[Hash]{$_}
+	} $s->interfacenames
+    }
+    sub Mk_sortedstringie {
+	my ($method)=@_;
+	sub {
+	    my $s=shift;
+	    join ("|",sort $s->$method)
+	}
+    }
+    *interfacenames_string= Mk_sortedstringie ("interfacenames");
+    *ips_string= Mk_sortedstringie ("ips");
+    sub maybe_ip_of_interface {
+	my $s=shift;
+	my ($interface)=@_;
+	$$s[Hash]{$interface}
+    }
+    sub ip_of_interface {
+	my $s=shift;
+	my ($interface)=@_;
+	$s->maybe_ip_of_interface ($interface)
+	  or die "interface not up or known: '$interface'";
+    }
+	
+    ## the one special thing for this here. otherwise this code could/should go into Chj::is_if_up or so right?.todo.
+    #'parametrization':
+    sub is_relevant_interface {
+	my $proto=shift;
+	my ($if)=@_;
+	not ($if eq "lo"
+	     or
+	     $if=~ /:/)
+    }
+}
 
-sub recordip ( $ ) {
-    my ($interface)=@_;
+sub recordips {
+    my (@interfaces)=@_;
+    my $ifaces= CHJ::recordip::ifaces->new_now (@interfaces);
     if (my $ip= is_if_up $interface) {
 	debug "interface '$interface' is at ip '$ip'";
 	my $resolveadd=
@@ -89,8 +158,8 @@ sub recordip ( $ ) {
 #__END__
 
 if (@ARGV) {
-    recordip $_ for @ARGV
+    recordips @ARGV
 } else {
-    recordip $default_interface
+    recordips $default_interface
 }
 
