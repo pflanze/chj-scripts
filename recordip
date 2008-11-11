@@ -14,7 +14,14 @@ our $default_interface="eth0";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [ interface ]
+    print "$myname [ interface(s) ]
+
+  Look at the interfaces' IP's, if different from the last run of
+  $myname, look them up in reverse dns and add them to the database
+  (with the given environment: '$datadir').
+
+  If no interfaces are given, just look at all relevant interfaces
+  (i.e. excluding 'lo' and interface aliases) which are up.
 
   (Christian Jaeger <$email>)
 ";
@@ -26,7 +33,6 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   ) or exit 1;
-#usage if @ARGV ;
 
 sub debug {
     print STDERR "$myname: ",join(" ", @_),"\n"
@@ -185,6 +191,6 @@ sub recordips {
 if (@ARGV) {
     recordips @ARGV
 } else {
-    recordips $default_interface
+    recordips ()
 }
 
