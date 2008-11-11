@@ -42,21 +42,6 @@ sub data_subdir ( $ ) {
     $path
 }
 
-use Chj::FileStore::MIndex;
-our $ip_store= Chj::FileStore::MIndex->new(data_subdir ("ip_store"));
-use Chj::FileStore::PIndex;
-our $attr_store= Chj::FileStore::PIndex->new (data_subdir ("attr_store"));
-
-use Chj::DNS 'ip_reverse_lookup';
-
-# ip -> domainname.
-
-sub _resolveadd ($ ) {
-    my ($ip)=@_;
-    $ip_store->add ($ip,
-		    ip_reverse_lookup($ip));
-}
-
 # use the list mode of is_if_up, but filter out irrelevant entries right.
 #multiple methods. thusmake it a package.blessedobj.
 {
@@ -106,6 +91,12 @@ sub _resolveadd ($ ) {
 	    $$s[Hash]{$_}
 	} $s->interfacenames
     }
+    sub if_and_ip_s {
+	my $s=shift;
+	map {
+	    [$_, $$s[Hash]{$_}]
+	} $s->interfacenames
+    }
     sub Mk_sortedstringie {
 	my ($method)=@_;
 	sub {
@@ -113,7 +104,9 @@ sub _resolveadd ($ ) {
 	    join ("|",sort $s->$method)
 	}
     }
+    sub interfacenames_string;
     *interfacenames_string= Mk_sortedstringie ("interfacenames");
+    sub ips_string;
     *ips_string= Mk_sortedstringie ("ips");
     sub maybe_ip_of_interface {
 	my $s=shift;
@@ -138,29 +131,50 @@ sub _resolveadd ($ ) {
     }
 }
 
+
+use Chj::FileStore::MIndex;
+our $ip_store= Chj::FileStore::MIndex->new(data_subdir ("ip_store"));
+use Chj::FileStore::PIndex;
+our $attr_store= Chj::FileStore::PIndex->new (data_subdir ("attr_store"));
+
+use Chj::DNS 'ip_reverse_lookup';
+
+# ip -> domainname.
+
+sub _resolveadd ($ ) {
+    my ($ip)=@_;
+    $ip_store->add ($ip,
+		    ip_reverse_lookup($ip));
+}
+
+
+
 sub recordips {
     my (@interfaces)=@_;
     my $ifaces= CHJ::recordip::ifaces->new_now (@interfaces);
-    if (my $ip= is_if_up $interface) {
-	debug "interface '$interface' is at ip '$ip'";
-	my $resolveadd=
-	  sub {
-	      _resolveadd ($ip);
-	      $attr_store->set ("lastip",$ip);
-	  };
-	if (my $lastip= $attr_store->maybe_get("lastip")) {
-	    if ($lastip eq $ip) {
-		debug "lastip is '$ip' already, so do not look-up&add-reverse-entry again";
-	    } else {
-		debug "ip is different from lastip '$lastip'";
-		&$resolveadd
-	    }
+    my $ips_string= $ifaces->ips_string;
+
+    my $resolveadd= sub {
+	for my $if_and_ip ($ifaces->if_and_ip_s) {
+	    my ($interface,$ip)= @$if_and_ip;
+	    debug "interface '$interface' is at ip '$ip'";
+	    _resolveadd ($ip);
+	} # "else" the missing interfaces. also an old  pattern.
+	  # debug "interface '$interface' is not up"
+          # [todo]
+	$attr_store->set ("lastips",$ips_string);
+    };
+
+    if (my $lastips_string= $attr_store->maybe_get("lastips")) {
+	if ($lastips_string eq $ips_string) {
+	    debug "lastips is '$ips_string' already, so do not look-up&add-reverse-entry again";
 	} else {
-	    debug "no lastip entry yet";
+	    debug "ips '$ips_string' is different from lastips '$lastips_string'";
 	    &$resolveadd
 	}
     } else {
-	debug "interface '$interface' is not up"
+	debug "no lastip entry yet";
+	&$resolveadd
     }
 }
 
