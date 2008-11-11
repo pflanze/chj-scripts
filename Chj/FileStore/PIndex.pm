@@ -172,7 +172,7 @@ sub iter_get {
 *get_iter= *iter_get;
 
 
-sub get {
+sub maybe_get {
     my $self=shift;
     my ($key)=@_;
     my $path="$$self[Basedir]/"._escape_key($key);
@@ -183,6 +183,9 @@ sub get {
 	undef;
     }
 }
+
+#backwards compat, doh. necessary?
+*get= \&maybe_get;
 
 #tja die ollen ewigen accessors
 sub basedir {
