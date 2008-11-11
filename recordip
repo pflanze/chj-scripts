@@ -35,44 +35,6 @@ sub debug {
 
 mkdir $datadir, 0700;
 
-use Chj::is_if_up 'is_if_up';
-use Net::DNS;
-#^ hab ich nid mal n wrapper gemacht? ah nur Chj/DNS/Mx*
-my $resolver= Net::DNS::Resolver->new;
-sub mk_lookup {
-    #my ($type, $method)=@_;
-    #hm interessant  weil ich bei rdatastr noch . wegnehmen muss, muss ich eignen code haben.
-    my ($type,$fn)=@_;
-    sub ( $ ) { #wirkt das oder nid?.
-	my ($ip)=@_;
-	my $query= $resolver->search ($ip); #ok?
-	if ($query) {
-	    my @res;
-	    local our $rr;
-	    for $rr ($query->answer) { #not answers. sowat stupid~.
-		#use Chj::repl; repl;
-		next unless $rr->type eq $type;
-		push @res, &$fn ($rr);
-	    }
-	    wantarray ? @res : $res[0]
-	} else {
-	    debug "ip_reverse_lookup for ip '$ip' failed";
-	    ()
-	}
-    }
-}
-
-sub ip_forward_lookup ( $ ); # against 'only used once' warning. grr.
-*ip_forward_lookup= mk_lookup("A",sub { $_[0]->address });
-*ip_reverse_lookup= mk_lookup("PTR",sub {
-				  my $res= $_[0]->rdatastr;
-				  $res=~ s/\.\z//
-				    or die "no match for dot at end in '$res'";
-				  $res
-			      });
-
-#^ TODO move to a lib.
-
 sub data_subdir ( $ ) {
     my ($subdir)=@_;
     my $path="$datadir/$subdir";
@@ -85,6 +47,7 @@ our $ip_store= Chj::FileStore::MIndex->new(data_subdir ("ip_store"));
 use Chj::FileStore::PIndex;
 our $attr_store= Chj::FileStore::PIndex->new (data_subdir ("attr_store"));
 
+use Chj::DNS 'ip_reverse_lookup';
 
 # ip -> domainname.
 
@@ -93,6 +56,8 @@ sub _resolveadd ($ ) {
     $ip_store->add ($ip,
 		    ip_reverse_lookup($ip));
 }
+
+use Chj::is_if_up 'is_if_up';
 
 sub recordip ( $ ) {
     my ($interface)=@_;
