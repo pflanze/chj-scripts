@@ -58,7 +58,7 @@ sub parse_tag {
 	    if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger ([^\n]*) (\d+) [-+\d]\d+ *\n/s) {
 		($2,$1)
 	    } else {
-		warn "no match for tagger field in '$$strrf'"
+		warn "no match for tagger field in tag '$name': '$$strrf'"
 		  if $verbose;
 		(undef,undef)
 	    }
