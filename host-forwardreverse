@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Mon Nov 17 12:58:19 CET 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage unless @ARGV;
+
+sub Warn {
+    print STDERR "$myname: ",join(" ",@_),"\n";
+    #does this still flush on lines  ?                 ?
+    #not caring anymore ?.
+}
+
+use Chj::DNS ':all';
+
+while (<>) {
+    chomp;
+    if (my $ip= maybe_ip_forward_lookup $_) {
+	if (my $name= maybe_ip_reverse_lookup $ip) {
+	    print $name,"\n"
+	      or die "could not print to stdout: $!";
+	} else {
+	    print "<no-reverse-lookup-result-for-ip:$ip>\n"
+	      or die "could not print to stdout: $!";
+	}
+    } else {
+	#Warn "not found or not a domain name: '$_'"
+	#well, why not like this:
+	print "<no-forward-lookup-result-for:'$_'>\n"
+	  or die "could not print to stdout: $!";
+    }
+}
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
