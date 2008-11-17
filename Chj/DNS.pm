@@ -11,8 +11,8 @@ Chj::DNS
 =head1 SYNOPSIS
 
  use Chj::DNS ':all';
- @res or $res = ip_forward_lookup $name;
-	dito    ip_reverse_lookup $ip
+ @res or $res = maybe_ip_forward_lookup $name;
+	dito    maybe_ip_reverse_lookup $ip
 
 =head1 DESCRIPTION
 
@@ -24,8 +24,8 @@ package Chj::DNS;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
 @EXPORT_OK=qw(
-	      ip_forward_lookup
-	      ip_reverse_lookup
+	      maybe_ip_forward_lookup
+	      maybe_ip_reverse_lookup
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -52,16 +52,16 @@ sub mk_lookup {
 	    }
 	    wantarray ? @res : $res[0]
 	} else {
-	    #debug "ip_reverse_lookup for ip '$ip' failed";
+	    #debug "maybe_ip_reverse_lookup for ip '$ip' failed";
 	    ()
 	}
     }
 }
 
-sub ip_forward_lookup ( $ ); # against 'only used once' warning. grr.
-*ip_forward_lookup= mk_lookup("A",sub { $_[0]->address });
-sub ip_reverse_lookup ( $ );
-*ip_reverse_lookup= mk_lookup("PTR",sub {
+sub maybe_ip_forward_lookup ( $ ); # against 'only used once' warning. grr.
+*maybe_ip_forward_lookup= mk_lookup("A",sub { $_[0]->address });
+sub maybe_ip_reverse_lookup ( $ );
+*maybe_ip_reverse_lookup= mk_lookup("PTR",sub {
 				  my $res= $_[0]->rdatastr;
 				  $res=~ s/\.\z//
 				    or die "no match for dot at end in '$res'";
