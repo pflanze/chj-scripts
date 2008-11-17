@@ -54,14 +54,14 @@ our $ip_store= Chj::FileStore::MIndex->new(data_subdir ("ip_store"));
 use Chj::FileStore::PIndex;
 our $attr_store= Chj::FileStore::PIndex->new (data_subdir ("attr_store"));
 
-use Chj::DNS 'ip_reverse_lookup';
+use Chj::DNS 'maybe_ip_reverse_lookup';
 
 # ip -> domainname.
 
 sub _resolveadd ($ ) {
     my ($ip)=@_;
     $ip_store->add ($ip,
-		    ip_reverse_lookup($ip));
+		    maybe_ip_reverse_lookup($ip));
 }
 
 {
