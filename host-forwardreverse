@@ -31,9 +31,10 @@ sub Warn {
 
 use Chj::DNS ':all';
 
-while (<>) {
-    chomp;
-    if (my $ip= maybe_ip_forward_lookup $_) {
+
+sub forwardreverse ( $ ) {
+    my ($name)=@_;
+    if (my $ip= maybe_ip_forward_lookup $name) {
 	if (my $name= maybe_ip_reverse_lookup $ip) {
 	    print $name,"\n"
 	      or die "could not print to stdout: $!";
@@ -42,10 +43,20 @@ while (<>) {
 	      or die "could not print to stdout: $!";
 	}
     } else {
-	#Warn "not found or not a domain name: '$_'"
+	#Warn "not found or not a domain name: '$name'"
 	#well, why not like this:
-	print "<no-forward-lookup-result-for:'$_'>\n"
+	print "<no-forward-lookup-result-for:'$name'>\n"
 	  or die "could not print to stdout: $!";
+    }
+}
+
+
+if (@ARGV) {
+    forwardreverse $_ for @ARGV
+} else {
+    while (<STDIN>) {
+	chomp;
+	forwardreverse $_
     }
 }
 #use Chj::ruse;
