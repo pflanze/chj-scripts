@@ -82,7 +82,7 @@ sub maybe_cat_file { # returns content ref, or undef in 'bad file' case (i.e. un
 	    undef
 	} else {
 	    # seems a real error has happened
-	    die "git cat-file $type $id exited with code $res";
+	    die "git cat-file $type $id exited with code $res and message '$$rf'";
 	}
     }
 }
