@@ -4,6 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+our @known_types= qw(commit tree blob ); ## what was the fourth ? ?
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -18,18 +19,29 @@ sub usage {
   -v|--invert show tags which are *not* signed
   -a|--all  show all tags
   --verbose   show some warning(s)
+  --type x   show tags pointing to objects of type x only
+             (the usual ones: @known_types)
 
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
+my $known_types= +{ map { $_=> 1} @known_types };
+
 use Getopt::Long;
 my $options={};
+our $opt_type;
 GetOptions($options,
 	   "v|invert",
 	   "a|all",
 	   "help"=> sub{usage},
+	   "type=s"=> sub {
+	       my ($k,$t)=@_;
+	       $$known_types{$t}
+		 or die "$myname: unknown type '$t'; we only know of: @known_types\n";
+	       $opt_type= $t;
+	   },
 	   "verbose",
 	   #"debug",
 	  )
@@ -70,10 +82,10 @@ our $verbose= $$options{verbose};
 			     or die "missing committer field in commit '$sha1': '$$rf'";
 			   $1
 		       } else {
-			   undef ##
+			   0 ## undef
 		       }
 		   } else {
-		       undef
+		       0 ## undef
 		   }
 	       });
 	$s
@@ -181,7 +193,21 @@ sub getsignedtagsparsedandsorted {
     };
     my $res= [
 	      sort { $a->maybe_unixtime <=> $b->maybe_unixtime }
-	      grep { $$options{a} || &$curried_xor($_->is_signed) and $_->maybe_unixtime }
+	      grep {
+		  my $t= $opt_type && $_->dereferenced_type;
+		  (
+		   ($t ? $t eq $opt_type : 1)
+		   and
+		   ($$options{a}
+		    ||
+		    &$curried_xor($_->is_signed))
+# 		   and
+# 		   ($t ? ($t eq "commit" ?
+# 			  $_->maybe_unixtime
+# 			  :
+# 			  ($_->maybe_unixtime)  ehr
+		  )
+	      }
 	      map { chomp; parse_tag($_, maybe_cat_tag ($_)) }
 	      <$ls>
 	     ];
