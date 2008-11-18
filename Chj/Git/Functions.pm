@@ -33,6 +33,7 @@ package Chj::Git::Functions;
 	      xgit_stdout_ref
 	      maybe_cat_file
 	      maybe_cat_tag
+	      parse_tag
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -212,5 +213,115 @@ sub maybe_cat_tag {
     my ($id)=@_;
     maybe_cat_file ("tag",$id)
 }
+
+
+{
+    package Chj::Git::Functions::ParsedTag;
+    use Class::Array -fields=> -publica=>
+      (qw(name maybe_contentrf maybe_unixtime maybe_tagger is_signed),
+       # and for caching:
+       '_maybe_unixtime', # promise
+       '_sha1', # cache
+       '_Dereferenced_type',
+      );
+    use Chj::FP::Memoize ();# 'memoize_thunk';
+    our $sha1_re= qr/\b[0-9a-f]{40}\b/;
+    sub new {
+	my $cl=shift;
+	my $s=bless [@_],$cl;
+	$$s[_Maybe_unixtime]=
+	  Chj::FP::Memoize::memoize_thunk
+	      (sub {
+		   if (defined (my $val= $$s[Maybe_unixtime])) {
+		       $val
+		   } elsif (1) {
+		       # the tag either isn't an annotated tag, or is
+		       # of the old type which didn't carry a tagger
+		       # line. Dereference it to the commit object and
+		       # use the commit object's commit time instead.
+		       # (Well, we expect it to be a commit, which
+		       # isn't necessarily true)
+		       my $sha1= $s->dereferenced_sha1;
+		       if (my $rf= Chj::Git::Functions::maybe_cat_file ("commit",$sha1)) {
+			   $$rf=~ /^committer .* (\d{8,}) +[+-]\d{4} *$/m
+			     # is . really not matching \n here? hm seems so, only /s does make . match \n according to man perlre
+			     or die "missing committer field in commit '$sha1': '$$rf'";
+			   $1
+		       } else {
+			   0 ## undef
+		       }
+		   } else {
+		       0 ## undef
+		   }
+	       });
+	$s
+    }
+    sub is_annotated {
+	my $s=shift;
+	$$s[Maybe_contentrf] and 1
+    }
+    #*dereferenced_sha1= Mk_dereference ()
+    #  sub Mk_dereference ( $ ) {
+    #nah it's not that simple. could short-cut the unannotated case but not the others.
+    sub dereferenced_sha1 {
+	my $s=shift;
+	if (defined (my $r= $$s[_Sha1])) {
+	    $r
+	} else {
+	    my $r= do {
+		if (my $rf= $$s[Maybe_contentrf]) {
+		    # annotated.
+		    $$rf=~ /^object ($sha1_re)/m
+		      or die "tag object '$$s[Name]' does not carry an object line";
+		    $1
+		} else {
+		    # unannotated tag. use rev-parse
+		    my $rf= Chj::Git::Functions::xgit_stdout_ref ("rev-parse", $$s[Name]);
+		    $$rf=~ /^($sha1_re)\s*\z/s
+		      or die "rev-parse did not return a sha1 for '$$s[Name]': '$$rf'";
+		    $1
+		}
+	    };
+	    $$s[_Sha1]= $r;
+	    $r
+	}
+    }
+    sub dereferenced_type {
+	my $s=shift;
+	$$s[_Dereferenced_type] ||= do {
+	    my $rf= Chj::Git::Functions::xgit_stdout_ref ("cat-file",
+					   "-t",
+					   $s->dereferenced_sha1);
+	    $$rf=~ /^(\w+)\s*\z/s or die "invalid output '$$rf'";
+	    $1
+	}
+    }
+    sub maybe_unixtime {
+	my $s=shift;
+	&{$$s[_Maybe_unixtime]}
+    }
+    end Class::Array;
+}
+
+sub parse_tag {
+    my ($name,$maybe_strrf,$verbose)=@_;
+    if (my $strrf= $maybe_strrf) {
+	my $is_signed= $$strrf=~ /^-----BEGIN PGP SIGNATURE-----$/m;
+	my ($maybe_unixtime,$maybe_tagger)= do {
+	    if ($$strrf=~ /^(?:[^\n]+\n)*[Tt]agger ([^\n]*) (\d+) [-+\d]\d+ *\n/s) {
+		($2,$1)
+	    } else {
+		warn "no match for tagger field in tag '$name': '$$strrf'"
+		  if $verbose;
+		(undef,undef)
+	    }
+	};
+	Chj::Git::Functions::ParsedTag->new($name,$strrf,$maybe_unixtime,$maybe_tagger,$is_signed);
+    } else {
+	# un-annotated tag
+	Chj::Git::Functions::ParsedTag->new($name,undef,undef,undef,0);
+    }
+}
+
 
 1
