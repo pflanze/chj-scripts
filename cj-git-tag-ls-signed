@@ -17,10 +17,11 @@ sub usage {
 
   Options:
   -v|--invert show tags which are *not* signed
-  -a|--all  show all tags
+  --all       show all tags, also non-signed ones
+  --non-annotated  only show non-annotated tags (implies --all)
   --verbose   show some warning(s)
-  --type x   show tags pointing to objects of type x only
-             (the usual ones: @known_types)
+  --type x    show tags pointing to objects of type x only
+              (the usual ones: @known_types)
 
   (Christian Jaeger <$email>)
 ";
@@ -34,7 +35,8 @@ my $options={};
 our $opt_type;
 GetOptions($options,
 	   "v|invert",
-	   "a|all",
+	   "all",
+	   "non-annotated",
 	   "help"=> sub{usage},
 	   "type=s"=> sub {
 	       my ($k,$t)=@_;
@@ -89,6 +91,10 @@ our $verbose= $$options{verbose};
 		   }
 	       });
 	$s
+    }
+    sub is_annotated {
+	my $s=shift;
+	$$s[Maybe_contentrf] and 1
     }
     #*dereferenced_sha1= Mk_dereference ()
     #  sub Mk_dereference ( $ ) {
@@ -202,9 +208,12 @@ sub getsignedtagsparsedandsorted {
 		  (
 		   ($t ? $t eq $opt_type : 1)
 		   and
-		   ($$options{a}
-		    ||
-		    &$curried_xor($_->is_signed))
+		   ($$options{"non-annotated"} ?
+		    not($_->is_annotated)
+		    :
+		    ($$options{all}
+		     ||
+		     &$curried_xor($_->is_signed)))
 		  )
 	      }
 	      map { chomp; parse_tag($_, maybe_cat_tag ($_)) }
