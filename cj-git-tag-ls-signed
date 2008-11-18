@@ -44,6 +44,7 @@ our $verbose= $$options{verbose};
        # and for caching:
        '_maybe_unixtime', # promise
        '_sha1', # cache
+       '_Dereferenced_type',
       );
     use Chj::FP::Memoize ();# 'memoize_thunk';
     our $sha1_re= qr/\b[0-9a-f]{40}\b/;
@@ -77,6 +78,9 @@ our $verbose= $$options{verbose};
 	       });
 	$s
     }
+    #*dereferenced_sha1= Mk_dereference ()
+    #  sub Mk_dereference ( $ ) {
+    #nah it's not that simple. could short-cut the unannotated case but not the others.
     sub dereferenced_sha1 {
 	my $s=shift;
 	if (defined (my $r= $$s[_Sha1])) {
@@ -90,9 +94,7 @@ our $verbose= $$options{verbose};
 		    $1
 		} else {
 		    # unannotated tag. use rev-parse
-		    my $t= Chj::IO::Command->new_sender ("git","rev-parse", $$s[Name]);
-		    my $rf= $t->xcontentref;
-		    $t->xxfinish;
+		    my $rf= main::xgit_stdout_ref ("rev-parse", $$s[Name]);
 		    $$rf=~ /^($sha1_re)\s*\z/s
 		      or die "rev-parse did not return a sha1 for '$$s[Name]': '$$rf'";
 		    $1
@@ -100,6 +102,16 @@ our $verbose= $$options{verbose};
 	    };
 	    $$s[_Sha1]= $r;
 	    $r
+	}
+    }
+    sub dereferenced_type {
+	my $s=shift;
+	$$s[_Dereferenced_type] ||= do {
+	    my $rf= main::xgit_stdout_ref ("cat-file",
+					   "-t",
+					   $s->dereferenced_sha1);
+	    $$rf=~ /^(\w+)\s*\z/s or die "invalid output '$$rf'";
+	    $1
 	}
     }
     sub maybe_unixtime {
@@ -110,6 +122,14 @@ our $verbose= $$options{verbose};
 }
 
 use Chj::IO::Command;
+
+
+sub xgit_stdout_ref {
+    my $t= Chj::IO::Command->new_sender ("git",@_);
+    my $rf= $t->xcontentref;
+    $t->xxfinish;
+    $rf
+}
 
 sub parse_tag {
     my ($name,$maybe_strrf)=@_;
