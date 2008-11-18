@@ -34,6 +34,7 @@ package Chj::Git::Functions;
 	      maybe_cat_file
 	      maybe_cat_tag
 	      parse_tag
+	      xgit_do
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -183,7 +184,11 @@ sub xgit_describe_debianstyle {
     $desc
 }
 
+use Chj::xperlfunc 'xxsystem';
 
+sub xgit_do {
+    xxsystem "git",@_
+}
 
 sub xgit_stdout_ref {
     my $t= Chj::IO::Command->new_sender ("git",@_);
