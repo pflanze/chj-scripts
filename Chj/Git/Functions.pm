@@ -30,6 +30,9 @@ package Chj::Git::Functions;
 	      git_merge_base__all
 	      xgit_describe
 	      xgit_describe_debianstyle
+	      xgit_stdout_ref
+	      maybe_cat_file
+	      maybe_cat_tag
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -177,6 +180,37 @@ sub xgit_describe_debianstyle {
       or die "missing v at the beginning of expected tag name: '$desc'";
     $desc=~ s/-/./sg;
     $desc
+}
+
+
+
+sub xgit_stdout_ref {
+    my $t= Chj::IO::Command->new_sender ("git",@_);
+    my $rf= $t->xcontentref;
+    $t->xxfinish;
+    $rf
+}
+
+sub maybe_cat_file { # returns content ref, or undef in 'bad file' case (i.e. un-annotated tag), hm, hacky since that only makes sense for cat_tag?
+    my ($type,$id)=@_;
+    my $t= Chj::IO::Command->new_combinedsender("git","cat-file",$type,$id);
+    my $rf= $t->xcontentref;
+    my $res= $t->xfinish;
+    if ($res==0) {
+	$rf
+    } else {
+	if ($$rf=~ /bad file$/) {
+	    undef
+	} else {
+	    # seems a real error has happened
+	    die "git cat-file $type $id exited with code $res and message '$$rf'";
+	}
+    }
+}
+
+sub maybe_cat_tag {
+    my ($id)=@_;
+    maybe_cat_file ("tag",$id)
 }
 
 1
