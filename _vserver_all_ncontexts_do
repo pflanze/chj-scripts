@@ -12,37 +12,33 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname cmd ( cmd-arguments )
+
+  Run cmd in all (running) vservers' network and vserver contexts (but
+  in the host's filesystem context).
+  (Used by vshow_tcpconnections etc.)
+
+  Options:
+  -a|--all  show all running vservers, even those without open connections
 
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
 }
 
-my @args;
-my $DEBUG=0;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
+use Getopt::Long;
+our $DEBUG=0;
+our $opt_all;
+
+if (@ARGV and $ARGV[0]=~ /^-/) {
+    GetOptions ("d|ebug"=> \$DEBUG,
+		"h|elp"=> sub{usage},
+		"a|ll"=> \$opt_all,
+	       )
+      or exit 1;
+    usage unless @ARGV;
 }
-#usage unless @args;
+our @cmd=@ARGV;
 
 use Chj::IO::Command;
 use Chj::xperlfunc;
@@ -58,7 +54,7 @@ while (<$stat>) {
     if (my ($ctx,$name)= /^(\d+)\s+.*?(\w+)$/) {
 	next if $ctx == 0;
 	print "-- $name: ".("-"x($width-4-3-length($name)))."\n";
-	xxsystem "ncontext --nid $ctx --migrate chcontext --ctx $ctx show_tcpconnections";
+	xxsystem "ncontext", "--nid", $ctx, "--migrate", "chcontext", "--ctx", $ctx, "--", @cmd;
 	#print "\n";
     } else {
 	die "invalid output '$_'";
