@@ -91,7 +91,7 @@ our $verbose= $$options{verbose};
 		} else {
 		    # unannotated tag. use rev-parse
 		    my $t= Chj::IO::Command->new_sender ("git","rev-parse", $$s[Name]);
-		    my $rf= $t->contentref;
+		    my $rf= $t->xcontentref;
 		    $t->xxfinish;
 		    $$rf=~ /^($sha1_re)\s*\z/s
 		      or die "rev-parse did not return a sha1 for '$$s[Name]': '$$rf'";
