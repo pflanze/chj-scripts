@@ -40,10 +40,71 @@ our $verbose= $$options{verbose};
 {
     package Chj_App::ParsedTag;
     use Class::Array -fields=> -publica=>
-      (qw(name maybe_contentrf maybe_unixtime maybe_tagger is_signed));
+      (qw(name maybe_contentrf maybe_unixtime maybe_tagger is_signed),
+       # and for caching:
+       '_maybe_unixtime', # promise
+       '_sha1', # cache
+      );
+    use Chj::FP::Memoize ();# 'memoize_thunk';
+    our $sha1_re= qr/\b[0-9a-f]{40}\b/;
     sub new {
 	my $cl=shift;
-	bless [@_],$cl
+	my $s=bless [@_],$cl;
+	$$s[_Maybe_unixtime]=
+	  Chj::FP::Memoize::memoize_thunk
+	      (sub {
+		   if (defined (my $val= $$s[Maybe_unixtime])) {
+		       $val
+		   } elsif (1) {
+		       # the tag either isn't an annotated tag, or is
+		       # of the old type which didn't carry a tagger
+		       # line. Dereference it to the commit object and
+		       # use the commit object's commit time instead.
+		       # (Well, we expect it to be a commit, which
+		       # isn't necessarily true)
+		       my $sha1= $s->dereferenced_sha1;
+		       if (my $rf= main::maybe_cat_file ("commit",$sha1)) {
+			   $$rf=~ /^committer .* (\d{8,}) +[+-]\d{4} *$/m
+			     # is . really not matching \n here? hm seems so, only /s does make . match \n according to man perlre
+			     or die "missing committer field in commit '$sha1': '$$rf'";
+			   $1
+		       } else {
+			   undef ##
+		       }
+		   } else {
+		       undef
+		   }
+	       });
+	$s
+    }
+    sub dereferenced_sha1 {
+	my $s=shift;
+	if (defined (my $r= $$s[_Sha1])) {
+	    $r
+	} else {
+	    my $r= do {
+		if (my $rf= $$s[Maybe_contentrf]) {
+		    # annotated.
+		    $$rf=~ /^object ($sha1_re)/m
+		      or die "tag object '$$s[Name]' does not carry an object line";
+		    $1
+		} else {
+		    # unannotated tag. use rev-parse
+		    my $t= Chj::IO::Command->new_sender ("git","rev-parse", $$s[Name]);
+		    my $rf= $t->contentref;
+		    $t->xxfinish;
+		    $$rf=~ /^($sha1_re)\s*\z/s
+		      or die "rev-parse did not return a sha1 for '$$s[Name]': '$$rf'";
+		    $1
+		}
+	    };
+	    $$s[_Sha1]= $r;
+	    $r
+	}
+    }
+    sub maybe_unixtime {
+	my $s=shift;
+	&{$$s[_Maybe_unixtime]}
     }
     end Class::Array;
 }
