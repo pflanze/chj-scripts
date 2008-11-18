@@ -4,7 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
-our @known_types= qw(commit tree blob ); ## what was the fourth ? ?
+our @known_types= qw(commit tree blob tag);
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -192,7 +192,11 @@ sub getsignedtagsparsedandsorted {
 	$$options{v} ? !$v : $v
     };
     my $res= [
-	      sort { $a->maybe_unixtime <=> $b->maybe_unixtime }
+	      sort {
+		  ($a->maybe_unixtime <=> $b->maybe_unixtime
+		   or
+		   $a->name cmp $b->name)
+	      }
 	      grep {
 		  my $t= $opt_type && $_->dereferenced_type;
 		  (
@@ -201,11 +205,6 @@ sub getsignedtagsparsedandsorted {
 		   ($$options{a}
 		    ||
 		    &$curried_xor($_->is_signed))
-# 		   and
-# 		   ($t ? ($t eq "commit" ?
-# 			  $_->maybe_unixtime
-# 			  :
-# 			  ($_->maybe_unixtime)  ehr
 		  )
 	      }
 	      map { chomp; parse_tag($_, maybe_cat_tag ($_)) }
