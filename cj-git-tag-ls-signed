@@ -170,5 +170,5 @@ sub getsignedtagsparsedandsorted {
 }
 
 for (@{ getsignedtagsparsedandsorted() }) {
-    print localtime($_->maybe_unixtime)."\t".$_->name."\t".$_->maybe_tagger."\n";
+    print localtime($_->maybe_unixtime)."\t".$_->name."\t".($_->maybe_tagger||"")."\n";
 }
