@@ -44,10 +44,7 @@ sub debug {
 
 $datadir->make(0700);
 
-use Chj::FileStore::MIndex;
-our $ip_store= Chj::FileStore::MIndex->new($datadir->subdir_make("ip_store")->path);
-use Chj::FileStore::PIndex;
-our $attr_store= Chj::FileStore::PIndex->new ($datadir->subdir_make("attr_store")->path);
+our ($ips,$attrs)= $datadir->ip_and_attr_stores;
 
 use Chj::DNS 'maybe_ip_reverse_lookup';
 
@@ -55,8 +52,7 @@ use Chj::DNS 'maybe_ip_reverse_lookup';
 
 sub _resolveadd ($ ) {
     my ($ip)=@_;
-    $ip_store->add ($ip,
-		    maybe_ip_reverse_lookup($ip));
+    $ips->add ($ip, maybe_ip_reverse_lookup($ip));
 }
 
 {
@@ -85,10 +81,10 @@ sub recordips {
 	} # "else" the missing interfaces. also an old  pattern.
 	  # debug "interface '$interface' is not up"
           # [todo]
-	$attr_store->set ("lastips",$ips_string);
+	$attrs->set ("lastips",$ips_string);
     };
 
-    if (my $lastips_string= $attr_store->maybe_get("lastips")) {
+    if (my $lastips_string= $attrs->maybe_get("lastips")) {
 	if ($lastips_string eq $ips_string) {
 	    debug "lastips is '$ips_string' already, so do not look-up&add-reverse-entry again";
 	} else {
