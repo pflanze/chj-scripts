@@ -49,7 +49,7 @@ use Chj::xopen ':all';
 our $ip_re= qr/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
 #^^well ipv6 and so on etc usw .... and lib ...
 
-our @ips= do {
+our $ips= do {
     # older/other known ip's?:
     my @res= eval {
 	my $f=xopen_read "$ENV{HOME}/var/recordip.list";
@@ -70,15 +70,15 @@ our @ips= do {
     };
     if (ref $@ or $@) {
 	warn "warning: $@";
-	()
+	+{}
     } else {
-	@res
+	+{ map {$_=>1} @res}
     }
 };
 while (my $k= $iter->next_key) {
     #print "$k\n"
     #  or die $!;
-    push @ips, $k
+    $$ips{$k}++
       if not ($k=~ /^192\.168\./)
 }
 ##HMMM.uniq.hmmm.
@@ -87,7 +87,7 @@ print "'^(".join("|",map {
     my $s=$_;
     $s=~ s/\./\\./sg;
     $s
-} sort @ips).")'\n"
+} sort keys %$ips).")'\n"
   or die $!;
 
 #use Chj::repl; repl;
