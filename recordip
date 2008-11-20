@@ -9,16 +9,19 @@ use strict;
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
-our $datadir= do{$ENV{HOME}|| die "missing HOME env var"}."/.$myname";
+use Chj::App::Recordip;
+
+our $datadir= datadir (0);
 our $default_interface="eth0";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
+    my $datadir_path= $datadir->path;
     print "$myname [ interface(s) ]
 
   Look at the interfaces' IP's, if different from the last run of
   $myname, look them up in reverse dns and add them to the database
-  (with the given environment: '$datadir').
+  (with the given environment: '$datadir_path').
 
   If no interfaces are given, just look at all relevant interfaces
   (i.e. excluding 'lo' and interface aliases) which are up.
@@ -39,20 +42,12 @@ sub debug {
       if $verbose;
 }
 
-mkdir $datadir, 0700;
-
-sub data_subdir ( $ ) {
-    my ($subdir)=@_;
-    my $path="$datadir/$subdir";
-    mkdir $path;
-    $path
-}
-
+$datadir->make(0700);
 
 use Chj::FileStore::MIndex;
-our $ip_store= Chj::FileStore::MIndex->new(data_subdir ("ip_store"));
+our $ip_store= Chj::FileStore::MIndex->new($datadir->subdir_make("ip_store")->path);
 use Chj::FileStore::PIndex;
-our $attr_store= Chj::FileStore::PIndex->new (data_subdir ("attr_store"));
+our $attr_store= Chj::FileStore::PIndex->new ($datadir->subdir_make("attr_store")->path);
 
 use Chj::DNS 'maybe_ip_reverse_lookup';
 
