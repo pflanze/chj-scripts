@@ -1,0 +1,62 @@
+#!/usr/bin/perl -w
+
+# Thu Nov 20 15:25:06 CET 2008
+(my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+use Chj::App::Recordip;
+
+our $datadir= datadir (1);
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    my $datadir_path= $datadir->path;
+    print "$myname
+
+  Show ip's recorded in '$datadir_path', as an -E regular
+  expression.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+our ($ips,$attrs)= $datadir->ip_and_attr_stores;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace;
+
+use Chj::FileStore::MIndex::NonsortedIterator;
+our $iter= Chj::FileStore::MIndex::NonsortedIterator->new($ips,sub {
+							      my ($k)=@_;
+							      not ($k=~ /^192\.168\./)
+							  });##HU why does the filter not work ???
+
+our @ips;
+while (my $k= $iter->next_key) {
+    #print "$k\n"
+    #  or die $!;
+    push @ips, $k
+      if not ($k=~ /^192\.168\./)
+}
+
+print "'(".join("|",map {
+    my $s=$_;
+    $s=~ s/\./\\./sg;
+    $s
+} sort @ips).")'\n"
+  or die $!;
+
+#use Chj::repl; repl;
