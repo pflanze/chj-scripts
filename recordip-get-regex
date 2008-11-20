@@ -52,7 +52,7 @@ while (my $k= $iter->next_key) {
       if not ($k=~ /^192\.168\./)
 }
 
-print "'(".join("|",map {
+print "'^(".join("|",map {
     my $s=$_;
     $s=~ s/\./\\./sg;
     $s
