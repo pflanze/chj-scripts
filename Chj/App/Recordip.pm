@@ -60,6 +60,16 @@ our $default_user= $myname; # the user the 'recordip' cronjob runs at, usually.
 	mkdir $sub->path;
 	$sub
     }
+    use Chj::FileStore::MIndex;
+    use Chj::FileStore::PIndex;
+    sub ip_and_attr_stores {
+	my $datadir=shift;
+	my $ips= Chj::FileStore::MIndex->new
+	  ($datadir->subdir_make("ip_store")->path);
+	my $attrs= Chj::FileStore::PIndex->new
+	  ($datadir->subdir_make("attr_store")->path);
+	($ips,$attrs)
+    }
     end Class::Array;
 }
 
