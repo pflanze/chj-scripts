@@ -23,7 +23,9 @@ our $removefiles= sub {
 	     'git',
 	     'filter-branch',
 
+	     # the index filter:
 	     '--index-filter',
+	     # script:
 	     ('git update-index '
 	      .join(' ',
 		    map {
@@ -31,7 +33,9 @@ our $removefiles= sub {
 		    } @ARGV)
 	      .' HEAD'),
 
+	     # the commit filter:
 	     '--commit-filter',
+	     # script:
 	     ('if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]
       then skip_commit "$@"
       else git commit-tree "$@"; fi'
