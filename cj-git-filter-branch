@@ -68,6 +68,25 @@ our $removedirs= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
+our $remove_perlmatch= &$make_filter
+  (
+   sub {
+       @ARGV==1
+	 or die "$myname: expecting 1 argument, the perl code for the test, but got ".@ARGV." arguments\n";
+       my ($perlcode)=@ARGV;
+       ('git ls-files -z |'
+	.'perl -wn -0 -l0 -e '.singlequote_sh ($perlcode)
+	# ^note: *both* the -0 and -l0 flags are necessary: the former
+	# somehow for input line handling (-l only seems to have an
+	# effect on chomp, not on file splitting?), the latter for
+	# chomping and printing.
+	.'|xargs -0 git rm --cached'
+       )
+   },
+   sub { $commit_filter_script__skip_empty_commits}
+  );
+
+
 sub CmdSetter ( $ );#heh
 our $cmds=
   [
@@ -75,6 +94,8 @@ our $cmds=
     "remove all given file paths from repo (including their commit if empty)"],
    ["remove-dirs" => CmdSetter ($removedirs),
     "remove all files in the given dir paths (including their commit if empty)"],# basically just a recursive version of the remove-files thing. wouldn't that message be too long?
+   ["remove-perlmatch" => CmdSetter ($remove_perlmatch),
+    "remove all files whose paths are printed by the given perl code; like 'print if m|someregex|' is enough, perl is run with flags to automatically strip and add \\0 path separation bytes"],
   ];
 
 sub usage {
