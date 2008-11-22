@@ -35,6 +35,7 @@ package Chj::Git::Functions;
 	      maybe_cat_tag
 	      parse_tag
 	      xgit_do
+	      git_unquote_path
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -328,5 +329,70 @@ sub parse_tag {
     }
 }
 
+use Encode 'decode_utf8';
+
+sub git_unquote_path ( $ ) {
+    my ($str)=@_;
+    if ($str=~ /^\"/) {
+	my ($str2)= $str=~ m/^\"(.*)\"\s*\z/
+	  or die "invalid quoted string?: '$str'";
+	#####HACKY ABSOLUTELI UNCORRECLT fo rnow
+	my $s= [ split /\\/, $str2 ];
+	my $r= [];
+	push @$r, shift @$s;
+	# now have to split off the \d+ parts huh.
+	#for my $piece (@$s) {
+	#need $i+1 access.'doh'
+	my $len= @$s;
+	my $flag_last_was_backslash=0;
+	for (my $i=0; $i<$len; $i++) {
+	    my $piece= $$s[$i];
+	    if ($piece =~ s/^(\d+)//) {
+		push @$r, chr(oct $1), $piece;
+	    #} elsif $piece =~ m/^\\/  EHR that can  never happen right? here's the HACK/wrong bit.
+	    } else {
+		#hmm. ah yep if it is empty?
+		# (shoult put this test to above--but doesn't matter except for computational cost)
+		if (length $piece) {
+		    # backslash before text ? ah, \n and such uuhm.
+		    if ($piece=~ s/^([nrt\"])//) {
+			my $thing=$1;
+			push @$r, do {
+			    if ($thing eq "n") {
+				"\n"
+			    } elsif ($thing eq "r") {
+				"\r"
+			    } elsif ($thing eq "t") {
+				"\t"
+			    } elsif ($thing eq '"') {
+				$thing
+			    } else {
+				die "??"
+			    }
+			}, $piece
+		    } else {
+			die "unknown text after backslash: '$piece'";
+		    }
+		} else {
+		    # okso it was a backslashed backslash, *except* if it's the last?
+		    if ($flag_last_was_backslash) {
+			push @$r, "\\";
+			$flag_last_was_backslash=0;
+		    } else {
+			if (length $$s[$i+1]) {
+			    push @$r, "\\";
+			    $flag_last_was_backslash=1;
+			} else {
+			    die "backslash at end of string: '$str'";
+			}
+		    }
+		}
+	    }
+	}
+	decode_utf8(join "", @$r)
+    } else {
+	$str   # correct, are thingies needing unquote always in double quotes?
+    }
+}
 
 1
