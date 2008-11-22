@@ -109,6 +109,14 @@ sub usage {
     print "$myname --command [ commandarguments ]
 
 $cmdsstr
+
+  ATTENTION: THIS SCRIPT OR PROCEDURE SUCKS HORRIBLY.
+  - it will not drop branches if they got totally empty, but instead
+    add the initial commit of that branch (with empty tree!) to
+    the next newer commit in the new history (making it a merge commit,
+    even if it wasn't a merge originally)
+  - it will not treat the initial commit.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
