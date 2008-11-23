@@ -14,6 +14,11 @@ sub usage {
   Logs the current, then the afterwards installed package list/versions,
   and the listeners before and after.
 
+  Note: sets vm ulimit to unlimited. But, if an error happens you'll
+  be back in your shell where the unlimiting doesn't have
+  effect. (Should I trap errors and run a subshell? Well don't think
+  going fancy is worth it here.)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -30,6 +35,8 @@ our ($basedir, @upgrade)=@ARGV;##hm todo  -d  not trigger GetOptions as always e
 
 use Chj::xperlfunc;
 use Chj::singlequote 'singlequote_sh'; #statt quotemeta, wirklich notwendig?
+use Chj::ulimit;
+ulimit qw(-S -v unlimited);
 
 our $logdir= do {
     # wieder mal..:?:
