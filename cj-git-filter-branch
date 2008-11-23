@@ -80,7 +80,7 @@ our $remove_perlmatch= &$make_filter
 	# somehow for input line handling (-l only seems to have an
 	# effect on chomp, not on file splitting?), the latter for
 	# chomping and printing.
-	.'|xargs -0 git rm --cached'
+	.'|xargs -0 --no-run-if-empty git rm --cached'
        )
    },
    sub { $commit_filter_script__skip_empty_commits}
