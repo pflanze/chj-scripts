@@ -92,79 +92,79 @@ use Carp;
 
 
 my %resourcemap= (
-	'-c'=> [RLIMIT_CORE, 1024],
-	'-d'=> [RLIMIT_DATA, 1024],
-	'-f'=> [RLIMIT_FSIZE, 1024],
-	'-l'=> [RLIMIT_MEMLOCK, 1024],
-	'-m'=> [RLIMIT_RSS, 1024],
-	'-n'=> [RLIMIT_NOFILE, 1],
-	#'-p'=> [RLIMIT_, 512], # ?
-	'-s'=> [RLIMIT_STACK, 1024],
-	'-t'=> [RLIMIT_CPU, 1],
-	'-u'=> [RLIMIT_NPROC, 1],
-	'-v'=> [RLIMIT_VMEM, 1024],
+    '-c'=> [RLIMIT_CORE, 1024],
+    '-d'=> [RLIMIT_DATA, 1024],
+    '-f'=> [RLIMIT_FSIZE, 1024],
+    '-l'=> [RLIMIT_MEMLOCK, 1024],
+    '-m'=> [RLIMIT_RSS, 1024],
+    '-n'=> [RLIMIT_NOFILE, 1],
+    #'-p'=> [RLIMIT_, 512], # ?
+    '-s'=> [RLIMIT_STACK, 1024],
+    '-t'=> [RLIMIT_CPU, 1],
+    '-u'=> [RLIMIT_NPROC, 1],
+    '-v'=> [RLIMIT_VMEM, 1024],
 );
 
 sub ulimit {
-	my ($soft, $action, $data);
-	for (@_) {
-		if ($_ eq '-S') {
-			if (defined $soft) {
-				croak "Only one -S or -H option allowed";
-			} else {
-				$soft=1
-			}
-		} elsif ($_ eq '-H') {
-			if (defined $soft) {
-				croak "Only one -S or -H option allowed";
-			} else {
-				$soft=0
-			}
-		} elsif (/^-/) {
-			if (! defined $action) {
-				if ($action= $resourcemap{$_}) {
-					# OK
-				} else {
-					croak "Unknown option '$_'";
-				}
-			} else {
-				croak "No more option arguments allowed (got '$_')";
-			}
-		} else {
-			if (! defined $data) {
-				$data=$_;
-			} else {
-				croak "No more arguments expected (got '$_')";
-			}
-		}
-	}
-	
-	my ($softlimit,$hardlimit)= getrlimit($action->[0]) or die "Could not get resource limit: $!";
-	
-	if (defined $data) {
-		$data *= $action->[1];
-		if ($soft) {
-			$softlimit=$data
-		} else {
-			$hardlimit=$data;
-			# strangely it's necessary to set the soft limit == or below the hard limit as
-			# well, or the hard limit will not have effect !!! (That's under linux 2.4.12-ac3)
-			#if (! $softlimit or $softlimit==RLIM_INFINITY or $softlimit > $hardlimit) {
-			#	$softlimit=$hardlimit;
-			#}
-			$softlimit=$data; # ?
-		}
-	} else {
-		$data= RLIM_INFINITY;
-		if ($soft) {
-			$softlimit=$data;
-		} else {
-			$hardlimit=$data;
-			$softlimit=$data; # ?
-		}
-	}
-	
-	setrlimit ($action->[0], $softlimit,$hardlimit) or die "Could not set resource limit: $!";
+    my ($soft, $action, $data);
+    for (@_) {
+        if ($_ eq '-S') {
+            if (defined $soft) {
+                croak "Only one -S or -H option allowed";
+            } else {
+                $soft=1
+            }
+        } elsif ($_ eq '-H') {
+            if (defined $soft) {
+                croak "Only one -S or -H option allowed";
+            } else {
+                $soft=0
+            }
+        } elsif (/^-/) {
+            if (! defined $action) {
+                if ($action= $resourcemap{$_}) {
+                    # OK
+                } else {
+                    croak "Unknown option '$_'";
+                }
+            } else {
+                croak "No more option arguments allowed (got '$_')";
+            }
+        } else {
+            if (! defined $data) {
+                $data=$_;
+            } else {
+                croak "No more arguments expected (got '$_')";
+            }
+        }
+    }
+
+    my ($softlimit,$hardlimit)= getrlimit($action->[0]) or die "Could not get resource limit: $!";
+
+    if (defined $data) {
+        $data *= $action->[1];
+        if ($soft) {
+            $softlimit=$data
+        } else {
+            $hardlimit=$data;
+            # strangely it's necessary to set the soft limit == or below the hard limit as
+            # well, or the hard limit will not have effect !!! (That's under linux 2.4.12-ac3)
+            #if (! $softlimit or $softlimit==RLIM_INFINITY or $softlimit > $hardlimit) {
+            #   $softlimit=$hardlimit;
+            #}
+            $softlimit=$data; # ?
+        }
+    } else {
+        $data= RLIM_INFINITY;
+        if ($soft) {
+            $softlimit=$data;
+        } else {
+            $hardlimit=$data;
+            $softlimit=$data; # ?
+        }
+    }
+
+    setrlimit ($action->[0], $softlimit,$hardlimit) or die "Could not set resource limit: $!";
 }
 
 __END__
