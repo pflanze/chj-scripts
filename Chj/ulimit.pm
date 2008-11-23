@@ -14,7 +14,7 @@ ulimit qw(-f 100);
 Provides almost exact the same semantics like the bash ulimit function, with the
 following exceptions:
 
- - you have to specify undef for "unlimited"
+ - you can specify undef or the string "unlimited" for unlimited
  - you can only set limits, not query them
  - -p is not implemented (since it seems BSD::Resource doesn't implement them?)
  - when setting hard limits, the soft limit is set as well. That seems
@@ -108,7 +108,13 @@ my %resourcemap= (
 sub ulimit {
     my ($soft, $action, $data);
     for (@_) {
-        if ($_ eq '-S') {
+	if (! defined $_ or $_ eq "unlimited") {
+	    if (! defined $data) {
+                #$data=undef hehe
+            } else {
+                croak "No more data arguments expected (got undef)";
+            }
+	} elsif ($_ eq '-S') {
             if (defined $soft) {
                 croak "Only one -S or -H option allowed";
             } else {
@@ -156,6 +162,7 @@ sub ulimit {
         }
     } else {
         $data= RLIM_INFINITY;
+	#warn "INFINITY";#
         if ($soft) {
             $softlimit=$data;
         } else {
