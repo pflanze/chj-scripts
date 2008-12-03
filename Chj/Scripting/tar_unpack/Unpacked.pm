@@ -63,10 +63,15 @@ sub DESTROY {
     my $s=shift;
     local $@;
     if ($$s[Autoclean]) {
-	Chj::xperlfunc::xsystem( "rm","-rf","--",$s->path);  ###HOPE HELL that chdir didn't change and it's not a relative path ???
-	rmdir( "$$s[Tmpdir]") or do {
-	    warn "could not rmdir '$$s[Tmpdir]' during destruction: $!"
-	      if $verbose
+	my $path= $s->path;
+	if ($path=~ m|^/|) {
+	    Chj::xperlfunc::xsystem( "rm","-rf","--",$s->path);
+	    rmdir( "$$s[Tmpdir]") or do {
+		warn "could not rmdir '$$s[Tmpdir]' during destruction: $!"
+		  if $verbose
+	      }
+	} else {
+	    warn "won't attempt to remove trees in non-absolute paths (ok this is unix specific): '$path'"
 	}
     }
     $s->SUPER::DESTROY;
