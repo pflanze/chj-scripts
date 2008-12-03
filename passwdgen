@@ -13,9 +13,10 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [length_in_bytes]
 
-  Generate password of $length_in_bytes bytes of randomness/entropy(?)/data ($_length_in_bits bits).
+  Generate password of length_in_bytes of randomness/entropy(?)/data
+  (by default, $length_in_bytes bytes ($_length_in_bits bits)).
 
   (Christian Jaeger <$email>)
 ";
@@ -45,7 +46,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage if @args;
+usage if @args>1;
+if (@args) {
+    ($length_in_bytes)=@args
+}
 
 use Chj::Random::Formatted 'random_passwd_string';
 
