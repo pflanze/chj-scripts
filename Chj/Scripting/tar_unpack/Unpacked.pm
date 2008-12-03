@@ -25,7 +25,7 @@ use strict;
 
 use Class::Array -fields=>
   -publica=>
-  'tmpdir', # tmpdir object
+  'tmpdir', # tmpdir *path* (not object because that would break during global destruction. yes.)
   'item',# item name inside tmpdir
   'autoclean',# bool
   ;
@@ -63,6 +63,7 @@ sub DESTROY {
     if ($$s[Autoclean]) {
 	Chj::xperlfunc::xsystem( "rm","-rf","--",$s->path);  ###HOPE HELL that chdir didn't change and it's not a relative path ???
 	# since Tmpdir's autoclean has been switched off:
+	#well since it's not an object anyway anymore..
 	Chj::xperlfunc::xrmdir( "$$s[Tmpdir]");
     }
     $s->SUPER::DESTROY;

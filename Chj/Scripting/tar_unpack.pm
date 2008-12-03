@@ -49,7 +49,7 @@ sub tar_unpack ($ ; $ $ ) {
     #ah aber immerhin hab ich in xnread list context er kennen   heh "".
     my @items= $d->xnread;
     @items==1 or die "expecting 1 item, got @items"; ##wel. every tar can do this.
-    Chj::Scripting::tar_unpack::Unpacked->new($dir,$items[0],1)
+    Chj::Scripting::tar_unpack::Unpacked->new("$dir",$items[0],1)
 }
 
 1
