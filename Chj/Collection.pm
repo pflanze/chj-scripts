@@ -11,6 +11,8 @@ Chj::Collection
 
 =head1 SYNOPSIS
 
+ use Chj::Collection ':all';
+
  our $c1= Collection 1,2,3,2;
  our $c2= Collection 3,4,5;
  our $joined= Collection_add $c1,$c2;
