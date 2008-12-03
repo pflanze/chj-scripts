@@ -57,14 +57,17 @@ use overload '""'=> "path";
 
 use Chj::xperlfunc ();
 
+our $verbose=1;
+
 sub DESTROY {
     my $s=shift;
     local $@;
     if ($$s[Autoclean]) {
 	Chj::xperlfunc::xsystem( "rm","-rf","--",$s->path);  ###HOPE HELL that chdir didn't change and it's not a relative path ???
-	# since Tmpdir's autoclean has been switched off:
-	#well since it's not an object anyway anymore..
-	Chj::xperlfunc::xrmdir( "$$s[Tmpdir]");
+	rmdir( "$$s[Tmpdir]") or do {
+	    warn "could not rmdir '$$s[Tmpdir]' during destruction: $!"
+	      if $verbose
+	}
     }
     $s->SUPER::DESTROY;
 }
