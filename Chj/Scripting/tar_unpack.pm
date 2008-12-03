@@ -19,7 +19,7 @@ Chj::Scripting::tar_unpack
 package Chj::Scripting::tar_unpack;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(tar_unpack);
-@EXPORT_OK=qw();
+@EXPORT_OK=qw(maybe_compression_from_path);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -29,9 +29,33 @@ use Chj::xtmpdir;
 use Chj::xopendir;
 use Chj::xopen 'xopen_read';
 use Chj::xperlfunc;
+use Carp;
+
+sub maybe_compression_from_path ( $ ) {
+    my ($path)=@_;
+    $path=~ m|\.(\w+)\z| or return;
+    my $suffix=lc $1;
+    if ($suffix eq "tgz"
+	or
+	$suffix eq "gz"
+       ) {
+	"z"
+    } elsif ($suffix eq "tbz"
+	     or
+	     $suffix eq "bz2"
+	    ) {
+	"j"
+    } elsif ($suffix eq "tar") {
+	""
+    } else {
+	undef # for now; might be lzop or others
+    }
+}
 
 sub tar_unpack ($ ; $ $ ) {
     my ($path,$opt_tmpdirbase,$opt_mask)=@_;
+    defined(my $compression=maybe_compression_from_path ($path))
+      or croak "path does not end in a recognizable compression: '$path'";
     my $dir= xtmpdir $opt_tmpdirbase,$opt_mask; #dank perl undef geht das passing so gut das is eben 'aber' einfach gut.
     my $fh= xopen_read $path;
     if (xfork) {
@@ -40,7 +64,7 @@ sub tar_unpack ($ ; $ $ ) {
 	#xchdir $dir;  wow: chdir() on unopened filehandle GEN4
 	xchdir "$dir"; #so much to overloading hehe...  .really.
 	$fh->xdup2(0);
-	xexec "tar" , "xzf", "-"
+	xexec "tar" , "xf$compression", "-"
     }
     $dir->autoclean(0);
     # return the path of the unpacked thing.
