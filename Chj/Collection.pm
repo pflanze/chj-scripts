@@ -30,6 +30,9 @@ Chj::Collection
  our $the_duplicates= Collection_intersect $c1,$c2;
  our $always_empty= Collection_intersect $all_nonduplicates, $the_duplicates;
 
+ # currently collections rely on having values; so to make "real hash
+ # style collections" work we need this, ugh: (maybe this should change though)
+ our $coll= Collection_from_hash +{ foo=> undef, bar=> undef };
 
  # Collection_subtract could be called Collection_remove, especially
  # the Hashcoll_subtract_d could deserve that name.
@@ -85,6 +88,7 @@ package Chj::Collection;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(
 	      Collection
+	      Collection_from_hash
 	      Collection_add Collection_addnew Collection_merge_with Collection_merge
 	      Collection_subtract
 	      Collection_intersect
@@ -179,6 +183,11 @@ sub Hashcoll_filter_d (& $ ) { # destructive filtering function.
 
 sub Collection {
     +{ map { $_=> $_ } @_ }
+}
+
+#sigh. turn value-less hashes to things that work here  hmm  or should I change Items back above  ?????
+sub Collection_from_hash ( $ ) {
+    +{ map { $_=> $_ } keys %{$_[0]} }
 }
 
 # generic functions:
