@@ -16,6 +16,7 @@ sub usage {
 
   Options:
   -b  force (passed to debchange)
+  --dry-run  only show what would be done
 
   (Christian Jaeger <$email>)
 ";
@@ -24,17 +25,23 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-our $opt_b;
+our ($opt_b,$opt_dry);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
 	   "b"=> \$opt_b,
 	   ) or exit 1;
 usage if @ARGV;
 
 use Chj::Git::Functions ':all';
 use Chj::xperlfunc;
+use Chj::singlequote ':all';
 
-xexec("debchange",
+our $Do= $opt_dry ? sub {
+    print STDERR "would run: ".singlequote_many( @_)."\n";
+} : \&xexec;
+
+&$Do ("debchange",
       ($opt_b ? "-b" : ()),
       "--newversion",
       xgit_describe_debianstyle());
