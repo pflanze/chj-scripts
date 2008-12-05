@@ -136,9 +136,9 @@ $baseclassdefs
 
 #sub DESTROY {
 #    my \$s=shift;
-#    local \$@;
+#    local ($@,$!,$?);
 #    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
-#    \$s->SUPER::DESTROY;
+#    \$s->SUPER::DESTROY; # or rather NEXT::
 #}
 
 end Class::Array;

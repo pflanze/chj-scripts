@@ -129,6 +129,13 @@ __PACKAGE__->__fields__
    #id=> 'r',
   );
 
+#sub DESTROY {
+#    my \$s=shift;
+#    local ($@,$!,$?);
+#    # ç remove if not used
+#    \$s->SUPER::DESTROY; # or rather NEXT::
+#}
+
 END
 #end $namespace;
 # Könnte noch  use vars qw{$VERSION};  und  $VERSION = '0.00'; reintun. Aber naja?
