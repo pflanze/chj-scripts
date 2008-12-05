@@ -36,6 +36,17 @@ usage if @ARGV;
 use Chj::Git::Functions ':all';
 use Chj::xperlfunc;
 use Chj::singlequote ':all';
+use Cwd;
+
+our $version= do {
+    my $v= xgit_describe_debianstyle();
+    # Some debian packages use prefixes; d'oh. Special-case those here:
+    if (getcwd =~ m|/git\z|) {
+	substr ($v,0,1).":".$v
+    } else {
+	$v
+    }
+};
 
 our $Do= $opt_dry ? sub {
     print STDERR "would run: ".singlequote_many( @_)."\n";
@@ -44,7 +55,7 @@ our $Do= $opt_dry ? sub {
 &$Do ("debchange",
       ($opt_b ? "-b" : ()),
       "--newversion",
-      xgit_describe_debianstyle());
+      $version);
 
 
 #use Chj::ruse;
