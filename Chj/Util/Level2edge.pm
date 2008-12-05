@@ -158,7 +158,7 @@ sub nosave {
 
 sub DESTROY {
     my $self=shift;
-    local ($@,$!);
+    local ($@,$!,$?);
     if ($$self[Ret]) {
 	warn "DESTROY: $self had unwritten level states: ".join(", ",map{ "$_ ($$self[Ret]{$_})" } keys %{$$self[Ret]})
     }

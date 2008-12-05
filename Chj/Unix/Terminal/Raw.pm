@@ -114,7 +114,7 @@ sub alwaysraw {
 
 sub DESTROY {
     my $s=shift;
-    local ($@,$!);
+    local ($@,$!,$?);
     $s->cooked if $$s{is_raw}
 }
 

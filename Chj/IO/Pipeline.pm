@@ -70,7 +70,7 @@ sub xreceiverpipeline_with_out_to {
 
 sub DESTROY {
     my $self=shift;
-    local ($@,$!);
+    local ($@,$!,$?);
     #$self->xxfinish unles   TODO ç
     delete $metadata{pack"I",$self};
     $self->SUPER::DESTROY;

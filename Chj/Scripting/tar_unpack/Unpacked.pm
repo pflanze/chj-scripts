@@ -61,7 +61,7 @@ our $verbose=1;
 
 sub DESTROY {
     my $s=shift;
-    local $@;
+    local ($@,$!,$?);
     if ($$s[Autoclean]) {
 	my $path= $s->path;
 	if ($path=~ m|^/|) {

@@ -153,6 +153,7 @@ sub verbose {
 
 sub DESTROY {
     my $s=shift;
+    local ($@,$!,$?);
     if ($s->verbose) {
 	print STDERR "releasing lock $s (".$$s[Fh]->path.")\n"
     }
