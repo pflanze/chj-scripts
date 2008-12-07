@@ -19,11 +19,13 @@ Chj::Mailfrom
 
 package Chj::Mailfrom;
 @ISA="Exporter"; require Exporter;
+@EXPORT=qw();
 @EXPORT_OK=qw(mailfrom mailfromaddress
 	      maybe_extend_with_realname
 	      maybe_mailrealname
 	      maybe_name_from_gcos
 	     );
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
 use Chj::Fileutil qw(MaybeChompCatfile xChompCatfile);
