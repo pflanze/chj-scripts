@@ -62,10 +62,12 @@ our $removefiles= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
+our $opt_quiet_rm;
+
 our $removedirs= &$make_filter
   (
    sub {
-       ('git rm --cached -r ' #does this work out?
+       ('git rm --cached '.($opt_quiet_rm ? "--quiet":"").' -r ' #does this work out?
 	.join(' ',
 	      map {
 		  singlequote_sh ($_)
@@ -90,7 +92,7 @@ our $remove_perlmatch= &$make_filter
 	# somehow for input line handling (-l only seems to have an
 	# effect on chomp, not on file splitting?), the latter for
 	# chomping and printing.
-	.'|xargs -0 --no-run-if-empty git rm --cached'
+	.'|xargs -0 --no-run-if-empty git rm --cached '.($opt_quiet_rm ? "--quiet":"")
        )
    },
    sub { $commit_filter_script__skip_empty_commits}
@@ -127,6 +129,10 @@ $cmdsstr
     even if it wasn't a merge originally)
   - it will not treat the initial commit.
 
+
+  Options:
+  --quiet-rm    pass quiet option to git rm
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -147,6 +153,7 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "quiet-rm"=> \$opt_quiet_rm,
 	   map {
 	       @$_[0,1]
 	   } @$cmds
