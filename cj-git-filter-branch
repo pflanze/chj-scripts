@@ -25,7 +25,7 @@ our $commit_filter_script__skip_empty_commits=
          git commit-tree "$@"
       fi
    else
-      if [ znot_a_merge = "${5-not_a_merge}" ]; then
+      if [ znot_a_merge = z"${5-not_a_merge}" ]; then
 	 if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]; then
 	    skip_commit "$@"
 	 else
@@ -34,6 +34,7 @@ our $commit_filter_script__skip_empty_commits=
       else
          # always commit merges, so that they end up in the right place. hm.
          # rather: this is a cheap way of not having to check for more arguments above.
+echo "seeing a merge: $@" >&2
          git commit-tree "$@"
       fi
    fi';
