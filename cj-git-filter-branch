@@ -18,9 +18,19 @@ sub _xxsystem {
 }
 
 our $commit_filter_script__skip_empty_commits=
-  'if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]
-      then skip_commit "$@"
-      else git commit-tree "$@"; fi';
+  'if [ initial = "${3-initial}" ]; then
+      if [ z"$1" = z"4b825dc642cb6eb9a060e54bf8d69288fbee4904" ]; then
+         skip_commit "$@"
+      else
+         git commit-tree "$@"
+      fi
+   else
+      if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]; then
+         skip_commit "$@"
+      else
+         git commit-tree "$@"
+      fi
+   fi';
 
 our $make_filter= sub {
     my ($index_filter_thunk, $commit_filter_thunk)=@_;
