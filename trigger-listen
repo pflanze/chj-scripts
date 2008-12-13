@@ -106,9 +106,10 @@ $SIG{CHLD}= do {
     };
 };
 
-if ($runner_child= xfork) {
-    # k proceed below
-} else {
+# handler which is not lossy (as I thought), but just does stuff once,
+# being triggered, and has a call frequency limit:
+
+our $trigger_handler = sub {
     my $flag=0;
     $SIG{USR1}= sub {
 	warn "runner_child got signal" if $DEBUG;
@@ -133,6 +134,28 @@ if ($runner_child= xfork) {
 	    warn "(runner_child: sleep timed out)" if $DEBUG;
 	}
     }
+};
+
+# handler which is just serial, but runs as many times as 'signalled',
+# without frequency limit, but also can handle arguments:
+
+our $piped_handler= sub {
+    my ($in)=@_;
+    while (<$in>) {
+	chomp;
+	if (my $args= maybe_parsemsg ($_)) {
+	    my $res= xsystem @cmd,@$args;
+	    ## todo: print if there was a problem  ?
+	} else {
+	    die "piped_handler: got strange message '$_'";
+	}
+    }
+};
+
+if ($runner_child= xfork) {
+    # k proceed below
+} else {
+    &$handler( ); #hm.
     exit 1;#never..
 }
 
