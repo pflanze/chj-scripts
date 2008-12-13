@@ -5,6 +5,34 @@
 
 use strict;
 
+use Chj::IO::Command;
+use Chj::Chomp;
+sub Maybe_which ( $ ) {
+    my ($progname)=@_;
+    my $in= Chj::IO::Command->new_sender ("which",$progname);
+    my $cnt= $in->xcontent;
+    my $res=$in->xfinish;
+    if ($res==0) {
+	Chomp ($cnt)
+    } else {
+	undef
+    }
+}
+
+our $browser=
+  (
+   Maybe_which ("galeon-$ENV{USER}sbx")
+   or
+   Maybe_which ("galeon")
+   or
+   #well, I haven't tested those..:
+   Maybe_which ("firefox")
+   or
+   Maybe_which ("mozilla")
+   or
+   "xmessage" #he
+  );
+
 sub Keyid32bithex ( $ ) {
     my ($str)= @_;
     #if (s/^0x//) {
@@ -75,9 +103,10 @@ sub usage {
       $maybe_default_key_short ? '0x'.$maybe_default_key_short : 'undefined';
     print "$myname openpgp-key-id
 
-  Open galeon window/tab(s) with wotsap url for the trust chain from
-  your key ($ownkeyid_str, taken from the default-key directive in
-  '$gpg_config_path') to the given key(s).
+  Open wotsap page url for the trust chain from your key
+  ($ownkeyid_str, taken from the default-key directive in
+  '$gpg_config_path') to the given key(s) in your browser
+  (choosen: $browser).
 
   (Christian Jaeger <$email>)
 ";
@@ -98,7 +127,7 @@ use Chj::xperlfunc;
 
 sub open_key_in_galeon ( $ ) {
     my ($keyid)=@_;
-    xxsystem "galeon", &$makeurl ($default_key_short, $keyid);
+    xxsystem $browser, &$makeurl ($default_key_short, $keyid);
 }
 
 open_key_in_galeon $_ for @ARGV;
