@@ -19,17 +19,28 @@ Chj::schemestring
 
 package Chj::schemestring;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(schemestring);
+@EXPORT=qw(schemestring schemestring_oneline);
 
 use strict;
 
-sub schemestring{
+sub schemestring {
     my ($s)=@_;
     $s=~ s/\\/\\\\/sg;
     $s=~ s/\"/\\\"/sg;
     "\"$s\""
 }
 
+sub schemestring_oneline {
+    my ($s)=@_;
+    $s=~ s/\\/\\\\/sg;
+    $s=~ s/\"/\\\"/sg;
+    $s=~ s/\n/\\n/sg;
+    $s=~ s/\r/\\r/sg;
+    $s=~ s/\t/\\t/sg;
+    "\"$s\""
+}
+
 *Chj::schemestring= \&schemestring;
+*oneline= \&schemestring_oneline;
 
 1
