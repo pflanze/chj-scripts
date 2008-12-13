@@ -11,7 +11,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname socketpath
+    print "$myname socketpath [ arguments ]
+
+  Send a trigger message to a trigger-listen instance.  If arguments
+  are given, those are sent with the message, but trigger-listen must
+  have been started with --accept-arguments in this case or it will
+  ignore the message.
 
   Options:
   --timeout seconds   instead of the default $timeout
@@ -27,7 +32,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "timeout"=> \$timeout,
 	   ) or exit 1;
-usage unless @ARGV==1;
+usage unless @ARGV;
 
 our $socketpath= shift @ARGV;
 
@@ -45,7 +50,11 @@ our $socket= IO::Socket::UNIX->new
   )
   or die "opening socket '$socketpath': $!";#!
 
-$socket->send("trigger\n")
+use Chj::schemestring 'schemestring_oneline';
+$socket->send(@ARGV ?
+	      "trigger: ".join("\t",map { schemestring_oneline $_ } @ARGV)."\n"
+	      :
+	      "trigger\n")
   or die "send: $!";
 my $result= <$socket>;
 if ($result ne "ok\n") {

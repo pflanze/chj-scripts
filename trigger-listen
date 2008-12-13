@@ -42,6 +42,9 @@ sub usage {
                use of the sleeptime right now)
   --umask val  use umask instead of the current one (relevant for
                creating the socket file)
+  --accept-arguments  instead of just the trigger message, accept
+               messages with a list of strings encoded in them, which
+               are then passed as additional arguments to cmd.
 
   (Christian Jaeger <$email>)
 ";
@@ -52,11 +55,13 @@ use Getopt::Long;
 our $verbose=0;
 our $DEBUG;
 our $umask;
+our $opt_accept_arguments;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime=s"=> \$sleeptime,
 	   "debug"=> \$DEBUG,
 	   "umask=s"=> \$umask,
+	   "accept-arguments"=>\$opt_accept_arguments,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
@@ -131,6 +136,34 @@ if ($runner_child= xfork) {
     exit 1;#never..
 }
 
+#sub maybe_parsemsg ( $ ) { # first return value is whether it matched. remaining ones are arguments.
+#ah no: much more ideomatic:
+sub maybe_parsemsg ( $ ) { # return vector of values, or false.
+    my ($str)=@_;
+    if ($opt_accept_arguments) {
+	if ($str=~ /trigger(?::(.*))/) {
+	    if (my $args=$1) {
+		# split on tab, then deescape schemestring
+		map {
+		    s/\\n/\n/sg;
+		    s/\\r/\r/sg;
+		    s/\\t/\t/sg;
+		    s/\\\"/\"/sg;
+		    s/\\\\/\\/sg;
+		    #ok?.
+		    $_
+		} split /\t/, $args
+	    } else {
+		[]  ## do not die if a non commandline containing msg is received? ok for now. maybe extend with a new option to be restrictive in future.
+	    }
+ 	} else {
+	    undef
+	}
+    } else {
+	$str eq 'trigger' ? [] : undef
+    }
+}
+
 eval {
     while(1) {
 	my $conn= $socket->accept
@@ -151,18 +184,21 @@ eval {
 	    } else {
 		while (<$conn>) {
 		    chomp;
-		    if ($_ eq "trigger") {
+		    if (my $args= maybe_parsemsg($_)) {
 			warn "$$ got trigger" if $DEBUG;
 			if (kill "USR1", $runner_child) {
 			    warn "$$ sent signal to runner_child" if $DEBUG;
 			} else {
 			    die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
 			}
-			$conn->send("ok\n") or warn "$myname: $$ could not send ok back to sender: $!";
+			$conn->send("ok\n")
+			  or warn "$myname: $$ could not send ok back to sender: $!";
 			#(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
 			warn "$$ sent ok back to trigger-send" if $DEBUG;
 		    } else {
 			warn "$$ got unrecognized message '$_'" if $DEBUG;
+			$conn->send("unrecognized message (need --accept-arguments?)\n")
+			  or warn "$myname: $$ could not send ok back to sender: $!";
 		    }
 		}
 		exit 0;
