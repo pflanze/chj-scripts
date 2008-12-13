@@ -1,0 +1,107 @@
+#!/usr/bin/perl -w
+
+# Sat Dec 13 22:19:53 CET 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+sub Keyid32bithex ( $ ) {
+    my ($str)= @_;
+    #if (s/^0x//) {
+    ## just fine
+    #}
+    my $re= qr|[A-F0-9]{8}|;
+    if ($str=~ m{^(?:0x|)($re)\z}s) {
+	$1
+    } else {
+	die "key does not match 32bit hex format: '$str'";
+    }
+}
+
+our $makeurl=sub ( $ $ ) {
+    my ($from, $to)=@_;
+    'http://webware.lysator.liu.se/jc/wotsap/wots/latest/paths/0x'.Keyid32bithex($from).'-0x'.Keyid32bithex($to).'.png?size=2000x700'
+};
+
+# fetch the key from config:
+use Chj::xopen 'xopen_read';
+our $gpg_config_path= $ENV{HOME}."/.gnupg/gpg.conf";
+sub maybe_gpg_config_parse ( $ ) {
+    my ($path)=@_;
+    return unless -f $path;
+    my $in= xopen_read $path;
+    my $h={};
+    while (<$in>) {
+	chomp;
+	s/^\s*//;
+	next if /^#/;
+	if (/^(\S+)\s+(\S+)/) {
+	    push @{$$h{lc $1}}, $2;
+	}
+    }
+    $in->xclose;
+    $h
+}
+our $maybe_gpg_config= maybe_gpg_config_parse ($gpg_config_path);
+sub maybe_gpg_config_get_single ( $ ) {
+    my ($key)=@_;
+    $maybe_gpg_config and do {
+	if (my $v=$$maybe_gpg_config{lc $key}) {
+	    if (@$v==1) {
+		$$v[0]
+	    } elsif (@$v==0) {
+		undef
+	    } else {
+		die "multiple definitions for key '$key' in gpg config '$gpg_config_path'";
+	    }
+	} else {
+	    undef
+	}
+    }
+}
+our $maybe_default_key_long= maybe_gpg_config_get_single ("default-key");
+our $maybe_default_key_short= ($maybe_default_key_long and do {
+    my $str= $maybe_default_key_long;
+    $str=~ m|^[A-F0-9]{8}([A-F0-9]{8})\z|
+      or die "seems like invalid default-key setting, does not match our regex: '$str'";
+    $1
+});#parens needed!..
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    my $ownkeyid_str=
+      $maybe_default_key_short ? '0x'.$maybe_default_key_short : 'undefined';
+    print "$myname openpgp-key-id
+
+  Open galeon window/tab(s) with wotsap url for the trust chain from
+  your key ($ownkeyid_str, taken from the default-key directive in
+  '$gpg_config_path') to the given key(s).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+my $default_key_short= $maybe_default_key_short
+  or usage "need definition of default-key in '$gpg_config_path'";
+
+use Chj::xperlfunc;
+
+sub open_key_in_galeon ( $ ) {
+    my ($keyid)=@_;
+    xxsystem "galeon", &$makeurl ($default_key_short, $keyid);
+}
+
+open_key_in_galeon $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
