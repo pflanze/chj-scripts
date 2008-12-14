@@ -45,6 +45,11 @@ sub usage {
   --accept-arguments  instead of just the trigger message, accept
                messages with a list of strings encoded in them, which
                are then passed as additional arguments to cmd.
+               Switches to piped handler, which does not have the
+               property of running only once if before starting a run
+               multiple triggers have been given, but instead runs as
+               many times as triggers have been sent, but still
+               serialized. Also switches off sleeping.
 
   (Christian Jaeger <$email>)
 ";
@@ -56,9 +61,10 @@ our $verbose=0;
 our $DEBUG;
 our $umask;
 our $opt_accept_arguments;
+our $opt_sleeptime;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "sleeptime=s"=> \$sleeptime,
+	   "sleeptime=s"=> \$opt_sleeptime,
 	   "debug"=> \$DEBUG,
 	   "umask=s"=> \$umask,
 	   "accept-arguments"=>\$opt_accept_arguments,
@@ -67,6 +73,10 @@ usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
 our $socketpath= shift @ARGV;
 our @cmd= @ARGV;
+if ($opt_accept_arguments and $opt_sleeptime) {
+    usage "--accept-arguments is incompatible with --sleep"
+}
+$sleeptime= $opt_sleeptime if defined $opt_sleeptime; # don't forget the defined *here* !!!!! !
 
 use IO::Socket::UNIX;
 
@@ -109,29 +119,40 @@ $SIG{CHLD}= do {
 # handler which is not lossy (as I thought), but just does stuff once,
 # being triggered, and has a call frequency limit:
 
-our $trigger_handler = sub {
-    my $flag=0;
-    $SIG{USR1}= sub {
-	warn "runner_child got signal" if $DEBUG;
-	$flag=1;
-    };
-    while (1) {
-	# use both interruptible and uninterruptible sleeps hehe
-	sleep 100000;
-	if ($flag) {
-	  RUNIT: {
-		warn "runner_child got request to run command" if $DEBUG;
-		uninterrupted_sleep $sleeptime;
-		warn "runner_child going to run command now" if $DEBUG;
-		$flag=0;
-		my $res= xsystem @cmd;
-		## todo: print if there was a problem  ?
-		if ($flag) {
-		    redo RUNIT;
-		}
+our $start_triggered_handler = sub {
+    if ($runner_child= xfork) {
+	# sender:
+	sub {
+	    if (kill "USR1", $runner_child) {
+		warn "$$ sent signal to runner_child" if $DEBUG;
+	    } else {
+		die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
 	    }
-	} else {
-	    warn "(runner_child: sleep timed out)" if $DEBUG;
+	}
+    } else {
+	my $flag=0;
+	$SIG{USR1}= sub {
+	    warn "runner_child got signal" if $DEBUG;
+	    $flag=1;
+	};
+	while (1) {
+	    # use both interruptible and uninterruptible sleeps hehe
+	    sleep 100000;
+	    if ($flag) {
+	      RUNIT: {
+		    warn "runner_child got request to run command" if $DEBUG;
+		    uninterrupted_sleep $sleeptime;
+		    warn "runner_child going to run command now" if $DEBUG;
+		    $flag=0;
+		    my $res= xsystem @cmd;
+		    ## todo: print if there was a problem  ?
+		    if ($flag) {
+			redo RUNIT;
+		    }
+		}
+	    } else {
+		warn "(runner_child: sleep timed out)" if $DEBUG;
+	    }
 	}
     }
 };
@@ -139,43 +160,63 @@ our $trigger_handler = sub {
 # handler which is just serial, but runs as many times as 'signalled',
 # without frequency limit, but also can handle arguments:
 
-our $piped_handler= sub {
-    my ($in)=@_;
-    while (<$in>) {
-	chomp;
-	if (my $args= maybe_parsemsg ($_)) {
-	    my $res= xsystem @cmd,@$args;
-	    ## todo: print if there was a problem  ?
-	} else {
-	    die "piped_handler: got strange message '$_'";
+use Chj::xpipe;
+
+our $start_piped_handler= sub {
+    my ($in,$send)=xpipe;
+    if ($runner_child= xfork) {
+	$in->xclose;
+	# sender:
+	sub {
+	    my ($msg)=@_;
+	    $send->xprint($msg,"\n"); #!!! the \n is mandatory; I did chomp!
+	    $send->xflush;
+	    warn "$$ passed on message to runner_child" if $DEBUG;
 	}
+    } else {
+	$send->xclose;
+	#$in->autoflush(0);
+	while (<$in>) {
+	#warn "runner_child $$ WAITING" if $DEBUG;
+	#while (defined ($_= $in->xreadline)) {
+	    #warn "runner_child HMMMMMMMMMMMMMMMMMMMMMMMMMMM" if $DEBUG;
+	    chomp;
+	    if (my $args= maybe_parsemsg ($_)) {
+		warn "runner_child got request to run command" if $DEBUG;
+		my $res= xsystem @cmd,@$args;
+		## todo: print if there was a problem  ?
+	    } else {
+		die "piped_handler: got strange message '$_'";
+	    }
+	}
+	exit 1;
     }
 };
 
-if ($runner_child= xfork) {
-    # k proceed below
-} else {
-    &$handler( ); #hm.
-    exit 1;#never..
-}
 
 #sub maybe_parsemsg ( $ ) { # first return value is whether it matched. remaining ones are arguments.
 #ah no: much more ideomatic:
 sub maybe_parsemsg ( $ ) { # return vector of values, or false.
     my ($str)=@_;
     if ($opt_accept_arguments) {
-	if ($str=~ /trigger(?::(.*))/) {
+	if ($str=~ /^trigger(?::(.*))?/s) {
 	    if (my $args=$1) {
 		# split on tab, then deescape schemestring
-		map {
-		    s/\\n/\n/sg;
-		    s/\\r/\r/sg;
-		    s/\\t/\t/sg;
-		    s/\\\"/\"/sg;
-		    s/\\\\/\\/sg;
-		    #ok?.
-		    $_
-		} split /\t/, $args
+		[
+		 map {
+		     s/^.*?\"//;
+		     s/\"[^\"]*\z//;
+		     #^ !  ah and, ? and [^ ].
+		     s/\\n/\n/sg;
+		     s/\\r/\r/sg;
+		     s/\\t/\t/sg;
+		     s/\\\"/\"/sg;
+		     s/\\\\/\\/sg;
+		     #ok?.
+		     $_
+		 } split /\t/, $args
+		]
+		  #!!!!!!!!!don't forget the  ref.
 	    } else {
 		[]  ## do not die if a non commandline containing msg is received? ok for now. maybe extend with a new option to be restrictive in future.
 	    }
@@ -186,6 +227,13 @@ sub maybe_parsemsg ( $ ) { # return vector of values, or false.
 	$str eq 'trigger' ? [] : undef
     }
 }
+
+
+# --- main ----------------------------
+
+our $pass_to_handler= &{ $opt_accept_arguments ?
+			   $start_piped_handler
+			     : $start_triggered_handler };
 
 eval {
     while(1) {
@@ -207,13 +255,9 @@ eval {
 	    } else {
 		while (<$conn>) {
 		    chomp;
-		    if (my $args= maybe_parsemsg($_)) {
+		    if (maybe_parsemsg($_)) {
 			warn "$$ got trigger" if $DEBUG;
-			if (kill "USR1", $runner_child) {
-			    warn "$$ sent signal to runner_child" if $DEBUG;
-			} else {
-			    die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
-			}
+			&$pass_to_handler($_);
 			$conn->send("ok\n")
 			  or warn "$myname: $$ could not send ok back to sender: $!";
 			#(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
