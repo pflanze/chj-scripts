@@ -196,6 +196,7 @@ our $start_piped_handler= sub {
 
 #sub maybe_parsemsg ( $ ) { # first return value is whether it matched. remaining ones are arguments.
 #ah no: much more ideomatic:
+use Chj::schemestring 'parse_schemestring';
 sub maybe_parsemsg ( $ ) { # return vector of values, or false.
     my ($str)=@_;
     if ($opt_accept_arguments) {
@@ -204,16 +205,7 @@ sub maybe_parsemsg ( $ ) { # return vector of values, or false.
 		# split on tab, then deescape schemestring
 		[
 		 map {
-		     s/^.*?\"//;
-		     s/\"[^\"]*\z//;
-		     #^ !  ah and, ? and [^ ].
-		     s/\\n/\n/sg;
-		     s/\\r/\r/sg;
-		     s/\\t/\t/sg;
-		     s/\\\"/\"/sg;
-		     s/\\\\/\\/sg;
-		     #ok?.
-		     $_
+		     parse_schemestring($_)
 		 } split /\t/, $args
 		]
 		  #!!!!!!!!!don't forget the  ref.
