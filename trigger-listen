@@ -76,7 +76,7 @@ our @cmd= @ARGV;
 if ($opt_accept_arguments and $opt_sleeptime) {
     usage "--accept-arguments is incompatible with --sleep"
 }
-$sleeptime= $opt_sleeptime if defined $opt_sleeptime; # don't forget the defined *here* !!!!! !
+$sleeptime= $opt_sleeptime if defined $opt_sleeptime;
 
 use IO::Socket::UNIX;
 
@@ -169,17 +169,14 @@ our $start_piped_handler= sub {
 	# sender:
 	sub {
 	    my ($msg)=@_;
-	    $send->xprint($msg,"\n"); #!!! the \n is mandatory; I did chomp!
+	    # msg does not end in newline anymore
+	    $send->xprint($msg,"\n");
 	    $send->xflush;
 	    warn "$$ passed on message to runner_child" if $DEBUG;
 	}
     } else {
 	$send->xclose;
-	#$in->autoflush(0);
 	while (<$in>) {
-	#warn "runner_child $$ WAITING" if $DEBUG;
-	#while (defined ($_= $in->xreadline)) {
-	    #warn "runner_child HMMMMMMMMMMMMMMMMMMMMMMMMMMM" if $DEBUG;
 	    chomp;
 	    if (my $args= maybe_parsemsg ($_)) {
 		warn "runner_child got request to run command" if $DEBUG;
@@ -193,9 +190,6 @@ our $start_piped_handler= sub {
     }
 };
 
-
-#sub maybe_parsemsg ( $ ) { # first return value is whether it matched. remaining ones are arguments.
-#ah no: much more ideomatic:
 use Chj::schemestring 'parse_schemestring';
 sub maybe_parsemsg ( $ ) { # return vector of values, or false.
     my ($str)=@_;
@@ -208,7 +202,6 @@ sub maybe_parsemsg ( $ ) { # return vector of values, or false.
 		     parse_schemestring($_)
 		 } split /\t/, $args
 		]
-		  #!!!!!!!!!don't forget the  ref.
 	    } else {
 		[]  ## do not die if a non commandline containing msg is received? ok for now. maybe extend with a new option to be restrictive in future.
 	    }
