@@ -87,22 +87,29 @@ our $removedirs= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
-our $_remove_perlmatch;
+our $_remove_perlmatch= sub {
+    my ($perlcode)=@_;
+    my $shellcode=
+      ('git ls-files -z |'
+       .'perl -wn -0 -l0 -e '.singlequote_sh ($perlcode)
+       # ^note: *both* the -0 and -l0 flags are necessary: the former
+       # somehow for input line handling (-l only seems to have an
+       # effect on chomp, not on file splitting?), the latter for
+       # chomping and printing.
+       .'|xargs -0 --no-run-if-empty git rm --cached '.($opt_quiet_rm ? "--quiet":"")
+      );
+    warn "got shellcode:
+$shellcode
+";die;#
+    $shellcode
+};
+
 our $remove_perlmatch= &$make_filter
   (
-   $_remove_perlmatch=sub {
+   sub {
        @ARGV==1
 	 or die "$myname: expecting 1 argument, the perl code for the test, but got ".@ARGV." arguments\n";
-       my ($perlcode)=@ARGV;
-       print STDERR "The shell result argument is:\n".
-       ('git ls-files -z |'
-	.'perl -wn -0 -l0 -e '.singlequote_sh ($perlcode)
-	# ^note: *both* the -0 and -l0 flags are necessary: the former
-	# somehow for input line handling (-l only seems to have an
-	# effect on chomp, not on file splitting?), the latter for
-	# chomping and printing.
-	.'|xargs -0 --no-run-if-empty git rm --cached '.($opt_quiet_rm ? "--quiet":"")
-       ); die;
+       &$_remove_perlmatch ($ARGV[0])
    },
    sub { $commit_filter_script__skip_empty_commits}
   );
