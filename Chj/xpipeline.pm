@@ -55,6 +55,9 @@ sub xreceiverpipeline_with_out_to{
     goto &Chj::IO::Pipeline::xreceiverpipeline_with_out_to
 }
 
+
+use Chj::Unix::exitcode;
+
 sub xxpipeline {
     if (@_>=2) {
 	my $firstframe=shift;
@@ -67,7 +70,8 @@ sub xxpipeline {
 		croak __PACKAGE__."::xxpipeline: could not run subprocess: $err";
 	    }
 	    waitpid $pid,0;
-	    croak "xxpipeline: first child gave exit status (\$?) $?" unless $?==0;##endlich rausfinden wie ich das will genau, sollte doch stets splitted sein das h ding
+	    croak "xxpipeline: first child exited with ".exitcode($?)
+	      unless $?==0;
 	    $out->xxfinish;
 	} else {
 	    $out->xdup2(1);
