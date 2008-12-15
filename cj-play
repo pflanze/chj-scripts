@@ -71,7 +71,7 @@ our $play_wav_jack= sub {
        #and we need it to give some standardthingie.
        ["sox", $file, qw(-c 2 -r 44100 -t wav ), "-"],
        #["toolame","-","out.mp3"],
-       ["toolame","-","-"],
+       ["lame","-","-"],
        ["mpg123", "-"]
       );
 };
