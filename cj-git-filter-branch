@@ -94,6 +94,7 @@ our $remove_perlmatch= &$make_filter
        @ARGV==1
 	 or die "$myname: expecting 1 argument, the perl code for the test, but got ".@ARGV." arguments\n";
        my ($perlcode)=@ARGV;
+       print STDERR "The shell result argument is:\n".
        ('git ls-files -z |'
 	.'perl -wn -0 -l0 -e '.singlequote_sh ($perlcode)
 	# ^note: *both* the -0 and -l0 flags are necessary: the former
@@ -101,7 +102,7 @@ our $remove_perlmatch= &$make_filter
 	# effect on chomp, not on file splitting?), the latter for
 	# chomping and printing.
 	.'|xargs -0 --no-run-if-empty git rm --cached '.($opt_quiet_rm ? "--quiet":"")
-       )
+       ); die;
    },
    sub { $commit_filter_script__skip_empty_commits}
   );
@@ -117,8 +118,7 @@ our $remove_all_but_those_in= &$make_filter
        my $code= ('BEGIN { { local $/="\n"; open my $in, "<",'
 		  .singlequote($realpath)
 		  .' or die; %want=map { chomp; $_=>1} <$in>; close $in or die; } } print unless $want{$_}');
-       #print STDERR "our code is:\n$code\n";
-       #die;
+       print STDERR "our code is:\n$code\n\n";
        &$_remove_perlmatch ($code)
    },
    sub { $commit_filter_script__skip_empty_commits}
