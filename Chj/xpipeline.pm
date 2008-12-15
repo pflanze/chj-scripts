@@ -60,9 +60,7 @@ sub xxpipeline {
 	my $firstframe=shift;
 	my $out= Chj::IO::Pipeline->xreceiverpipeline_with_out_to(undef,@_);
 	my ($readerr,$writeerr)=xpipe;
-	if (my $pid=xfork) {#  spinn ich??Found = in conditional, should be == at /usr/local/lib/perl/5.6.1/Chj/xpipeline.pm line 53.   heh kommt nur wenn sonst fehler kommen.
-	#my $pid=xfork;
-	#if ($pid){
+	if (my $pid=xfork) {
 	    $writeerr->xclose;
 	    my $err= $readerr->xcontent;
 	    if ($err) {
