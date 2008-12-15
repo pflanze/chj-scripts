@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 use Chj::xperlfunc;
-use Chj::singlequote "singlequote_sh";
+use Chj::singlequote qw(singlequote_sh singlequote);
 
 sub _xxsystem {
     use Data::Dumper "Dumper";
@@ -87,9 +87,10 @@ our $removedirs= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
+our $_remove_perlmatch;
 our $remove_perlmatch= &$make_filter
   (
-   sub {
+   $_remove_perlmatch=sub {
        @ARGV==1
 	 or die "$myname: expecting 1 argument, the perl code for the test, but got ".@ARGV." arguments\n";
        my ($perlcode)=@ARGV;
@@ -105,6 +106,23 @@ our $remove_perlmatch= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
+use Chj::xrealpath;
+our $remove_all_but_those_in= &$make_filter
+  (
+   sub {
+       @ARGV==1
+	 or die "$myname: expecting 1 argument, the path containing the filelist, but got ".@ARGV." arguments\n";
+       my ($path)=@ARGV;
+       my $realpath= xrealpath $path;
+       my $code= ('BEGIN { { local $/="\n"; open my $in, "<",'
+		  .singlequote($realpath)
+		  .' or die; %want=map { chomp; $_=>1} <$in>; close $in or die; } } print unless $want{$_}');
+       #print STDERR "our code is:\n$code\n";
+       #die;
+       &$_remove_perlmatch ($code)
+   },
+   sub { $commit_filter_script__skip_empty_commits}
+  );
 
 sub CmdSetter ( $ );#heh
 our $cmds=
@@ -115,6 +133,9 @@ our $cmds=
     "remove all files in the given dir paths (including their commit if empty)"],# basically just a recursive version of the remove-files thing. wouldn't that message be too long?
    ["remove-perlmatch" => CmdSetter ($remove_perlmatch),
     "remove all files whose paths are printed by the given perl code; like 'print if m|someregex|' is enough, perl is run with flags to automatically strip and add \\0 path separation bytes"],
+
+   ["remove-all-but-those-in" => CmdSetter ($remove_all_but_those_in),
+    "remove all files except those which are listed (one path per line) in the file with the given path"],
   ];
 
 sub usage {
