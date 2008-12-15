@@ -98,9 +98,6 @@ our $_remove_perlmatch= sub {
        # chomping and printing.
        .'|xargs -0 --no-run-if-empty git rm --cached '.($opt_quiet_rm ? "--quiet":"")
       );
-    warn "got shellcode:
-$shellcode
-";die;#
     $shellcode
 };
 
@@ -125,7 +122,6 @@ our $remove_all_but_those_in= &$make_filter
        my $code= ('BEGIN { { local $/="\n"; open my $in, "<",'
 		  .singlequote($realpath)
 		  .' or die; %want=map { chomp; $_=>1} <$in>; close $in or die; } } print unless $want{$_}');
-       print STDERR "our code is:\n$code\n\n";
        &$_remove_perlmatch ($code)
    },
    sub { $commit_filter_script__skip_empty_commits}
