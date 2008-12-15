@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w
+
+# Mon Dec 15 01:21:52 CET 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $sleep_n=1;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  play files, either .wav or .mp3, either using jack if running or
+  directly otherwise
+
+  Options:
+  -n  play file(s) n times
+  --sleep n   sleep n seconds between repeating the loop ($sleep_n by default)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_n=1;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sleep=s"=> \$sleep_n,
+	   "n=n"=> \$opt_n,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Time::HiRes 'sleep';
+
+# how to find out if jackd is running?
+use Chj::IO::Command;
+sub jackd_running_p {
+    my $in= Chj::IO::Command->new_combinedsender #not new_combined_sender
+      ("jack_lsp");
+    my $cnt= $in->xcontent;
+    my $res= $in->xfinish;
+    $res==0
+}
+
+use Chj::xperlfunc;
+
+our $play_mp3= sub {
+    my ($file)=@_;
+    xxsystem "mpg123",$file;
+};
+our $play_wav_nojack= sub {
+    my ($file)=@_;
+    xxsystem "play",$file;
+};
+use Chj::xpipeline ':all';
+our $play_wav_jack= sub {
+    my ($file)=@_;
+    # encode wav  ad hoc into mp3.  since most wav's have wrong sample rate. ok?
+    xxpipeline
+      (#["cat", $file ],
+       #heh actually use toolame since that one is in Debian. no patent issues? hmm?.
+       #and this wouldn't work right?:
+       #chris@novo:~$ dpkg -s vorbis-tools|grep jack
+       #chris@novo:~$ 
+       #so..:
+       #and we need it to give some standardthingie.
+       ["sox", $file, qw(-c 2 -r 44100 -t wav ), "-"],
+       #["toolame","-","out.mp3"],
+       ["toolame","-","-"],
+       ["mpg123", "-"]
+      );
+};
+
+for (1..$opt_n) {
+    sleep $sleep_n
+      unless $_ == $opt_n;
+}
+
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
