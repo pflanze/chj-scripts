@@ -59,7 +59,6 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
 	my $cmd= ("chmod 0".sprintf('%o', $stat->permissions)
 		  ." "
 		  .singlequote_sh ($remotetmp));
-	warn "going to run cmd '$cmd'";
 	CheckSuccessAndEmptyness
 	  ($s->remote_run_commandstring_with_statusreply
 	   ($cmd));
