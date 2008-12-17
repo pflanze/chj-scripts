@@ -1,7 +1,8 @@
 package Chj::PackageData;
 
 # Sun Mar  9 16:07:52 2003  Christian Jaeger
-# $Id$
+# Copyright 2003-2008 Christian at jaeger mine nu
+# Published under the same terms as Perl 5.
 
 =head1 NAME
 
@@ -42,7 +43,7 @@ Probably more.
 
 =head1 AUTHOR
 
-Christian Jaeger <christian.jaeger@ethlife.ethz.ch>
+Christian Jaeger
 
 =cut
 
