@@ -75,7 +75,12 @@ sub surefetch {
 		if ($$contentref =~ /ERROR/ && $$contentref =~ /404/) {
 		    push @error, "Page contains ERROR and 404";
 		} elsif ($$contentref=~ /Fehler aufgetreten/) {
-		    push @error, "Page contains 'Fehler aufgetreten'";
+		    if ($$contentref=~ /nur ein einziger marginaler Fehler aufgetreten/) {
+			# an article containing that phrase, t'a. I knew it of course that it would happen once.
+			last TRY;
+		    } else {
+			push @error, "Page contains 'Fehler aufgetreten'";
+		    }
 		} elsif ($$contentref=~ /axkit.*error/i) {
 		    push @error, "Page contains /axkit.*error/i";
 		} else {
