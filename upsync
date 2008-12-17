@@ -155,7 +155,7 @@ if ($opt_dryrun) {
 	if ($verbose) {
 	    print "synching file ".singlequote($path_from_base)."\n";
 	}
-	$rem->upload_file_path($basedir."/".$path_from_base, $path_from_base);
+	$rem->upload_file_path_with_permissions($basedir."/".$path_from_base, $path_from_base);
     };
     $synchfiledelete= sub {
 	my ($path_from_base)=@_;
