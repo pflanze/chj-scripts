@@ -37,8 +37,8 @@ sub Randomname {
 }
 
 sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
-    @_==3 or die "wrong number of arguments";#grrrrrr ich depp. soweit bin ich schon  dass ich darauf nimmeracht.(vergass remotepath immer  und wunder mich)
-    my ($s, $inputfh, $remotepath)=@_;
+    @_==3 or @_==4 or die "wrong number of arguments";#grrrrrr ich depp. soweit bin ich schon  dass ich darauf nimmeracht.(vergass remotepath immer  und wunder mich)
+    my ($s, $inputfh, $remotepath, $maybe_stat)=@_;
     my $remotetmp= $remotepath.Randomname;
     my $marker= NewMarker();#grr needs parens because it's not imported at compiletime.
     CheckSuccessAndEmptyness
@@ -53,6 +53,17 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
 	    $inputfh->xsendfile_to($fh);  # 'depends on xsendfile_to *not* being the lowlevel linux call. (or at least it doing flushing of perl buffers first)'---d'oh, it *is* lowlevel, even the perl implementation of it (using sysread/-write), thus the xflush above now.
 	    $fh->xprint("\n".$marker."\n");
 	}));
+    # permissions: (ignore user and group   ?  hm?  TODO could even be dangerous with this!)
+    if (defined(my $stat= $maybe_stat)) {
+	#my $cmd= "chmod 0".sprintf('%o', $stat->permissions);#richtige knallköpfe
+	my $cmd= ("chmod 0".sprintf('%o', $stat->permissions)
+		  ." "
+		  .singlequote_sh ($remotetmp));
+	warn "going to run cmd '$cmd'";
+	CheckSuccessAndEmptyness
+	  ($s->remote_run_commandstring_with_statusreply
+	   ($cmd));
+    }
     my $cmd= $shellquoted->("/bin/mv", "--", $remotetmp, $remotepath);
     #warn "cmd=".singlequote($cmd);
     CheckSuccessAndEmptyness
@@ -66,6 +77,16 @@ sub upload_file_path {
     $s->upload_file_fh(Chj::xopen::xopen_read($sourcepath), $remotepath);
 }
 #((praktisch, wie exceptions überall jeweils abbrechen automaticaly.))
+
+use Chj::xperlfunc ();
+sub upload_file_path_with_permissions {
+    @_==3 or die "wrong number of arguments";#grrrrrr HIER muss es sein,ja
+    my ($s, $sourcepath, $remotepath)=@_;
+    $s->upload_file_fh(Chj::xopen::xopen_read($sourcepath),
+		       $remotepath,
+		       scalar Chj::xperlfunc::xstat($sourcepath), # NOT xlstat, right? ah YEAHYEAHYEAH once more don't forget scalar.
+		      );
+}
 
 
 sub remote_unlink {
