@@ -51,6 +51,7 @@ Christian Jaeger
 require Exporter;
 @ISA="Exporter";
 @EXPORT_OK=qw(packagedata);
+%EXPORT_TAGS= (all=> \@EXPORT_OK);
 use strict;
 use Devel::Symdump;
 
