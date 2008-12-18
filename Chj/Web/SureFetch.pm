@@ -75,7 +75,10 @@ sub surefetch {
 		if ($$contentref =~ /ERROR/ && $$contentref =~ /404/) {
 		    push @error, "Page contains ERROR and 404";
 		} elsif ($$contentref=~ /Fehler aufgetreten/) {
-		    if ($$contentref=~ /nur ein einziger marginaler Fehler aufgetreten/) {
+		    if ($$contentref=~ /nur ein einziger marginaler Fehler aufgetreten/
+			or
+			$$contentref=~ /Tolle Idee - schlechte Umsetzung/
+		       ) {
 			# an article containing that phrase, t'a. I knew it of course that it would happen once.
 			last TRY;
 		    } else {
