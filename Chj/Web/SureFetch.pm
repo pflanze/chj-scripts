@@ -57,13 +57,15 @@ sub onlyone(\@) {
     join " / ",@err
 }
 
+our $num_attempts=3;
+
 sub surefetch {
     my ($url,$wantarray)=@_; # not rely on wantarray since it might not be backwards compatible. (array contexts dis eh a pointments)
     my $contentref;
     my $result;
   TRY: {
 	my @error;
-	for (1..3) {
+	for (1..$num_attempts) {
 	    my $ua = LWP::UserAgent->new()   or die "??";
 	    $ua->agent("Mozilla/LibWWW-Perl ($0)");
 	    my $req = new HTTP::Request GET => $url   or die "??";
