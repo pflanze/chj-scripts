@@ -28,9 +28,10 @@ our $randev= "/dev/urandom";
 sub seed {
     @_==1 or croak "expecting 1 argument";
     my ($length)=@_;
-    open IN, "<$randev" or croak "could not open '$randev' for reading: $!";
+    open my $in, "<", $randev
+      or croak "could not open '$randev' for reading: $!";
     my $seed;
-    my $len = read (IN,$seed,$length);
+    my $len = sysread ($in,$seed,$length);
     if (! defined $len) {
 	croak "could not read from '$randev': $!"; ##  eagain und so  ?
     }
@@ -38,6 +39,8 @@ sub seed {
 	croak "got eof from '$randev', how can this happen?";## signal interrupts?
     }
     if ($len == $length) {
+	close $in
+	  or die "error closing '$randev': $!";
 	$seed
     } else {
 	croak "couldn't read $length bytes from '$randev', got only $len";
