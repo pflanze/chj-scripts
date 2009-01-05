@@ -44,6 +44,7 @@ sub seed {
 	$seed
     } else {
 	croak "couldn't read $length bytes from '$randev', got only $len";
+	# NOTE: this can happen with /dev/random (not urandom) on a 2.6.27.10{-grsec?} kernel, when the pool seems to be depleted, then it will only give what it has, funny :)
     }
 }
 
