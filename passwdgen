@@ -17,6 +17,12 @@ sub usage {
   Generate password of length_in_bytes of randomness/entropy(?)/data
   (by default, $length_in_bytes bytes ($_length_in_bits bits)).
 
+  Options:
+  --pure   use pure entropy, aka /dev/random instead of /dev/urandom
+           NOTE: this will die if the entropy pool does not have the
+           requested number of bytes ready (on linux 2.6) (it will
+           not block anymore?; interesting?)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -24,8 +30,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_pure;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "pure"=> \$opt_pure,
 	   ) or exit 1;
 usage if @ARGV>1;
 if (@ARGV) {
@@ -34,8 +42,21 @@ if (@ARGV) {
 
 use Chj::Random::Formatted 'random_passwd_string';
 
-print random_passwd_string ($length_in_bytes),"\n"
-  or die $!;
+my $act= sub {
+    print random_passwd_string ($length_in_bytes),"\n"
+      or die $!;
 
-close STDOUT
-  or die $!;
+    close STDOUT
+      or die $!;
+};
+
+if ($opt_pure) {
+    $Chj::Random::randev eq "/dev/urandom"
+      or die "expected \$Chj::Random::randev to be /dev/urandom but it is '$Chj::Random::randev'";
+    local $Chj::Random::randev= "/dev/random";
+    &$act
+} else {
+    &$act
+}
+
+
