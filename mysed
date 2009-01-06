@@ -6,6 +6,7 @@
 # Tue,  6 May 2003 22:08:07 +0200: trash not on same partition problem: ask user first.
 # Mon, 10 Nov 2003 23:01:30 +0100: alternatively, work with file lists (require -r flag for old behaviour)
 # -Tue, 11 Nov 2003 02:18:02 +0100. Ah und was auch noch fehlt, ist permissions rebuild. eben, writebackfile anwenden. todo.
+# {Tue Jan  6 02:42:50 2009} hmm... ich hacke nun mtime rein dabei seh ich ja oben wollt ich auch perms, und dies kann xtmpfile, und wär auch trash los, oder, also, hum. mal machen irgenddann.
 
 use constant DEBUG => 0;
 my $name= "mysed";
@@ -14,6 +15,7 @@ use strict;
 use Fcntl;
 use File::Path;
 use POSIX 'EXDEV';
+use Chj::xperlfunc 'xstat','xlstat','xutime';
 
 sub usage {
     warn @_,"\n" if @_;
@@ -23,14 +25,20 @@ sub usage {
     print "$name s/../../sigo -l < filelist\n";
     print "  Applies perl regex to all given files; moves old versions of the modified\n";
     print "  files to the trash can (if possible).\n";
+    print "  Other options: (to be given after the code argument, too, \n";
+    print "                 *but before* the above-mentioned options!)\n";
+    print "    --keep-time    keep the modification time of the file\n";
+    print "                   (if it's a symlink, hmmmm currently get the mtime of the\n";
+    print "                   pointed-at file and apply it to the new file which replaces\n";
+    print "                   the symlink, right? todo: check or improve?)\n";
     exit (@_ ? 1 : 0);
 }
 
 
 my $regex=shift or usage;# "Bitte Regex und Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
 my $mode; # f=filelist in @ARGV, -=filelist on stdin, r=recursive with $path and $optionalpathregex
-my ($path,$optionalpathregex,$fileregex_is_negative);
-{
+my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time);
+OPTPARSE: {
     local $_= $ARGV[0]; defined or usage;
     if ($_ eq '-r') {
 	$mode='r';
@@ -46,6 +54,10 @@ my ($path,$optionalpathregex,$fileregex_is_negative);
 	open STDIN, "<$ARGV[1]" or die "opening '$ARGV[1]' for input: $!";
 	$mode='-';
 	shift;
+    } elsif ($_ eq '--keep-time') {
+	$opt_keep_time=1;
+	shift;
+	redo OPTPARSE;
     } elsif ($_ eq '--') {
 	# ignore
 	shift;
@@ -133,6 +145,13 @@ my $opt_L;
 sub changefile {
     my ($folder,$file)=@_;
     my $path= length($folder)? "$folder/$file" : $file;##hum?
+    my $maybe_stat= ($opt_keep_time and xstat $path);
+    my $maybe_apply_statinfo= sub {
+	if ($maybe_stat) {
+	    my $newstat= xlstat $path; # lstat here, since we will apply to whatever is *here* anyway, ok?
+	    xutime $newstat->atime, $maybe_stat->mtime,  $path;
+	}
+    };
     my $trashpath= $folder;
     $trashpath=~ s|^../|__/|s;
     $trashpath=~ s|/../|/__/|sg;
@@ -183,6 +202,7 @@ sub changefile {
 			    }
 			}
 			if (rename "$path.$appendix",$path) {
+			    &$maybe_apply_statinfo;
 			    # OK!
 			} else {
 			    die "Could not rename `$path.$appendix' to `$path': $!";
