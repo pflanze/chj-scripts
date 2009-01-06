@@ -39,6 +39,9 @@ sub usage {
   --dry-run
   --no-current-version   import keep histories where no non-kept current
                          file exists
+  --drop-identical-versions   if a newer version is identical to the older
+                         one, ignore the resulting error from git and proceed,
+                         i.e. do not record any trace of it.
 
   (Christian Jaeger <$email>)
 ";
@@ -50,10 +53,12 @@ our $verbose=0;
 our $dry_run;
 our $opt_git_force=1; #will I ever want it to be off?
 our $opt_no_current_version;
+our $opt_drop_identical_versions;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$dry_run,
 	   "no-current-version"=> \$opt_no_current_version,
+	   "drop-identical-versions"=> \$opt_drop_identical_versions,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -166,15 +171,16 @@ if ($dry_run) {
 		     ($opt_git_force ? "-f" :()),
 		     "--",
 		     $basename);
-	    xxsystem("cj-git-commit-with-authordate-of-file",
-		     $basename,
-		     "-m",
-		     &$commitmsg_body(
-				      $entry->maybe_message,
-				      $entry->version,
-				     ),
-		     "--",
-		     $basename);
+	    &{$opt_drop_identical_versions ? \&xsystem : \&xxsystem}
+	      ("cj-git-commit-with-authordate-of-file",
+	       $basename,
+	       "-m",
+	       &$commitmsg_body(
+				$entry->maybe_message,
+				$entry->version,
+			       ),
+	       "--",
+	       $basename);
 	    xunlink $basename;
 	}
     };
