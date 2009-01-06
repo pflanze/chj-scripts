@@ -35,6 +35,11 @@ sub usage {
   using cj-git-fast-switch-branch and merge afterwards). See
   cj-git-import-keephistory for another more complicated approach.
 
+  Options:
+  --dry-run
+  --no-current-version   import keep histories where no non-kept current
+                         file exists
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -44,9 +49,11 @@ use Getopt::Long;
 our $verbose=0;
 our $dry_run;
 our $opt_git_force=1; #will I ever want it to be off?
+our $opt_no_current_version;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$dry_run,
+	   "no-current-version"=> \$opt_no_current_version,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -145,7 +152,8 @@ if ($dry_run) {
     }
 } else {
     my $tmppath= $basename."_tmp_".rand;
-    xlinkunlink $basename, $tmppath;
+    xlinkunlink $basename, $tmppath
+      unless $opt_no_current_version;
     eval {
 	for my $entry (@$sortedentries) {
 	    if ($entry->is_current) {
@@ -171,8 +179,10 @@ if ($dry_run) {
 	}
     };
     my $e=$@;
-    unlink $basename; #safe, right?
-    xlinkunlink $tmppath, $basename;
+    unless ($opt_no_current_version) {
+	unlink $basename; #safe, right?
+	xlinkunlink $tmppath, $basename;
+    }
     if (ref $e or $e) {
 	die $e
     }
