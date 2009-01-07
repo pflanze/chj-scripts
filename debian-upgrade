@@ -60,6 +60,13 @@ sub listeners {
     $path
 }
 
+{
+    use Chj::xtmpfile;
+    my $f= xtmpfile "$logdir/commandline";
+    $f->xprint(map { "$_\0" } @upgrade);
+    $f->xclose;
+    $f->xputback (0666);
+}
 
 my $dpkglibefore= dpkgli ("before");
 my $listenersbefore= listeners ("before");
