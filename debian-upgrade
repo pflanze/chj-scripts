@@ -65,7 +65,7 @@ sub listeners {
     my $f= xtmpfile "$logdir/commandline";
     $f->xprint(map { "$_\0" } @upgrade);
     $f->xclose;
-    $f->xputback (0666);
+    $f->xputback (0644);
 }
 
 my $dpkglibefore= dpkgli ("before");
