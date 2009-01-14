@@ -15,6 +15,7 @@ TODO:
 - Return-Path  automatically
 - somehow automatic selection and correction of email ? Or warn user, and tell how to set the mail in git config.
 - add 'git am -3 thefile' instructions to the mail file.
+- do not nest patch series -- only make them replies to a cover letter, either one given as in-reply-to option or one generated for you.
 
   (Christian Jaeger <$_email>)
 ";
