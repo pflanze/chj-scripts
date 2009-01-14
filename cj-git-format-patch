@@ -11,6 +11,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname format-patch-options
 
+TODO:
+- Return-Path  automatically
+- somehow automatic selection and correction of email ? Or warn user, and tell how to set the mail in git config.
+- add 'git am -3 thefile' instructions to the mail file.
+
   (Christian Jaeger <$_email>)
 ";
 exit (@_ ? 1 : 0);
