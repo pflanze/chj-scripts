@@ -102,4 +102,10 @@ sub xxpipeline {
     }
 }
 
+sub newxxpipeline {
+    my $out= Chj::IO::Pipeline->xreceiverpipeline_with_out_to(undef,@_);
+    $out->xxfinish;
+}
+
+
 1;
