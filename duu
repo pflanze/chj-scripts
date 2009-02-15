@@ -77,7 +77,7 @@ if (opendir DIR,$dir) {
     closedir DIR;
 
     foreach (sort $sortfunc @items) {
-        print $_->[1].substr("        ",length($_->[1])).$_->[0]."\n";
+        print $_->[1].substr(" "x12,length($_->[1])).$_->[0]."\n";
     }
     $ownsize= $ownsize*$blocksize/1024;
     print "TOTAL: folders $total k, files ".($totalfiles*$blocksize/1024)." k, dir $ownsize k  (blocksize=${blocksize}b".(${blocksize} eq 512? '':' ?').")\n";
