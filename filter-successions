@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Tue Feb 17 13:02:56 EST 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  reads lines on stdin, and folds following ones (using the perl ++ operator) into one with '..' inbetween.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+my $begin= <STDIN>
+  or die "$myname: no input\n";
+chomp $begin;
+
+my $line = $begin;
+
+while (<STDIN>) {
+    chomp;
+    if (defined $begin) {
+	if ($line++ eq $_) {
+	    # suppress it
+	} else {
+	    print "$begin..$_\n"
+	      or die $!;
+	    #$begin=$_; falsch.
+	    undef $begin;
+	}
+	
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
