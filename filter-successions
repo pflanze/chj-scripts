@@ -39,10 +39,15 @@ while (<STDIN>) {
 	    $oldline=$newline;
 	} else {
 	    #print "$begin..$_\n" ah that's wrong. grr.
-	    print "$begin..$oldline\n"
-	      or die $!;
-	    #^ hm still wrong, should check for eq right?.
-	    #undef $begin; worng=!.
+	    if ($begin eq $oldline) {
+		print "$begin\n"
+		  or die $!;
+	    } else {
+		print "$begin..$oldline\n"
+		  or die $!;
+		#^ hm still wrong, should check for eq right?.
+		#undef $begin; worng=!.
+	    }
 	    $begin= $_; $oldline=$_;
 	}
     } else {
@@ -54,9 +59,8 @@ while (<STDIN>) {
 
 if (defined $begin) {
     if ($begin eq $oldline) {
-	die "$myname: only got one input item\n";
-	#^ correct?
-	#and  or   what/how to handle this case above! ?.
+	print "$begin\n"
+	  or die $!;
     } else {
 	#copy.
 	print "$begin..$oldline\n"
