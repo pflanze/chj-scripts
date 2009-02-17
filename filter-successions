@@ -25,24 +25,46 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage if @ARGV;
 
-my $begin= <STDIN>
-  or die "$myname: no input\n";
-chomp $begin;
+my $begin;
 
-my $line = $begin;
+my $oldline;
 
 while (<STDIN>) {
     chomp;
     if (defined $begin) {
-	if ($line++ eq $_) {
-	    # suppress it
+	my $newline= $oldline; $newline++;
+	if ($newline eq $_) {
+	    # that's it
+	    #ehr well not yet, need this  mutation:
+	    $oldline=$newline;
 	} else {
-	    print "$begin..$_\n"
+	    #print "$begin..$_\n" ah that's wrong. grr.
+	    print "$begin..$oldline\n"
 	      or die $!;
-	    #$begin=$_; falsch.
-	    undef $begin;
+	    #^ hm still wrong, should check for eq right?.
+	    #undef $begin; worng=!.
+	    $begin= $_; $oldline=$_;
 	}
-	
+    } else {
+	$begin= $_; #wrong
+	#$begin=$;#ehr above it was wrong.
+	$oldline= $_;
+    }
+}
+
+if (defined $begin) {
+    if ($begin eq $oldline) {
+	die "$myname: only got one input item\n";
+	#^ correct?
+	#and  or   what/how to handle this case above! ?.
+    } else {
+	#copy.
+	print "$begin..$oldline\n"
+	  or die $!;
+	#/copy.
+    }
+} else {
+    # could be either been no input at all. or just given a range because of .. #at this point i 'fixed' the $line into $oldline and $newline stuff above   and wel.
 }
 
 #use Chj::ruse;
