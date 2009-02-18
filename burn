@@ -42,16 +42,19 @@ use Chj::xperlfunc;
 
 our $gen_commandline=sub ( $ ) {
     my ($remainingpipeline)=@_;
+    my $res=
     (join(" ",
 	  "genisoimage -r -J -allow-limited-size",
 	  (map {
 	      singlequote_sh $_
 	  } @items),
 	  $remainingpipeline));
+    print "note: commandline is: $res\n\n";
+    $res
 };
 
 
-print "\n(1) Running the length-measuring run...:\n\n\n";
+print "\n(1) Running the length-measuring run...:\n\n";
 
 our $checksize= Chj::IO::Command->new_sender(&$gen_commandline ("|bfr|wc -c"));
 our $supposedly_size= $checksize->xcontent;
