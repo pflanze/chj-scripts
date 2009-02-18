@@ -26,7 +26,8 @@ sub usage {
   write it. Thus the items must not change during those runs!
 
   Options:
-  --sign   create a signed SHA1SUMS.asc file
+  --sign   create a signed SHA1SUMS.asc file; is the default now
+  --no-sign  do not do the above
   [--sha1sum  well  not implemented, would be an unsigned one]
   --dry-run  skip the burning part
 
@@ -37,10 +38,12 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-our ($opt_sign,$opt_dry);
+our $opt_sign=1;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sign"=>\$opt_sign,
+	   "no-sign"=>sub{$opt_sign=0},
 	   "dry-run"=>\$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
