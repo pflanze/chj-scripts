@@ -5,11 +5,22 @@
 
 use strict;
 
+our $device= "/dev/dvdrw1"; #"/dev/scd0"; #######!!!!!--ok thanks to the symlink not so critical rite.
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname items-to-burn
+
+  Burn DVD with the given items, which can be big.
+  (Let's hope that this format is future proof..)
+
+  *ATTENTION*  check: is $device really the dvd burner?
+
+  Attention: the items are read two times, once for determining the
+  length of the generated image, then to generate the image again and
+  write it. Thus the items must not change during those runs!
 
   (Christian Jaeger <$email>)
 ";
@@ -27,30 +38,31 @@ our @items=@ARGV;
 
 use Chj::IO::Command;
 use Chj::singlequote 'singlequote_sh';
+use Chj::xperlfunc;
 
-our $start_genisoimage=sub ( $ ) {
+our $gen_commandline=sub ( $ ) {
     my ($remainingpipeline)=@_;
-    Chj::IO::Command->new_sender
-	#sigh still no reliable xpipeline right? so hack away.
-	(join(" ",
-	      "genisoimage -r -J -allow-limited-size"
-	      (map {
-		  singlequote_sh $_
-	      } @items),
-	      $remainingpipeline));
+    (join(" ",
+	  "genisoimage -r -J -allow-limited-size",
+	  (map {
+	      singlequote_sh $_
+	  } @items),
+	  $remainingpipeline));
 };
 
-our $checksize= &$start_genisoimage ("|bfr|wc -c");
+
+print "\n(1) Running the length-measuring run...:\n\n\n";
+
+our $checksize= Chj::IO::Command->new_sender(&$gen_commandline ("|bfr|wc -c"));
 our $supposedly_size= $checksize->xcontent;
 $checksize->xxfinish;
 
 $supposedly_size=~ /^(\d+)\s*\z/s
-  or die "not just size: '$size'";
+  or die "not just size: '$supposedly_size'";
 our $size=$1;
 
-our $realwrite= &$start_genisoimage ("|bfr | wodim dev=/dev/scd0 tsize=$size -");
-our $whateveroutput= $realwrite->xcontent;
-$realwrite->xxfinish;
+print "\n\n\n(2) Running the BURNING run on device $device !...:\n\n\n";
+xxsystem(&$gen_commandline ("|bfr | wodim dev=$device tsize=$size -"));
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
