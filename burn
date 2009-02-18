@@ -7,6 +7,9 @@ use strict;
 
 our $device= "/dev/dvdrw1"; #"/dev/scd0"; #######!!!!!--ok thanks to the symlink not so critical rite.
 
+our $sha1sumfilename= "SHA1SUMS";
+our $sha1sumfilename_asc= "SHA1SUMS.asc";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -22,6 +25,11 @@ sub usage {
   length of the generated image, then to generate the image again and
   write it. Thus the items must not change during those runs!
 
+  Options:
+  --sign   create a signed SHA1SUMS.asc file
+  [--sha1sum  well  not implemented, would be an unsigned one]
+  --dry-run  skip the burning part
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -29,8 +37,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our ($opt_sign,$opt_dry);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "sign"=>\$opt_sign,
+	   "dry-run"=>\$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -54,6 +65,28 @@ our $gen_commandline=sub ( $ ) {
 };
 
 
+#use Chj::xtmpfile;
+#no, since I need the name to be fixed right?
+use Chj::xtmpdir;
+
+our $tmpdir= xtmpdir;
+our $sumsfile= "$tmpdir/$sha1sumfilename";
+our $sumsfile_asc= "$tmpdir/$sha1sumfilename_asc";
+if ($opt_sign) {
+    print "\n(0) Running the checksumming/signing run...:\n\n";
+    xxsystem (join " ",
+	      "sha1sum",
+	      (map {
+		  singlequote_sh $_
+	      } @items),
+	      "> ".singlequote_sh ($sumsfile));
+
+    print "\n(0.b) signing the checksum file '$sumsfile'...:\n\n";
+    xxsystem "gpg","--clearsign",$sumsfile;
+    -f $sumsfile_asc or die "missing '$sumsfile_asc'";
+    push @items, $sumsfile_asc; #ok?.
+}
+
 print "\n(1) Running the length-measuring run...:\n\n";
 
 our $checksize= Chj::IO::Command->new_sender(&$gen_commandline ("|bfr|wc -c"));
@@ -64,8 +97,12 @@ $supposedly_size=~ /^(\d+)\s*\z/s
   or die "not just size: '$supposedly_size'";
 our $size=$1;
 
-print "\n\n\n(2) Running the BURNING run on device $device !...:\n\n\n";
-xxsystem(&$gen_commandline ("|bfr | wodim dev=$device tsize=$size -"));
+if ($opt_dry) {
+    print "\n\n\n(2) Running the BURNING run on device $device: skip because of --dry-run option.\n\n";
+} else {
+    print "\n\n\n(2) Running the BURNING run on device $device !...:\n\n\n";
+    xxsystem(&$gen_commandline ("|bfr | wodim dev=$device tsize=$size -"));
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
