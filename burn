@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Tue Feb 17 22:12:11 EST 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname items-to-burn
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+our @items=@ARGV;
+
+use Chj::IO::Command;
+use Chj::singlequote 'singlequote_sh';
+
+our $start_genisoimage=sub ( $ ) {
+    my ($remainingpipeline)=@_;
+    Chj::IO::Command->new_sender
+	#sigh still no reliable xpipeline right? so hack away.
+	(join(" ",
+	      "genisoimage -r -J -allow-limited-size"
+	      (map {
+		  singlequote_sh $_
+	      } @items),
+	      $remainingpipeline));
+};
+
+our $checksize= &$start_genisoimage ("|bfr|wc -c");
+our $supposedly_size= $checksize->xcontent;
+$checksize->xxfinish;
+
+$supposedly_size=~ /^(\d+)\s*\z/s
+  or die "not just size: '$size'";
+our $size=$1;
+
+our $realwrite= &$start_genisoimage ("|bfr | wodim dev=/dev/scd0 tsize=$size -");
+our $whateveroutput= $realwrite->xcontent;
+$realwrite->xxfinish;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
