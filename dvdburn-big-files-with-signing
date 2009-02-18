@@ -1,0 +1,115 @@
+#!/usr/bin/perl -w
+
+# Tue Feb 17 22:12:11 EST 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $device= "/dev/dvdrw1"; #"/dev/scd0"; #######!!!!!--ok thanks to the symlink not so critical rite.
+
+our $sha1sumfilename= "SHA1SUMS";
+our $sha1sumfilename_asc= "SHA1SUMS.asc";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname items-to-burn
+
+  Burn DVD with the given items, which can be big.
+  (Let's hope that this format is future proof..)
+
+  *ATTENTION*  check: is $device really the dvd burner?
+
+  Attention: the items are read two times, once for determining the
+  length of the generated image, then to generate the image again and
+  write it. Thus the items must not change during those runs!
+
+  CAVEAT: I don't check items-to-burn to not contaion
+  $sha1sumfilename_asc; hopefully genisoimage will complain by itself
+  right?
+
+  Options:
+  --sign   create a signed SHA1SUMS.asc file; is the default now
+  --no-sign  do not do the above
+  [--sha1sum  well  not implemented, would be an unsigned one]
+  --dry-run  skip the burning part
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_sign=1;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sign"=>\$opt_sign,
+	   "no-sign"=>sub{$opt_sign=0},
+	   "dry-run"=>\$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+our @items=@ARGV;
+
+use Chj::IO::Command;
+use Chj::singlequote 'singlequote_sh';
+use Chj::xperlfunc;
+
+our $gen_commandline=sub ( $ ) {
+    my ($remainingpipeline)=@_;
+    my $res=
+    (join(" ",
+	  "genisoimage -r -J -allow-limited-size",
+	  (map {
+	      singlequote_sh $_
+	  } @items),
+	  $remainingpipeline));
+    print "note: commandline is: $res\n\n";
+    $res
+};
+
+
+#use Chj::xtmpfile;
+#no, since I need the name to be fixed right?
+use Chj::xtmpdir;
+
+our $tmpdir= xtmpdir;
+our $sumsfile= "$tmpdir/$sha1sumfilename";
+our $sumsfile_asc= "$tmpdir/$sha1sumfilename_asc";
+if ($opt_sign) {
+    print "\n(0) Running the checksumming/signing run...:\n\n";
+    xxsystem (join " ",
+	      "sha1sum",
+	      (map {
+		  singlequote_sh $_
+	      } @items),
+	      "> ".singlequote_sh ($sumsfile));
+
+    print "\n(0.b) signing the checksum file '$sumsfile'...:\n\n";
+    xxsystem "gpg","--clearsign",$sumsfile;
+    -f $sumsfile_asc or die "missing '$sumsfile_asc'";
+    push @items, $sumsfile_asc; #ok?.
+}
+
+print "\n(1) Running the length-measuring run...:\n\n";
+
+our $checksize= Chj::IO::Command->new_sender(&$gen_commandline ("|bfr|wc -c"));
+our $supposedly_size= $checksize->xcontent;
+$checksize->xxfinish;
+
+$supposedly_size=~ /^(\d+)\s*\z/s
+  or die "not just size: '$supposedly_size'";
+our $size=$1;
+
+if ($opt_dry) {
+    print "\n\n\n(2) Running the BURNING run on device $device: skip because of --dry-run option.\n\n";
+} else {
+    print "\n\n\n(2) Running the BURNING run on device $device !...:\n\n\n";
+    xxsystem(&$gen_commandline ("|bfr | wodim dev=$device tsize=$size -"));
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
