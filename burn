@@ -25,6 +25,10 @@ sub usage {
   length of the generated image, then to generate the image again and
   write it. Thus the items must not change during those runs!
 
+  CAVEAT: I don't check items-to-burn to not contaion
+  $sha1sumfilename_asc; hopefully genisoimage will complain by itself
+  right?
+
   Options:
   --sign   create a signed SHA1SUMS.asc file; is the default now
   --no-sign  do not do the above
