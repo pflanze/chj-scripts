@@ -22,6 +22,9 @@ sub usage {
   -e   exit on errors (default: proceed even if command exits
        uncleanly / with non-zero status, although upon non-existing
        commands the program will stop anyway)
+  --sleep n   instead of looping 'as fast as is good', sleep n seconds
+              between each run. (n can be a floatingpoint number.)
+
 
   (PS: as every perl script (and also shell?) works, this will not
   stop when signals are coming in while running the given command but
@@ -46,6 +49,9 @@ my ($options,$command)= do {
 	    last
 	} elsif (/^-/) {
 	    push @pre,$_;
+	    if ($_ eq '--sleep') {
+		push @pre, shift @ARGV;
+	    }
 	} else {
 	    @post=($_,@ARGV);
 	    last #fast vergessen..
@@ -61,12 +67,21 @@ our $debug=0;
 our $verbose;
 our $opt_e;
 our $opt_shell;
+our $opt_sleep;
 GetOptions("verbose"=>\$verbose,
 	   "debug"=> \$debug,
 	   "help"=> sub{usage},
 	   "e"=> \$opt_e,
+	   "s"=> \$opt_shell,
 	   "shell"=> \$opt_shell,
-	   ) or exit 1;
+	   #"sleep=n"=> \$opt_sleep,  would give 'Value "0.1" invalid for option sleep (number expected)'
+	   "sleep=s"=> sub {
+	       my ($_k,$n)=@_;
+	       $n=~ /^\d*(\.\d*)?\z/
+		 or usage "not a positive number of acceptable format: '$n'"; #sigh I mean, exponent notation etc ?..... 'perl so ....'
+	       $opt_sleep=$n;
+	   },
+	  ) or exit 1;
 usage if @ARGV;
 usage unless @$command;
 
@@ -89,19 +104,23 @@ while (1)
 	{
 	    die "$myname: @$command exited with ".exitcode($res)."\n";
 	}
-      my $t=time;
-      push @$times, $t;
-      my $first_t= shift @$times;
+      if (defined $opt_sleep) {
+	  sleep $opt_sleep
+      } else {
+	  my $t=time;
+	  push @$times, $t;
+	  my $first_t= shift @$times;
 
-      my $wait= $time_window - ($t - $first_t);
-      warn "wait=$wait" if $debug;
-      if ($wait>0)
-	{
-	    if ($verbose) {
-		warn "$myname: too frequent restarts, sleeping for $wait seconds..\n";
+	  my $wait= $time_window - ($t - $first_t);
+	  warn "wait=$wait" if $debug;
+	  if ($wait>0)
+	    {
+		if ($verbose) {
+		    warn "$myname: too frequent restarts, sleeping for $wait seconds..\n";
+		}
+		sleep $wait;
 	    }
-	    sleep $wait;
-	}
-      if ($debug) {require Data::Dumper; print Data::Dumper::Dumper( $times); }
+	  if ($debug) {require Data::Dumper; print Data::Dumper::Dumper( $times); }
+      }
   }
 
