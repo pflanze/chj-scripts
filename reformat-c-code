@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname from to
+    print "$myname [ from to ]
 
   (Christian Jaeger <$email>)
 ";
@@ -21,7 +21,6 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   ) or exit 1;
-usage unless @ARGV==2;
 
 use Chj::xopen ':all';
 use Chj::xtmpfile;
@@ -79,7 +78,27 @@ sub reformat_from_to {
     $out->xputback (0644);# real perms, not umask'ed. (again)
 }
 
-reformat_from_to (@ARGV);
+use Chj::xtmpfile;
+
+if (@ARGV==2) {
+    reformat_from_to (@ARGV);
+} elsif (@ARGV==0) {
+    my $infile= xtmpfile;
+    my $in= bless *STDIN{IO}, "Chj::IO::File";
+    $in->xsendfile_to($infile);
+    $in->xclose;
+    my $out= bless *STDOUT{IO}, "Chj::IO::File";
+    my $outfile= xtmpfile;
+    reformat_from_to ($infile->path,
+		      $outfile->path);
+    #$outfile->xrewind;  why not working? GR
+    {
+	my $outfile= xopen_read($outfile->path);
+	$outfile->xsendfile_to($out);
+	$outfile->xclose;
+	$out->xclose;
+    }
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
