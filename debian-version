@@ -94,10 +94,11 @@ our $releases=
    #   'aptitude as the selected tool for package management'
    ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
    # ^ includes AMD64, but drops m68k (which was still in unstable, though)
+   ["lenny", "5.0", "2009-02-14", ">23000", ">12000", undef ],
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
-   ["lenny", undef, undef, undef, undef, undef ],
+   ["squeeze", undef, undef, undef, undef, undef ]
   ];
 
 sub index_of_by {
