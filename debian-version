@@ -95,6 +95,12 @@ our $releases=
    ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
    # ^ includes AMD64, but drops m68k (which was still in unstable, though)
    ["lenny", "5.0", "2009-02-14", ">23000", ">12000", undef ],
+   # ^ adds support for Marvell's Orion platform, .. now supports several Netbooks, .. also contains the build tools for Emdebian .. includes the new ARM EABI port, ..
+   #  With the integration of X.Org 7.3 the X server autoconfigures itself with most hardware.
+   #  Overall improvements for notebooks have been introduced, such as out of the box support of CPU frequency scaling.
+   #  The availability and updates of OpenJDK, GNU Java compiler, GNU Java bytecode interpreter, Classpath and other free versions of Sun's Java technology, into Debian GNU/Linux 5.0 allow us to ship Java-based applications in Debian's "main" repository.
+   #  Further improvements in system security include the installation of available security updates before the first reboot by the Debian Installer, the reduction of setuid root binaries and open ports in the standard installation, and the use of GCC hardening features in the builds of several security-critical packages. Various applications have specific improvements, too. PHP for example is now built with the Suhosin hardening patch.
+   #  In addition to the regular installation media, Debian GNU/Linux can now also be directly used without prior installation. The special images used, known as live images, are available for CDs, USB sticks, and netboot setups. Initially, these are provided for the amd64 and i386 architectures only.
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
