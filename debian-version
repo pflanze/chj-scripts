@@ -126,6 +126,7 @@ sub index_of_by {
 our $release_by_name= index_by ("name");
 our $release_by_number= index_by ("number");
 $$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
+#^hm. http://www.debian.org/releases/ says that *testing* is called squeeze, unstable is sid. I'm somewhat confusing those here hm.
 
 use Chj::Fileutil 'xCatfile';
 
