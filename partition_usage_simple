@@ -50,6 +50,13 @@ echo loop devices:
 losetup -a | egrep "($DEV|$DEVVOLL)"
 echo
 
+# dito~:
+# get device numbers
+device="$(perl -we '@l=stat $ARGV[0] or die $!; $d=$l[6]; $minor= $d & 255; $major= $d >> 8; print "($major, $minor)\n"' "$DEV")"
+echo "dmsetup deps: looking for $device"
+dmsetup deps | grep -F "$device"
+echo
+
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
 echo "   unless you have all mappings in /etc/rawtab.)"
