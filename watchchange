@@ -1,0 +1,135 @@
+#!/usr/bin/perl -w
+
+# Sam Nov 23 11:14:17 MET 2002
+# pflanze@gmx.ch
+
+use strict;
+
+$0=~ /([^\/]+)$/s or die "?";
+my $myname=$1;
+sub usage {
+    print "$myname file
+  -or-
+$myname pid fd
+
+  Watch the size of the given file, or position of the fd of the given
+  process, and report about the increase of that number.
+
+  Options:
+  -l  output new line for each time frame instead of overwriting
+      existing line
+";
+exit @_;
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_l;
+GetOptions("verbose"=> \$verbose,
+           "help"=> sub{usage},
+	   "line"=> \$opt_l,
+           ) or exit 1;
+
+sub number_of_string {
+    my ($v)=@_;
+    $v=~/^(\d+)\z/
+      or die "$myname: not a number: $v\n";#well. I had a usage call, but that didn't print here, and would not be obvious anyway, hm.
+    $1
+}
+
+our $getpos= do {
+    if (@ARGV==1) {
+	my ($file)=@ARGV;
+	sub {
+	    -f $file or die "No such file '$file'\n";
+	    (stat _) [7];
+	}
+    } elsif (@ARGV==2) {
+	my ($pid,$fd)= map { number_of_string $_ } @ARGV;
+	my $procpath= "/proc/$pid/fdinfo/$fd";
+	sub {
+	    open my $f,"<", $procpath
+	      or die "$myname: could not open '$procpath' for input: $!\n";
+	    # NOTE: fdinfo seems to be a recent addition to the 2.6.xx linux kernel series
+	    my $v= eval {
+		&{sub {
+		    while (defined (my $line= <$f>)) {
+			if ($line=~ /^pos:\s*(\d+)\s*\z/s) {
+			    return $1
+			}
+		    }
+		    die "couldn't find <pos:> field in '$procpath'";
+		}}
+	    };
+	    if (ref $@ or $@) {
+		my $e=$@;
+		close $f
+		  or die "closing '$procpath': $!, after error: $e";
+		die $e
+	    } else {
+		$v
+	    }
+	}
+    } else {
+	usage;
+    }
+};
+
+use Time::HiRes 'time';
+
+my ($starttime,$lasttime,$startpos,$lastpos);
+$starttime= $lasttime= time;
+$startpos= $lastpos= &$getpos;
+
+sub pad {
+    my ($num,$divisor)=@_;
+    $divisor|=1;
+    my $str=
+      $num == 0 ?
+	"   0   " :
+	  #-900.11
+	  #-1.123
+	  sprintf("% 7.2f",$num/$divisor);
+    wantarray ? ($str,length($str)>7) : $str
+}
+
+my %range=(
+	   0=> "bytes",
+	   1=> "KB",
+	   2=> "MB"
+	  );
+
+my $base=1024;
+
+$|=1;
+
+while (1) {
+    sleep 1;
+    my $time= time();
+    my $pos= &$getpos;
+    my $diff1= ($pos-$lastpos)/($time-$lasttime);
+    my $diffs= ($pos-$startpos)/($time-$starttime);
+    my ($d1,$over1)= pad($diff1);
+    my $range=0; # 0= bytes, 1= kbyte, 2= mbyte
+    if ($over1) {
+	$range++;
+	($d1,$over1)= pad($diff1,$base**$range);
+	if ($over1) {
+	    $range++;
+	    ($d1,$over1)= pad($diff1,$base**$range);
+	}
+    }
+    my ($ds,$overs)= pad($diffs, $base**$range);
+    while ($overs and $range<2) {
+	$range++;
+	($ds,$overs)= pad($diffs, $base**$range);
+	$d1= pad($diff1, $base**$range);
+    }
+    if ($opt_l) {
+	print " $d1  $ds  $range{$range}/s\n";
+    } else {
+	print chr(27)."M\n $d1  $ds  $range{$range}/s".chr(27)."[K";
+    }
+    $lasttime=$time;
+    $lastpos= $pos;
+}
