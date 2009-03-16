@@ -18,16 +18,18 @@ $myname pid fd
   Options:
   -l  output new line for each time frame instead of overwriting
       existing line
+  -s|--show   show absolute size/position, too.
 ";
 exit @_;
 }
 
 use Getopt::Long;
 our $verbose=0;
-our $opt_l;
+our ($opt_l,$opt_showpos);
 GetOptions("verbose"=> \$verbose,
            "help"=> sub{usage},
 	   "line"=> \$opt_l,
+	   "showpos"=> \$opt_showpos,
            ) or exit 1;
 
 sub number_of_string {
@@ -125,10 +127,11 @@ while (1) {
 	($ds,$overs)= pad($diffs, $base**$range);
 	$d1= pad($diff1, $base**$range);
     }
+    my $msg= " $d1  $ds  $range{$range}/s".($opt_showpos ? "  $pos" : "");
     if ($opt_l) {
-	print " $d1  $ds  $range{$range}/s\n";
+	print "$msg\n";
     } else {
-	print chr(27)."M\n $d1  $ds  $range{$range}/s".chr(27)."[K";
+	print chr(27)."M\n$msg".chr(27)."[K";
     }
     $lasttime=$time;
     $lastpos= $pos;
