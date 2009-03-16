@@ -50,6 +50,7 @@ our $getpos= do {
 	sub {
 	    open my $f,"<", $procpath
 	      or die "$myname: could not open '$procpath' for input: $!\n";
+	    # NOTE: fdinfo seems to be a recent addition to the 2.6.xx linux kernel series
 	    my $v= eval {
 		&{sub {
 		    while (defined (my $line= <$f>)) {
