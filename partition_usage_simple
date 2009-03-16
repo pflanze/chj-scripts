@@ -31,6 +31,12 @@ echo "---- Checking '$DEV' aka '$DEVVOLL': -------------------------------------
 #grep "$DEVVOLL" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
 
 egrep "($DEV|$DEVVOLL)" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
+echo
+
+# this is rather quick and dirty, right?:
+echo vgdisplay:
+vgdisplay -v 2>/dev/null | egrep "($DEV|$DEVVOLL)"
+echo
 
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
