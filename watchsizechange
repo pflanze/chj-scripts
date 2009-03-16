@@ -8,7 +8,7 @@ use strict;
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
-    print "$myname [ options ] file
+    print "$myname file
   -or-
 $myname pid fd
 
@@ -33,7 +33,7 @@ GetOptions("verbose"=> \$verbose,
 sub number_of_string {
     my ($v)=@_;
     $v=~/^(\d+)\z/
-      or usage "not a number: $v";
+      or die "$myname: not a number: $v\n";#well. I had a usage call, but that didn't print here, and would not be obvious anyway, hm.
     $1
 }
 
