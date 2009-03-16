@@ -17,27 +17,16 @@ sub usage {
 exit @_;
 }
 
-my @files;
-my $opt_l;
-for (my $i=0; $i<=$#ARGV; $i++) {
-  local $_=$ARGV[$i];
-  if (/^--?h(elp)?$/) {
-    usage
-  } elsif ($_ eq '--') {
-    push @files, @ARGV[$i+1..$#ARGV];
-    last;
-  } elsif ($_ eq '-l') {
-    $opt_l=1;
-  } elsif (/^-/) {
-    warn "Unknown option '$_'\n";
-    usage(1)
-  } else {
-    push @files, $_
-  }
-}
-usage unless @files ==1;
+use Getopt::Long;
+our $verbose=0;
+our $opt_l;
+GetOptions("verbose"=> \$verbose,
+           "help"=> sub{usage},
+	   "line"=> \$opt_l,
+           ) or exit 1;
+usage unless @ARGV==1;
 
-my ($file)=@files;
+my ($file)=@ARGV;
 
 use Time::HiRes 'time';
 
