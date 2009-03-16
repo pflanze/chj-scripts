@@ -52,19 +52,21 @@ our $getpos= do {
 	    my $v= eval {
 		open $f,"<", $procpath
 		  or die "could not open '$f' for input (no such pid or fd?) : $!";
-		&(sub {
+		&{sub {
 		    while (defined (my $line= <$f>)) {
 			if ($line=~ /^pos:\s*(\d+)\s*\z/s) {
 			    return $1
 			}
 		    }
 		    die "couldn't find <pos:> field in '$procpath'";
-		})
+		}}
 	    };
 	    if (ref $@ or $@) {
 		my $e=$@;
-		(close $f if $f)
-		  or die "closing '$procpath': $!, after error: $e";
+		if ($f) {
+		    close $f
+		      or die "closing '$procpath': $!, after error: $e";
+		}
 		die $e
 	    } else {
 		$v
