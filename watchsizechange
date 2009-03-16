@@ -49,7 +49,7 @@ our $getpos= do {
 	my $procpath= "/proc/$pid/fdinfo/$fd";
 	sub {
 	    open my $f,"<", $procpath
-	      or die "could not open '$procpath' for input (no such pid or fd?) : $!";
+	      or die "$myname: could not open '$procpath' for input: $!\n";
 	    my $v= eval {
 		&{sub {
 		    while (defined (my $line= <$f>)) {
