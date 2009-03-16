@@ -38,6 +38,11 @@ echo vgdisplay:
 vgdisplay -v 2>/dev/null | egrep "($DEV|$DEVVOLL)"
 echo
 
+# dito, not even sure this will find something sensibly:
+echo loop devices:
+losetup -a | egrep "($DEV|$DEVVOLL)"
+echo
+
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
 echo "   unless you have all mappings in /etc/rawtab.)"
