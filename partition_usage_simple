@@ -25,13 +25,13 @@ fi
 
 
 #echo "Checking '$DEV' aka '$DEVVOLL'.."
-echo "---- Checking '$DEV' aka '$DEVVOLL': ------------------------------------------------------------------------"|cut -b0-$COLUMNS
+echo "---- Checking '$DEV' aka '$DEVVOLL': ------------------------------------------------------------------------"|cut -b1-$COLUMNS
 
 #grep "$DEV" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
 #grep "$DEVVOLL" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
 
 egrep "($DEV|$DEVVOLL)" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
 
-echo "---------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b0-$COLUMNS
+echo "---------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
 echo "   unless you have all mappings in /etc/rawtab.)"
