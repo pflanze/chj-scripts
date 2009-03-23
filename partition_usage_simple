@@ -9,6 +9,7 @@ if [ ! "$DEV" ]; then
     exit 1
 fi
 
+ORIGARG="$DEV"
 if [ ! "`echo "$DEV" | grep -F /`" ]; then
     DEV="/dev/$DEV"
 fi
@@ -16,24 +17,29 @@ fi
 DEVVOLL="`chase "$DEV"`"
 
 if [ ! "$DEVVOLL" ]; then
-    echo "Looks like $DEV does not exist, terminating."
-    exit 1
+    echo "Warning: looks like $DEV does not exist as a path, thus only searching for '$ORIGARG'."
+    HAVE_DEV_PATH=""
+    DEVNAMES="'$ORIGARG' only"
+    grepcmd () {
+	egrep "$ORIGARG"
+    }
 else
     # strip /dev part, since mdstat does not contain it
+    HAVE_DEV_PATH=1
     DEVVOLL="`echo "$DEVVOLL"|cut -d/ -f3-`"
+    DEVNAMES="'$DEV' aka '$DEVVOLL'"
+    grepcmd () {
+	egrep "($DEV|$DEVVOLL)"
+    }
 fi
 
 
-#echo "Checking '$DEV' aka '$DEVVOLL'.."
-echo "---- Checking '$DEV' aka '$DEVVOLL': --------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
-
-#grep "$DEV" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
-#grep "$DEVVOLL" /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab
+echo "---- Checking $DEVNAMES: --------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 
 for f in /etc/fstab /proc/swaps /proc/mounts /proc/mdstat /etc/rawtab; do
     echo $f:
     if [ -e "$f" ]; then
-	cat "$f" | egrep "($DEV|$DEVVOLL)"
+	cat "$f" | grepcmd
     else
 	echo " - (file does not exist)"
     fi
@@ -42,20 +48,26 @@ done
 
 # this is rather quick and dirty, right?:
 echo vgdisplay:
-vgdisplay -v 2>/dev/null | egrep "($DEV|$DEVVOLL)"
+vgdisplay -v 2>/dev/null | grepcmd
 echo
 
 # dito, not even sure this will find something sensibly:
 echo loop devices:
-losetup -a | egrep "($DEV|$DEVVOLL)"
+losetup -a | grepcmd
 echo
 
 # dito~:
 # get device numbers
-device="$(perl -we '@l=stat $ARGV[0] or die $!; $d=$l[6]; $minor= $d & 255; $major= $d >> 8; print "($major, $minor)\n"' "$DEV")"
-echo "dmsetup deps: looking for $device"
-dmsetup deps | grep -F "$device"
+if [ "$HAVE_DEV_PATH" ]; then
+    device="$(perl -we '@l=stat $ARGV[0] or die $!; $d=$l[6]; $minor= $d & 255; $major= $d >> 8; print "($major, $minor)\n"' "$DEV")"
+    echo "dmsetup deps: looking for $device"
+    dmsetup deps | grep -F "$device"
+else
+    echo "dmsetup deps: can't search dmsetup because of missing device path (see warning above); instead just looking up '$ORIGARG' instead (not making much sense, this will only show the inverse dependency direction (if anything)!)";
+    dmsetup deps | grep -F "$ORIGARG"
+fi
 echo
+
 
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
