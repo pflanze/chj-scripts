@@ -38,14 +38,24 @@ our ($branch)=@_;
 # well. what does this help, vs. using Git.pm
 
 use Git;
-
+{
+    package CJ_GIT_PICK_PICKY::Git::Commit;
+    sub is_merge {
+	my $s=shift;
+	@{$$s[1]}>1
+    }
+    sub sha1 {
+	my $s=shift;
+	$$s[0]
+    }
+}
 {
     package CJ_GIT_PICK_PICKY::Git;
     use base 'Git';
     # assume it's a fixed Git.pm
     sub log_sha1_and_parents {
 	my $s=shift;
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P');
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',@_);
 	my @log=
 	  #fullyeager..
 	  map {
@@ -53,14 +63,19 @@ use Git;
 	      my ($commit,$parents)= split /:/,$_,2
 		or die "invalid line '$_'";
 	      my @parents= split / /,$parents;
-	      [$commit, \@parents]
+	      bless [$commit, \@parents],"CJ_GIT_PICK_PICKY::Git::Commit"
 	  } <$fh>;
 	$s->command_close_pipe ($fh,$ctx);
-	@log
+	\@log
     }
 }
 
 our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
+
+for my $commit (reverse grep { $_->is_merge } @{$git-> log_sha1_and_parents ($branch)}) {
+    #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
+    $git->command ("cherry-pick", $commit->sha1);
+}
 
 use Chj::ruse;
 use Chj::Backtrace; use Chj::repl; repl;
