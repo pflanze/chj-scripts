@@ -28,7 +28,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
-our ($branch)=@_;
+our ($branch)=@ARGV;#NOT @_ WHEN WILL I REMEMBER THAT.
 
 # hm habe git modul sachen 'hm'.
 
@@ -55,7 +55,8 @@ use Git;
     # assume it's a fixed Git.pm
     sub log_sha1_and_parents {
 	my $s=shift;
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',@_);
+	#hm can't use @_ hu what the  ??
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',);
 	my @log=
 	  #fullyeager..
 	  map {
@@ -74,7 +75,8 @@ our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even
 
 for my $commit (reverse grep { $_->is_merge } @{$git-> log_sha1_and_parents ($branch)}) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
-    $git->command ("cherry-pick", $commit->sha1);
+    #$git->command ("cherry-pick", $commit->sha1);
+    print "would cherry-pick ".$commit->sha1."\n";
 }
 
 use Chj::ruse;
