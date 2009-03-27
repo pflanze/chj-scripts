@@ -45,7 +45,7 @@ use Git;
     # assume it's a fixed Git.pm
     sub log_sha1_and_parents {
 	my $s=shift;
-	$s->command_input_pipe ("log",'--pretty=format:%H:%P');
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P');
 	my @log=
 	  #fullyeager..
 	  map {
@@ -54,8 +54,8 @@ use Git;
 		or die "invalid line '$_'";
 	      my @parents= split / /,$parents;
 	      [$commit, \@parents]
-	  } <$s>;
-	$s->xclose;
+	  } <$fh>;
+	$s->command_close_pipe ($fh,$ctx);
 	@log
     }
 }
