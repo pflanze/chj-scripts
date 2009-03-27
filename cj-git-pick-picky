@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Fri Mar 27 09:51:23 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname branchname
+
+  Cherry-pick all patches that branch has which the current branch
+  doesn't have (hm also older ones? or just from the latest fork
+  point??) and apply them unless their sha1 is listed in
+  .git/$myname.ignore/\$branchname .
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($branch)=@_;
+
+# hm habe git modul sachen 'hm'.
+
+#use Chj::Git::Functions ':all';
+#our $git_dir= xgit_dir;
+
+# well. what does this help, vs. using Git.pm
+
+use Git;
+
+{
+    package CJ_GIT_PICK_PICKY::Git;
+    use base 'Git';
+    # assume it's a fixed Git.pm
+    sub log_sha1_and_parents {
+	my $s=shift;
+	$s->command_input_pipe ("log",'--pretty=format:%H:%P');
+	my @log=
+	  #fullyeager..
+	  map {
+	      chomp;
+	      my ($commit,$parents)= split /:/,$_,2
+		or die "invalid line '$_'";
+	      my @parents= split / /,$parents;
+	      [$commit, \@parents]
+	  } <$s>;
+	$s->xclose;
+	@log
+    }
+}
+
+our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
+
+use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
