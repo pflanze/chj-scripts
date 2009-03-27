@@ -55,8 +55,7 @@ use Git;
     # assume it's a fixed Git.pm
     sub log_sha1_and_parents {
 	my $s=shift;
-	#hm can't use @_ hu what the  ??
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',);
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',@_);
 	my @log=
 	  #fullyeager..
 	  map {
