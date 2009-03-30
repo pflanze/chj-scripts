@@ -57,7 +57,9 @@ use Git;
 {
     package CJ_GIT_PICK_PICKY::Git;
     use base 'Git';
-    # assume it's a fixed Git.pm
+    # ^ we assume here that it's a fixed Git.pm
+    use Chj::Random::Formatted ();# 'random_passwd_string';
+
     sub log_sha1_and_parents {
 	my $s=shift;
 	@_==1 or die "need revision (range) argument";
@@ -74,21 +76,53 @@ use Git;
 	$s->command_close_pipe ($fh,$ctx);
 	\@log
     }
+    my $pre='(cherry picked from commit ';
+    my $sha1_re= qr{[0-9a-f]{40}};
+    my $post= ')';
+    my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
+    sub known_cherry_picks {
+	my $s=shift;
+	@_==0 or die "expecting 0 arguments";
+	my $beginmarker= Chj::Random::Formatted::random_passwd_string (8);
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:'.$beginmarker.'%H:%s %b'."\0",@_);
+	local $/="\0";
+	# heh well actually maybe we wouldn't need $beginmarker after all--but better be safe..
+	my $known={}; # origcommit=> [newcommits]
+	while (<$fh>) {
+	    chomp;use Chj::Backtrace; use Chj::repl; repl;
+
+	    s/^$beginmarker// or die "invalid input record: '$_'";
+	    my ($commit,$msg)= split /:/,$_,2
+	      or die "invalid input record '$_'";
+	    if ($msg=~ m/$re/s) {
+		my $origcommit=$1;
+		push @{$$known{$origcommit}},$commit
+	    }
+	}
+	$s->command_close_pipe ($fh,$ctx);
+	$known
+    }
 }
 
 our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
+
+our $known_cherry_picks= $git->known_cherry_picks;
+use Chj::Backtrace; use Chj::repl; repl;
 
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
 # pick merges. But maybe I *still* don't want to? (dunnoreally.)
 
 for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents ("HEAD..$branch")}) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
-    if ($opt_dry) {
-	print "would cherry-pick ".$commit->sha1."\n";
+    if (my $known= $$known_cherry_picks{$commit}) {
+	print "already picked earlier in our history: ".$commit->sha1." at @$known\n";
     } else {
-	$git->command ("cherry-pick", "-x", $commit->sha1);
+	if ($opt_dry) {
+	    print "would cherry-pick ".$commit->sha1."\n";
+	} else {
+	    $git->command ("cherry-pick", "-x", $commit->sha1);
+	}
     }
 }
 
 #use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
