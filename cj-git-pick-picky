@@ -83,17 +83,19 @@ use Git;
     sub known_cherry_picks {
 	my $s=shift;
 	@_==0 or die "expecting 0 arguments";
-	my $beginmarker= Chj::Random::Formatted::random_passwd_string (8);
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:'.$beginmarker.'%H:%s %b'."\0",@_);
-	local $/="\0";
-	# heh well actually maybe we wouldn't need $beginmarker after all--but better be safe..
+	my $marker= Chj::Random::Formatted::random_passwd_string (8);
+	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%s %b'.$marker,@_);
+	local $/=$marker;
 	my $known={}; # origcommit=> [newcommits]
 	while (<$fh>) {
-	    chomp;use Chj::Backtrace; use Chj::repl; repl;
-
-	    s/^$beginmarker// or die "invalid input record: '$_'";
+	    chomp;
+	    # somehow we get whitespace (a newline actually) before the commit id starting from the 2nd record. (why? so does git imply a newline after all ?  maybe I forgot to give some  whatever -z or so option. or so.toolazytolooknow.havemyoldscmcode.). strip it.
+	    s/^\s+//s;
 	    my ($commit,$msg)= split /:/,$_,2
 	      or die "invalid input record '$_'";
+	    $commit=~ m/^$sha1_re\z/
+	      or die "BUG: not a sha1: '$commit'";
+	    ##^ turn that into an assert statement. etcetc.
 	    if ($msg=~ m/$re/s) {
 		my $origcommit=$1;
 		push @{$$known{$origcommit}},$commit
@@ -114,13 +116,15 @@ use Chj::Backtrace; use Chj::repl; repl;
 
 for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents ("HEAD..$branch")}) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
-    if (my $known= $$known_cherry_picks{$commit}) {
-	print "already picked earlier in our history: ".$commit->sha1." at @$known\n";
+    #warn "looking at commit '$commit'..\n";#
+    my $commitsha1= $commit->sha1; #grrrr.
+    if (my $known= $$known_cherry_picks{$commitsha1}) {
+	print "already picked earlier in our history: ".$commitsha1." at @$known\n";
     } else {
 	if ($opt_dry) {
-	    print "would cherry-pick ".$commit->sha1."\n";
+	    print "would cherry-pick ".$commitsha1."\n";
 	} else {
-	    $git->command ("cherry-pick", "-x", $commit->sha1);
+	    $git->command ("cherry-pick", "-x", $commitsha1);
 	}
     }
 }
