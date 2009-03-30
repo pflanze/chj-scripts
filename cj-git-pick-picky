@@ -50,6 +50,17 @@ our ($branch)=@ARGV;#NOT @_ WHEN WILL I REMEMBER THAT.
 
 # well. what does this help, vs. using Git.pm
 
+#COPY from below: well actually now the only definition since 'below' is in scope.
+my $sha1_re= qr{[0-9a-f]{40}};
+#/COPY
+
+# declare as our $var instead of sub so that it can be seen in other namespace, does this work?
+our $assert_sha1= sub {
+    my ($str)=@_;
+    $str=~ m/^$sha1_re\z/
+      or die "assertion failure: not a sha1: '$str'";
+};
+
 use Git;
 {
     package CJ_GIT_PICK_PICKY::Git::Commit;
@@ -85,32 +96,32 @@ use Git;
 	\@log
     }
     my $pre='(cherry picked from commit ';
-    my $sha1_re= qr{[0-9a-f]{40}};
+    #my $sha1_re= qr{[0-9a-f]{40}};
     my $post= ')';
     my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
-    sub known_cherry_picks {
+    sub designated_cherry_picks {
 	my $s=shift;
-	@_==0 or die "expecting 0 arguments";
+	@_<=1 or die "expecting 0 or 1 arguments";
 	my $marker= Chj::Random::Formatted::random_passwd_string (8);
 	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%s %b'.$marker,@_);
 	local $/=$marker;
-	my $known={}; # origcommit=> [newcommits]
+	my $orig_to_new={}; # origcommit=> [newcommits]
+	my $new_to_orig={}; # newcommit => origcommit
 	while (<$fh>) {
 	    chomp;
 	    # somehow we get whitespace (a newline actually) before the commit id starting from the 2nd record. (why? so does git imply a newline after all ?  maybe I forgot to give some  whatever -z or so option. or so.toolazytolooknow.havemyoldscmcode.). strip it.
 	    s/^\s+//s;
 	    my ($commit,$msg)= split /:/,$_,2
 	      or die "invalid input record '$_'";
-	    $commit=~ m/^$sha1_re\z/
-	      or die "BUG: not a sha1: '$commit'";
-	    ##^ turn that into an assert statement. etcetc.
+	    &$assert_sha1($commit);
 	    if ($msg=~ m/$re/s) {
 		my $origcommit=$1;
-		push @{$$known{$origcommit}},$commit
+		push @{$$orig_to_new{$origcommit}},$commit;
+		$$new_to_orig{$commit}=$origcommit;
 	    }
 	}
 	$s->command_close_pipe ($fh,$ctx);
-	$known
+	($new_to_orig, $orig_to_new)
     }
     sub maybe_current_branch {
 	my $s=shift;
@@ -133,10 +144,6 @@ use Git;
 
 our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
 
-
-#COPY from above:
-my $sha1_re= qr{[0-9a-f]{40}};
-#/COPY
 
 use Chj::xopen 'xopen_read';
 
@@ -163,13 +170,28 @@ our $ignore= do {
     $ignore
 };
 
-our $known_cherry_picks= $git->known_cherry_picks;
+our (undef,$done_cherry_picks)= $git->designated_cherry_picks("HEAD");
 #use Chj::Backtrace; use Chj::repl; repl;
+
+# to look up whether a commit has been cherry-picked (and if so, whether from us):
+our ($cherrycommit_to_orig,undef)= $git->designated_cherry_picks($branch);
+
 
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
 # pick merges. But maybe I *still* don't want to? (dunnoreally.)
 
-for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents ("HEAD..$branch")}) {
+our $commits= $git-> log_sha1_and_parents ("HEAD..$branch");
+
+# build index for quick lookup:
+our $commit_is_ours= do {
+    my $h={};
+    for my $commit (@$commits) {
+	$$h{$commit->sha1}++
+    }
+    $h
+};
+
+for my $commit (reverse grep { not $_->is_merge } @$commits) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
@@ -177,15 +199,28 @@ for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents 
 	print "ignore: $commitsha1\n"
 	  if $verbose;
     } else {
-	if (my $known= $$known_cherry_picks{$commitsha1}) {
-	    print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
+	if (do {
+	    if (my $orig= $$cherrycommit_to_orig{$commitsha1}) {
+		# would still be simpler with a cond. and ye with and it won't work right. except with predeclaration right?
+		&$assert_sha1($orig);
+		$$commit_is_ours{$orig}
+	    } else {
+		0
+	    }
+	}) {
+	    print "commit is ours: $commitsha1\n"
 	      if $verbose;
 	} else {
-	    if ($opt_dry) {
-		print "would cherry-pick ".$commitsha1."\n";
+	    if (my $known= $$done_cherry_picks{$commitsha1}) {
+		print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
+		  if $verbose;
 	    } else {
-		print "cherry-picking $commitsha1..\n";
-		$git->command ("cherry-pick", "-x", $commitsha1);
+		if ($opt_dry) {
+		    print "would cherry-pick ".$commitsha1."\n";
+		} else {
+		    print "cherry-picking $commitsha1..\n";
+		    $git->command ("cherry-pick", "-x", $commitsha1);
+		}
 	    }
 	}
     }
