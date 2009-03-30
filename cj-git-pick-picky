@@ -174,10 +174,12 @@ for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents 
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
     if ($$ignore{$commitsha1}) {
-	print "to be ignored: $commitsha1\n";
+	print "ignore: $commitsha1\n"
+	  if $verbose;
     } else {
 	if (my $known= $$known_cherry_picks{$commitsha1}) {
-	    print "already picked: ".$commitsha1."\n"; #" (at @$known)\n"; is too long.
+	    print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
+	      if $verbose;
 	} else {
 	    if ($opt_dry) {
 		print "would cherry-pick ".$commitsha1."\n";
