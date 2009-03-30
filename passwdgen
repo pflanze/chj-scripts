@@ -23,6 +23,12 @@ sub usage {
            requested number of bytes ready (on linux 2.6) (it will
            not block anymore?; interesting?)
 
+           Well more precisely: it seems that it *does* block if there
+           is *no* entropy left; but it will return as soon as there
+           is some, which may be (or probably is, if the required
+           length is more than 8, on novo) less than the required
+           size.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
