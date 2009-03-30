@@ -7,14 +7,22 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+sub ignorepath {
+    @_==2 or die;
+    my ($gitbase,$branchname)=@_;
+    "$gitbase/$myname.ignore/$branchname"
+};
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
+    my $where= ignorepath (".git",'$branchname');
     print "$myname branchname
 
   Cherry-pick all patches that branch has which the current branch
   doesn't have (hm also older ones? or just from the latest fork
   point??) and apply them unless their sha1 is listed in
-  .git/$myname.ignore/\$branchname .
+  $where .
 
   Options:
   --dry-run
@@ -104,9 +112,56 @@ use Git;
 	$s->command_close_pipe ($fh,$ctx);
 	$known
     }
+    sub maybe_current_branch {
+	my $s=shift;
+	#hm I did this already somewhere. branches method. wherever.
+	my ($fh,$ctx)=$s->command_output_pipe ("branch");
+	my $current_branch;
+	while (<$fh>) {
+	    if (s/^\*\s+//s) {
+		chomp;
+		## some further checks needed?
+		$current_branch= $_;
+		# stop? well. avoid sigpipe?  btw yeh i also did solve *that* already.
+		#hey, \MYLANG{expect and check for void in non-terminal begin form positions.
+	    }
+	}
+	$s->command_close_pipe ($fh,$ctx);#(hope this dies upon errors,right?. ...)
+	$current_branch
+    }
 }
 
 our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
+
+
+#COPY from above:
+my $sha1_re= qr{[0-9a-f]{40}};
+#/COPY
+
+use Chj::xopen 'xopen_read';
+
+our $ignore= do {
+    my $current_branch= $git->maybe_current_branch
+      or die "not on a branch?";
+    our $ignorepath= ignorepath ($git->repo_path, $current_branch); # *not* $branch!
+    my $f= xopen_read $ignorepath;
+    my $ignore={};
+    my $z=0;
+    while (<$f>) {
+	$z++;
+	s/#.*//;
+	s/^\s*//s;
+	s/\s*\z//s;
+	next unless length;
+	#m/^$sha1_re\z/
+	#  or die "file '$ignorepath' line $z does not match sha1 sum pattern: '$_'";
+	m/^($sha1_re)\b/
+	  or die "file '$ignorepath' line $z does not start with a sha1: '$_'";
+	$$ignore{$1}++
+    }
+    $f->xclose;
+    $ignore
+};
 
 our $known_cherry_picks= $git->known_cherry_picks;
 #use Chj::Backtrace; use Chj::repl; repl;
@@ -118,14 +173,18 @@ for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents 
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
-    if (my $known= $$known_cherry_picks{$commitsha1}) {
-	print "already picked: ".$commitsha1."\n"; #" (at @$known)\n"; is too long.
+    if ($$ignore{$commitsha1}) {
+	print "to be ignored: $commitsha1\n";
     } else {
-	if ($opt_dry) {
-	    print "would cherry-pick ".$commitsha1."\n";
+	if (my $known= $$known_cherry_picks{$commitsha1}) {
+	    print "already picked: ".$commitsha1."\n"; #" (at @$known)\n"; is too long.
 	} else {
-	    print "cherry-picking $commitsha1..\n";
-	    $git->command ("cherry-pick", "-x", $commitsha1);
+	    if ($opt_dry) {
+		print "would cherry-pick ".$commitsha1."\n";
+	    } else {
+		print "cherry-picking $commitsha1..\n";
+		$git->command ("cherry-pick", "-x", $commitsha1);
+	    }
 	}
     }
 }
