@@ -220,7 +220,7 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		print "commit is ours: $commitsha1\n"
 		  if $verbose;
 	    } else {
-		if ($$known_orig_from_our_history{$orig}) {
+		if ($$done_cherry_picks{$orig}) {
 		    print "have picked it, too: $commitsha1\n"
 		      if $verbose;
 		} else {
