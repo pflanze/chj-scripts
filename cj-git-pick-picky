@@ -86,7 +86,7 @@ for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents 
     if ($opt_dry) {
 	print "would cherry-pick ".$commit->sha1."\n";
     } else {
-	$git->command ("cherry-pick", $commit->sha1);
+	$git->command ("cherry-pick", "-x", $commit->sha1);
     }
 }
 
