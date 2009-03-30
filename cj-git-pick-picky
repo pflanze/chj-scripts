@@ -201,18 +201,7 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 	print "ignore: $commitsha1\n"
 	  if $verbose;
     } else {
-	if (do {
-	    if (my $orig= $$cherrycommit_to_orig{$commitsha1}) {
-		# would still be simpler with a cond. and ye with and it won't work right. except with predeclaration right?
-		&$assert_sha1($orig);
-		$$commit_is_ours{$orig}
-	    } else {
-		0
-	    }
-	}) {
-	    print "commit is ours: $commitsha1\n"
-	      if $verbose;
-	} else {
+	my $needit= sub {
 	    if (my $known= $$done_cherry_picks{$commitsha1}) {
 		print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
 		  if $verbose;
@@ -224,6 +213,22 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		    $git->command ("cherry-pick", "-x", $commitsha1);
 		}
 	    }
+	};
+	if (my $orig= $$cherrycommit_to_orig{$commitsha1}) {
+	    &$assert_sha1($orig);
+	    if ($$commit_is_ours{$orig}) {
+		print "commit is ours: $commitsha1\n"
+		  if $verbose;
+	    } else {
+		if ($$known_orig_from_our_history{$orig}) {
+		    print "have picked it, too: $commitsha1\n"
+		      if $verbose;
+		} else {
+		    &$needit
+		}
+	    }
+	} else {
+	    &$needit
 	}
     }
 }
