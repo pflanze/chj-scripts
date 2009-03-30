@@ -109,7 +109,7 @@ use Git;
 our $git= CJ_GIT_PICK_PICKY::Git->repository(Directory=> ".");#k? yep works even from subdirs.
 
 our $known_cherry_picks= $git->known_cherry_picks;
-use Chj::Backtrace; use Chj::repl; repl;
+#use Chj::Backtrace; use Chj::repl; repl;
 
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
 # pick merges. But maybe I *still* don't want to? (dunnoreally.)
@@ -119,11 +119,12 @@ for my $commit (reverse grep { not $_->is_merge } @{$git-> log_sha1_and_parents 
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
     if (my $known= $$known_cherry_picks{$commitsha1}) {
-	print "already picked earlier in our history: ".$commitsha1." at @$known\n";
+	print "already picked: ".$commitsha1."\n"; #" (at @$known)\n"; is too long.
     } else {
 	if ($opt_dry) {
 	    print "would cherry-pick ".$commitsha1."\n";
 	} else {
+	    print "cherry-picking $commitsha1..\n";
 	    $git->command ("cherry-pick", "-x", $commitsha1);
 	}
     }
