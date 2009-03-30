@@ -22,7 +22,12 @@ sub usage {
   Cherry-pick all patches that branch has which the current branch
   doesn't have (hm also older ones? or just from the latest fork
   point??) and apply them unless their sha1 is listed in
-  $where .
+  $where,
+  or they are recognized as having been applied to the current branch
+  already. The latter does *only* work if all manually executed
+  cherry-pick's are applied with the -x flag. (Also, there will be
+  problems if cherry-picks need manual conflict resolution, as then
+  the -x flag does not take effect. D'oh.)
 
   Options:
   --dry-run
