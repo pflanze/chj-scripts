@@ -171,7 +171,6 @@ our $ignore= do {
 };
 
 our (undef,$done_cherry_picks)= $git->designated_cherry_picks("HEAD");
-#use Chj::Backtrace; use Chj::repl; repl;
 
 # to look up whether a commit has been cherry-picked (and if so, whether from us):
 our ($cherrycommit_to_orig,undef)= $git->designated_cherry_picks($branch);
@@ -180,10 +179,9 @@ our ($cherrycommit_to_orig,undef)= $git->designated_cherry_picks($branch);
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
 # pick merges. But maybe I *still* don't want to? (dunnoreally.)
 
-our $commits= $git-> log_sha1_and_parents ("HEAD..$branch");
-
 # build index for quick lookup:
 our $commit_is_ours= do {
+    my $commits= $git-> log_sha1_and_parents ("HEAD");## well, until 'branch point' (?, 'oldest' common ancestor of all branch points, ~) would be enough. (todo)
     my $h={};
     for my $commit (@$commits) {
 	$$h{$commit->sha1}++
@@ -191,7 +189,11 @@ our $commit_is_ours= do {
     $h
 };
 
-for my $commit (reverse grep { not $_->is_merge } @$commits) {
+our $otherbranch_commits= $git-> log_sha1_and_parents ("HEAD..$branch");
+
+#use Chj::Backtrace; use Chj::repl; repl;
+
+for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
