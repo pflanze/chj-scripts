@@ -83,6 +83,9 @@ sub uncompress {
 	my $f= xopen_read $file;
 	my $tdir= xtmpdir $TMPDIR."/"; # do not use lengthy program path. Well, I really meant to say this to xtmpfile; but there I'm now using the (exact) filename anyway (with xputback).
 	my $filename= basename $file;
+	##ugly, shouldn't this be done by the decompression detection routine.
+	$filename=~ s/\.(gz|bz2)\z//is;
+	##/ugly
 	my $t= xtmpfile "$tdir/$filename";
 	my $r= xreceiverpipeline_with_out_to($t, $decmd);
 	$f->xsendfile_to($r);
