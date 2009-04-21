@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Tue Apr 21 11:13:41 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+sub maps_path ( $ ) {
+    my ($pid)=@_;
+    "/proc/$pid/maps"
+}
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid
+
+  Reads ".maps_path("\$pid")." and sorts by the size of the mapped regions.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($expected_pid)=@ARGV; ##NOT $_ hey man
+
+our ($pid)= $expected_pid=~ /^(\d+)\z/ or usage "not a number: $expected_pid";
+
+use Chj::xopen 'xopen_read';
+use Chj::BinHexOctDec;
+
+our $f= xopen_read maps_path $pid;
+
+my $hexre= qr/[0-9a-f]+/;
+
+our @records; #it is scratched (will not buy)
+while (<$f>) {
+    chomp;
+    my @fromto= /($hexre)-($hexre) /
+      or die "invalid input '$_'";
+    {
+	#no warnings; # "Hexadecimal number > 0xffffffff non-portable at /usr/local/lib/site_perl/Chj/BinHexOctDec.pm line 72, <GEN0> line 125."
+	#well doesn't even help. ~of course. well.urgh.
+	local $^W; #this *does* help. but well.
+	my ($from,$to)= map { Chj::BinHexOctDec->hex($_)->dec } @fromto;
+	push @records, [$to-$from, $_]
+    }
+}
+$f->xclose;
+
+for (sort {
+    $b->[0] <=> $a->[0]
+} @records) {
+    print sprintf ('%12u', $$_[0])," ", $$_[1], "\n";
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
