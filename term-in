@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# Thu Apr 23 01:33:44 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir [arguments]
+
+  Run term with arguments from within dir.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV>=1;
+
+our $dir= shift @ARGV;
+
+if ($dir eq "--") {
+    @ARGV >= 1 or usage;
+    $dir= shift @ARGV;
+} else {
+    if ($dir eq "-h" or $dir eq "--help") {
+	usage
+    }
+}
+
+#use Chj::xsystem;
+#ehr heh
+use Chj::xperlfunc;
+
+xchdir $dir;
+xexec "term", @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
