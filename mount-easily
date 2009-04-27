@@ -28,7 +28,7 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our @mountoptions=(); ehr no,
-our $mountoptions= {};
+our $mountoptions= { noatime => 1 };
 our $opt_createdir;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
