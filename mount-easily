@@ -17,6 +17,12 @@ sub usage {
 
   Options:
   -c|--create-dir  create mount path [if it doesn't exist already]
+  --private create mount path as \$dest_path/mnt/ subdirectory and
+            create \$dest_path with 0700 permissions. If mount path
+            already exists, require it to have a mnt/ subdirectory
+            (and use that, which will be done anyway, but with
+            --private it fails if that directory doesn't exist) [and
+            check the parent dir for 0700 perms? well no for now]
   --ro|--readonly
   [--noatime wll use as default anyway ok?]
 
@@ -30,6 +36,7 @@ our $verbose=0;
 #our @mountoptions=(); ehr no,
 our $mountoptions= { noatime => 1 };
 our $opt_createdir;
+our $opt_private;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "ro|readonly"=> sub {
@@ -52,21 +59,42 @@ sub mount_easily {
     my ($device_path)=@_;
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
     my $dest_path=  "/mnt/".basename $device_path; ###
-    my $mount= sub {
+    my $mount_on= sub ( $ ) {
+	my ($dest_paht)=@_;
 	my $options= join(",", keys %$mountoptions);
-	mount( (length $options ? ("-o",$options) : ()), $device_path, $dest_path);
+	mount( (length $options ? ("-o",$options) : ()),
+	       $device_path,
+	       $dest_path);
     };
+    my $private_dest_path= $dest_path."/mnt";
     if (-e $dest_path) {
 	if (mounted $dest_path) {
 	    mydie "there is already something mounted on '$dest_path'";
 	} else {
-	    &$mount;
+	    if ($opt_private) {
+		if (-e $private_dest_path) {
+		    if (mounted $private_dest_path) {
+			mydie "there is already something mounted on '$private_dest_path'";
+		    } else {
+			&$mount_on $private_dest_path;
+		    }
+		} else {
+		    mydie "private '$private_dest_path' mount point does not exist (while '$dest_path' exists)"
+		}
+	    } else {
+		&$mount_on $dest_path;
+	    }
 	}
     } else {
 	if ($opt_createdir) {
 	    #or ask for it  ? wl or no, just rerun program then.with the option.
-	    xmkdir $dest_path;
-	    &$mount;
+	    if ($opt_private) {
+		xmkdir $dest_path, 0700;
+		xmkdir $private_dest_path, 0700; #(perms for consistency only, not really relevant)
+	    } else {
+		xmkdir $dest_path;
+	    }
+	    &$mount_on $private_dest_path; ##~
 	} else {
 	    mydie "target dir '$dest_path' does not exist and --create-dir option not given"
 	}
