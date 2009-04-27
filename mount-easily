@@ -61,7 +61,7 @@ sub mount_easily {
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
     my $dest_path=  "/mnt/".basename $device_path; ###
     my $mount_on= sub ( $ ) {
-	my ($dest_paht)=@_;
+	my ($dest_path)=@_;
 	my $options= join(",", keys %$mountoptions);
 	mount( (length $options ? ("-o",$options) : ()),
 	       $device_path,
@@ -72,6 +72,7 @@ sub mount_easily {
 	if (mounted $dest_path) {
 	    mydie "there is already something mounted on '$dest_path'";
 	} else {
+	    warn "ok going to check '$private_dest_path'";
 	    if (-e $private_dest_path) {
 		if (mounted $private_dest_path) {
 		    mydie "there is already something mounted on '$private_dest_path'";
