@@ -72,7 +72,6 @@ sub mount_easily {
 	if (mounted $dest_path) {
 	    mydie "there is already something mounted on '$dest_path'";
 	} else {
-	    warn "ok going to check '$private_dest_path'";
 	    if (-e $private_dest_path) {
 		if (mounted $private_dest_path) {
 		    mydie "there is already something mounted on '$private_dest_path'";
