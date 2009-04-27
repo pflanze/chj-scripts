@@ -75,13 +75,13 @@ sub mount_easily {
 		if (mounted $private_dest_path) {
 		    mydie "there is already something mounted on '$private_dest_path'";
 		} else {
-		    &$mount_on $private_dest_path;
+		    &$mount_on( $private_dest_path);
 		}
 	    } else {
 		if ($opt_private) {
 		    mydie "--private option given but private '$private_dest_path' mount point does not exist (while '$dest_path' exists)"
 		} else {
-		    &$mount_on $dest_path;
+		    &$mount_on( $dest_path);
 		}
 	    }
 	}
@@ -94,7 +94,7 @@ sub mount_easily {
 	    } else {
 		xmkdir $dest_path;
 	    }
-	    &$mount_on $private_dest_path; ##~
+	    &$mount_on( $private_dest_path); ##~
 	} else {
 	    mydie "target dir '$dest_path' does not exist and --create-dir option not given"
 	}
