@@ -71,18 +71,18 @@ sub mount_easily {
 	if (mounted $dest_path) {
 	    mydie "there is already something mounted on '$dest_path'";
 	} else {
-	    if ($opt_private) {
-		if (-e $private_dest_path) {
-		    if (mounted $private_dest_path) {
-			mydie "there is already something mounted on '$private_dest_path'";
-		    } else {
-			&$mount_on $private_dest_path;
-		    }
+	    if (-e $private_dest_path) {
+		if (mounted $private_dest_path) {
+		    mydie "there is already something mounted on '$private_dest_path'";
 		} else {
-		    mydie "private '$private_dest_path' mount point does not exist (while '$dest_path' exists)"
+		    &$mount_on $private_dest_path;
 		}
 	    } else {
-		&$mount_on $dest_path;
+		if ($opt_private) {
+		    mydie "--private option given but private '$private_dest_path' mount point does not exist (while '$dest_path' exists)"
+		} else {
+		    &$mount_on $dest_path;
+		}
 	    }
 	}
     } else {
