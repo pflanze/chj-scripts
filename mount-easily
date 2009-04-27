@@ -46,6 +46,7 @@ GetOptions("verbose"=> \$verbose,
 	       $$mountoptions{noatime}=1;
 	   },
 	   "c|create-dir"=> \$opt_createdir,
+	   "private"=> \$opt_private,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
