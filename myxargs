@@ -5,7 +5,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 # symlink based argument processing:
-our $no_run_if_empty=1;
+our $run_if_empty;
 
 {
     my $name= $myname;
@@ -14,7 +14,7 @@ our $no_run_if_empty=1;
     if ($name) {
 	my $optionpart=$name;
 	if ($name=~ s/-run-if-empty//) {
-	    $no_run_if_empty=0;
+	    $run_if_empty=1;
 	}
 	#if ($name=~ s/-oneinvocation//) {
 	# well, we'll assume this always anyway, right? why not.
@@ -27,6 +27,12 @@ our $no_run_if_empty=1;
 use Chj::App::Myxargs qw(options_and_cmd myxargs);
 
 my $options_and_cmd= options_and_cmd();
-$$options_and_cmd[0]{no_run_if_empty}= $no_run_if_empty;
+if (defined $run_if_empty
+    or # more importantly, sgh waah,
+    ! defined($$options_and_cmd[0]{"no-run-if-empty"})
+   ) {
+    $$options_and_cmd[0]{"no-run-if-empty"}= !$run_if_empty;
+}
+#use Data::Dumper; print Dumper $options_and_cmd;
 myxargs $options_and_cmd;
 
