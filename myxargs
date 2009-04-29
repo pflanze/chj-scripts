@@ -26,14 +26,8 @@ our $run_if_empty;
 
 use Chj::App::Myxargs qw(options_and_cmd myxargs);
 
-my $options_and_cmd= options_and_cmd();
-if (defined $run_if_empty
-    or # more importantly, sgh waah,
-    ! defined($$options_and_cmd[0]{"no-run-if-empty"})
-   ) {
-    $$options_and_cmd[0]{"no-run-if-empty"}= !$run_if_empty;
-}
-#use Data::Dumper; print Dumper $options_and_cmd;
+my $options_and_cmd= options_and_cmd(+{"no-run-if-empty" => !$run_if_empty});
+use Data::Dumper; print Dumper $options_and_cmd;
 myxargs $options_and_cmd;
 
 
