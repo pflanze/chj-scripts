@@ -17,7 +17,7 @@ Chj::App::Myxargs
 
 
 package Chj::App::Myxargs;
-#@ISA="Exporter"; require Exporter;
+@ISA="Exporter"; require Exporter;
 @EXPORT=qw(options_and_cmd
 	   myxargs);
 #@EXPORT_OK=qw();
