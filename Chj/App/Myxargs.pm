@@ -36,6 +36,7 @@ our $optionspec=
     help=> undef,
     "no-run-if-empty"=> "do not run if stdin doesn't deliver any items",
     "run-if-empty" => "inverse of --no-run-if-empty",
+    "null|0|z"=> "split stdin on \\0 instead of \\n", #wow that's cool, that | thingie. for here.same way usable.
    };
 #^ well sort of dumb idea since ordering will be lost  but  i  do not care now.
 
@@ -109,6 +110,7 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
     #well actually @args is separate anyway and I'd have to have aliased it to @ARGV actually,wow.  wl actually name it $cmd now for that, better named ('speaking'), reason.
     my @args;
     my $tot_size=0; #initialize it!!
+    local $/= $$options{null} ? "\0" : $/;
     while (<STDIN>) {
 	if (@args >= $max_args) {
 	    die "$myname: input exceeds maximum number of arguments ($max_args)\n";
