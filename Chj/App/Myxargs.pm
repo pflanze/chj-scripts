@@ -40,21 +40,26 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 sub options_and_cmd {
-    my $o=
+    my $options;
+    $options= #yes memleak, whatever.
       +{
 	verbose=>0,
 	#"no-run-if-empty"=>0,
+	help=> sub{usage}, # so that the option parser will see that during parsing,k?
+	'run-if-empty'=> sub {
+	    $$options{'no-run-if-empty'}=0
+	},
        };
-    {
-	local $^W; # to prevent super silly 'Use of uninitialized value $key in hash element at /usr/share/perl/5.10/Getopt/Long.pm line 582.' warning
-	GetOptions("verbose"=> $o,
-		   "help"=> sub{usage},
-		   "no-run-if-empty"=>$o,
-		  ) or exit 1;
-    }
+    GetOptions($options,
+	       qw(verbose
+		  help
+		  no-run-if-empty
+		  run-if-empty
+		 ))
+      or exit 1;
     usage unless @ARGV;
     #($options, [@ARGV]) well. rather?: well or not?
-    [$o, [@ARGV]]
+    [$options, [@ARGV]]
 }
 
 our $max_args= 1e6;##for now
