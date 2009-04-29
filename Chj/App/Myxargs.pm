@@ -77,7 +77,7 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 	push @args,$_;
     }
 
-    if (!$$options{no_run_if_empty} or @args) {
+    if (!$$options{"no-run-if-empty"} or @args) {
 	do {
 	    no warnings;
 	    exec @$cmd,@args
