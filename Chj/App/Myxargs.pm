@@ -39,9 +39,17 @@ exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
+use Chj::Collection 'Collection_addnew';
+#use Chj::Backtrace;
 sub options_and_cmd {
+    my ($optiondefaults)=@_;
+    $optiondefaults||={};
+    # then set all options which haven't already
+    #could possibly use Collection_add from  well actually do it.
     my $options;
     $options= #yes memleak, whatever.
+      Collection_addnew
+	($optiondefaults,
       +{
 	verbose=>0,
 	#"no-run-if-empty"=>0,
@@ -49,7 +57,7 @@ sub options_and_cmd {
 	'run-if-empty'=> sub {
 	    $$options{'no-run-if-empty'}=0
 	},
-       };
+       });
     GetOptions($options,
 	       qw(verbose
 		  help
