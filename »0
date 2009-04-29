@@ -1,0 +1,9 @@
+#!/usr/bin/perl -w
+
+# same as myxargs but parse options instead of looking at program name
+
+use strict;
+
+use Chj::App::Myxargs;
+
+myxargs options_and_cmd(+{"no-run-if-empty"=>1, "null"=>1});
