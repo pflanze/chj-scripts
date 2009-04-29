@@ -39,16 +39,27 @@ exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
-use Chj::Collection 'Collection_addnew';
+
+sub Hash_addnew ( $ $ ) {
+    my ($a,$b)=@_;
+    my $res=+{%$a};
+    for my $key (keys %$b) {
+	if (not exists $$res{$key}) {
+	    $$res{$key}=$$b{$key}
+	}
+    }
+    $res
+}
+
 #use Chj::Backtrace;
 sub options_and_cmd {
     my ($maybe_optiondefaults)=@_;
     my $optiondefaults= $maybe_optiondefaults || {};
     # then set all options which haven't already
-    #could possibly use Collection_add from  well actually do it.
+    #could possibly use Collection_add from  well actually do it.  well actually doesn't work, assumes key==value and acts as such for adding (hu~wl.y named it so)
     my $options;
     $options= #yes memleak, whatever.
-      Collection_addnew
+      Hash_addnew
 	($optiondefaults,
       +{
 	verbose=>0,
