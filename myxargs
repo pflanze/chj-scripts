@@ -27,8 +27,4 @@ our $run_if_empty;
 use Chj::App::Myxargs qw(options_and_cmd myxargs);
 
 my $options_and_cmd= options_and_cmd(+{"no-run-if-empty" => !$run_if_empty});
-use Data::Dumper; print Dumper $options_and_cmd;
 myxargs $options_and_cmd;
-
-
-#uff. actually twice wrong: (1) better feed default value just to options() first. not after. (2) actually we do not want option processing after all!!!! thatwas the whole point of this file and keepin g that backward compatible.
