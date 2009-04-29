@@ -29,9 +29,29 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+our $optionspec=
+  +{
+    verbose=> "be verbose",
+    help=> undef,
+    "no-run-if-empty"=> "do not run if stdin doesn't deliver any items",
+    "run-if-empty" => "inverse of --no-run-if-empty",
+   };
+#^ well sort of dumb idea since ordering will be lost  but  i  do not care now.
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname cmd [static args]
+
+  Read stdin and add it's records to the arguments of cmd, and run cmd.
+  Runs cmd at most once.
+
+  Options:
+".join("",
+       map{my ($name,$desc)=@$_;
+	   $desc ? "  --$name  $desc\n" : ""}
+       map{my $key=$_; [$key,$$optionspec{$key}]} sort keys %$optionspec
+      )."
 
   (Christian Jaeger <$email>)
 ";
@@ -70,11 +90,7 @@ sub options_and_cmd {
 	},
        });
     GetOptions($options,
-	       qw(verbose
-		  help
-		  no-run-if-empty
-		  run-if-empty
-		 ))
+	       keys %$optionspec)
       or exit 1;
     usage unless @ARGV;
     #($options, [@ARGV]) well. rather?: well or not?
