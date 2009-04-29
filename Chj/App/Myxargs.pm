@@ -43,10 +43,15 @@ sub options_and_cmd {
     my $o=
       +{
 	verbose=>0,
+	#"no-run-if-empty"=>0,
        };
-    GetOptions("verbose"=> $o,
-	       "help"=> sub{usage},
-	      ) or exit 1;
+    {
+	local $^W; # to prevent super silly 'Use of uninitialized value $key in hash element at /usr/share/perl/5.10/Getopt/Long.pm line 582.' warning
+	GetOptions("verbose"=> $o,
+		   "help"=> sub{usage},
+		   "no-run-if-empty"=>$o,
+		  ) or exit 1;
+    }
     usage unless @ARGV;
     #($options, [@ARGV]) well. rather?: well or not?
     [$o, [@ARGV]]
