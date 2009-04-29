@@ -42,8 +42,8 @@ use Getopt::Long;
 use Chj::Collection 'Collection_addnew';
 #use Chj::Backtrace;
 sub options_and_cmd {
-    my ($optiondefaults)=@_;
-    $optiondefaults||={};
+    my ($maybe_optiondefaults)=@_;
+    my $optiondefaults= $maybe_optiondefaults || {};
     # then set all options which haven't already
     #could possibly use Collection_add from  well actually do it.
     my $options;
