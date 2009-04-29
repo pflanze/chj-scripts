@@ -27,6 +27,6 @@ our $no_run_if_empty=1;
 use Chj::App::Myxargs qw(options_and_cmd myxargs);
 
 my $options_and_cmd= options_and_cmd();
-$$options_and_cmd{no_run_if_empty}= $no_run_if_empty;
+$$options_and_cmd[0]{no_run_if_empty}= $no_run_if_empty;
 myxargs $options_and_cmd;
 
