@@ -63,7 +63,7 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
     #h GetOptions should take a cont,really....H (or, values to be applied) (well fun and we're back at bad matching scm apply.)
     #well actually @args is separate anyway and I'd have to have aliased it to @ARGV actually,wow.  wl actually name it $cmd now for that, better named ('speaking'), reason.
     my @args;
-    my $tot_size;
+    my $tot_size=0; #initialize it!!
     while (<STDIN>) {
 	if (@args >= $max_args) {
 	    die "$myname: input exceeds maximum number of arguments ($max_args)\n";
