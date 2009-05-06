@@ -93,7 +93,6 @@ sub main {
       keys %$files;
     #^gern wieder mal  split eines hashes nach bestimmten mustern.
     # statt multiple greps.  'sigh?..'
-    return unless @nondeletedfiles;
     if ($opt_show_deleted) {
 	for my $file (@deletedfiles) {
 	    my $kind= $$files{$file};
@@ -105,6 +104,7 @@ sub main {
 	    }
 	}
     }
+    return unless @nondeletedfiles;
     my $l= Chj::IO::Command->new_sender ("l", @nondeletedfiles);
     while (<$l>) {
 	chomp;
