@@ -103,19 +103,38 @@ use Git;
     my $pre='(cherry picked from commit ';
     my $post= ')';
     my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
-    our $check_and_maybe_record_cherrypickchain;
-    $check_and_maybe_record_cherrypickchain= sub {
+    sub check_and_maybe_record_cherrypickchain {
+	my $s=shift;
 	my ($commit,$msg)=@_;
 	&$assert_sha1($commit);
 	if ($msg=~ m/$re/s) {
 	    my $origcommit=$1;
 	    push @{$$orig_to_new{$origcommit}},$commit;
 	    $$new_to_orig{$commit}=$origcommit;
-	    &$check_and_maybe_record_cherrypickchain
+	    # no need to check for endless loops, as git is (well, it's id's are) don't allow mutation
+	    $s->check_and_maybe_record_cherrypickchain
 	      ($origcommit,
-	       msg_of ($origcommit));
+	       $s->message_of_commit ($origcommit));
 	}
-    };
+    }
+    sub message_of_commit {
+	my $s=shift;
+	my ($commit)=@_;
+	&$assert_sha1($commit); #well not necessarily. but for now check anyway.
+	#ps $/ is still set to  whatever  be eh dangerous eh i mean.
+	# inefficient.  but so.be it.f now
+	#don't have my own git classes here so need to go lowlevel:
+	my ($fh,$ctx)=$s->command_output_pipe ("cat-file",'-t',"commit", $commit);
+	while (<$fh>) {
+	    if (/^$/) {
+		my @out;
+		while (<$fh>) {
+		    push @out;
+		}
+		return join ("",@out)
+	    }
+	}
+    }
     sub designated_cherry_picks {
 	my $s=shift;
 	@_<=1 or die "expecting 0 or 1 arguments";
@@ -130,7 +149,7 @@ use Git;
 	    s/^\s+//s;
 	    my ($commit,$msg)= split /:/,$_,2
 	      or die "invalid input record '$_'";
-	    &$check_and_maybe_record_cherrypickchain ($commit,$msg);
+	    $s->check_and_maybe_record_cherrypickchain ($commit,$msg);
 	}
 	$s->command_close_pipe ($fh,$ctx);
 	($new_to_orig, $orig_to_new)
