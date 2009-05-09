@@ -59,7 +59,7 @@ our ($branch)=@ARGV;#NOT @_ WHEN WILL I REMEMBER THAT.
 my $sha1_re= qr{[0-9a-f]{40}};
 #/COPY
 
-# declare as our $var instead of sub so that it can be seen in other namespace, does this work?
+# declare as our $var instead of sub so that it can be seen in other namespace, does this work? -- it does (fun)
 our $assert_sha1= sub {
     my ($str)=@_;
     $str=~ m/^$sha1_re\z/
@@ -103,6 +103,19 @@ use Git;
     my $pre='(cherry picked from commit ';
     my $post= ')';
     my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
+    our $check_and_maybe_record_cherrypickchain;
+    $check_and_maybe_record_cherrypickchain= sub {
+	my ($commit,$msg)=@_;
+	&$assert_sha1($commit);
+	if ($msg=~ m/$re/s) {
+	    my $origcommit=$1;
+	    push @{$$orig_to_new{$origcommit}},$commit;
+	    $$new_to_orig{$commit}=$origcommit;
+	    &$check_and_maybe_record_cherrypickchain
+	      ($origcommit,
+	       msg_of ($origcommit));
+	}
+    };
     sub designated_cherry_picks {
 	my $s=shift;
 	@_<=1 or die "expecting 0 or 1 arguments";
@@ -117,12 +130,7 @@ use Git;
 	    s/^\s+//s;
 	    my ($commit,$msg)= split /:/,$_,2
 	      or die "invalid input record '$_'";
-	    &$assert_sha1($commit);
-	    if ($msg=~ m/$re/s) {
-		my $origcommit=$1;
-		push @{$$orig_to_new{$origcommit}},$commit;
-		$$new_to_orig{$commit}=$origcommit;
-	    }
+	    &$check_and_maybe_record_cherrypickchain ($commit,$msg);
 	}
 	$s->command_close_pipe ($fh,$ctx);
 	($new_to_orig, $orig_to_new)
