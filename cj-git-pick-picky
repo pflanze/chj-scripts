@@ -101,7 +101,6 @@ use Git;
 	\@log
     }
     my $pre='(cherry picked from commit ';
-    #my $sha1_re= qr{[0-9a-f]{40}};
     my $post= ')';
     my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
     sub designated_cherry_picks {
