@@ -105,7 +105,8 @@ use Git;
     my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
     sub check_and_maybe_record_cherrypickchain {
 	my $s=shift;
-	my ($commit,$msg)=@_;
+	my ($commit,$msg
+	    ,$orig_to_new, $new_to_orig)=@_;
 	&$assert_sha1($commit);
 	if ($msg=~ m/$re/s) {
 	    my $origcommit=$1;
@@ -114,7 +115,8 @@ use Git;
 	    # no need to check for endless loops, as git is (well, it's id's are) don't allow mutation
 	    $s->check_and_maybe_record_cherrypickchain
 	      ($origcommit,
-	       $s->message_of_commit ($origcommit));
+	       $s->message_of_commit ($origcommit)
+	       ,$orig_to_new, $new_to_orig);
 	}
     }
     sub message_of_commit {
@@ -149,7 +151,8 @@ use Git;
 	    s/^\s+//s;
 	    my ($commit,$msg)= split /:/,$_,2
 	      or die "invalid input record '$_'";
-	    $s->check_and_maybe_record_cherrypickchain ($commit,$msg);
+	    $s->check_and_maybe_record_cherrypickchain ($commit,$msg
+							,$orig_to_new, $new_to_orig);
 	}
 	$s->command_close_pipe ($fh,$ctx);
 	($new_to_orig, $orig_to_new)
