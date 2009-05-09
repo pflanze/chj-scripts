@@ -126,12 +126,12 @@ use Git;
 	#ps $/ is still set to  whatever  be eh dangerous eh i mean.
 	# inefficient.  but so.be it.f now
 	#don't have my own git classes here so need to go lowlevel:
-	my ($fh,$ctx)=$s->command_output_pipe ("cat-file",'-t',"commit", $commit);
+	my ($fh,$ctx)=$s->command_output_pipe ("cat-file","commit", $commit);
 	while (<$fh>) {
 	    if (/^$/) {
 		my @out;
 		while (<$fh>) {
-		    push @out;
+		    push @out,$_;
 		}
 		return join ("",@out)
 	    }
