@@ -11,7 +11,7 @@ my ($mydir, $myname)=($1,$2);
 sub ignorepath {
     @_==2 or die;
     my ($gitbase,$branchname)=@_;
-    "$gitbase/$myname.ignore/$branchname"
+    "$gitbase/$myname.ignore/*all*"
 };
 
 sub usage {
