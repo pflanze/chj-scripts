@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -eu
+
+f="`tempfile`"
+
+cat "$@" > "$f"
+
+echo "$f"
