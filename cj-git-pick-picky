@@ -48,6 +48,46 @@ usage unless @ARGV==1;
 
 our ($branch)=@ARGV;#NOT @_ WHEN WILL I REMEMBER THAT.
 
+
+# LIBS to separate
+
+sub callcc { # outwards only.
+    (@_>=1 and @<=2) or die "wrong number of values";
+    # not taking @cleanup_args, 'since that would be C style', well, rather: since we *can* pass closures, this is to be the right, eh preferred way (heh, Python is doing it OO (wl aka C style) not closure here (since non-modifiable bindings))
+    my ($cont,$maybe_cleanup)=@_; #well. cont to pass cont, so to say.
+    my $marker= []; #use for identity checking.
+    #^ fill in something to help debugging?
+    my $is_marker= sub {
+	my ($v)=@_;
+	ref ($v) eq "ARRAY" and $v eq $marker
+    };
+    my $res= eval { #well do the usual wantarray circus ?
+	&$cont (sub {
+		    @_==1 or die "expecting 1 value";
+		    #wel accept any number of values  ? but then, how to  cdr ... (nest arrays? why not: flat like noncurried procs)
+		    my ($v)=@_;
+		    die [$marker, $v]
+		})
+    };
+    my $e=$@;
+    if ($maybe_cleanup) {
+	&$maybe_cleanup()
+    }
+    if (ref($e) or $e) {
+	if (&$is_marker($e)) {
+	    $$e[1]
+	} else {
+	    die $e
+	}
+    } else {
+	$res
+	  #hmm how to do  () # a real nothing. (in this, otherwise scalar, context)
+    }
+}
+
+# /LIBS
+
+
 # hm habe git modul sachen 'hm'.
 
 #use Chj::Git::Functions ':all';
