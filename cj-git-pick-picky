@@ -231,10 +231,10 @@ our $ignore= do {
     $ignore
 };
 
-our (undef,$done_cherry_picks,$known_by_identity)= $git->designated_cherry_picks("HEAD");
+our (undef,$done_cherry_picks,undef)= $git->designated_cherry_picks("HEAD");
 
 # to look up whether a commit has been cherry-picked (and if so, whether from us):
-our ($cherrycommit_to_orig,undef,undef)= $git->designated_cherry_picks($branch);
+our ($cherrycommit_to_orig,undef,$known_by_identity)= $git->designated_cherry_picks($branch);
 
 
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
