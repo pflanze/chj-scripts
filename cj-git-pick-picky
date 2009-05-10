@@ -267,7 +267,8 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
     #warn "looking at commit '$commit'..\n";#
     my $commitsha1= $commit->sha1; #grrrr.
-    if ($$ignore{$commitsha1}) {
+    if (hash_contains_commitsha1_possibly_indirectly
+	($ignore,$commitsha1)) {
 	print "ignore: $commitsha1\n"
 	  if $verbose;
     } else {
