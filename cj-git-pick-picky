@@ -262,34 +262,29 @@ sub Mk_hash_contains_commitsha1_possibly_indirectly { #looks commitsha1 up in ch
     sub {
 	my ($hash,$commitsha1)=@_;
 	my $rec;
-	$rec= sub {
-	    my ($commitsha1)=@_;
-	    die ["return",$$hash{$commitsha1}]
-	      if (exists $$hash{$commitsha1});
-	    #picked-from:
-	    if (my $originals= $$cherrycommit_to_orig{$commitsha1}) {
-		# a short-cutting for.
-		for my $commitsha1 (@$originals) {
-		    die ["return",$$hash{$commitsha1}]
-		      if (exists $$hash{$commitsha1});
-		    &$rec ($commitsha1)
-		}
-	    }
-	};
-	eval {
-	    &$rec ($commitsha1)
-	};
-	my $e=$@;
-	undef $rec;#don't forget.
-	if (ref($e) or $e) {
-	    if (ref ($e) eq "ARRAY" and $$e[0] eq "return") {
-		$$e[1]
-	    } else {
-		die $e
-	    }
-	} else {
-	    () # a real nothing. (in this, otherwise scalar, context)
-	}
+	callcc
+	  (sub {
+	       my ($exit)=@_;
+	       $rec= sub {
+		   my ($commitsha1)=@_;
+		   &$exit($$hash{$commitsha1})
+		     if (exists $$hash{$commitsha1});
+		   #picked-from:
+		   if (my $originals= $$cherrycommit_to_orig{$commitsha1}) {
+		       # a short-cutting for.
+		       for my $commitsha1 (@$originals) {
+			   &$exit($$hash{$commitsha1})
+			     if (exists $$hash{$commitsha1});
+			   &$rec ($commitsha1)
+		       }
+		   }
+		   return ()
+	       };
+	       &$rec ($commitsha1)
+	   },
+	   sub {
+	       undef $rec;#don't forget.
+	   })
     }
 }
 
