@@ -4,6 +4,6 @@ set -eu
 
 f="`tempfile`"
 
-cat "$@" > "$f"
+cat "$@" >> "$f"
 
 echo "$f"
