@@ -112,7 +112,7 @@ use Git;
 	for my $origcommit ($msg=~ m/$re/sg) {
 	    warn "    '$commit' leads to $origcommit\n";
 	    push @{$$orig_to_new{$origcommit}},$commit;
-	    $$new_to_orig{$commit}=$origcommit;
+	    push @{$$new_to_orig{$commit}},$origcommit;
 	    # no need to check for endless loops, as git is (well, it's id's are) don't allow mutation
 	    $s->check_and_maybe_record_cherrypickchain
 	      ($origcommit,
@@ -251,17 +251,20 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		}
 	    }
 	};
-	if (my $orig= $$cherrycommit_to_orig{$commitsha1}) {
-	    &$assert_sha1($orig);
-	    if ($$commit_is_ours{$orig}) {
-		print "commit is ours: $commitsha1\n"
-		  if $verbose;
-	    } else {
-		if ($$done_cherry_picks{$orig}) {
-		    print "have picked it, too: $commitsha1\n"
+	if (my $originalcommits= $$cherrycommit_to_orig{$commitsha1}) {
+	    # side-effecting part only. well as everywhere in the loop.
+	    for my $orig (@$originalcommits) {
+		&$assert_sha1($orig);
+		if ($$commit_is_ours{$orig}) {
+		    print "commit is ours: $commitsha1\n"
 		      if $verbose;
 		} else {
-		    &$needit
+		    if ($$done_cherry_picks{$orig}) {
+			print "have picked it, too: $commitsha1\n"
+			  if $verbose;
+		    } else {
+			&$needit
+		    }
 		}
 	    }
 	} else {
