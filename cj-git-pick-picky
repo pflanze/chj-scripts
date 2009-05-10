@@ -61,27 +61,34 @@ sub callcc { # outwards only.
 	my ($v)=@_;
 	ref ($v) eq "ARRAY" and $v eq $marker
     };
+    my $not_exception=0;
     my $res= eval { #well do the usual wantarray circus ?
-	&$cont (sub {
+	my $res= &$cont (sub {
 		    @_==1 or die "expecting 1 value";
 		    #wel accept any number of values  ? but then, how to  cdr ... (nest arrays? why not: flat like noncurried procs)
 		    my ($v)=@_;
 		    die [$marker, $v]
-		})
+		});
+	$not_exception=1;
+	$res
     };
     my $e=$@;
     if ($maybe_cleanup) {
 	&$maybe_cleanup()
     }
-    if (ref($e) or $e) {
-	if (&$is_marker($e)) {
-	    $$e[1]
-	} else {
-	    die $e
-	}
-    } else {
+    if ($not_exception) {
 	$res
 	  #hmm how to do  () # a real nothing. (in this, otherwise scalar, context)
+    } else {	
+	if (ref($e) or $e) {
+	    if (&$is_marker($e)) {
+		$$e[1]
+	    } else {
+		die $e
+	    }
+	} else {
+	    die "lost an exception"
+	}
     }
 }
 
