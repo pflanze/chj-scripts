@@ -58,11 +58,17 @@ sub callcc { # outwards only.
     my $wantarray=wantarray;
     my $res= eval { #well do the usual wantarray circus ?
 	my @res= do {
+	    my $called=0;
 	    my $exit= sub {
 		@_==1 or die "expecting 1 value";
 		#wel accept any number of values  ? but then, how to  cdr ... (nest arrays? why not: flat like noncurried procs)
 		my ($v)=@_;
-		die [$marker, $v]
+		if ($called) {
+		    die "one-shot continuation has already been called";
+		} else {
+		    $called=1;
+		    die [$marker, $v]
+		}
 	    };
 	    if ($wantarray) {
 		&$cont ($exit)
