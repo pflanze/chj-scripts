@@ -129,6 +129,7 @@ use Git;
 	# inefficient.  but so.be it.f now
 	#don't have my own git classes here so need to go lowlevel:
 	my ($fh,$ctx)=$s->command_output_pipe ("cat-file","commit", $commit);
+	local $/="\n"; #HAH 'forgotten'(well heh yep, always!wow), and  4 lines after the self warning I trapped into it.
 	while (<$fh>) {
 	    if (/^$/) {
 		my @out;
