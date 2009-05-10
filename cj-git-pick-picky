@@ -108,9 +108,7 @@ use Git;
 	my ($commit,$msg
 	    ,$orig_to_new, $new_to_orig)=@_;
 	&$assert_sha1($commit);
-	warn "CHECKING '$commit'..\n";
 	for my $origcommit ($msg=~ m/$re/sg) {
-	    warn "    '$commit' leads to $origcommit\n";
 	    push @{$$orig_to_new{$origcommit}},$commit;
 	    push @{$$new_to_orig{$commit}},$origcommit;
 	    # no need to check for endless loops, as git is (well, it's id's are) don't allow mutation
@@ -119,7 +117,6 @@ use Git;
 	       $s->message_of_commit ($origcommit)
 	       ,$orig_to_new, $new_to_orig);
 	}
-	warn " <- return from '$commit'\n";
     }
     sub message_of_commit {
 	my $s=shift;
