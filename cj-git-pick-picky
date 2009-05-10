@@ -273,7 +273,9 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 	  if $verbose;
     } else {
 	my $needit= sub {
-	    if (my $known= $$done_cherry_picks{$commitsha1}) {
+	    if (my $known=
+		hash_contains_commitsha1_possibly_indirectly
+		($done_cherry_picks,$commitsha1)) {
 		print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
 		  if $verbose;
 	    } else {
@@ -285,7 +287,9 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		}
 	    }
 	};
-	if (my $originalcommits= $$cherrycommit_to_orig{$commitsha1}) {
+	if (my $originalcommits=
+	    hash_contains_commitsha1_possibly_indirectly
+	    ($cherrycommit_to_orig,$commitsha1)) {
 	    # side-effecting part only. well as everywhere in the loop.
 	    for my $orig (@$originalcommits) {
 		&$assert_sha1($orig);
@@ -294,7 +298,8 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		    print "commit is ours: $commitsha1\n"
 		      if $verbose;
 		} else {
-		    if ($$done_cherry_picks{$orig}) {
+		    if (hash_contains_commitsha1_possibly_indirectly
+			($done_cherry_picks,$orig)) {
 			print "have picked it, too: $commitsha1\n"
 			  if $verbose;
 		    } else {
