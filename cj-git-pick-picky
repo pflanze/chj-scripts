@@ -173,7 +173,7 @@ use Git;
 	    s/^\s+//s;
 	    my ($commit,$author,$msg)= split /\E$marker1/,$_,3
 	      or die "invalid input record '$_'";
-	    $$known_by_identity{"$author -- $msg"}++;
+	    ##$$known_by_identity{"$author -- $msg"}++;
 	    $s->check_and_maybe_record_cherrypickchain ($commit,$msg
 							,$orig_to_new, $new_to_orig);
 	    # ^no need to also pass known_by_identity, as we assume
@@ -297,13 +297,15 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 	  if $verbose;
     } else {
 	my $needit= sub {
+	    my $identity= $commit->identity;
 	    if (my $known=
 		hash_contains_commitsha1_possibly_indirectly
 		($done_cherry_picks,$commitsha1)) {
 		print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
 		  if $verbose;
+		# to make sure that doubles in parallel branches will be suppressed subsequently:
+		$$known_by_identity{$identity}++;
 	    } else {
-		my $identity= $commit->identity;
 		if ($$known_by_identity{$identity}) {
 		    print "patch (recognized by author/message) already applied: ".$commitsha1."\n" # from a different branch (part,  merging!), or from a previous run  - ehr no not previous run (would have the picked header), but from old history,k?
 		      if $verbose;
