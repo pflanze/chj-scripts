@@ -289,7 +289,8 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 	    # side-effecting part only. well as everywhere in the loop.
 	    for my $orig (@$originalcommits) {
 		&$assert_sha1($orig);
-		if ($$commit_is_ours{$orig}) {
+		if (hash_contains_commitsha1_possibly_indirectly
+		    ($commit_is_ours,$orig)) {
 		    print "commit is ours: $commitsha1\n"
 		      if $verbose;
 		} else {
