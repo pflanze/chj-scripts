@@ -102,15 +102,14 @@ use Git;
     }
     my $pre='(cherry picked from commit ';
     my $post= ')';
-    my $re= qr/\Q$pre\E($sha1_re)\Q$post\E\s*\z/;
+    my $re= qr/\Q$pre\E($sha1_re)\Q$post\E/;
     sub check_and_maybe_record_cherrypickchain {
 	my $s=shift;
 	my ($commit,$msg
 	    ,$orig_to_new, $new_to_orig)=@_;
 	&$assert_sha1($commit);
 	warn "CHECKING '$commit'..\n";
-	if ($msg=~ m/$re/s) {
-	    my $origcommit=$1;
+	for my $origcommit ($msg=~ m/$re/sg) {
 	    warn "    '$commit' leads to $origcommit\n";
 	    push @{$$orig_to_new{$origcommit}},$commit;
 	    $$new_to_orig{$commit}=$origcommit;
