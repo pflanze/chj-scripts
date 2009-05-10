@@ -230,6 +230,23 @@ our $otherbranch_commits= $git-> log_sha1_and_parents ("HEAD..$branch");
 
 #use Chj::Backtrace; use Chj::repl; repl;
 
+sub hash_contains_commitsha1_possibly_indirectly { #looks commitsha1 up in cherry pick chaings
+    my ($hash,$commitsha1)=@_;
+    if (exists $$hash{$commitsha1}) {
+	$$hash{$commitsha1}
+    } else {
+	#picked-from:
+	if (my $originals= $$cherrycommit_to_orig{$commitsha1}) {
+	    # a short-cutting for.
+	    for my $commitsha1 (@$originals) {
+		return $$hash{$commitsha1}
+		  if (exists $$hash{$commitsha1});
+		ç hmm. brauchen wir conts? die?
+	    }
+	}
+    }
+}
+
 for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
     #( grep reverse   warum macht cperl mode verschiedene farben (f diese 2 kommandos) h.?.) (hautpsachefrbg)
     #warn "looking at commit '$commit'..\n";#
