@@ -77,6 +77,12 @@ use Git;
 	my $s=shift;
 	$$s[0]
     }
+    sub identity {
+	# string to identify a commit (if it's not a cherry-picked one), like to suppress doubly found patches from merges.
+	# --well, actually the cherry-picks are already a case where the commit msg is spoiling; but shouldn't matter [so much], right?
+	my $s=shift;
+	$$s[2] # author+message
+    }
 }
 {
     package CJ_GIT_PICK_PICKY::Git;
@@ -84,18 +90,29 @@ use Git;
     # ^ we assume here that it's a fixed Git.pm
     use Chj::Random::Formatted ();# 'random_passwd_string';
 
+    our $gitformat_author= '%aN -- %aE -- %at';
+    our $gitformat_body= '%s\n\n%b'; # really ok with these \n ? (well either way acceptable for the purpose, right?+-)
     sub log_sha1_and_parents {
 	my $s=shift;
 	@_==1 or die "need revision (range) argument";
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%P',@_);
+	my $marker= Chj::Random::Formatted::random_passwd_string (8);
+	my $marker1= Chj::Random::Formatted::random_passwd_string (8);
+	my ($fh,$ctx)=$s->command_output_pipe
+	  ("log",
+	   '--pretty=format:%H:%P'.$marker1.$gitformat_author.$marker1.$gitformat_body.$marker,
+	   @_);
+	local $/=$marker;
 	my @log=
 	  #fullyeager..
 	  map {
 	      chomp;
-	      my ($commit,$parents)= split /:/,$_,2
+	      s/^\s+//s; # (again to remove newline that git inserts after $marker's)
+	      my ($meta,$author,$msg)= split /\E$marker1/,$_,3
+		or die "?? '$_'";
+	      my ($commit,$parents)= split /:/,$meta,2
 		or die "invalid line '$_'";
 	      my @parents= split / /,$parents;
-	      bless [$commit, \@parents],"CJ_GIT_PICK_PICKY::Git::Commit"
+	      bless [$commit, \@parents, "$author -- $msg"],"CJ_GIT_PICK_PICKY::Git::Commit"
 	  } <$fh>;
 	$s->command_close_pipe ($fh,$ctx);
 	\@log
@@ -141,21 +158,31 @@ use Git;
 	my $s=shift;
 	@_<=1 or die "expecting 0 or 1 arguments";
 	my $marker= Chj::Random::Formatted::random_passwd_string (8);
-	my ($fh,$ctx)=$s->command_output_pipe ("log",'--pretty=format:%H:%s %b'.$marker,@_);
+	my $marker1= Chj::Random::Formatted::random_passwd_string (8);
+	my ($fh,$ctx)=$s->command_output_pipe
+	  ("log",
+	   '--pretty=format:%H'.$marker1.$gitformat_author.$marker1.$gitformat_body.$marker,
+	   @_);
 	local $/=$marker;
 	my $orig_to_new={}; # origcommit=> [newcommits]
 	my $new_to_orig={}; # newcommit => origcommit
+	my $known_by_identity={}; # identity => true
 	while (<$fh>) {
 	    chomp;
 	    # somehow we get whitespace (a newline actually) before the commit id starting from the 2nd record. (why? so does git imply a newline after all ?  maybe I forgot to give some  whatever -z or so option. or so.toolazytolooknow.havemyoldscmcode.). strip it.
 	    s/^\s+//s;
-	    my ($commit,$msg)= split /:/,$_,2
+	    my ($commit,$author,$msg)= split /\E$marker1/,$_,3
 	      or die "invalid input record '$_'";
+	    $$known_by_identity{"$author -- $msg"}++;
 	    $s->check_and_maybe_record_cherrypickchain ($commit,$msg
 							,$orig_to_new, $new_to_orig);
+	    # ^no need to also pass known_by_identity, as we assume
+	    # that 'identity' is the same over the cherrypickchain
+	    # (well, if it would be 100% safe, we could even just rely
+	    # on that instead. right. but it isn't).
 	}
 	$s->command_close_pipe ($fh,$ctx);
-	($new_to_orig, $orig_to_new)
+	($new_to_orig, $orig_to_new, $known_by_identity)
     }
     sub maybe_current_branch {
 	my $s=shift;
@@ -204,10 +231,10 @@ our $ignore= do {
     $ignore
 };
 
-our (undef,$done_cherry_picks)= $git->designated_cherry_picks("HEAD");
+our (undef,$done_cherry_picks,$known_by_identity)= $git->designated_cherry_picks("HEAD");
 
 # to look up whether a commit has been cherry-picked (and if so, whether from us):
-our ($cherrycommit_to_orig,undef)= $git->designated_cherry_picks($branch);
+our ($cherrycommit_to_orig,undef,undef)= $git->designated_cherry_picks($branch);
 
 
 # NOTE: git cherry-pick has a --mainline option, so I could maybe even
@@ -276,11 +303,19 @@ for my $commit (reverse grep { not $_->is_merge } @$otherbranch_commits) {
 		print "already picked: ".$commitsha1."\n" #" (at @$known)\n"; is too long.
 		  if $verbose;
 	    } else {
-		if ($opt_dry) {
-		    print "would cherry-pick ".$commitsha1."\n";
+		my $identity= $commit->identity;
+		if ($$known_by_identity{$identity}) {
+		    print "patch (recognized by author/message) already applied: ".$commitsha1."\n" # from a different branch (part,  merging!), or from a previous run  - ehr no not previous run (would have the picked header), but from old history,k?
+		      if $verbose;
+		    # could also print $identity. but that contains the full message or so and probably more.
 		} else {
-		    print "cherry-picking $commitsha1..\n";
-		    $git->command ("cherry-pick", "-x", $commitsha1);
+		    if ($opt_dry) {
+			print "would cherry-pick ".$commitsha1."\n";
+		    } else {
+			print "cherry-picking $commitsha1..\n";
+			$git->command ("cherry-pick", "-x", $commitsha1);
+		    }
+		    $$known_by_identity{$identity}++;
 		}
 	    }
 	};
