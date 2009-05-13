@@ -15,6 +15,8 @@ sub usage {
   device on that path. Errors out when something is mounted on the
   choosen path already.
 
+  Automatically uses -o loop if the 'device' path is a regular file.
+
   Options:
   -c|--create-dir  create mount path [if it doesn't exist already]
   --private create mount path as \$dest_path/mnt/ subdirectory and
@@ -51,7 +53,7 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV==1;
 
 use Chj::Unix::Mount 'mounted','mount';
-use Chj::xperlfunc qw(xmkdir basename dirname);
+use Chj::xperlfunc qw(xmkdir basename dirname xstat);
 sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
@@ -59,6 +61,19 @@ sub mydie { #forever
 sub mount_easily {
     my ($device_path)=@_;
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
+
+    # check whether we need -o loop: (safe enough?hopeso)
+    {
+	my $s= xstat $device_path;
+	if ($s->is_file) {#hm is_regular ?
+	    $$mountoptions{loop}=1
+	} elsif ($s->is_blockdevice) {
+	    delete $$mountoptions{loop} # =0 is not enough if I'm taking keys..
+	} else {
+	    die "hm?, file '$device_path' is neither block device nor regular file"
+	}
+    }
+
     my $dest_path=  "/mnt/".basename $device_path; ###
     my $mount_on= sub ( $ ) {
 	my ($dest_path)=@_;
