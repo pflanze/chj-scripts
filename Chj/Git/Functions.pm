@@ -108,6 +108,8 @@ sub is_ancestor_of {
     ## ^ HMMMM could just have used git rev-list instead ?! (ok my %P
     ## trick will short cut it a bit in some cases)
     while (<$in>) {
+#	my $str="$_";
+#	$_=$str;
 	chomp;
 	for my $sha1 (split /\s+/, $_) {
 	    if ($commit1 eq $sha1) {
