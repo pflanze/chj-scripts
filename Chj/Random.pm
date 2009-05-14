@@ -28,6 +28,7 @@ our $randev= "/dev/urandom";
 sub seed {
     @_==1 or croak "expecting 1 argument";
     my ($length)=@_;
+    defined $length or die "undefined length given";#!!!!! @_ alone isn't enough. and perl doesn't croak upon type errors.
     open my $in, "<", $randev
       or croak "could not open '$randev' for reading: $!";
     my $seed;
