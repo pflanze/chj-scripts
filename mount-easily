@@ -107,10 +107,11 @@ sub mount_easily {
 	    if ($opt_private) {
 		xmkdir $dest_path, 0700;
 		xmkdir $private_dest_path, 0700; #(perms for consistency only, not really relevant)
+		&$mount_on( $private_dest_path);
 	    } else {
 		xmkdir $dest_path;
+		&$mount_on( $dest_path);
 	    }
-	    &$mount_on( $private_dest_path); ##~
 	} else {
 	    mydie "target dir '$dest_path' does not exist and --create-dir option not given"
 	}
