@@ -107,6 +107,7 @@ sub is_ancestor_of {
 					 '--pretty=format:%H %P', $commit2);
     ## ^ HMMMM could just have used git rev-list instead ?! (ok my %P
     ## trick will short cut it a bit in some cases)
+    local $_; #!!!!!!!!!!!
     while (<$in>) {
 #	my $str="$_";
 #	$_=$str;
