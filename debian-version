@@ -149,7 +149,11 @@ use Chj::Fileutil 'xCatfile';
     }
     no warnings;## agains 'used only once: possible typo'
     *as_string=_delegate ("as_string");
-    *fullinfo=_delegate ("fullinfo");
+    #*fullinfo=_delegate ("fullinfo");
+    sub fullinfo {
+	my $s=shift;
+	"[found: ".$s->key."] ".$$s[Release]->fullinfo
+    }
     # no need for proxies of the fields right?
     end Class::Array;
 }
@@ -159,12 +163,8 @@ sub make_release_with_key ($ $ ) {
 
 sub maybe_find_release {
     my ($key)= @_;
-    if (my $r= $$release_by_number{$key} || $$release_by_name{lc $key} || do {
+    $$release_by_number{$key} || $$release_by_name{lc $key} || do {
 	$key=~ /^(\d+\.\d+)\.\d+\s*\z/s and $$release_by_number{$1}
-    }) {
-	make_release_with_key ($key,$r)
-    } else {
-	undef
     }
 }
 
@@ -181,7 +181,7 @@ sub parseversion {
     if (@parts==2) {
 	my $r2= maybe_find_release ($parts[1]);
 	if ($r1 eq $r2) {
-	    $r1
+	    make_release_with_key (join(" / ",@parts),$r1)
 	} else {
 	    die ("'$file' contains contradicting information, "
 		 ."leading to release "
@@ -190,7 +190,11 @@ sub parseversion {
 		 .$r2->as_string)
 	}
     } else {
-	$r1 or die "couldn't find release for key '$parts[0]'";
+	if ($r1) {
+	    make_release_with_key ($parts[0],$r1)
+	} else {
+	    die "couldn't find release for key '$parts[0]'";
+	}
     }
 }
 
