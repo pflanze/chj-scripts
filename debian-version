@@ -132,7 +132,9 @@ use Chj::Fileutil 'xCatfile';
 
 sub maybe_find_release {
     my ($key)= @_;
-    $$release_by_number{$key} || $$release_by_name{lc $key}
+    $$release_by_number{$key} || $$release_by_name{lc $key} || do {
+	$key=~ /^(\d+\.\d+)\.\d+\s*\z/s and $$release_by_number{$1}
+    }
 }
 
 sub parseversion {
