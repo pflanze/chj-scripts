@@ -130,10 +130,35 @@ $$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
 
 use Chj::Fileutil 'xCatfile';
 
+{
+    package CHJ::Release_with_key;
+    use Class::Array -fields=> -publica=>
+      qw(key
+	 release);
+    sub new {
+	my $class=shift;
+	@_==2 or die;
+	bless [@_],$class
+    }
+    #sub _delegate {
+    #	my ($methodname)=@_;
+    #wel why not subclass???. hm.
+    
+    sub as_string
+    end Class::Array;
+}
+sub make_release_with_key ($ $ ) {
+
+}
+
 sub maybe_find_release {
     my ($key)= @_;
-    $$release_by_number{$key} || $$release_by_name{lc $key} || do {
+    if (my $r= $$release_by_number{$key} || $$release_by_name{lc $key} || do {
 	$key=~ /^(\d+\.\d+)\.\d+\s*\z/s and $$release_by_number{$1}
+    }) {
+	make_release_with_key ($key,$r)
+    } else {
+	undef
     }
 }
 
