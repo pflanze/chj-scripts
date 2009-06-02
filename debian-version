@@ -140,15 +140,21 @@ use Chj::Fileutil 'xCatfile';
 	@_==2 or die;
 	bless [@_],$class
     }
-    #sub _delegate {
-    #	my ($methodname)=@_;
-    #wel why not subclass???. hm.
-    
-    sub as_string
+    sub _delegate {
+    	my ($methodname)=@_;
+	sub {
+	    my $s=shift;
+	    $$s[Release]->$methodname(@_)
+	}
+    }
+    no warnings;## agains 'used only once: possible typo'
+    *as_string=_delegate ("as_string");
+    *fullinfo=_delegate ("fullinfo");
+    # no need for proxies of the fields right?
     end Class::Array;
 }
 sub make_release_with_key ($ $ ) {
-
+    CHJ::Release_with_key->new(@_);
 }
 
 sub maybe_find_release {
