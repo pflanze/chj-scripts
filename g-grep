@@ -1,1 +1,3 @@
-g-diff
+#!/bin/bash
+
+git --no-pager grep "$@"
