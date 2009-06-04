@@ -1,3 +1,8 @@
 #!/bin/bash
 
-LANG=C exec /usr/bin/sort "$@"
+if [ C != "$LANG" ]; then
+    echo "WARNING: LANG env var is not set to C when using sort: '$LANG'" >&2
+    # for me, see csort wrapper
+fi
+
+exec /usr/bin/sort "$@"
