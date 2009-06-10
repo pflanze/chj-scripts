@@ -1,6 +1,6 @@
 #!/bin/bash
 
-exec dpkg -L "$@"|sort
+exec dpkg -L "$@"|csort
 
 # sort!!! so that I won't confuse myself anymore in the future. And
 # yes it will show symlinks--just at the end maybe.
