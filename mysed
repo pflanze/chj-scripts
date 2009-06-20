@@ -31,13 +31,14 @@ sub usage {
     print "                   (if it's a symlink, hmmmm currently get the mtime of the\n";
     print "                   pointed-at file and apply it to the new file which replaces\n";
     print "                   the symlink, right? todo: check or improve?)\n";
+    print "    --no-trash     just replace old file versions instead of moving them to trash\n";
     exit (@_ ? 1 : 0);
 }
 
 
 my $regex=shift or usage;# "Bitte Regex und Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
 my $mode; # f=filelist in @ARGV, -=filelist on stdin, r=recursive with $path and $optionalpathregex
-my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time);
+my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time,$opt_no_trash);
 OPTPARSE: {
     local $_= $ARGV[0]; defined or usage;
     if ($_ eq '-r') {
@@ -58,6 +59,10 @@ OPTPARSE: {
 	$opt_keep_time=1;
 	shift;
 	redo OPTPARSE;
+    } elsif ($_ eq '--no-trash') {
+	$opt_no_trash=1;
+	shift;
+	redo OPTPARSE;
     } elsif ($_ eq '--') {
 	# ignore
 	shift;
@@ -74,10 +79,17 @@ if ($@) {
 }
 
 use Chj::App::Trash;
-our $trasher= new Chj::App::Trash;
-our $trash= $trasher ->trashdir; #naja geht nur jetzt noch. so lang dass ich nicht auf perpartition wechsle. aber dann .. eben hier wieder anpassen.
 
-if ($mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks wirklich nicht? und werd ich nie mount --bind machen? NA: odersogar normaler ichdummkopfeinfacher mount innerhalb tree reicht für change. todo. na, einfach auf EXDEV testen unten und in jedem solchen Falle nachfragen sigh. todo also eher: aufräumen,streamlinen.
+our $trash= do {
+    if ($opt_no_trash) {
+	undef
+    } else {
+	my $trasher= new Chj::App::Trash;
+	$trasher ->trashdir; #naja geht nur jetzt noch. so lang dass ich nicht auf perpartition wechsle. aber dann .. eben hier wieder anpassen.
+    }
+};
+
+if ($trash and $mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks wirklich nicht? und werd ich nie mount --bind machen? NA: odersogar normaler ichdummkopfeinfacher mount innerhalb tree reicht für change. todo. na, einfach auf EXDEV testen unten und in jedem solchen Falle nachfragen sigh. todo also eher: aufräumen,streamlinen.
  {
     my $trashdev= (stat $trash)[0]; ## or die?
     my $pathdev= (stat $path)[0]; defined $pathdev or die "could not stat '$path': $!";
@@ -94,12 +106,12 @@ if ($mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks w
 	    }
 	    $ans=<STDIN>;
 	} until ($ans=~ /^y/i or $ans=~ /^n/i and die "user cancelled.\n");
-	$trash=0; ##seufz so hasslich
+	$trash=undef; ##seufz so hasslich
     }
 }
 my $appendix= "".localtime();
 $appendix=~ s/ /_/sg;
-my $actualtrashdir= "$trash/$name/$appendix";
+my $actualtrashdir= "$trash/$name/$appendix" if $trash;
 
 
 sub scandir {
