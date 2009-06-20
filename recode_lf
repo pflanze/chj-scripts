@@ -99,6 +99,10 @@ foreach my $file (@files) {
         warn "`$file' is a directory\n";
         next;
     }
+    if (0 == (stat(_))[7]) {
+	warn "`$file' is empty\n";
+	next;
+    }
     eval {
 	if (sysopen IN, $file, O_RDONLY) {
 	    if (sysopen OUT, $file.".new", O_WRONLY|O_CREAT|O_EXCL, 0200) {
