@@ -5,15 +5,21 @@ set -eu
 if [ $# -ne 1 ]; then
 	echo "usage: $0 dir"
 	cat <<'EOF'
- clean up issues in SVN or similar checkouts, so that the tree can be
- 'cleanly' diffed against another one from a tarball, for example.
- NOTE: currently acts on ALL files, even binaries
+  clean up issues in SVN or similar checkouts, so that the tree can be
+  'cleanly' diffed against another one from a tarball, for example.
+  NOTE: currently acts on ALL files, even binaries
+EOF
 	exit 1
 fi
 
 dir="$1"
 
-find "$dir" -type f -print0 | grep -z -v "/\.git/" | xargs -0 recode_lf -B
+filelist=`tempfile`
 
-mysed 's/\$(Revision|Author|Date|Id):.*?\$/\$$1\$/g' -r "$dir" .
+find "$dir" -type f -print0 | grep -z -v '/\.git/' > "$filelist"
 
+xargs -0 recode_lf -B < "$filelist"
+
+xargs -0 mysed 's/\$(Revision|Author|Date|Id):.*?\$/\$$1\$/g' < "$filelist"
+
+#rm "$filelist"
