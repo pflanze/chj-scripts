@@ -169,8 +169,8 @@ sub changefile {
                 if (defined $r and $r==length($_)) {
                     close OUT;#(sollte oben stehen, aber das würde $! spoilen)(c ist so haässlich)
 		  CHANGE:{
-			mkpath($trashpath); # error check?
 			if ($trash) {
+			    mkpath($trashpath); # error check?
 			    if (rename $path,"$trashpath/$file") {
 				# ok
 			    } elsif ($!==EXDEV) {
