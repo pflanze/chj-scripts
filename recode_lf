@@ -89,8 +89,7 @@ for (my $i=0; $i<= $#ARGV; $i++) {
     }
 }
 unless (@files) {
-    warn "Missing filepaths (pipe functionality not (yet?) implemented!). --help for help.\n";
-    exit 1;
+    die "Missing filepaths. --help for help.\n";
 }
 
 
