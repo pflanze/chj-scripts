@@ -22,4 +22,4 @@ xargs -0 recode_lf -B < "$filelist"
 
 xargs -0 mysed 's/\$(Revision|Author|Date|Id):.*?\$/\$$1\$/g' --no-trash --quiet -- < "$filelist"
 
-#rm "$filelist"
+rm "$filelist"
