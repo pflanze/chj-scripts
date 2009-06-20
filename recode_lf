@@ -99,81 +99,88 @@ foreach my $file (@files) {
         warn "`$file' is a directory\n";
         next;
     }
-    if (sysopen IN, $file, O_RDONLY) {
-        if (sysopen OUT, $file.".new", O_WRONLY|O_CREAT|O_EXCL, 0200) {
-	    my $in;
-            if (mmap ($in, 0, PROT_READ, MAP_SHARED, IN)) {
-                my $oldpos=0;
-                my $pos;
-                if ($in=~ /$CR$LF/so) {
-                    # Convert from DOS
-                    print "'$file' has DOS newlines\n";
-                    while ($in=~ /$CR$LF/sog) {
-                        $pos= pos($in);
-                        print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings
-			  or die "print OUT: $!";
-                        $oldpos= $pos;
-                    }
-
-                } else {
-                    # Mac or Unix?
-                    my $mac=0; while ($in=~ /$CR/sog) {$mac++};
-                    my $unix=0; while ($in=~ /$LF/sog) {$unix++};
-                    print "'$file' has $mac Macnewlines, $unix Unixnewlines\n";
-                    if ($mac>$unix) {
-                        pos($in)=0;
-                        while ($in=~ /$CR/sog) {
-                            $pos= pos($in);
-                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
+    eval {
+	if (sysopen IN, $file, O_RDONLY) {
+	    if (sysopen OUT, $file.".new", O_WRONLY|O_CREAT|O_EXCL, 0200) {
+		my $in;
+		if (mmap ($in, 0, PROT_READ, MAP_SHARED, IN)) {
+		    my $oldpos=0;
+		    my $pos;
+		    if ($in=~ /$CR$LF/so) {
+			# Convert from DOS
+			print "'$file' has DOS newlines\n";
+			while ($in=~ /$CR$LF/sog) {
+			    $pos= pos($in);
+			    print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings
 			      or die "print OUT: $!";
-                            $oldpos= $pos;
-                        }
-                    } else {
-                        pos($in)=0;
-                        while ($in=~ /$LF/sog) {
-                            $pos= pos($in);
-                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
-			      or die "print OUT: $!";
-                            $oldpos= $pos;
-                        }
-                    }
-                }
-                print OUT substr($in, $oldpos)
-		  or die "print OUT: $!";
-                close OUT
-		  or die "close OUT: $!";
-                munmap($in)
-		  or die "munmap: $!";
-                close IN
-		  or die "close IN: $!";
+			    $oldpos= $pos;
+			}
 
-                my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
-                if (chown $uid,$gid,$file.".new") {
-                    chmod $oldmode & ($recreatesetid ? 07777 : 01777), $file.".new"
-		      or die "Could not recreate permissions on '$file.new': $!\n";
-                } else {
-                    warn "Could not recreate owner/group on '$file.new' (will not recreate setuid/setgid bits): $!\n";
-                    chmod $oldmode & 01777, $file.".new"
-		      or die "Could not recreate permissions on '$file.new': $!\n";
-                    }
-                if ($opt_p){
-                    if (!utime $atime,$mtime,$file.".new"){
-			die "Could not copy mtime/atime to '$file.new': $!";
-                    }
-                }
-                rename $file,$file.$backsuffix
-		  or die "Could not rename '$file' to '$file$backsuffix': $!\n"
-                    if $backup;
-                rename $file.".new", $file
-		  or die "Could not rename '$file.new' to '$file': $!\n";
+		    } else {
+			# Mac or Unix?
+			my $mac=0; while ($in=~ /$CR/sog) {$mac++};
+			my $unix=0; while ($in=~ /$LF/sog) {$unix++};
+			print "'$file' has $mac Macnewlines, $unix Unixnewlines\n";
+			if ($mac>$unix) {
+			    pos($in)=0;
+			    while ($in=~ /$CR/sog) {
+				$pos= pos($in);
+				print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
+				  or die "print OUT: $!";
+				$oldpos= $pos;
+			    }
+			} else {
+			    pos($in)=0;
+			    while ($in=~ /$LF/sog) {
+				$pos= pos($in);
+				print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
+				  or die "print OUT: $!";
+				$oldpos= $pos;
+			    }
+			}
+		    }
+		    print OUT substr($in, $oldpos)
+		      or die "print OUT: $!";
+		    close OUT
+		      or die "close OUT: $!";
+		    munmap($in)
+		      or die "munmap: $!";
+		    close IN
+		      or die "close IN: $!";
 
-            } else {
-                die "Could not mmap?: $!";
-            }
-        } else {
-            warn "Could not create '$file.new': $!\n";
-        }
-    } else {
-        warn "Could not open '$file': $!\n";
+		    my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
+		    if (chown $uid,$gid,$file.".new") {
+			chmod $oldmode & ($recreatesetid ? 07777 : 01777), $file.".new"
+			  or die "Could not recreate permissions on '$file.new': $!\n";
+		    } else {
+			warn "Could not recreate owner/group on '$file.new' (will not recreate setuid/setgid bits): $!\n";
+			chmod $oldmode & 01777, $file.".new"
+			  or die "Could not recreate permissions on '$file.new': $!\n";
+			}
+		    if ($opt_p){
+			if (!utime $atime,$mtime,$file.".new"){
+			    die "Could not copy mtime/atime to '$file.new': $!";
+			}
+		    }
+		    rename $file,$file.$backsuffix
+		      or die "Could not rename '$file' to '$file$backsuffix': $!\n"
+			if $backup;
+		    rename $file.".new", $file
+		      or die "Could not rename '$file.new' to '$file': $!\n";
+
+		} else {
+		    die "Could not mmap?: $!";
+		}
+	    } else {
+		die "Could not create '$file.new': $!\n";
+	    }
+	} else {
+	    die "Could not open '$file': $!\n";
+	}
+    };
+    my $e=$@;
+    if (ref $e or $e) {
+	#print STDERR $e;
+	die "Exception while handling file '$file': $e";
     }
 }
