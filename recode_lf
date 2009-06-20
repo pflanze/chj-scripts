@@ -151,22 +151,22 @@ foreach my $file (@files) {
                 my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
                 if (chown $uid,$gid,$file.".new") {
                     chmod $oldmode & ($recreatesetid ? 07777 : 01777), $file.".new"
-                        or warn "Could not recreate permissions on '$file.new': $!\n";
+		      or die "Could not recreate permissions on '$file.new': $!\n";
                 } else {
                     warn "Could not recreate owner/group on '$file.new' (will not recreate setuid/setgid bits): $!\n";
                     chmod $oldmode & 01777, $file.".new"
-                        or warn "Could not recreate permissions on '$file.new': $!\n";
+		      or die "Could not recreate permissions on '$file.new': $!\n";
                     }
                 if ($opt_p){
                     if (!utime $atime,$mtime,$file.".new"){
-                    warn "Could not copy mtime/atime to '$file.new': $!";
+			die "Could not copy mtime/atime to '$file.new': $!";
                     }
                 }
                 rename $file,$file.$backsuffix
-                    or warn "Could not rename '$file' to '$file$backsuffix': $!\n"
+		  or die "Could not rename '$file' to '$file$backsuffix': $!\n"
                     if $backup;
                 rename $file.".new", $file
-                    or warn "Could not rename '$file.new' to '$file': $!\n";
+		  or die "Could not rename '$file.new' to '$file': $!\n";
 
             } else {
                 die "Could not mmap?: $!";
