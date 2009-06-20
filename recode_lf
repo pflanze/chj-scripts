@@ -37,6 +37,8 @@ Usage: $myname [ -B ] file(s)
    or ~ (on linux systems) by default.
    -b suffix: override default suffix.
    -p   preserve timestamps
+   -v|--verbose  tell which line endings have been found, or some
+                 other info if appropriate.
 
    Note that the file is recreated as a new inode and
    so it is possible that the original permissions cannot
@@ -64,7 +66,7 @@ if ($myname=~ /(?:crlf|dos|win)$/s) {
 }
 
 
-my (@files,$backup,  $flag_endparms,$opt_p);
+my (@files,$backup,  $flag_endparms,$opt_p,$verbose);
 $backup=1;
 for (my $i=0; $i<= $#ARGV; $i++) {
     local $_= $ARGV[$i];
@@ -77,6 +79,8 @@ for (my $i=0; $i<= $#ARGV; $i++) {
             $backup=0;
         } elsif ($_ eq '-p') {
             $opt_p=1;
+        } elsif ($_ eq '-v' or $_ eq '--verbose') {
+	    $verbose=1;
         } elsif ($_ eq '-b') {
             $backsuffix= $ARGV[++$i];
         } elsif ($_ eq '--') {
@@ -100,7 +104,8 @@ foreach my $file (@files) {
         next;
     }
     if (0 == (stat(_))[7]) {
-	warn "`$file' is empty\n";
+	warn "`$file' is empty\n"
+	  if $verbose;
 	next;
     }
     eval {
@@ -112,7 +117,8 @@ foreach my $file (@files) {
 		    my $pos;
 		    if ($in=~ /$CR$LF/so) {
 			# Convert from DOS
-			print "'$file' has DOS newlines\n";
+			print "'$file' has DOS newlines\n"
+			  if $verbose;
 			while ($in=~ /$CR$LF/sog) {
 			    $pos= pos($in);
 			    print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings
@@ -124,7 +130,8 @@ foreach my $file (@files) {
 			# Mac or Unix?
 			my $mac=0; while ($in=~ /$CR/sog) {$mac++};
 			my $unix=0; while ($in=~ /$LF/sog) {$unix++};
-			print "'$file' has $mac Macnewlines, $unix Unixnewlines\n";
+			print "'$file' has $mac Macnewlines, $unix Unixnewlines\n"
+			  if $verbose;
 			if ($mac>$unix) {
 			    pos($in)=0;
 			    while ($in=~ /$CR/sog) {
