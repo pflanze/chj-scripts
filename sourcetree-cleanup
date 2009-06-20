@@ -15,5 +15,5 @@ dir="$1"
 
 find -type f | myxargs recode_lf -B
 
-mysed 's/\$(Revision|Author|Date|Id):.*?\$/\$$1\$/g' --keep-time -r "$dir" .
+mysed 's/\$(Revision|Author|Date|Id):.*?\$/\$$1\$/g' -r "$dir" .
 
