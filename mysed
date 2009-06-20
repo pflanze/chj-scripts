@@ -253,29 +253,3 @@ if ($mode eq 'r') {
 } else {
     die "?? mode=$mode";
 }
-
-__END__
-
-HISTORY:
-
-ALIGN="CENTER"><a HREF="http://ads.web.aol.com.*?/div>
-
- sed 's/<div ALIGN="CENTER"><a HREF="http://ads.web.aol.com.*?\/div>//' */*  
-
- sed --silent 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*\/div>//i' silbsee/silbsee.htm
- 
-geht alles nicht.
-
-find -exec sed 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*\/div>//' '{}' 
-
-
-
-ARGGGGGH.
-
-perl
-
-05:26
-time passes
-06:49
-chris@lombi may > mysed 's/<div ALIGN="CENTER"><a HREF="http:\/\/ads.web.aol.com.*?\/div>//si' . '.html?$'
-cool!
