@@ -32,13 +32,14 @@ sub usage {
     print "                   pointed-at file and apply it to the new file which replaces\n";
     print "                   the symlink, right? todo: check or improve?)\n";
     print "    --no-trash     just replace old file versions instead of moving them to trash\n";
+    print "    --quiet|-q     do not print messages about changes that have been done\n";
     exit (@_ ? 1 : 0);
 }
 
 
 my $regex=shift or usage;# "Bitte Regex und Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
 my $mode; # f=filelist in @ARGV, -=filelist on stdin, r=recursive with $path and $optionalpathregex
-my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time,$opt_no_trash);
+my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time,$opt_no_trash,$opt_quiet);
 OPTPARSE: {
     local $_= $ARGV[0]; defined or usage;
     if ($_ eq '-r') {
@@ -61,6 +62,10 @@ OPTPARSE: {
 	redo OPTPARSE;
     } elsif ($_ eq '--no-trash') {
 	$opt_no_trash=1;
+	shift;
+	redo OPTPARSE;
+    } elsif ($_ eq '-q' or $_ eq '--quiet') {
+	$opt_quiet=1;
 	shift;
 	redo OPTPARSE;
     } elsif ($_ eq '--') {
@@ -170,7 +175,8 @@ sub changefile {
         local $_=<FILE>;
         close FILE;
         if (my $cnt = doreg()) {
-            print "$cnt ".($cnt==1 ? "change": "changes")." in $path\n";
+            print "$cnt ".($cnt==1 ? "change": "changes")." in $path\n"
+	      unless $opt_quiet;
             if (sysopen OUT, "$path.$appendix",O_EXCL|O_CREAT|O_WRONLY) {
                 my $r=syswrite OUT,$_;
                 if (defined $r and $r==length($_)) {
