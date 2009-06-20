@@ -154,7 +154,7 @@ sub changefile {
     };
     my $trashpath= $folder;
     $trashpath=~ s|^../|__/|s;
-    $trashpath=~ s|/../|/__/|sg;
+    $trashpath=~ s|/../|/__/|sg;##todo is wrong right
     $trashpath=~ s|/..$|/__|s;
     $trashpath= "$actualtrashdir/$trashpath";
     warn "Scanning file $path\n" if DEBUG;
