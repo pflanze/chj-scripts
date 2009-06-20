@@ -191,7 +191,7 @@ sub changefile {
 				    } elsif ($ans eq 'o') {
 					last ASK;
 				    } elsif ($ans eq 'O') {
-					undef $trash;
+					undef $trash;##todo bad, not really same as L handling, i.e. if getting back to region in subtree where it *is* on same filesystem, this is 'gone.
 					last ASK;
 				    } else {
 					redo ASK;
