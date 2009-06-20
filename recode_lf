@@ -111,7 +111,8 @@ foreach my $file (@files) {
                     print "'$file' has DOS newlines\n";
                     while ($in=~ /$CR$LF/sog) {
                         $pos= pos($in);
-                        print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings;
+                        print OUT substr($in,$oldpos,$pos-2-$oldpos),$newlineendings
+			  or die "print OUT: $!";
                         $oldpos= $pos;
                     }
 
@@ -124,22 +125,28 @@ foreach my $file (@files) {
                         pos($in)=0;
                         while ($in=~ /$CR/sog) {
                             $pos= pos($in);
-                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings;
+                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
+			      or die "print OUT: $!";
                             $oldpos= $pos;
                         }
                     } else {
                         pos($in)=0;
                         while ($in=~ /$LF/sog) {
                             $pos= pos($in);
-                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings;
+                            print OUT substr($in,$oldpos,$pos-1-$oldpos),$newlineendings
+			      or die "print OUT: $!";
                             $oldpos= $pos;
                         }
                     }
                 }
-                print OUT substr($in, $oldpos);
-                close OUT;
-                munmap($in) or die "munmap: $!";
-                close IN;
+                print OUT substr($in, $oldpos)
+		  or die "print OUT: $!";
+                close OUT
+		  or die "close OUT: $!";
+                munmap($in)
+		  or die "munmap: $!";
+                close IN
+		  or die "close IN: $!";
 
                 my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
                 if (chown $uid,$gid,$file.".new") {
