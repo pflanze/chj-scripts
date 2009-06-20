@@ -1,13 +1,5 @@
 #!/usr/bin/perl -w
 
-# Sun,  4 Nov 2001 05:30:00 +0100
-# Searchreplace in EINEM File, oder in einem Baum falls 2.Arg=Folder und 3 Argumente angegeben.
-# Verschiebt die alten Versionen in den Trash.
-# Tue,  6 May 2003 22:08:07 +0200: trash not on same partition problem: ask user first.
-# Mon, 10 Nov 2003 23:01:30 +0100: alternatively, work with file lists (require -r flag for old behaviour)
-# -Tue, 11 Nov 2003 02:18:02 +0100. Ah und was auch noch fehlt, ist permissions rebuild. eben, writebackfile anwenden. todo.
-# {Tue Jan  6 02:42:50 2009} hmm... ich hacke nun mtime rein dabei seh ich ja oben wollt ich auch perms, und dies kann xtmpfile, und wär auch trash los, oder, also, hum. mal machen irgenddann.
-
 use constant DEBUG => 0;
 my $name= "mysed";
 use strict;
