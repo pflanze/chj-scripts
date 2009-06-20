@@ -152,11 +152,6 @@ sub changefile {
 	    xutime $newstat->atime, $maybe_stat->mtime,  $path;
 	}
     };
-    my $trashpath= $folder;
-    $trashpath=~ s|^../|__/|s;
-    $trashpath=~ s|/../|/__/|sg;##todo is wrong right
-    $trashpath=~ s|/..$|/__|s;
-    $trashpath= "$actualtrashdir/$trashpath";
     warn "Scanning file $path\n" if DEBUG;
     if (open FILE ,"<$path") {
         local $/=undef;
@@ -170,6 +165,11 @@ sub changefile {
                     close OUT;#(sollte oben stehen, aber das würde $! spoilen)(c ist so haässlich)
 		  CHANGE:{
 			if ($trash) {
+			    my $trashpath= $folder;
+			    $trashpath=~ s|^../|__/|s;
+			    $trashpath=~ s|/../|/__/|sg;##todo is wrong right
+			    $trashpath=~ s|/..$|/__|s;
+			    $trashpath= "$actualtrashdir/$trashpath";
 			    mkpath($trashpath); # error check?
 			    if (rename $path,"$trashpath/$file") {
 				# ok
