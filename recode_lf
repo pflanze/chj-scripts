@@ -95,8 +95,6 @@ unless (@files) {
 
 
 
-use vars '$in';
-
 foreach my $file (@files) {
     if (-d $file) {
         warn "`$file' is a directory\n";
@@ -104,6 +102,7 @@ foreach my $file (@files) {
     }
     if (sysopen IN, $file, O_RDONLY) {
         if (sysopen OUT, $file.".new", O_WRONLY|O_CREAT|O_EXCL, 0200) {
+	    my $in;
             if (mmap ($in, 0, PROT_READ, MAP_SHARED, IN)) {
                 my $oldpos=0;
                 my $pos;
@@ -140,7 +139,6 @@ foreach my $file (@files) {
                 print OUT substr($in, $oldpos);
                 close OUT;
                 munmap($in) or die "munmap: $!";
-                undef $in;
                 close IN;
 
                 my ($oldmode,$uid,$gid,$atime,$mtime)= (stat $file)[2,4,5,8,9] or die "Could not stat $file: $!\n";
