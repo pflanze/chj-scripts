@@ -236,11 +236,7 @@ sub changefile {
 #warn "mode=$mode";
 if ($mode eq 'r') {
     if (-d $path) {
-	if (defined $optionalpathregex) {
-	    scandir($path);
-	} else {
-	    die "Hast Directory angegeben, aber keine optionalpathregex.";
-	}
+	scandir($path);
     } else {
 	$path=~ m|(.*?)([^/]+)$|s or die "???";
 	my ($folder,$file)=($1,$2);
