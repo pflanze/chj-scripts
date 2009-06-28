@@ -18,6 +18,9 @@ sub usage {
   branches diverted from the main branch '$mainbranch' (so that gitk
   without the --all option will show them).
 
+  Options:
+  --verbose  some verbosity
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
