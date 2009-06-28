@@ -1,0 +1,73 @@
+#!/usr/bin/perl -w
+
+# Sun Jun 28 00:20:20 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  Create patch for the given changes, open it in \$EDITOR, then feed
+  the patch through rediff and apply it to the git index.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+# use Getopt::Long;
+# our $verbose=0;
+# GetOptions("verbose"=> \$verbose,
+# 	   "help"=> sub{usage},
+# 	   ) or exit 1;
+# usage unless @ARGV;
+
+if (@ARGV==1 and $ARGV[0]=~ /^--?h(elp)?\z/) {
+    usage
+}
+
+use Chj::xperlfunc;
+use Chj::xtmpfile;
+
+my $patchfile= xtmpfile (sub {
+			     my ($base,$n)=@_;
+			     "$base$n.patch"
+			 });
+
+my @diff= ("git","diff", @ARGV); ##?
+
+##wiedermal withoutputto also"?".
+use Chj::IO::Command;
+my $read= Chj::IO::Command->new_sender (@diff);
+$read->xsendfile_to ($patchfile);
+$read->xxfinish;
+#$patchfile->xflush; well can even close it,
+$patchfile->xclose;
+#actually have to, since the editor may replace it...
+
+xxsystem $ENV{EDITOR}, $patchfile->path;
+#hm how to give possibility to abort? well empty the file?..
+
+my $rediffed= Chj::IO::Command->new_sender ("rediff",
+					    # "--", NOPE
+					    $patchfile->path);
+#oder piping direkt.?.
+#oder sendfiling ?.  ...
+#print $rediffed->xcontent;
+
+my $apply= Chj::IO::Command->new_receiver ("git","apply","--cached");
+$rediffed->xsendfile_to($apply);
+$rediffed->xxfinish;
+
+#hmm kill $apply in case of errors? well really means, write it to tempfile right. ugh.
+#nopipinghehehehehehehehe.seeeven.
+
+$apply->xxfinish;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
