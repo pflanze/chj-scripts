@@ -49,6 +49,7 @@ $read->xxfinish;
 $patchfile->xclose;
 #actually have to, since the editor may replace it...
 
+$patchfile->autoclean (0);
 xxsystem $ENV{EDITOR}, $patchfile->path;
 #hm how to give possibility to abort? well empty the file?..
 
@@ -68,6 +69,7 @@ $rediffed->xxfinish;
 
 $apply->xxfinish;
 
+$patchfile->autoclean (1);
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
