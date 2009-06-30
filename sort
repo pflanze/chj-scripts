@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ C != "$LANG" ]; then
-    echo "WARNING: LANG env var is not set to C when using sort: '$LANG'" >&2
+if [ C != "$LANG" -a -z "$LC_COLLATE" ]; then
+    echo "WARNING:  env var is not set to C when using sort: LANG='${LANG-(unset)}', LC_COLLATE='${LC_COLLATE-(unset)}'" >&2
     # for me, see csort wrapper
 fi
 
