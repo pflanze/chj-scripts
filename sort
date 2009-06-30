@@ -1,8 +1,11 @@
 #!/bin/bash
 
-if [ C != "$LANG" -a -z "$LC_COLLATE" ]; then
-    echo "WARNING:  env var is not set to C when using sort: LANG='${LANG-(unset)}', LC_COLLATE='${LC_COLLATE-(unset)}'" >&2
-    # for me, see csort wrapper
+if [ C != "$LANG" ]; then
+    #if [ RANDOMVALUEFORUNSET = "${LC_COLLATE-RANDOMVALUEFORUNSET}" ]; then
+    if [ -z "$LC_COLLATE" ]; then
+	echo "WARNING: LANG env var is not set to C (and LC_COLLATE empty) when using sort: '${LANG-(unset)}'" >&2
+        # for me, see csort wrapper
+    fi
 fi
 
 exec /usr/bin/sort "$@"
