@@ -1,6 +1,4 @@
 #!/bin/bash
-# Sun,  1 Feb 2004 05:24:19 +0100
-# für linux2.6
 
 usage(){
     echo "$0 regex"
