@@ -1,16 +1,34 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-usage(){
-    echo "$0 regex"
-    echo "  egrep for regex in all configure help files (Kconfig)"
-    echo "  in linux-2.6 source trees."
-    echo "  The current working dir must be the toplevel dir of an"
-    echo "  unpacked linux source tree."
-    exit 1
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] regex [options]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
 }
 
-if [ $# -lt 1 -o "A$1" == "A-h" -o "A$1" == "A--help" ]; then
-    usage
-fi
+usage if (! @ARGV
+	  or
+	  (@ARGV==1 and $ARGV[0]=~ /^--?h(elp)?\z/));
 
-find -name 'Kconfig*' -print0|xargs -0 egrep "$@"
+use Chj::singlequote 'singlequote_sh';
+use Chj::xperlfunc 'xexec';
+
+xexec ("find -name 'Kconfig*' -print0|xargs -0 egrep "
+       .
+       join(" ",
+	    map {
+		singlequote_sh $_
+	    }
+	    map {
+		s/^CONFIG_//; $_
+	    }
+	    @ARGV));
