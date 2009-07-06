@@ -25,7 +25,7 @@ sub switchto {
 	die "cp returned error status $rv";
     }
     rename "/etc/resolv.conf.TMP","/etc/resolv.conf"
-      or warn "Could not re-link resolv.conf: $!";
+      or die "could not re-link resolv.conf: $!";
 }
 
 sub get {
@@ -71,7 +71,7 @@ sub setitto {
 	print OUT $where."\n";
 	close OUT;
     } else {
-	warn "$name: parameter `$whereorig' doesn't conform to rules. Ignoring.\n";
+	die "$name: parameter `$whereorig' doesn't conform to rules.\n";
     }
 }
 
