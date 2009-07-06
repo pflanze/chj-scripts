@@ -1,8 +1,4 @@
 #!/usr/bin/perl -w
-# Christian Jaeger. Hinweis: es gibt auch ein whereami in Debian.
-# (-7. Nov 2001)
-# Fri, 15 Aug 2003 10:40:16 +0200:
-# copy instead of link, since dooofy wirelesskarte überschreibt.
 
 my $name="whereami";
 use strict;
