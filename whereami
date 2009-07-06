@@ -57,15 +57,9 @@ sub rulez {
 sub setitto {
     my $whereorig=shift;
     if (my $where= rulez $whereorig) {
-	my $old;
-	if (open IN, "<$file") {
-	    $old= <IN>;
-	    chomp $old;
-	    close IN;
-	}
-	# switch anyway, even if $old is same as new. Since
+	# switch even if the location doesn't change, since
 	# inserting wireless card changes the resolv.conf without
-	# changing the whereami status file!
+	# changing the whereami status file
 	switchto($where);
 	open OUT, ">$file" or die "$name: Could not write to $file: $!\n";
 	print OUT $where."\n";
