@@ -50,7 +50,7 @@ sub rulez {
     defined $where and length $where or return;
     if ($where=~ m|^/etc/resolv.conf.([^/]+)\z|) {
 	return $1;
-    } elsif (not $where=~ m|/|) { # mann, bis heute Wed, 31 Mar 2004 11:14:55 +0200 war hier ! statt not
+    } elsif (not $where=~ m|/|) {
 	$where
     } else {
 	undef
@@ -59,7 +59,6 @@ sub rulez {
 
 sub setitto {
     my $whereorig=shift;
-    #if (defined $where and length($where) and $where!~ /\//) {
     if (my $where= rulez $whereorig) {
 	my $old;
 	if (open IN, "<$file") {
@@ -67,7 +66,7 @@ sub setitto {
 	    chomp $old;
 	    close IN;
 	}
-	# new: switch anyway, even if $old is same as new. Since
+	# switch anyway, even if $old is same as new. Since
 	# inserting wireless card changes the resolv.conf without
 	# changing the whereami status file!
 	switchto($where);
