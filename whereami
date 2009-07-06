@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-my $name="whereami";
+my $myname="whereami";
 use strict;
 
 my $file= "/var/lib/whereami";
@@ -63,11 +63,11 @@ sub setitto {
 	# changing the whereami status file
 	switchto($where);
 	open OUT, ">", $file
-	  or die "$name: could not open '$file' for writing: $!\n";
+	  or die "$myname: could not open '$file' for writing: $!\n";
 	print OUT $where."\n";
 	close OUT;
     } else {
-	die "$name: parameter `$whereorig' doesn't conform to rules.\n";
+	die "$myname: parameter `$whereorig' doesn't conform to rules.\n";
     }
 }
 
