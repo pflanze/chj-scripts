@@ -3,11 +3,17 @@
 my $name="whereami";
 use strict;
 
-sub usage {
-    print "$0 [-s parameter]
+my $file= "/var/lib/whereami";
 
-Speichert neuen Standort \& macht entsprechende Anpassungen.
-Oder printet den aktuellen Standort.
+sub usage {
+    print "usage:
+  $0 prefix
+    -or-
+  $0 -s locationname
+
+ Print current location name, prefixed with \$prefix-.
+ Or save new location name (to '$file'), and do some other
+ changes to adapt to it.
 ";
     exit;
 }
@@ -21,8 +27,6 @@ sub switchto {
     rename "/etc/resolv.conf.TMP","/etc/resolv.conf"
       or warn "Could not re-link resolv.conf: $!";
 }
-
-my $file= "/var/lib/whereami";
 
 sub get {
     open IN, "<$file" or exit(1);
