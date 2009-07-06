@@ -31,10 +31,17 @@ sub switchto {
 
 my $file= "/var/lib/whereami";
 
-sub printit {
+sub get {
     open IN, "<$file" or exit(1);
-    print <IN>;
+    my $setting= <IN>; chomp $setting;
     close IN;
+    $setting
+}
+
+sub printit ( $ ) {
+    my ($prefix)=@_;
+    print $prefix."-".get."\n"
+      or die $!;
 }
 
 
@@ -72,24 +79,16 @@ sub setitto {
     }
 }
 
-if (@ARGV) {
-    while (defined($_=shift)) {
-	if ($_ eq "-s") {
-	    if (@ARGV==1) {
-		setitto(shift)
-	    } else {
-		usage
-	    }
-	} elsif (/^--?h/) {
-	    usage
-	} elsif ($_ eq "eth0") {
-			# ignore
-	} else {
-	    warn "whereami: unknown argument `$_'\n"
-	}
+if (@ARGV==1) {
+    if ($ARGV[0]=~ /^--?h/) {
+	usage
+    } else {
+	printit($ARGV[0])
     }
-    printit;
+} elsif (@ARGV==2 and $ARGV[0] eq '-s') {
+    setitto($ARGV[1]);
+    printit ($ARGV[1]);
 } else {
-    printit
+    usage
 }
 
