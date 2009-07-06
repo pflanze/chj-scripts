@@ -29,7 +29,8 @@ sub switchto {
 }
 
 sub get {
-    open IN, "<$file" or exit(1);
+    open IN, "<", $file
+      or die "$myname: could not open '$file' for reading: $!\n";
     my $setting= <IN>; chomp $setting;
     close IN;
     $setting
@@ -61,7 +62,8 @@ sub setitto {
 	# inserting wireless card changes the resolv.conf without
 	# changing the whereami status file
 	switchto($where);
-	open OUT, ">$file" or die "$name: Could not write to $file: $!\n";
+	open OUT, ">", $file
+	  or die "$name: could not open '$file' for writing: $!\n";
 	print OUT $where."\n";
 	close OUT;
     } else {
