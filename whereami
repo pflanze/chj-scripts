@@ -83,7 +83,6 @@ if (@ARGV==1) {
     }
 } elsif (@ARGV==2 and $ARGV[0] eq '-s') {
     setitto($ARGV[1]);
-    printit ($ARGV[1]);
 } else {
     usage
 }
