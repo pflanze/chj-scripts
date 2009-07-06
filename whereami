@@ -12,13 +12,6 @@ Oder printet den aktuellen Standort.
     exit;
 }
 
-sub switchtoOLD {
-    my $where=shift;
-    link "/etc/resolv.conf.$where", "/etc/resolv.conf.$$"
-      and
-	rename "/etc/resolv.conf.$$","/etc/resolv.conf"
-	  or warn "Could not re-link resolv.conf: $!";
-}
 sub switchto {
     my $where=shift;
     my $rv= system "cp","-f","/etc/resolv.conf.$where", "/etc/resolv.conf.TMP";
