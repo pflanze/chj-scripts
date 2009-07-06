@@ -32,7 +32,7 @@ sub xsymlinkresolve ( $ ) {
 	}
     } else {
 	$path=~ s|//+|/|sg;
-	$path=~ m{(?:^|/)..(?:\z|/)}
+	$path=~ m{(?:^|/)\.\.(?:\z|/)}
 	  and die "path contains '..' segments: ".singlequote ($path);
 	$path
     }
