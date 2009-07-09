@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo 100 > /proc/acpi/video/VID1/LCD0/brightness
