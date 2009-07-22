@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source /opt/chj/bin/gambit-expand-c-file-helpers/lib.sh
+
+gsc-cc-o.bat
+
+reformat-c-code < "$outfile" > "$outfile"_reformatted.c
