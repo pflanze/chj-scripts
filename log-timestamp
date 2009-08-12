@@ -103,7 +103,7 @@ if ($opt_hires) {
 	my ($seconds, $microseconds) = Time::HiRes::gettimeofday();
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($seconds);
 	printf '%4d-%02d-%02d %02d:%02d:%02d.%06d %s',
-	  $year+1900, $mon, $mday, $hour,$min,$sec, $microseconds, ($opt_pid ? "($pid) $_" : $_)
+	  $year+1900, $mon+1, $mday, $hour,$min,$sec, $microseconds, ($opt_pid ? "($pid) $_" : $_)
 	    or die "printing to stdout: $!";
     }
 } else {
