@@ -28,7 +28,37 @@ sub lg {
       or die $!
 }
 
-if ((@ARGV==2 and $ARGV[0] eq "--") or (@ARGV==1 and not $ARGV[0]=~ /-/)) {
+my $number_of_files = do {
+    my $i=0;
+    my @args= @ARGV;
+    while (@args) {
+	my $a=shift @args;
+	if ($a eq "--") {
+	    $i+= @args;
+	    last;
+	}
+	if ($a =~ /-/) {
+	    # ignore.
+	    # well but are there flags with a followup argument ?
+	    # doesn't seem so. except maybe: '-O<orderfile>' could be valid with a space afer O ? nope.
+	    # what about the = stuff like '--dst-prefix=<prefix>'?: nope, space instead of = is not valid.
+	    # cool finally a program that does it sensibly rit.
+	} else {
+	    #hm. is it a revision not a file ? :
+	    if (-e $a) {
+		# a file.
+		$i++
+	    } else {
+		# ignore
+	    }
+	}
+    }
+    $i
+};
+
+#print "number_of_files=$number_of_files\n\n";
+
+if ($number_of_files==1) {
     lg("--follow")
 } else {
     lg()
