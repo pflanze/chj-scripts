@@ -17,7 +17,7 @@ sub usage {
     print "$myname [ options ] [--] command [arguments]
 
   Options:
-  -s|--shell  pass command to $shell (overrideable through \$SHELL)
+  -c|-s|--shell  pass command to $shell (overrideable through \$SHELL)
               with an $shell_execute_flag flag, and with arguments as arguments
   -e   exit on errors (default: proceed even if command exits
        uncleanly / with non-zero status, although upon non-existing
@@ -72,7 +72,7 @@ GetOptions("verbose"=>\$verbose,
 	   "debug"=> \$debug,
 	   "help"=> sub{usage},
 	   "e"=> \$opt_e,
-	   "s"=> \$opt_shell,
+	   "c|s"=> \$opt_shell,
 	   "shell"=> \$opt_shell,
 	   #"sleep=n"=> \$opt_sleep,  would give 'Value "0.1" invalid for option sleep (number expected)'
 	   "sleep=s"=> sub {
