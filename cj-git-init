@@ -23,6 +23,11 @@ EOF
 	cat >> .gitignore <<EOF
 *~
 .gitignore
+
+*.o
+*.o[1-9]
+*.o[1-9][0-9]
+
 EOF
     fi
 else
