@@ -5,12 +5,35 @@
 
 set -eu
 
-if [ -e ".git" ]; then
-    echo ".git already exists; can only work on local directory, thus aborting before doing anything."
+usage () {
+    echo "usage: $0 [-f]"
     exit 1
+}
+
+opt_force=""
+if [ $# = 1 ]; then
+    if [ x-f = x"$1" ]; then
+	opt_force=1
+    else
+	usage
+    fi
+else
+    if [ $# -gt 1 ]; then
+        usage
+    fi
 fi
 
-git init "$@"
+if [ -e ".git" ]; then
+    if [ -n "$opt_force" ]; then
+	echo ".git already exists, but proceeding to change the config"
+    else
+	echo ".git already exists; can only work on local directory; aborting."
+	echo "Give -f option if you want to change the config."
+	exit 1
+    fi
+else
+    git init "$@"
+fi
 
 if [ -d ".git" ]; then
     if ! locale| grep -q UTF-8; then
