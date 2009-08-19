@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Wed Aug 19 19:00:55 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $sleeptime= 0.1;#
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path
+
+  Watch the given path (currently only one) and exit with success if
+  it changed. (Exit with error code if there was an error.)
+
+  Do this by polling (wech) with sleeptime $sleeptime seconds.
+
+  * This might be a stepping stone in the simplification of my many
+  * old scripts like watchandprocess, observe_contentchange, ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc 'xlstat'; #or xstat ?
+*x_stat= *xlstat;
+
+sub getstats {
+    [
+     map {
+	 scalar x_stat ($_)
+     } @ARGV
+    ]
+}
+
+my $nfiles= @ARGV;
+my $stats= getstats;
+
+#there was something to ask for change right.  yep equal and equal_content
+
+OUTER: { #GR
+    while (1) {
+	sleep $sleeptime;
+	my $newstats= getstats;
+	for (my $i=0; $i<$nfiles; $i++) {
+	    if ($$stats[$i]->equal($$newstats[$i])) {
+		# ok keep on going
+	    } else {
+		last OUTER;
+	    }
+	}
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
