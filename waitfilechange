@@ -35,6 +35,7 @@ usage unless @ARGV;
 
 use Chj::xperlfunc 'xlstat'; #or xstat ?
 *x_stat= *xlstat;
+use Time::HiRes 'sleep';
 
 sub getstats {
     [
