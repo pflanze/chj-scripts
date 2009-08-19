@@ -11,10 +11,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path
+    print "$myname path(s)
 
-  Watch the given path (currently only one) and exit with success if
-  it changed. (Exit with error code if there was an error.)
+  Watch the given path(s) and exit with success if one of them changed
+  (looking at stat info only). Exit with error code if there was an
+  error.
 
   Do this by polling (wech) with sleeptime $sleeptime seconds.
 
