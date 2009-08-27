@@ -7,6 +7,10 @@ set -eu
 
 usage () {
     echo "usage: $0 [-f]"
+    echo "  Options:"
+    echo "  -f  proceed even if .git exists: "
+    echo "      change i18n.commitencoding, and create .gitignore if it"
+    echo "      doesn't exist already."
     exit 1
 }
 
