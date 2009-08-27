@@ -5,7 +5,7 @@
 
 use strict;
 
-my $periode=2;
+my $sleeptime=2;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
@@ -19,7 +19,7 @@ sub usage {
   the subprocess to give paths instead of stdin/stdout.
 
   Further options:
-   --sleep seconds   override the default of $periode seconds.
+   --sleep seconds   override the default of $sleeptime seconds.
    --logfile 'perlcode'  similar to newfile, for directing stderr.
    --logcrlf    if given, stderr will be converted to crlf lineendings
    --crlf       [both] stdout [and stderr] will be converted to crlf.
@@ -74,6 +74,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_newfile= $ARGV[++$i] or usage("$_ parameter has no argument");
     } elsif ($_ eq '--logfile'){
 	defined($opt_logfile= $ARGV[++$i]) or usage("$_ parameter has no argument");
+    } elsif ($_ eq '--sleep'){
+	defined($sleeptime= $ARGV[++$i]) or usage("$_ parameter has no argument");
     } elsif ($_ eq '--logcrlf'){
 	$opt_logcrlf=1;
     } elsif ($_ eq '--crlf'){
@@ -241,7 +243,7 @@ while(1){
 	    warn "processed '$in' to '$out'\n" if $DEBUG;
 	}
     }
-    sleep $periode;
+    sleep $sleeptime;
 }
 __END__
 
