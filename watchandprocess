@@ -28,6 +28,7 @@ sub usage {
    --addfile  file   also observe this file and call command whenever
                      file is younger than an out file. This option
                      can be given multiple times.
+   --no-redir-stdout Do not redir stdout even if no \$OUT has been given.
 
   Notes:
   - the --exec argument slurps all following arguments so must be the last
@@ -54,7 +55,7 @@ usage unless @ARGV;
 
 my @files;
 my $DEBUG=0;
-my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors);
+my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors,$opt_no_redir_stdout);
 my @addfiles;
 
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -77,6 +78,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_logcrlf=1;
     } elsif ($_ eq '--crlf'){
 	$opt_crlf=1;
+    } elsif ($_ eq '--no-redir-stdout'){
+	$opt_no_redir_stdout=1;
     } elsif ($_ eq '--ignoreerrors'){
 	$opt_ignoreerrors=1;
     } elsif ($_ eq '--addfile'){
@@ -113,7 +116,7 @@ if ($opt_logfile){
 
 
 my $redirstdin=( ! grep{$_ eq '$IN'} @files and $opt_exec!~ /\$IN\b/);
-my $redirstdout=( ! grep{$_ eq '$OUT'} @files and $opt_exec!~ /\$OUT\b/);
+my $redirstdout= $opt_no_redir_stdout ? 0 : ( ! grep{$_ eq '$OUT'} @files and $opt_exec!~ /\$OUT\b/);
 
 usage("option --crlf may not be used since stdout is not redirected") if $opt_crlf and !$redirstdout;
 
