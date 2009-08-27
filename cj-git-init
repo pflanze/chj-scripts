@@ -37,10 +37,7 @@ fi
 
 if [ -d ".git" ]; then
     if ! locale| grep -q UTF-8; then
-	cat >> .git/config <<EOF
-[i18n]
-	commitencoding=latin1
-EOF
+	git config i18n.commitencoding latin1
     fi
     if [ ! -f ".gitignore" ]; then
 	cat >> .gitignore <<EOF
