@@ -212,13 +212,14 @@ while(1){
 	    $ex=~ s/\$OUT\b/$out/sg unless $redirstdout;
 
 	    system $ex, map { $_ eq '$IN' ? $in : $_ eq '$OUT' ? $out : $_ } @files;
+	    my $resultcode= $?;
 
 	    if ($redirstdout){
 		close STDOUT or die "error closing redirected stdout: $!";
 		open STDOUT,">&KEEPSTDOUT" or die $!;
 		close KEEPSTDOUT;
 		if (!$merge_outerr){
-		    if ($opt_ignoreerrors or $?==0) {
+		    if ($opt_ignoreerrors or $resultcode==0) {
 			rename "$out.new",$out
 			  or warn "$myname: could not rename '$out.new' to '$out': $!\n";
 		    }
