@@ -29,6 +29,8 @@ sub usage {
                      file is younger than an out file. This option
                      can be given multiple times.
    --no-redir-stdout Do not redir stdout even if no \$OUT has been given.
+   --show-exit-status Show result and an empty line after every
+                     invocation.
 
   Notes:
   - the --exec argument slurps all following arguments so must be the last
@@ -55,7 +57,7 @@ usage unless @ARGV;
 
 my @files;
 my $DEBUG=0;
-my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors,$opt_no_redir_stdout);
+my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors,$opt_no_redir_stdout,$opt_show_exit_status);
 my @addfiles;
 
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -82,6 +84,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_crlf=1;
     } elsif ($_ eq '--no-redir-stdout'){
 	$opt_no_redir_stdout=1;
+    } elsif ($_ eq '--show-exit-status'){
+	$opt_show_exit_status=1;
     } elsif ($_ eq '--ignoreerrors'){
 	$opt_ignoreerrors=1;
     } elsif ($_ eq '--addfile'){
@@ -213,6 +217,15 @@ while(1){
 
 	    system $ex, map { $_ eq '$IN' ? $in : $_ eq '$OUT' ? $out : $_ } @files;
 	    my $resultcode= $?;
+	    if ($opt_show_exit_status) {
+		print STDERR do{
+		    if ($resultcode==0) {
+			"*** SUCCESS\n\n"
+		    } else {
+			"*** ERROR: ".exitcode($resultcode)."\n\n"
+		    }
+		};
+	    }
 
 	    if ($redirstdout){
 		close STDOUT or die "error closing redirected stdout: $!";
