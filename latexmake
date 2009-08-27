@@ -1,0 +1,9 @@
+#!/bin/bash
+
+watchandprocess \
+    --glob '*.tex' \
+    --newfile 's/\.tex$/.dvi/' \
+    --no-redir-stdout \
+    --sleep 0.1 \
+    --show-exit-status \
+    --exec latex '$IN'
