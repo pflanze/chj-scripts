@@ -48,5 +48,9 @@ our ($from,$to)= map {
     CJ_TAILOR::spec->new_parse ($_)
 } @ARGV;
 
+my $scmcode= '(let* ((rl (lambda () (read-line (current-input-port) #\newline #t))) (first (rl))) (let lp () (let ((l (rl))) (if (eof-object? l) (begin (newline) (display first)) (begin (display l) (lp))))))';
+use Chj::singlequote 'singlequote_sh';
+my $filtercode= 'gsi -e '.singlequote_sh ($scmcode);
+
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
