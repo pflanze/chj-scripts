@@ -33,7 +33,7 @@ usage unless @ARGV==2;
 
 {
     package CJ_TAILOR::spec;
-    use Class::Array -fields=> -publica=> 'type', 'path';
+    use Class::Array -fields=> -publica=> 'type', 'path', 'path_has_to_exist';
     use Chj::xrealpath ();
     sub new_parse {
 	my $class=shift;
@@ -41,8 +41,18 @@ usage unless @ARGV==2;
 	my $s=$class->new;
 	my ($Type,$Path)= split /:/,$str,2
 	  or die "missing : in str: '$str'";
+	@$s[Type,Path]= ($Type,$Path);
+	$s
+    }
+    sub xinit {
+	my $s=shift;
+	my ($Type,$Path)= @$s[Type,Path];
 	$Type=~ /^\w+\z/ or die "invalid type '$Type'";
-	$Path= Chj::xrealpath::xrealpath( $Path); # hmm doesn't need to exist, right. but that's already handled this way correctly, cool. except if path ends with a slash then it has to exist hmwell gr.  and  is it  always this way in my implementation?....--ACHno, it isn't  just happened to have a foo in cdt.
+	if ($s->path_has_to_exist) {
+	    $Path= Chj::xrealpath::xrealpath( $Path);
+	} else {
+	    $Path= Chj::xrealpath::xrealpath_dirname( $Path);
+	}
 	@$s[Type,Path]= ($Type,$Path);
 	$s
     }
@@ -52,6 +62,8 @@ usage unless @ARGV==2;
 our ($from,$to)= map {
     CJ_TAILOR::spec->new_parse ($_)
 } @ARGV;
+$from->path_has_to_exist (1);
+$_->xinit for ($from,$to); #h which lengths to go for map. for for.
 
 # create config file:
 
