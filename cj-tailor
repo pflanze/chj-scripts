@@ -123,7 +123,7 @@ use Chj::singlequote 'singlequote_sh';
 my $filtercode= 'perl -we '.singlequote_sh ($_code);
 
 xchdir $to->path;
-xxsystem "git","filter-branch","--msgfilter", $filtercode; #hm not even saying master branch. just the current one. what  ever.
+xxsystem "git","filter-branch","--msg-filter", $filtercode; #hm not even saying master branch. just the current one. what  ever.
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
