@@ -104,9 +104,9 @@ print STDERR "\nGoing to fix the commit messages...\n\n";
 
 ##just do it badly on 'the master branch' for now:
 
-my $scmcode= '(let* ((rl (lambda () (read-line (current-input-port) #\newline #t))) (first (rl))) (let lp () (let ((l (rl))) (if (eof-object? l) (begin (newline) (display first)) (begin (display l) (lp))))))';
+my $_code= 'local $/; $cnt=<STDIN>; close STDIN or die $!; if (($first,$rest)= $cnt=~ /^(\[project \@[^\n]+)\n(.*)/s ) { print "$rest\n$first\n" or die $! } else { print $cnt or die $!}';
 use Chj::singlequote 'singlequote_sh';
-my $filtercode= 'gsi -e '.singlequote_sh ($scmcode);
+my $filtercode= 'perl -we '.singlequote_sh ($_code);
 
 xxsystem "git","filter-branch","--msgfilter", $filtercode; #hm not even saying master branch. just the current one. what  ever.
 
