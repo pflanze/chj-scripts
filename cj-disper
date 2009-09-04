@@ -64,7 +64,7 @@ sub doit {
     $statefh->xclose;
     # do not xexec, wait till it finishes before releasing the lock.
     ##btw auto recognize von tail ding h ? "!" ~.
-    xxsystem (($opt_dry ? "echo" : "disper"), $oldstate ? "-s" : "-S");
+    xxsystem (($opt_dry ? do { sleep 3; "echo"} : "disper"), $oldstate ? "-s" : "-S");
 }
 
 if (my $maybe_oldstate= Xstat $statefile) {
