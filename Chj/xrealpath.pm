@@ -28,7 +28,7 @@ former doesn't require the last path segment to exist :/.
 package Chj::xrealpath;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(xrealpath);
-@EXPORT_OK=qw();
+@EXPORT_OK=qw(xrealpath_dirname);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -65,6 +65,28 @@ BEGIN {
     }
 }
 
+use Chj::xperlfunc 'dirname','basename';
+sub xrealpath_dirname ($ ) {
+    my ($path)=@_;
+    my $dir= dirname $path;
+    my $bn= basename $path;
+    #xrealpath ($dir)."/".$bn  ## always correct?. should. except platform dependency, as always.  HMM and /foo expands to //foo. Since basename doesn't go to "" and neither does xrealpath. old sigh~.
+    my $xdir= xrealpath ($dir);
+    if ($xdir eq "/") {
+	"/".$bn
+    } else {
+	$xdir."/".$bn
+    }
+}
 
+# hm a result of this way of working is:
+#calc> :l xrealpath_dirname "/usr/"
+#/usr
+#calc> :l xrealpath_dirname "/usr/src"
+#/mnt/rootextend/usr/src
+# so GRRR it's still not like readlink -f
+#chris@novo:~$ readlink -f /usr
+#/mnt/rootextend/usr
+# -- but things like cj-tailor might still be happy with this. But then, those would be just as happy (if not happier) with just prepending cwd to relative paths. hmmm.
 
 1
