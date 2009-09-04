@@ -108,6 +108,7 @@ my $_code= 'local $/; $cnt=<STDIN>; close STDIN or die $!; if (($first,$rest)= $
 use Chj::singlequote 'singlequote_sh';
 my $filtercode= 'perl -we '.singlequote_sh ($_code);
 
+xchdir $to->path;
 xxsystem "git","filter-branch","--msgfilter", $filtercode; #hm not even saying master branch. just the current one. what  ever.
 
 #use Chj::ruse;
