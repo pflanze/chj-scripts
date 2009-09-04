@@ -1,0 +1,87 @@
+#!/usr/bin/perl -w
+
+# Fri Sep  4 19:10:25 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $min_interval= 5; # seconds
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  To be bound to the Fn-F7 key, for switching between internal and
+  external monitor, on commercial nvidia.
+
+  Call disper with -s or -S option, toggling between the two[, and
+  setting a limit on switching (needed?)]. Limit is once all
+  $min_interval seconds.
+
+  (--dry-run  for testing)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "dry-run"=> \$opt_dry,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage if @ARGV;
+
+sub Die {
+    die "$myname: @_\n";
+}
+
+our $statefile= "$ENV{HOME}/.$myname.state";
+our $lockfile= "$statefile.lock";
+
+use Chj::xperlfunc ':all';
+use Chj::Lockfile;
+use Chj::xopen 'xopen_readwrite'; #'xopen_read','xopen_write;
+#use Chj::xtmpfile; # for overwriting above  why anoter lib i mean wel . hm actually yeah why if i have a lockfile anyway.
+#hm because to hm. create it hm. hmmm ?.
+
+my $lock= Chj::Lockfile->get($lockfile);
+##i 'know' [that] I remember that I at some point did some with_lock ? instead of that. hmm ?
+##(hm would it even be  bettr smntclly?.)
+
+sub doit {
+    my ($oldstate_exists)=@_;
+    #my $oldstate=
+    #xopen_readwrite is that failing when it doesnt exist jet ? .krk.
+    my $statefh= xopen_readwrite ($statefile);
+    my $oldstate= $oldstate_exists ? $statefh->xreadline : 0;
+    chomp $oldstate;
+    $oldstate=~ /^0|1\z/ or die "what kind of state is this?: '$oldstate'";#assertments easier ones pls....... like thea
+    $statefh->xrewind;
+    $statefh-> #PS GRRRRR da gabs frick  haha  schon malsowas. achje.
+      xtruncate;
+    $statefh->xprint (($oldstate ? 0 : 1)."\n");
+    $statefh->xclose;
+    # do not xexec, wait till it finishes before releasing the lock.
+    ##btw auto recognize von tail ding h ? "!" ~.
+    xxsystem (($opt_dry ? "echo" : "disper"), $oldstate ? "-s" : "-S");
+}
+
+if (my $maybe_oldstate= Xstat $statefile) {
+    my $time= time;
+    my $diff= $time - $maybe_oldstate->mtime;
+    if ($diff < $min_interval) {
+	Die "called too recently, wait"; #exponential backoff...?
+    } else {
+	&doit ($maybe_oldstate);
+    }
+} else {
+    &doit ($maybe_oldstate)
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
