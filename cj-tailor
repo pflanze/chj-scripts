@@ -33,24 +33,62 @@ usage unless @ARGV==2;
 
 {
     package CJ_TAILOR::spec;
-    use Class::Array -publica=> 'type', 'path';
+    use Class::Array -fields=> -publica=> 'type', 'path';
+    use Chj::xrealpath ();
     sub new_parse {
 	my $class=shift;
 	my ($str)=@_;
 	my $s=$class->new;
-	@$s[Type,Path]= split $str, /:/,2
+	my ($Type,$Path)= split /:/,$str,2
 	  or die "missing : in str: '$str'";
+	$Type=~ /^\w+\z/ or die "invalid type '$Type'";
+	$Path= Chj::xrealpath::xrealpath( $Path); # hmm doesn't need to exist, right. but that's already handled this way correctly, cool. except if path ends with a slash then it has to exist hmwell gr.  and  is it  always this way in my implementation?....--ACHno, it isn't  just happened to have a foo in cdt.
+	@$s[Type,Path]= ($Type,$Path);
 	$s
     }
+    end Class::Array;
 }
 
 our ($from,$to)= map {
     CJ_TAILOR::spec->new_parse ($_)
 } @ARGV;
 
+# create config file:
+
+use Chj::xtmpfile;
+my $tmp= xtmpfile;
+
+##well, this may be a bad idea if tailor changes it's config file format but then hell what hell of an interface would it provide really.
+#I'm currently using (Debian lenny) :
+#$ tailor --version
+#0.9.35
+
+# TODO what kind of quoting does this file format need  grr?
+$tmp->xprint("[DEFAULT]
+verbose = True
+
+[project]
+target = ".$to->type.":target
+start-revision = INITIAL
+root-directory = ".$to->path."
+state-file = tailor.state
+source = ".$from->type.":source
+subdir = .
+
+[".$from->type.":source]
+repository = ".$from->path."
+
+[".$to->type.":target]
+repository = ".$to->type."
+");
+## I'm not sure what repository = foo is for, it seems to be ignored? or is it really expected to be the type  ??.
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
+
 my $scmcode= '(let* ((rl (lambda () (read-line (current-input-port) #\newline #t))) (first (rl))) (let lp () (let ((l (rl))) (if (eof-object? l) (begin (newline) (display first)) (begin (display l) (lp))))))';
 use Chj::singlequote 'singlequote_sh';
 my $filtercode= 'gsi -e '.singlequote_sh ($scmcode);
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
