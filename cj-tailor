@@ -62,7 +62,7 @@ usage unless @ARGV==2;
 our ($from,$to)= map {
     CJ_TAILOR::spec->new_parse ($_)
 } @ARGV;
-$from->path_has_to_exist (1);
+$from->set_path_has_to_exist (1);
 $_->xinit for ($from,$to); #h which lengths to go for map. for for.
 
 # create config file:
