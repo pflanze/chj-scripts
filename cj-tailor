@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Fri Sep  4 16:08:14 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to
+
+  one time (hmm?) conversion between two repository formats
+  (well could keep .bzr or whatever in 'to'? what about the git filter-branch --msgfilter thingie tho?)
+
+  from and to are specs of this format:
+     repotype:path
+
+  e.g.  bzr:foo git:bar
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+{
+    package CJ_TAILOR::spec;
+    use Class::Array -publica=> 'type', 'path';
+    sub new_parse {
+	my $class=shift;
+	my ($str)=@_;
+	my $s=$class->new;
+	@$s[Type,Path]= split $str, /:/,2
+	  or die "missing : in str: '$str'";
+	$s
+    }
+}
+
+our ($from,$to)= map {
+    CJ_TAILOR::spec->new_parse ($_)
+} @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
