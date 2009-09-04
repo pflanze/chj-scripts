@@ -45,9 +45,7 @@ our $lockfile= "$statefile.lock";
 
 use Chj::xperlfunc ':all';
 use Chj::Lockfile;
-use Chj::xopen 'xopen_readwrite'; #'xopen_read','xopen_write;
-#use Chj::xtmpfile; # for overwriting above  why anoter lib i mean wel . hm actually yeah why if i have a lockfile anyway.
-#hm because to hm. create it hm. hmmm ?.
+use Chj::xsysopen;
 
 my $lock= Chj::Lockfile->get($lockfile);
 ##i 'know' [that] I remember that I at some point did some with_lock ? instead of that. hmm ?
@@ -55,9 +53,7 @@ my $lock= Chj::Lockfile->get($lockfile);
 
 sub doit {
     my ($oldstate_exists)=@_;
-    #my $oldstate=
-    #xopen_readwrite is that failing when it doesnt exist jet ? .krk.
-    my $statefh= xopen_readwrite ($statefile);
+    my $statefh= xsysopen ($statefile, O_CREAT|O_RDWR); #this combination not available in Chj::xopen::* it seems (nor in perls open function, thus?)
     my $oldstate= $oldstate_exists ? $statefh->xreadline : 0;
     chomp $oldstate;
     $oldstate=~ /^0|1\z/ or die "what kind of state is this?: '$oldstate'";#assertments easier ones pls....... like thea
