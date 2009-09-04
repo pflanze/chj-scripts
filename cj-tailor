@@ -103,6 +103,8 @@ use Chj::xperlfunc ':all';
 xxsystem "tailor", "--configfile", $tmp->path;
 ##OH NO THIS tool S.CKS doesn't exit with non zero code in case of errors like: "Common base for tailor exceptions: 'bar' is not a known VCS kind: No module named bar"
 
+##xstat $to->path."/.git"  hmm. but that would expect that the target is of type git. hell..
+
 # (do we want to keep the config ? shouldn't be necessary. since I
 # have my own control about the versions of my script, so I know the
 # contents.)
