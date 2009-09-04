@@ -71,7 +71,7 @@ verbose = True
 target = ".$to->type.":target
 start-revision = INITIAL
 root-directory = ".$to->path."
-state-file = tailor.state
+state-file = ".$to->path.".tailor.state
 source = ".$from->type.":source
 subdir = .
 
@@ -82,13 +82,36 @@ repository = ".$from->path."
 repository = ".$to->type."
 ");
 ## I'm not sure what repository = foo is for, it seems to be ignored? or is it really expected to be the type  ??.
+## putting tailor.state in file *besides* the target dir, ok?.
+## (Hm could use something else than . for subdir. I see, I thought it was subdir inside a repo. krwl)
+$tmp->xclose;
 
-#use Chj::ruse;
-use Chj::Backtrace; use Chj::repl; repl;
+use Chj::xperlfunc ':all';
 
-__END__
+xxsystem "tailor", "--configfile", $tmp->path;
+##OH NO THIS tool S.CKS doesn't exit with non zero code in case of errors like: "Common base for tailor exceptions: 'bar' is not a known VCS kind: No module named bar"
+
+# (do we want to keep the config ? shouldn't be necessary. since I
+# have my own control about the versions of my script, so I know the
+# contents.)
+
+
+# now, fix the commit messages: do this in a separate branch  ok ?.
+print STDERR "\nGoing to fix the commit messages...\n\n";
+##sh.t, subsequent tailor runs will assume it should look at the master branch?
+##what about multiple branches anyway,hmmmmmm.
+##wll just use a better commit msg converter ?.--todo actually filter-branch all branches.? how far back...?  wl.  todo improve performance in future.  but.  how will tailor handle this. convert back or what?  or, will I clone the git repo and filter the clone???.
+
+##just do it badly on 'the master branch' for now:
 
 my $scmcode= '(let* ((rl (lambda () (read-line (current-input-port) #\newline #t))) (first (rl))) (let lp () (let ((l (rl))) (if (eof-object? l) (begin (newline) (display first)) (begin (display l) (lp))))))';
 use Chj::singlequote 'singlequote_sh';
 my $filtercode= 'gsi -e '.singlequote_sh ($scmcode);
+
+xxsystem "git","filter-branch","--msgfilter", $filtercode; #hm not even saying master branch. just the current one. what  ever.
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
 
