@@ -16,6 +16,6 @@ fi
 # hmmm. in chicken sources it is possible to have both .h and .scm files. and yes, doesn't make much sense as such.
 
 
-find "$dir" \! -name .git -prune -a -type f |perl -wne 'my $l=$_; chomp; print $l unless (s/_\.c$// or s/\.c$//) && -e "$_.scm"'|sort
+find "$dir" \! -name .git -prune -a -type f |perl -wne 'my $l=$_; chomp; print $l unless (s/_\.c$// or s/\.c$//) && -e "$_.scm"'|csort
 
 # dass ./lib/_gambc.c noch gefunden wird ist weil dafür wirklich kein scm file existiert.

@@ -12,7 +12,7 @@
 # 
 # 
 
-lsof -n |grep ' REG '|awk '{print $1,$7,$9}'|sort -k 2 -n -r|uniq|less
+lsof -n |grep ' REG '|awk '{print $1,$7,$9}'|csort -k 2 -n -r|uniq|less
 
 # smbd 30362373 /tmp/avfspl.0.log
 # smbd 30362373 /tmp/avfspl.0.log

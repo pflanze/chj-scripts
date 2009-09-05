@@ -13,4 +13,4 @@ fi
 # hmmm. in chicken sources it is possible to have both .h and .scm files. and yes, doesn't make much sense as such.
 
 
-find "$dir" -name "*.[ch]"|perl -wne 'my $l=$_; chomp; print $l unless s/\.c$// && -e "$_.scm"'|sort
+find "$dir" -name "*.[ch]"|perl -wne 'my $l=$_; chomp; print $l unless s/\.c$// && -e "$_.scm"'|csort

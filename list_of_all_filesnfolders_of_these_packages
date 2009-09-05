@@ -16,7 +16,7 @@ fi
     while read packages; do
 	dpkg -L $packages
     done
-) | sort | uniq | grep -v '^/\.$' | grep -v '^$' | ( 
+) | csort | uniq | grep -v '^/\.$' | grep -v '^$' | ( 
     while read item; do
 	if [ -e "$item" ]; then
 # 	    if [ -f "$item" ]; then 

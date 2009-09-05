@@ -31,7 +31,7 @@ tmp2="$(tempfile --suffix "$(echo "$file2"|perl -wne 's/\s'\''//sg; s|/|--|sg; p
 trap "rm -f '$tmp1' '$tmp2'" 0  # programexit
 
 trans() {
-    filter_stripcomments $STRIPOPT < "$1" | sort > "$2"
+    filter_stripcomments $STRIPOPT < "$1" | csort > "$2"
 }
 
 trans "$file1" "$tmp1"
