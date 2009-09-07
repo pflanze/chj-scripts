@@ -5,7 +5,7 @@
 
 use strict;
 
-our $length_in_bytes= 5;
+our $length_in_bytes= 12;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
