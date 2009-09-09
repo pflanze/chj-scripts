@@ -19,7 +19,7 @@ mkdir "$TMPDIR"
 cd "$TMPDIR"
 cj-git-init
 
-for f in `ls -rt ../*"$SUFFIX"`; do
+ls -rt ../*"$SUFFIX" | while read f; do
     rm -rf *
     tar xf "$f"  # relies on tar finding out decompression scheme by itself
     dir=`ls -d *`
