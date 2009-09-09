@@ -10,6 +10,8 @@ if [ $# -ne 1 ]; then
 	echo "  into a git repo in a newly created subdir '$TMPDIR'"
 	echo "  suffix should probably be .tar.gz or .tgz or .tar.bz2 (inluding"
 	echo "  the leading dot)"
+	echo " Set MOVE_OUT_OF_SUBDIR=1 if you want it to move stuff out of a "
+	echo "  single toplevel subdir."
 	exit 1
 fi
 
@@ -22,9 +24,11 @@ cj-git-init
 ls -rt ../*"$SUFFIX" | while read f; do
     rm -rf *
     tar xf "$f"  # relies on tar finding out decompression scheme by itself
-    dir=`ls -d *`
-    mv -i "$dir"/* .
-    rmdir "$dir"  # assumes there are not dot files
+    if [ 1 = "${MOVE_OUT_OF_SUBDIR-}" ]; then
+	dir=`ls -d *`
+	mv -i "$dir"/* .
+	rmdir "$dir"  # assumes there are not dot files
+    fi
     file=$(basename "$f")
     filedate=$(
 	cd ..
