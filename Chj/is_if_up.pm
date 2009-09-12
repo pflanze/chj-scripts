@@ -29,7 +29,7 @@ use strict;
 our $ifconfig= "/sbin/ifconfig";
 
 sub extractfromone {
-    my ($a,$if)=@_; # string from ifconfig of one interface
+    my ($a,$if, $is_list_mode)=@_; # string from ifconfig of one interface
     if ($a=~ /^\s+UP\s/m) {
 	if ($a=~ /inet addr:(\d+\.\d+\.\d+\.\d+)\s+/) {
 	    return $1
@@ -47,7 +47,11 @@ sub extractfromone {
 	    #  if $^W;
 	    #return undef
 	    # 13.4.04: ach was soll das obige.
-	    die "is_if_up: no match for 'inet addr' in interface output:\n$a\n";
+	    if ($is_list_mode) {
+		""
+	    } else {
+		die "is_if_up: no match for 'inet addr' in interface output:\n$a\n";
+	    }
 	}
     } else {
 	return ""
@@ -77,7 +81,7 @@ sub is_if_up {
 		map {
 		    /^(\S+)/ or die "???: '$_'";
 		    my $iface=$1;
-		    my $ip= extractfromone($_, $if);
+		    my $ip= extractfromone($_, $if, 1);
 		    [ $iface,$ip ]
 		} split /\n{2,}/, $a
 	    } else {
