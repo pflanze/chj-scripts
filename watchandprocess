@@ -219,6 +219,9 @@ while(1){
 	    system $ex, map { $_ eq '$IN' ? $in : $_ eq '$OUT' ? $out : $_ } @files;
 	    my $resultcode= $?;
 	    if ($opt_show_exit_status) {
+		# (is it on purpose that I write this to the logfile if
+		# one happens to be opened? well probably not
+		# consciously. but why not.)
 		print STDERR do{
 		    if ($resultcode==0) {
 			"*** SUCCESS\n\n"
