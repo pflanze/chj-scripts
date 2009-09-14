@@ -6,4 +6,4 @@ watchandprocess \
     --no-redir-stdout \
     --sleep 0.1 \
     --show-exit-status \
-    --exec latex '$IN'
+    --exec latex -interaction=batchmode '$IN'
