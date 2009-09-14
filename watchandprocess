@@ -57,7 +57,7 @@ usage unless @ARGV;
 
 my @files;
 my $DEBUG=0;
-my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors,$opt_no_redir_stdout,$opt_show_exit_status);
+my ($opt_exec,$opt_newfile,$opt_logfile,$opt_glob, $opt_logcrlf,$opt_crlf, $opt_ignoreerrors,$opt_no_redir_stdout,$opt_show_exit_status,$opt_sleep_on_errors);
 my @addfiles;
 
 for (my $i=0; $i<=$#ARGV; $i++) {
@@ -78,6 +78,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	defined($opt_logfile= $ARGV[++$i]) or usage("$_ parameter has no argument");
     } elsif ($_ eq '--sleep'){
 	defined($sleeptime= $ARGV[++$i]) or usage("$_ parameter has no argument");
+    } elsif ($_ eq '--sleep-on-errors'){
+	defined($opt_sleep_on_errors= $ARGV[++$i]) or usage("$_ parameter has no argument");
     } elsif ($_ eq '--logcrlf'){
 	$opt_logcrlf=1;
     } elsif ($_ eq '--crlf'){
@@ -259,6 +261,9 @@ while(1){
 		}
 	    }
 	    warn "processed '$in' to '$out'\n" if $DEBUG;
+	    if ($opt_sleep_on_errors and ($resultcode!=0)) {
+		sleep $opt_sleep_on_errors
+	    }
 	}
     }
     sleep $sleeptime;
