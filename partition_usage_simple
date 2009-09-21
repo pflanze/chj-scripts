@@ -16,6 +16,7 @@ fi
 
 DEVVOLL="`chase "$DEV"`"
 
+declare -a devpaths
 if [ ! "$DEVVOLL" ]; then
     echo "Warning: looks like $DEV does not exist as a path, thus only searching for '$ORIGARG'."
     HAVE_DEV_PATH=""
@@ -23,6 +24,7 @@ if [ ! "$DEVVOLL" ]; then
     grepcmd () {
 	egrep "$ORIGARG"
     }
+    devpaths=("$DEV")
 else
     # strip /dev part, since mdstat does not contain it
     HAVE_DEV_PATH=1
@@ -31,6 +33,7 @@ else
     grepcmd () {
 	egrep "($DEV|$DEVVOLL)"
     }
+    devpaths=("$DEV" "$DEVVOLL")
 fi
 
 
@@ -68,7 +71,12 @@ else
 fi
 echo
 
-
+echo "---- Checking with filesystem-usage -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
+echo "  (you gave a device path and not a mount point, right?, so this won't bring up anything)"
+for dev in "${devpaths[@]}"; do
+    echo "device '$dev':"
+    filesystem-usage "$dev"
+done
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
 echo "   unless you have all mappings in /etc/rawtab.)"
