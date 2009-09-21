@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+if [ $# -ne 1 ]; then
+    echo "usage: `basename $0` mountpoint"
+    exit 1
+fi
+
+
+mnt="$1"
+
+{
+lsof
+losetup -a
+} | grep "$mnt"
+
