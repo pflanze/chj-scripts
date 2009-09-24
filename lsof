@@ -1,7 +1,6 @@
 #!/bin/sh
 
-#exec /usr/sbin/lsof -nP "$@"
-# Mon, 29 May 2006 17:39:03 +0200: das war mal. nun haben debian das nach /usr/bin/ verschoben.
+set -eu
 
 if [ -f /usr/sbin/lsof ]; then
     lsof=/usr/sbin/lsof
@@ -9,6 +8,7 @@ elif [ -f /usr/bin/lsof ]; then
     lsof=/usr/bin/lsof
 else
     echo "don't know where lsof is"
+    exit 1
 fi
 
 exec "$lsof" -nP "$@"
