@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Thu Sep 24 17:42:50 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [-- lsof-arguments]
+
+  Show deleted files opened by processor, filtering the output of
+  lsof, relying on it's at the time used convention to display such
+  files.
+
+  The aim is to find programs that have object files open that have
+  been replaced by a package upgrade. For this reason, ignores
+  /tmp|dev|var/ and a couple other uninteresting paths.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::IO::Command;
+
+our $in= Chj::IO::Command->new_sender ("lsof", @ARGV);
+
+while (<$in>) {
+    if (/ (\S+) \(deleted\)$/) {
+	my $possiblypartial_path= $1;
+	if ($possiblypartial_path=~ m{^/(tmp|dev|var)/}
+	    or
+	    $possiblypartial_path=~ m|/\.galeon/mozilla/|) {
+	    # suppress
+	} else {
+	    print or die $!
+	}
+    }
+    # else suppress
+}
+$in->xxfinish; # yeah gell better than in the shell where this is verschluckt.
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
