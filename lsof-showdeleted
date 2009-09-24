@@ -34,6 +34,7 @@ GetOptions("verbose"=> \$verbose,
 use Chj::IO::Command;
 
 our $in= Chj::IO::Command->new_sender ("lsof", @ARGV);
+our $out= Chj::IO::Command->new_receiver ("less");
 
 while (<$in>) {
     if (/ (\S+) \(deleted\)$/) {
@@ -43,13 +44,13 @@ while (<$in>) {
 	    $possiblypartial_path=~ m|/\.galeon/mozilla/|) {
 	    # suppress
 	} else {
-	    print or die $!
+	    $out->xprint($_);
 	}
     }
     # else suppress
 }
 $in->xxfinish; # yeah gell better than in the shell where this is verschluckt.
-
+$out->xxfinish;# (well? should we exec less into ourselves? whatever?)
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
