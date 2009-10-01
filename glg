@@ -38,7 +38,7 @@ my $number_of_files = do {
 	    $i+= @args;
 	    last;
 	}
-	if ($a =~ /-/) {
+	if ($a =~ /^-/) {
 	    # ignore.
 	    # well but are there flags with a followup argument ?
 	    # doesn't seem so. except maybe: '-O<orderfile>' could be valid with a space afer O ? nope.
