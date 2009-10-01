@@ -34,6 +34,7 @@ my $number_of_files = do {
     while (@args) {
 	my $a=shift @args;
 	if ($a eq "--") {
+	    warn "hm i=$i";
 	    $i+= @args;
 	    last;
 	}
@@ -46,13 +47,15 @@ my $number_of_files = do {
 	} else {
 	    #hm. is it a revision not a file ? :
 	    if (-e $a) {
-		# a file.
+		warn "a file: '$a'";
 		$i++
 	    } else {
+		die "does not exist: '$a' : $!\n";
 		# ignore
 	    }
 	}
     }
+    warn "i=$i";
     $i
 };
 
