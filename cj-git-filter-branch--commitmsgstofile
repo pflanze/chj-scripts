@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -eu
+
+COMMITFILENAME=${COMMITFILENAME:--COMMITMSG}
+# choosing '-' as first character since gtk orders this before big
+# alphabetic letters (unlike the underscore which is sorted after Z)
+
+usage () {
+    echo "$0 [filter-branch options]"
+    echo "  rewrite (given or current) branch to have a file '$COMMITFILENAME'"
+    echo "  (overridable through the COMMITFILENAME env var)"
+    echo "  so that it can be diffed in gitk; and only keep the first line of it"
+    echo "  in the normal commit msg, and add the sha1 of the original commit."
+    echo
+    exit 1
+}
+
+#if [ $# -eq 1 -a \( "$1" = "-h" -o "$1" = "--help" \) ]; then
+#does not work.
+
+#if [ $# -eq 1 -a ( "$1" = "-h" -o "$1" = "--help" ) ]; then
+#syntax error near unexpected token `(
+
+if [ $# -eq 1 ]; then
+	if [ "$1" = "-h" -o "$1" = "--help" ]; then
+	    usage
+	fi
+fi
+
+export COMMITFILENAME
+exec git filter-branch \
+    --msg-filter 'head -1; echo; echo "$GIT_COMMIT"' \
+    --index-filter 'git update-index --add --cacheinfo 100644 $(git cat-file commit $GIT_COMMIT|perl -wne '\''if ($seen) { print or die } else { if (/^$/) { $seen=1}}'\'' | git hash-object -w --stdin) "$COMMITFILENAME"' \
+    "$@"
+
