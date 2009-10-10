@@ -72,7 +72,7 @@ local our $pos= $in->xtell;
 use Chj::xperlfunc;
 
 # http://www.smackfu.com/stuff/programming/shoutcast.html
-sub read_icy_data ( $ ) {
+sub read_icy_data_block ( $ ) {
     my ($in)=@_;
     my $len= do {
 	my $ch= getc $in; defined $ch or die "read error?: $!";
@@ -100,7 +100,7 @@ while (1) {
 	$out->xprint ($buf);
 	$pos_shrunk+=length($buf);
 	# now skip until \0 found. or capture if you want
-	local our $str= read_icy_data ($in);
+	local our $str= read_icy_data_block ($in);
 	if (length $str) {
 	    if ($str=~ /StreamTitle='(.*?)';/i) {
 		print STDERR "$pos_shrunk\t$1\n";
