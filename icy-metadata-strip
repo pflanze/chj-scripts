@@ -18,6 +18,12 @@ sub usage {
   Example:
    icy-metadata-strip foo.mp3httpstream > /tmp/chris/foo.mp3 2> foo.list
 
+  Or:
+   icy-metadata-strip --servlist foo.mp3httpstream > foo.servlist 2> foo.list
+  in which case it outputs a list with the lengths of all gaps and live parts,
+  usable for serving (by a yet-to-be-written program) without having to save
+  the stripped binary data.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -25,8 +31,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_servlist;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "servlist"=> \$opt_servlist,
 	   ) or exit 1;
 usage unless @ARGV==1;
 our ($file)=@ARGV;
@@ -58,6 +66,8 @@ while (<$in>) {
 	}
     }
 }
+
+local our $pos= $in->xtell;
 
 use Chj::xperlfunc;
 
