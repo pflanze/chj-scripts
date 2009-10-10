@@ -5,9 +5,6 @@
 
 use strict;
 
-#sub DEBUG () { 0 }
-use constant DEBUG=>0;
-
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -108,11 +105,11 @@ while (1) {
 	    if ($str=~ /StreamTitle='(.*?)';/i) {
 		print STDERR "$pos_shrunk\t$1\n";
 	    } else {
-		if (DEBUG) {
-		    use Chj::Backtrace; use Chj::repl; repl
-		} else {
+		#if (DEBUG) {
+		#    use Chj::Backtrace; use Chj::repl; repl
+		#} else {
 		    die "no match in icy meta data";
-		}
+		#}
 	    }
 	}
     } else {
