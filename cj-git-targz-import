@@ -11,7 +11,9 @@ if [ $# -ne 1 ]; then
 	echo "  suffix should probably be .tar.gz or .tgz or .tar.bz2 (inluding"
 	echo "  the leading dot)"
 	echo " Set MOVE_OUT_OF_SUBDIR=1 if you want it to move stuff out of a "
-	echo "  single toplevel subdir."
+	echo "  single toplevel subdir using mv * (will not move dot files)."
+	echo " Set MOVE_OUT_OF_SUBDIR=2 if you want it to move stuff out of a "
+	echo "  single toplevel subdir using mv *, and rm -rf the toplevel dir."
 	exit 1
 fi
 
@@ -28,6 +30,10 @@ ls -rt ../*"$SUFFIX" | while read f; do
 	dir=`ls -d *`
 	mv -i "$dir"/* .
 	rmdir "$dir"  # assumes there are not dot files
+    elif [ 2 = "${MOVE_OUT_OF_SUBDIR-}" ]; then
+	dir=`ls -d *`
+	mv -i "$dir"/* .
+	rm -rf "$dir"  # assumes dot files are unimportant
     fi
     file=$(basename "$f")
     filedate=$(
