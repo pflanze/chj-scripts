@@ -10,6 +10,8 @@ if [ $# -ne 1 ]; then
 	echo "  into a git repo in a newly created subdir '$TMPDIR'"
 	echo "  suffix should probably be .tar.gz or .tgz or .tar.bz2 (inluding"
 	echo "  the leading dot)"
+	echo " Adds g-l listing to the commit msg unless the NO_ADD_MTIMES env var"
+	echo "  is set."
 	echo " Set MOVE_OUT_OF_SUBDIR=1 if you want it to move stuff out of a "
 	echo "  single toplevel subdir using mv * (will not move dot files)."
 	echo " Set MOVE_OUT_OF_SUBDIR=2 if you want it to move stuff out of a "
@@ -42,9 +44,11 @@ ls -rt ../*"$SUFFIX" | while read f; do
     )
     name=$(basename "$f" "$SUFFIX")
     echo "$name  ($filedate)" > .git/_cjmsg
-    echo >> .git/_cjmsg
     git add .
-    g-l >> .git/_cjmsg
+    if [ "" = "${NO_ADD_MTIMES-}" ]; then
+        echo >> .git/_cjmsg
+	g-l >> .git/_cjmsg
+    fi
     #cat .git/_cjmsg
 
     git commit -a -m "$(cat .git/_cjmsg)"
