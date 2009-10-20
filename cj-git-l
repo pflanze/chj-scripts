@@ -9,10 +9,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [files to show]
 
   git list added/modified/deleted files. (obviously the latter only if
   they are still there, ehr)
+
+  If no file arguments are given, shows all.
 
   Options:
   --show-deleted   also show the deleted files (currently the default)
@@ -32,8 +34,8 @@ GetOptions("verbose"=> \$verbose,
 	   # hm Getopt(::Long) does not support no-*?
 	   "no-show-deleted"=> sub{$opt_show_deleted=0},
 	   ) or exit 1;
-usage if @ARGV;
-
+our @maybe_files= @ARGV;
+#hh always a list. but may be nil. hhh. \MYLANG[nil,#f]
 
 use Chj::IO::Command;
 use Chj::Unix::exitcode;
@@ -82,7 +84,19 @@ my $modmap= {
 use Encode 'decode_utf8';
 
 sub main {
-    my $files= files;
+    my $files= do {
+	my $files= files;
+	# the usual collectionstuffwlll.
+	if (@maybe_files) {
+	    my $f= +{map { $_=> 1 } @maybe_files};
+	    for my $path (keys %$files) {
+		delete $$files{$path} unless $$f{$path};
+	    }
+	    $files
+	} else {
+	    $files
+	}
+    };
     my @deletedfiles= grep {
 	$$files{$_} eq "deleted"
     }
