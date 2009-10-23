@@ -2,6 +2,8 @@
 
 set -eu
 
-stdout=`tty`
+stdout=`chase /dev/stdout`
 
+(
 mdsha "$@" | tee "$stdout" | perl -wne 'm/^(\w+)/ or die "no match for: $_"; print "http://www.google.com/search?ie=UTF8&q=$1\n"' | myxargs "${BROWSER-galeon-chrissbx}"
+)
