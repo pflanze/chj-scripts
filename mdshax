@@ -2,8 +2,9 @@
 
 set -eu
 
-stdout=`chase /dev/stdout`
+md=`mdsha "$@"`
 
-(
-mdsha "$@" | tee "$stdout" | perl -wne 'm/^(\w+)/ or die "no match for: $_"; print "http://www.google.com/search?ie=UTF8&q=$1\n"' | myxargs "${BROWSER-galeon-chrissbx}"
-)
+echo "$md"
+
+echo "$md" | perl -wne 'm/^(\w+)/ or die "no match for: $_"; print "http://www.google.com/search?ie=UTF8&q=$1\n"' | myxargs "${BROWSER-galeon-chrissbx}"
+
