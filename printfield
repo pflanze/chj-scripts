@@ -7,6 +7,7 @@ usage () {
     echo "$0 fieldno"
     echo "  filters stdin to stdout, outputting only filed no. filedno, like"
     echo "  awk \"{print \\\$\$fieldno}\""
+    exit 1
 }
 
 if [ $# -ne 1 ]; then
