@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Fri Oct 23 15:59:09 EDT 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $galeon=
+  [
+   #"galeon-chrissbx","--" #hmm. should not be hardcoded, obviously...
+   #ehr, this is part of the proxy caller, so just:
+   "galeon"
+  ];
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    require Chj::singlequote; import Chj::singlequote "singlequote_many";
+    print "$myname url(s)
+
+  Creates a new window with ".singlequote_many(@$galeon)." and opens all urls as tabs there.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc ":all";
+
+our $first= shift @ARGV;
+
+# open a new window first--but only for one url, not all urls in a new
+# window each:
+xxsystem @$galeon,"--new-window", $first;
+
+sleep 1;
+# open the remaining urls, hopefully in the window that has just been
+# opened (racy, obviously):
+xxsystem @$galeon, @ARGV if @ARGV;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
