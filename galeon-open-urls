@@ -37,23 +37,5 @@ use Chj::xperlfunc ":all";
 
 our $first= shift @ARGV;
 
-# open a new window first--but only for one url, not all urls in a new
-# window each:
-xxsystem @$galeon,"--new-window", $first;
+xxsystem @$galeon,"--new-window", $first, "-n", @ARGV;
 
-sleep 1;
-# open the remaining urls, hopefully in the window that has just been
-# opened (racy, obviously):
-
-# wow, -x option does not even open a tab, I see. Even with multiple
-# arguments given; will just load every url in the same tab one after
-# each other or so (in any case, only one will be open in the end).
-
-# -n is just the same as no option given.
-
-xxsystem @$galeon,"-n", @ARGV if @ARGV;
-
-
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
