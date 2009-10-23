@@ -44,7 +44,14 @@ xxsystem @$galeon,"--new-window", $first;
 sleep 1;
 # open the remaining urls, hopefully in the window that has just been
 # opened (racy, obviously):
-xxsystem @$galeon, @ARGV if @ARGV;
+
+# wow, -x option does not even open a tab, I see. Even with multiple
+# arguments given; will just load every url in the same tab one after
+# each other or so (in any case, only one will be open in the end).
+
+# -n is just the same as no option given.
+
+xxsystem @$galeon,"-n", @ARGV if @ARGV;
 
 
 
