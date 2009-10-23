@@ -20,6 +20,8 @@ sub usage {
     print "$myname url(s)
 
   Creates a new window with ".singlequote_many(@$galeon)." and opens all urls as tabs there.
+  Hm actually galeon can't do this as it seems ARGH, so at least open
+  new windows in a controlled fashion ARGH.
 
   (Christian Jaeger <$email>)
 ";
@@ -34,8 +36,11 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV;
 
 use Chj::xperlfunc ":all";
-
-our $first= shift @ARGV;
-
-xxsystem @$galeon,"--new-window", $first, "-n", @ARGV;
-
+use Time::HiRes 'sleep';
+our $sleeptime=0.2; #HACK of course but what should I do?.. (against the much-too-small-windows)
+my $seen;
+for (@ARGV) {
+    sleep $sleeptime if $seen;
+    xxsystem @$galeon,"--new-window", $_;
+    $seen=1; #~muta to solvebrokenloopconstruct
+}
