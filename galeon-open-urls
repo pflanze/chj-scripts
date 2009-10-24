@@ -33,14 +33,17 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   ) or exit 1;
-usage unless @ARGV;
 
 use Chj::xperlfunc ":all";
 use Time::HiRes 'sleep';
 our $sleeptime=0.2; #HACK of course but what should I do?.. (against the much-too-small-windows)
 my $seen;
-for (@ARGV) {
-    sleep $sleeptime if $seen;
-    xxsystem @$galeon,"--new-window", $_;
-    $seen=1; #~muta to solvebrokenloopconstruct
+if (@ARGV) {
+    for (@ARGV) {
+	sleep $sleeptime if $seen;
+	xxsystem @$galeon,"--new-window", $_;
+	$seen=1; #~muta to solvebrokenloopconstruct
+    }
+} else {
+    xxsystem @$galeon,"--new-window"
 }
