@@ -20,8 +20,6 @@ In both cases, only the name of the file/folder is searched, not
 any other part of the path of the file. And you can specify the
 whole file name this way:
     loc '^myfile\.txt$'
-To prevent the shell from interpreting meta chars, put single quotes
-around your search terms!
 
 If you specify the -i option, the search (!) is case insensitive. (This
 does not touch the exclude pattern - see below.)
@@ -38,12 +36,10 @@ LIMITATIONS:  handling of search patterns is not complete. For example
 you may NOT use the 'or' syntax (like in '(some)|(other)'). Read the
 first printed line to see what's being done. (This does not concern
 exclusion patterns.)
-This is a perl script which uses 'locate' and filters the output.
-So it reflects the state of the file system at the time of the latest
-update of the locate database.
 
-(The name 'loc' is choosen by the author, of course you could call it
-anything you like.)
+This is a wrapper around either 'locate' or 'mlocate', in the former
+case filtering the output with perl, in the latter using mlocate's
+abilities directly.
 
 END
     exit(0);
