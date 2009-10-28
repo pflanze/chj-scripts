@@ -50,7 +50,15 @@ END
 }
 
 our $loc='loc'; #name of this
-our $locate= '/usr/bin/locate';
+our $locate;
+our $have_mlocate;
+if (-f "/usr/bin/mlocate") {
+    $have_mlocate=1;
+    $locate= "/usr/bin/mlocate";
+} else {
+    $have_mlocate=0;
+    $locate= '/usr/bin/locate';
+}
 
 
 usage unless @ARGV;
@@ -90,6 +98,26 @@ foreach (@ARGV) {
 
 die "$loc: missing exclusion pattern\n"
   if $exclude and not defined $exmatch;
+
+sub detaint ( $ ) {
+    my ($str)=@_;
+    $str=~ /^(.*)\z/s;
+    $1
+}
+
+if ($have_mlocate) {
+    die "exclude with mlocate not implemented yet" if $exclude;
+    die "folders with mlocate not implemented yet" if $folders;#uh
+    my @cmd= ($locate,
+	      ($insensitive ? "-i" : ()),
+	      ($opt_F ? () : "-r"),
+	      detaint($desc));
+    delete $ENV{PATH};delete $ENV{BASH_ENV};delete $ENV{ENV};
+    exec @cmd
+      or die "could not exec $locate: $!";
+} else {
+    # go on with locate and perl below..
+}
 
 our $match;
 
