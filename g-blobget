@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Tue Nov  3 13:32:36 EST 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname blob-id(s)
+
+  Copy the blobs of the given id(s) to files with the same name in the
+  current directory.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+#  (well clean would be to stdout? but can still make a g-blob for that)
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::IO::Command;
+use Chj::xtmpfile;
+
+sub blobget ( $ ) {
+    my ($id)=@_;
+    $id=~ s/\.+\z//;
+    if (-e $id) {
+	die "file exists: '$id'"; #wl. never should be a reason to overwrite yep but, hm.
+    }
+    my $in= Chj::IO::Command->new_sender("git","cat-file","blob", $id);
+    my $out= xtmpfile $id; # actually use the given, possibly short, id, ok?
+    $in->xsendfile_to ($out);
+    $in->xxfinish;
+    $out->xclose; $out->xputback(0644); #ok? already forgot again, is this masked or not. butanyway. no need to write right?.
+}
+
+blobget $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
