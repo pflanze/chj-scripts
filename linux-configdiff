@@ -55,7 +55,7 @@ sub stripcomment_n_sort {
     my $t= xtmpfile; ## und name angeben ?
     my $out= xreceiverpipeline_with_out_to($t,
 					   ["filter_stripcomments"],
-					   ["sort"],
+					   ["csort"],
 					  );
 #    warn "ha";
     #my $in= xopen_read $path; muss oben stehen sonst bei exception lockt es pipeline destroy mensch todo
