@@ -41,6 +41,10 @@ This is a wrapper around either 'locate' or 'mlocate', in the former
 case filtering the output with perl, in the latter using mlocate's
 abilities directly.
 
+Further options:
+ -w | --whole-path  match the pattern against the whole path instead
+                    of only against the basename
+
 END
     exit(0);
 }
@@ -61,6 +65,7 @@ usage unless @ARGV;
 usage if $ARGV[0] eq '--help' or $ARGV[0] eq '-h';
 
 our ($folders,$insensitive,$desc,$exclude,$excludep,$exinsensitive,$exmatch,$opt_F);
+our $opt_wholepath;
 
 foreach (@ARGV) {
     if (/^-[fd]$/) {
@@ -73,6 +78,10 @@ foreach (@ARGV) {
     }
     if (/^-F$/) {
 	$opt_F=1;
+	next
+    }
+    if (/^--?w(?:hole(?:-path)?)?$/) {
+	$opt_wholepath=1;
 	next
     }
     unless (defined $desc) {
@@ -105,6 +114,7 @@ if ($have_mlocate) {
     die "exclude with mlocate not implemented yet" if $exclude;
     die "folders with mlocate not implemented yet" if $folders;#uh
     my @cmd= ($locate,
+	      ($opt_wholepath ? () : "--basename"),
 	      ($insensitive ? "-i" : ()),
 	      ($opt_F ? () : "-r"),
 	      detaint($desc));
@@ -113,6 +123,7 @@ if ($have_mlocate) {
       or die "could not exec $locate: $!";
 } else {
     # go on with locate and perl below..
+    die "\$opt_wholepath not supported in locate-using mode [yet]" if $opt_wholepath;
 }
 
 our $match;
