@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec wpa_supplicant -Dwext -iwlan0 -c/etc/wpa_supplicant.conf
