@@ -3,9 +3,13 @@
 use strict;
 
 sub usage {
-    print STDERR <<'END';
-
-USAGE:
+    my $err=@_;
+    my $fh= $err ? *STDERR{IO} : *STDOUT{IO};
+    if ($err) {
+	print $fh @_,"\n";
+    }
+    print $fh <<'END';
+Usage:
     loc [-i] [-F] description_of_file
 or  loc [-i] [-F] -d description_of_folder
 or  loc [-i] [-F] [-d] description -e[i] exclude_desc
@@ -46,7 +50,7 @@ Further options:
                     of only against the basename
 
 END
-    exit(0);
+    exit($err ? 1 : 0);
 }
 
 our $loc='loc'; #name of this
@@ -62,12 +66,14 @@ if (-f "/usr/bin/mlocate") {
 
 
 usage unless @ARGV;
-usage if $ARGV[0] eq '--help' or $ARGV[0] eq '-h';
 
 our ($folders,$insensitive,$desc,$exclude,$excludep,$exinsensitive,$exmatch,$opt_F);
 our $opt_wholepath;
 
 foreach (@ARGV) {
+    if ($_ eq '--help' or $_ eq '-h') {
+	usage
+    }
     if (/^-[fd]$/) {
 	$folders=1;
 	next
@@ -98,7 +104,7 @@ foreach (@ARGV) {
 	$exmatch = $_;
 	next
     }
-    die "$loc: too many arguments or wrong options.\n";
+    usage "too many arguments or wrong options.\n";
 }
 
 die "$loc: missing exclusion pattern\n"
