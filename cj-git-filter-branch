@@ -43,27 +43,25 @@ our $opt_dry;
 
 our $make_filter= sub {
     my ($index_filter_thunk, $commit_filter_thunk)=@_;
-    my @cmd= (
-	      'git',
-	      'filter-branch',
+    sub {
+	# @ARGV being the list of files to remove
+	my @cmd= (
+		  'git',
+		  'filter-branch',
 
-	      '--index-filter',
-	      &$index_filter_thunk,
+		  '--index-filter',
+		  &$index_filter_thunk,
 
-	      '--commit-filter',
-	      &$commit_filter_thunk,
-	     );
-    ($opt_dry ?
-     sub {
-	 use Chj::singlequote 'singlequote_many';
-	 print "would call: ".singlequote_many(@cmd)."\n" or die $!;
-     }
-     :
-     sub {
-	 # @ARGV being the list of files to remove
-	 xxsystem @cmd;
-     }
-    )
+		  '--commit-filter',
+		  &$commit_filter_thunk,
+		 );
+	if ($opt_dry) {
+	    use Chj::singlequote 'singlequote_many';
+	    print "would call: ".singlequote_many(@cmd)."\n" or die $!;
+	} else {
+	    xxsystem @cmd;
+	}
+    }
 };
 
 our $removefiles= &$make_filter
