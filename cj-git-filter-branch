@@ -137,17 +137,16 @@ our $remove_all_but_those_in= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
-sub CmdSetter ( $ );#heh
 our $cmds=
   [
-   ["remove-files" => CmdSetter($removefiles),
+   ["remove-files" => $removefiles,
     "remove all given file paths from repo (including their commit if empty)"],
-   ["remove-dirs" => CmdSetter ($removedirs),
+   ["remove-dirs" => $removedirs,
     "remove all files in the given dir paths (including their commit if empty)"],# basically just a recursive version of the remove-files thing. wouldn't that message be too long?
-   ["remove-perlmatch" => CmdSetter ($remove_perlmatch),
+   ["remove-perlmatch" => $remove_perlmatch,
     "remove all files whose paths are printed by the given perl code; like 'print if m|someregex|' is enough, perl is run with flags to automatically strip and add \\0 path separation bytes"],
 
-   ["remove-all-but-those-in" => CmdSetter ($remove_all_but_those_in),
+   ["remove-all-but-those-in" => $remove_all_but_those_in,
     "remove all files except those which are listed (one path per line) in the file with the given path"],
   ];
 
@@ -181,16 +180,6 @@ exit (@_ ? 1 : 0);
 }
 
 our $command;
-sub CmdSetter ( $ ) {
-    my ($cmd)=@_;
-    sub {
-	if ($command) {
-	    usage "can't give more than one command, currently";
-	}
-	$command= $cmd
-    }
-}
-
 use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
@@ -198,7 +187,14 @@ GetOptions("verbose"=> \$verbose,
 	   "quiet-rm"=> \$opt_quiet_rm,
 	   "dry-run"=> \$opt_dry,
 	   map {
-	       @$_[0,1]
+	       my($key,$cmd)= @$_[0,1];
+	       ($key,
+		sub {
+		    if ($command) {
+			usage "can't give more than one command, currently (parsing option --$key)";
+		    }
+		    $command= $cmd
+		})
 	   } @$cmds
 	  ) or exit 1;
 usage unless @ARGV;
