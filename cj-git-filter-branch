@@ -57,7 +57,12 @@ our $make_filter= sub {
 		 );
 	if ($opt_dry) {
 	    use Chj::singlequote 'singlequote_many';
-	    print "would call: ".singlequote_many(@cmd)."\n" or die $!;
+	    print( "would call xxsystem with:\n "
+		   .
+		   join (" \\\n ",
+			 map {singlequote_sh($_)} @cmd)
+		   ."\n" )
+	      or die $!;
 	} else {
 	    xxsystem @cmd;
 	}
