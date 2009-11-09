@@ -39,21 +39,31 @@ echo "seeing a merge: $@" >&2
       fi
    fi';
 
+our $opt_dry;
+
 our $make_filter= sub {
     my ($index_filter_thunk, $commit_filter_thunk)=@_;
-    sub {
-	# @ARGV being the list of files to remove
-	xxsystem(
-		 'git',
-		 'filter-branch',
+    my @cmd= (
+	      'git',
+	      'filter-branch',
 
-		 '--index-filter',
-		 &$index_filter_thunk,
+	      '--index-filter',
+	      &$index_filter_thunk,
 
-		 '--commit-filter',
-		 &$commit_filter_thunk,
-		);
-    }
+	      '--commit-filter',
+	      &$commit_filter_thunk,
+	     );
+    ($opt_dry ?
+     sub {
+	 use Chj::singlequote 'singlequote_many';
+	 print "would call: ".singlequote_many(@cmd)."\n" or die $!;
+     }
+     :
+     sub {
+	 # @ARGV being the list of files to remove
+	 xxsystem @cmd;
+     }
+    )
 };
 
 our $removefiles= &$make_filter
@@ -163,6 +173,7 @@ $cmdsstr
 
   Options:
   --quiet-rm    pass quiet option to git rm
+  --dry-run     show what git filter-branch instance would be run.
 
   (Christian Jaeger <$email>)
 ";
@@ -185,6 +196,7 @@ our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "quiet-rm"=> \$opt_quiet_rm,
+	   "dry-run"=> \$opt_dry,
 	   map {
 	       @$_[0,1]
 	   } @$cmds
