@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ $# -ne 0 ]; then
+	echo "$0: error: not accepting arguments (for safety reasons)"
+	# don't want to commit all changes if I gave a couple paths
+	exit 1
+fi
+
+exec git commit --amend -a
