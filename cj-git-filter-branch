@@ -34,6 +34,7 @@ echo "seeing a merge: $@" >&2
    fi';
 
 our $opt_dry;
+our $opt_rev;
 
 our $make_filter= sub {
     my ($index_filter_thunk, $commit_filter_thunk)=@_;
@@ -48,6 +49,9 @@ our $make_filter= sub {
 
 		  '--commit-filter',
 		  &$commit_filter_thunk,
+
+		  ($opt_rev ? $opt_rev : ()),
+
 		 );
 	if ($opt_dry) {
 	    use Chj::singlequote 'singlequote_many';
@@ -170,6 +174,8 @@ $cmdsstr
   Options:
   --quiet-rm    pass quiet option to git rm
   --dry-run     show what git filter-branch instance would be run.
+  --rev         rev-list option(not plural, hm), passed to git filter-branch
+                to specify the range to be filtered.
 
   (Christian Jaeger <$email>)
 ";
@@ -183,6 +189,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "quiet-rm"=> \$opt_quiet_rm,
 	   "dry-run"=> \$opt_dry,
+	   "rev=s"=> \$opt_rev,
 	   map {
 	       my($key,$cmd)= @$_[0,1];
 	       ($key,
