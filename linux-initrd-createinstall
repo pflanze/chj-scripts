@@ -19,6 +19,7 @@ sub usage {
   Options:
   -c  create, if none existed for this kernel version before
   -v  verbose
+  --dry-run  only show
 
   (Christian Jaeger <$email>)
 ";
@@ -28,9 +29,11 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_create;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "c"=> \$opt_create,
+	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
@@ -44,16 +47,19 @@ our @cmd=("update-initramfs",
 	  "-k",
 	  $kernel_version);
 
-if ($verbose) {
+if ($verbose or $opt_dry) {
     use Chj::singlequote 'singlequote_many';
     print STDERR "running ".singlequote_many (@cmd)."..\n";
 }
-xxsystem @cmd;
+unless ($opt_dry) {
+    xxsystem @cmd;
 
-## also add verbosity here  ?
-xsystem "mvnumber", "$boot/initrd.img.old";#well.
-xrename "$boot/initrd.img", "$boot/initrd.img.old";
-xsymlink "initrd.img-$kernel_version", "$boot/initrd.img";
+    ## also add verbosity here  ?
+    xsystem "mvnumber", "$boot/initrd.img.old";#well.
+    xrename "$boot/initrd.img", "$boot/initrd.img.old";
+    xsymlink "initrd.img-$kernel_version", "$boot/initrd.img";
+}
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
