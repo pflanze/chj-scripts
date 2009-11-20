@@ -45,8 +45,9 @@ sub Do {
     my $proc=shift;
     my (@cmd)=@_;
     if ($verbose or $opt_dry) {
-	use Chj::singlequote 'singlequote_many';
-	print STDERR ($opt_dry ? "would run " : "running ").$proc." ".singlequote_many (@cmd)."\n";
+	use Chj::singlequote 'singlequote_sh';
+	print STDERR ($opt_dry ? "would run " : "running ").$proc." ".
+	  join(" ",map {singlequote_sh $_} (@cmd))."\n";
     }
     unless ($opt_dry) {
 	no strict 'refs';
