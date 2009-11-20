@@ -41,24 +41,32 @@ our ($kernel_version)=@ARGV;
 
 use Chj::xperlfunc;
 
+sub Do {
+    my $proc=shift;
+    my (@cmd)=@_;
+    if ($verbose or $opt_dry) {
+	use Chj::singlequote 'singlequote_many';
+	print STDERR ($opt_dry ? "would run " : "running ").$proc." ".singlequote_many (@cmd)."\n";
+    }
+    unless ($opt_dry) {
+	no strict 'refs';
+	# rely on $proc containing a string 'yay' ha.
+	$proc->(@cmd)
+    }
+}
+
+
 our @cmd=("update-initramfs",
 	  ($opt_create ? "-c" : "-u"),
 	  ($verbose ? "-v" : ()),
 	  "-k",
 	  $kernel_version);
 
-if ($verbose or $opt_dry) {
-    use Chj::singlequote 'singlequote_many';
-    print STDERR "running ".singlequote_many (@cmd)."..\n";
-}
-unless ($opt_dry) {
-    xxsystem @cmd;
+Do xxsystem=> @cmd;
 
-    ## also add verbosity here  ?
-    xsystem "mvnumber", "$boot/initrd.img.old";#well.
-    xrename "$boot/initrd.img", "$boot/initrd.img.old";
-    xsymlink "initrd.img-$kernel_version", "$boot/initrd.img";
-}
+Do xsystem=> "mvnumber", "$boot/initrd.img.old";#well.
+Do xrename=> "$boot/initrd.img", "$boot/initrd.img.old";
+Do xsymlink=> "initrd.img-$kernel_version", "$boot/initrd.img";
 
 
 #use Chj::ruse;
