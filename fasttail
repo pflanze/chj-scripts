@@ -7,6 +7,7 @@
 use strict;
 use Fcntl ":seek";
 
+my $sleepinterval= 1/20; # seconds
 my $check_interval=20;
 # this is in iterations, so with 20 iterations per second this means once each second
 
@@ -23,7 +24,7 @@ sub usage {
                detect replacements or truncations.
                This is now the default. Switch off with -C
   -C           switch off the periodic file stat
-  -s | --sleep-interval seconds  (may also be fractional) defaults to 0.05
+  -s | --sleep-interval seconds  (may also be fractional) defaults to $sleepinterval
   -w | --wait  wait for the file to appear, do not terminate if it vanishes.
 ";
 exit @_ ? 1 : 0;
@@ -31,8 +32,7 @@ exit @_ ? 1 : 0;
 
 my @files;
 my $DEBUG=0;
-my ($opt_t,$opt_c,$opt_q,$opt_s,$opt_wait);
-$opt_s=1/20;
+my ($opt_t,$opt_c,$opt_q,$opt_wait);
 $opt_c=1;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -55,9 +55,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_q=1;
     } elsif (/^--?s(?:leep-interval(?:=(.*))?)?$/) {
         if (defined $1) {
-            $opt_s=$1
+            $sleepinterval=$1
         } else {
-            $opt_s=$ARGV[++$i] or usage "missing argument for '$_' option";
+            $sleepinterval=$ARGV[++$i] or usage "missing argument for '$_' option";
         }
   } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
@@ -139,7 +139,7 @@ $buf=$rest="";
 $|=1;
 my $count=0;
 while (1) {
-    select "","","",$opt_s;
+    select "","","",$sleepinterval;
     defined(my $cnt=sysread IN,$newbuf,1000)
       or die "$myname: error reading from $files[0]: $!\n";
     if ($cnt) {
