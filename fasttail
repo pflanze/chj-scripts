@@ -7,7 +7,7 @@
 use strict;
 use Fcntl ":seek";
 
-my $sleepinterval= 1/20; # seconds
+my $sleepinterval= 1/4; # seconds
 my $check_interval=20;
 # this is in iterations, so with 20 iterations per second this means once each second
 
