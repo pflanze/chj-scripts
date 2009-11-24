@@ -139,7 +139,6 @@ $buf=$rest="";
 $|=1;
 my $count=0;
 while (1) {
-    select "","","",$sleepinterval;
     defined(my $cnt=sysread IN,$newbuf,1000)
       or die "$myname: error reading from $files[0]: $!\n";
     if ($cnt) {
@@ -194,6 +193,7 @@ while (1) {
 	    }
 	}
     }
+    select "","","",$sleepinterval;
 }
 
 print $rest;
