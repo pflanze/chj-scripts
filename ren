@@ -22,8 +22,10 @@ exit @_ ? 1 : 0;
 
 use Getopt::Long;
 our $DEBUG=0;
+our $opt_print_only;
 GetOptions("d|debug"=> \$DEBUG,
 	   "help"=> sub{usage},
+	   "print-only"=> \$opt_print_only,
 	  ) or exit 1;
 usage unless @ARGV;
 
@@ -60,11 +62,15 @@ sub ren {
 			}
 		    }
 		    eval {
-			if ($path_is_d) {
-			    xrename $path,$newpath;
+			if ($opt_print_only) {
+			    print $newpath."\n";
 			} else {
-			    # be unrisky to race conds
-			    xlinkunlink $path,$newpath;
+			    if ($path_is_d) {
+				xrename $path,$newpath;
+			    } else {
+				# be unrisky to race conds
+				xlinkunlink $path,$newpath;
+			    }
 			}
 		    };
 		    my $e=$@;
