@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#[todo check for -h ?]
+
+for f in "$@"; do
+    newf="`ren --print-only "$f"`"
+    g-mv "$f" "$newf"
+done
