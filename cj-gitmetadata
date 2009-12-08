@@ -126,12 +126,20 @@ use Chj::xperlfunc ':all';
 	# aber es ist schlimmer, nicht nur missing methods sondern batching ebenfalls.
 	# also handarbeit.
 	if ($stat->type eq $s->type) { ##aber warum mach ich mtime check vorher zersch? und nid beideshierorso.?. wl nj.hier quasi assert dass es sich umsrichtigehandelt? . [weil link utime nid accessible]
-	    # (keep old atime)
-	    xutime $stat->atime,$s->mtime, $$s[Path];
-	    # make it safe: first disable all access, then set owner, then set perms.
-	    xchmod 0, $$s[Path];
-	    xchown $s->xuid, $s->xgid, $s->path;
-	    xchmod $$s[Permissions], $$s[Path];
+	    if ($stat->mtime != $s->mtime) {
+		# (keep old atime)
+		xutime $stat->atime,$s->mtime, $$s[Path];
+	    }
+	    if (($stat->uid != $s->xuid)
+		or
+		($stat->gid != $s->xgid)
+		or
+		($stat->permissions != $s->permissions)) {
+		# make it safe: first disable all access, then set owner, then set perms.
+		xchmod 0, $$s[Path];
+		xchown $s->xuid, $s->xgid, $s->path;
+		xchmod $$s[Permissions], $$s[Path];
+	    }
 	} else {
 	    die "changed type: ".$stat->type." vs ".$s->type; ## why do I have to re write this. assign to a @v and then?.
 	}
