@@ -1,0 +1,216 @@
+#!/usr/bin/perl -w
+
+# Mon Dec  7 23:55:11 EST 2009
+(my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+our $metadatapath=".METADATA";
+our $versionstring= "#cj-gitmetadata version 1"; #the whole first line of the file
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname save|restore
+
+  save: create a file '$metadatapath' which contains metadata
+  information for all files in the current repository except for the
+  '$metadatapath' file itself (it does *not* git-add or commit it
+  automatically currently).
+
+  restore: read the file '$metadatapath', and restore the contained
+  metadata to all files, [except if they have a newer mtime than
+  stored in the metadatafile?]
+
+  NOTE: saves/expects on the current directory and subdirs only and
+  expects '$metadatapath' in the current directory. So if you want to
+  track metadata of the whole repository, cd to the root of the
+  working dir first.
+
+  Also, only the files in the current HEAD are tracked ('of course').
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==1;# optinally take list of files to save[well,update?] or restore?
+our ($command)= @ARGV;
+
+use Chj::xperlfunc ':all';
+
+{
+    package CHJ::Metadata;
+    our @statfields;
+    BEGIN {
+	@statfields=
+	  (
+	   #'atime', can't use it, because some filesystems are not mounted noatime. And maybe other problems. I don't want to have fussy data in the reposi.
+	   'mtime',
+	   # inode: nope, since not 'portable' (can't be 'ported' to another sys)
+	   'permissions', #inkl setuid and such, right?.
+	   'type', #not settable of course. but checkable, ok?. like symlink vs file.
+	   'username', #not uid, right?
+	   #'uid', #keep anyway? well but no would give bad diff
+	   'groupname',
+	  );
+    }
+    use Class::Array -fields=>
+      -publica=>
+	(
+	 'path',
+	 @statfields,
+	);
+    sub new_from_stat {
+	my $cl=shift;
+	my ($path,$stat)=@_;
+	my $s=$cl->SUPER::new;
+	$$s[Path]=$path;
+	for my $field (@statfields) {
+	    my $setmethod="set_$field";
+	    $s->$setmethod($stat->$field); #dankseiundwl irg. #h wl wenn op symbols dann auch geh. [heh und jo hash lookup dann heheheh]
+	}
+	$s
+    }
+    use Chj::xperlfunc 'xlstat','xutime','xchmod','xchown';
+    sub new_from_path {
+	my $cl=shift;
+	my ($path)=@_;
+	$cl->new_from_stat($path,
+			   scalar xlstat($path));
+    }
+    use Chj::schemestring 'schemestring_oneline','parse_schemestring';
+    sub stringify {
+	my $s=shift;
+	join("\t", #to make parsing easy harharhar
+	     map {
+		 scalar schemestring_oneline(scalar $s->$_)
+	     }
+	     (
+	      'path',
+	      @statfields,
+	     ))
+    }
+    sub new_from_string { #parse
+	my $cl=shift;
+	my ($str)=@_;
+	my $s=$cl->SUPER::new;
+	my @v=
+	  (
+	   map {
+	       scalar parse_schemestring $_
+	   }
+	   split /\t/, $str
+	  );
+	# pairing how?...
+	$$s[Path]= shift @v;
+	for (my $i=0; $i < @statfields; $i++) {
+	    my $field= $statfields[$i];
+	    my $setmethod="set_$field";
+	    $s->$setmethod($v[$i]);
+	}
+	$s
+    }
+    # equal method needed?
+    sub restore {
+	my $s=shift;
+	my ($stat)=@_;#since I already have it at hands..
+	# merke dass ich eben gar nid, einfach, @statfields lesen kan, fall für macros or. spec massige liste. code undso. "or?".[[howdoyoudothatfnctsl?.x]]
+	# und zwar nur weil keine methoden da sind  erneut. !.  setten von dingern  solltejustso. wsch haha  wl  .  kopy von fields. altes business  matching so  quasi  wie  closures fabrizieren von ausserem kontext  "???".
+	# aber es ist schlimmer, nicht nur missing methods sondern batching ebenfalls.
+	# also handarbeit.
+	if ($stat->type eq $s->type) { ##aber warum mach ich mtime check vorher zersch? und nid beideshierorso.?. wl nj.hier quasi assert dass es sich umsrichtigehandelt? . [weil link utime nid accessible]
+	    xutime $s->atime,$s->mtime, $$s[Path];
+	    # make it safe: first disable all access, then set owner, then set perms.
+	    xchmod 0, $$s[Path];
+	    xchown $s->xuid, $s->xgid, $s->path;
+	    xchmod $$s[Permissions], $$s[Path];
+	} else {
+	    die "changed type: ".$stat->type." vs ".$s->type; ## why do I have to re write this. assign to a @v and then?.
+	}
+    }
+    sub atime {
+	my $s=shift;
+	$$s[Mtime]
+    }
+    sub mkx_id {
+	my ($idname, $namemethod, $op)=@_;
+	sub {
+	    my $s=shift;
+	    my $name= $s->$namemethod;
+	    if (defined (my $res=$op->($name))) {
+		$res
+	    } else {
+		die "x$idname: unknown $namemethod: $name";
+	    }
+	}
+    }
+    sub xuid; sub xgid;#prevent warning sigh.
+    *xuid= mkx_id ("uid", "username", sub { getpwnam $_[0] });
+    *xgid= mkx_id ("gid", "groupname", sub { getgrnam $_[0] });
+    end Class::Array;
+}
+
+
+use Chj::xopen 'xopen_read';
+use Chj::xtmpfile;
+use Chj::IO::Command;
+
+our $commands=
+  +{
+    # n sub namensraumnaturlich. derdritte undnamensraum.
+    save=> sub {
+	my $c= Chj::IO::Command->new_sender ("git","ls-files","-z");
+	local $/="\0";
+	my $out= xtmpfile $metadatapath;
+	$out->xprint("$versionstring\n");
+	while (<$c>) {
+	    chop;
+	    my $path=$_;
+	    if ($path eq $metadatapath) {
+		# ignore
+	    } else {
+		my $metadata= CHJ::Metadata->new_from_path ($path);
+		$out->xprint($metadata->stringify,"\n");
+	    }
+	}
+	$c->xxfinish;
+	$out->xclose;
+	$out->xputback(0644);#k?.
+	# add and commit it?
+    },
+    restore=> sub {
+	my $in= xopen_read $metadatapath;
+	my $first= <$in>;
+	chomp $first;
+	$first eq $versionstring
+	  or die "unknown version line of '$metadatapath' file: '$first', expecting '$versionstring'";
+	while (<$in>) {
+	    chomp;
+	    local our $metadata= CHJ::Metadata->new_from_string ($_);
+	    my $path= $metadata->path;
+	    local our $s= xlstat $path;
+#	    if ($s->mtime > $metadata->mtime) {
+#		warn "file has changed (newer mtime), ignoring: '$path'\n";##
+#	    } else {
+		$metadata->restore($s); # need to be a method because it needs access to the field list. rite. harhar. (wl so hat man versch  hingehörigkeitn.)
+#	    }
+#	    use Chj::repl; repl;
+	}
+    }
+   };
+if (my $c= $$commands{$command}) {
+    &$c
+} else {
+    usage "unknown command '$command'"
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
