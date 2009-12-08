@@ -126,7 +126,8 @@ use Chj::xperlfunc ':all';
 	# aber es ist schlimmer, nicht nur missing methods sondern batching ebenfalls.
 	# also handarbeit.
 	if ($stat->type eq $s->type) { ##aber warum mach ich mtime check vorher zersch? und nid beideshierorso.?. wl nj.hier quasi assert dass es sich umsrichtigehandelt? . [weil link utime nid accessible]
-	    xutime $s->atime,$s->mtime, $$s[Path];
+	    # (keep old atime)
+	    xutime $stat->atime,$s->mtime, $$s[Path];
 	    # make it safe: first disable all access, then set owner, then set perms.
 	    xchmod 0, $$s[Path];
 	    xchown $s->xuid, $s->xgid, $s->path;
@@ -137,7 +138,7 @@ use Chj::xperlfunc ':all';
     }
     sub atime {
 	my $s=shift;
-	$$s[Mtime]
+	die "not available";
     }
     sub mkx_id {
 	my ($idname, $namemethod, $op)=@_;
