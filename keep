@@ -102,7 +102,7 @@ sub rotate($) {
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my %takennumbers;
     while (defined (local $_=readdir DIR)){
-	if (/^\Q$itemname\E\.(\d+)/s) {
+	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) {
 	    # found a (probable) backup item.
 	    if (exists $takennumbers{$1}) {
 		die "Problem: '$_' uses same backup number as '$takennumbers{$1}'. Terminating.\n";
@@ -132,7 +132,7 @@ sub keep($) {
     my $usenumber=1;
     while (defined (local $_=readdir DIR)){
 	#if (/^\Q$itemname\E\.(\d)(?:[_ :-]|$)/s) { ## auch fortführung möglich
-	if (/^\Q$itemname\E\.(\d+)/s) { ## auch fortführung möglich
+	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) { ## auch fortführung möglich
 	    # found a backup item.
 	    if ($1 >= $usenumber){
 		$usenumber= $1+1;
