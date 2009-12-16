@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+
+# Tue May 26 18:11:00 EDT 2009
+(my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
+
+use strict;
+
+our $default_samplerate= 22050;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [samplerate]
+
+  Do a local echo test with the given sample rate (default: $default_samplerate)
+
+  Options:
+  --resample    do resampling in userspace
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_resample;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "resample"=> \$opt_resample,
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+our $rate= @ARGV ? $ARGV[0] : $default_samplerate;
+
+$rate=~ /^\d+\z/ or die "not a number '$rate'";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+use Chj::xperlfunc;
+
+our $len= int($rate*1.5);
+
+sub _xxsystem ($ ) {
+    print "@_\n";
+    xxsystem @_
+}
+
+if ($opt_resample) {
+    our $semilen= int($len/2);
+    our $datrate= 48000;
+    our $prelen= int ($datrate*1.5/2);
+    _xxsystem
+      ("arecord -t raw -f dat -c 1 | ".
+       "bfr -m $prelen | ".
+       "sox -t raw -r $datrate -s -2 -c 1 -  -t raw -r $rate -".
+       #recoding:
+       "   resample -ql |".
+       "bfr -m $semilen | ".
+       "aplay -t raw -f dat -r $rate -c 1 -");
+} else {
+    _xxsystem
+      ("arecord -t raw -f dat -r $rate -c 1 | ".
+       "bfr -m $len | ".
+       "aplay -t raw -f dat -r $rate -c 1 -");
+}
