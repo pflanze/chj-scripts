@@ -58,6 +58,25 @@ sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
 
+use Chj::xrealpath;
+use Chj::xopendir;
+#sub dev_to_maybe_
+sub maybe_uuid_from_dev {
+    my ($devpath)=@_;
+    my $search= xrealpath $devpath;
+    my $base= "/dev/disk/by-uuid";
+    my $d= xopendir $base;
+    # local chdir wl. wt gmb provides. eben manuell dieses machen hier.
+    while (defined (my$item=$d->xnread)) {
+	my $found= xrealpath "$base/$item";
+	if ($found eq $search) {
+	    return $item
+	}
+    }
+    $d->xclose;
+    undef
+}
+
 sub mount_easily {
     my ($device_path)=@_;
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
@@ -74,7 +93,9 @@ sub mount_easily {
 	}
     }
 
-    my $dest_path=  "/mnt/".basename $device_path; ###
+    my $maybe_uuid= maybe_uuid_from_dev $device_path;
+    my $id= defined($maybe_uuid)? $maybe_uuid : basename $device_path;
+    my $dest_path=  "/mnt/".$id;
     my $mount_on= sub ( $ ) {
 	my ($dest_path)=@_;
 	my $options= join(",", keys %$mountoptions);
