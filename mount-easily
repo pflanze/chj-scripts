@@ -77,6 +77,23 @@ sub maybe_uuid_from_dev {
     undef
 }
 
+use Chj::IO::Command;
+sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
+    my ($devpath)=@_;
+    # could also be file. no problem.
+    my $in= Chj::IO::Command->new_sender
+      ("file","--brief","--special-files",$devpath);
+    my $cnt= $in->xcontent;
+    $in->xxfinish; # or just xfinish?
+    if ($cnt=~ /^LUKS encrypted/) {
+	$cnt
+    } else {
+	undef
+    }
+}
+
+use Chj::xperlfunc;
+
 sub mount_easily {
     my ($device_path)=@_;
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
@@ -95,6 +112,26 @@ sub mount_easily {
 
     my $maybe_uuid= maybe_uuid_from_dev $device_path;
     my $id= defined($maybe_uuid)? $maybe_uuid : basename $device_path;
+
+    if (my $luks= maybe_luks $device_path) {
+	print $luks;
+	my $devicemapper_path= "/dev/mapper/$id"; #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
+	if (-e $devicemapper_path) {
+	    # already set up
+	} else {
+	    xxsystem "cryptsetup", "luksOpen", $device_path, $id;
+	    ##hm what with failed pw's? retry?.
+	}
+	# here comes the mutation:
+	$device_path= $devicemapper_path;
+	# hm and now get the id of the decrypted volume ?. or actually
+	# hide that??. hide / ignore it for now and we get the "same
+	# id for mapper and for mount point" behaviour.
+	# Question: maybe I even *want* that behaviour of using the id
+	# of the (outmost) *container*?: I could mount a copy twice
+	# you "knw!"
+    }
+
     my $dest_path=  "/mnt/".$id;
     my $mount_on= sub ( $ ) {
 	my ($dest_path)=@_;
