@@ -78,17 +78,31 @@ sub maybe_uuid_from_dev {
 }
 
 use Chj::IO::Command;
-sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
+
+sub try_file {
+    # do not throw exception on error, but return an error (not false in perl5..)
+    # well why not the tuple case. boolean   there  still.
+    # hm.   (vs multiple cont vs x..)
     my ($devpath)=@_;
     # could also be file. no problem.
     my $in= Chj::IO::Command->new_sender
       ("file","--brief","--special-files",$devpath);
     my $cnt= $in->xcontent;
-    $in->xxfinish; # or just xfinish?
-    if ($cnt=~ /^LUKS encrypted/) {
-	$cnt
+    my $res= $in->xfinish;
+    ($res==0,$cnt)
+}
+
+sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
+    my ($devpath)=@_;
+    my ($ok,$cnt)= try_file $devpath;
+    if ($ok) {
+	if ($cnt=~ /^LUKS encrypted/) {
+	    $cnt
+	} else {
+	    undef
+	}
     } else {
-	undef
+	die "error checking '$devpath': $cnt";
     }
 }
 
@@ -116,11 +130,27 @@ sub mount_easily {
     if (my $luks= maybe_luks $device_path) {
 	print $luks;
 	my $devicemapper_path= "/dev/mapper/$id"; #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
-	if (-e $devicemapper_path) {
-	    # already set up
-	} else {
+	my $open= sub {
 	    xxsystem "cryptsetup", "luksOpen", $device_path, $id;
 	    ##hm what with failed pw's? retry?.
+	};
+	if (-e $devicemapper_path) {
+	    # check whether it's still working
+	    my ($ok,$cnt)= try_file $devicemapper_path; # yeh it's a bit a misuse of that tool right?...
+	    if ($ok) {
+		#if ($cnt=~ )
+		#no need to check.
+		# already set up
+	    } else {
+		if ($cnt=~ m|Input/output error|i) {
+		    xxsystem "cryptsetup", "luksClose", $devicemapper_path;
+		    &$open
+		} else {
+		    die "unexpected error checking '$devicemapper_path': $cnt";#well doppelmoppel path in err msg.
+		}
+	    }
+	} else {
+	    &$open
 	}
 	# here comes the mutation:
 	$device_path= $devicemapper_path;
