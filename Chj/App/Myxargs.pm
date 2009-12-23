@@ -72,6 +72,29 @@ sub Hash_addnew ( $ $ ) {
     $res
 }
 
+
+sub MyGetOptions {
+    # only accept options up to the first argument not starting with a dash. or so.
+    # well ugly wegen argtaking options.
+    # well luckily we don't have any of those here.hu.
+    my @argv1;
+    while (@ARGV) {
+	my $v= shift @ARGV;
+	if ($v=~ /^-/) {
+	    push @argv1, $v;
+	} else {
+	    unshift @ARGV, $v; #'haha'  wl wsm
+	    last;
+	}
+    }
+    my @argv2=@ARGV;
+    @ARGV=@argv1;
+    my $res= GetOptions (@_);
+    die "??" if @ARGV;
+    @ARGV=@argv2;
+    $res
+}
+
 #use Chj::Backtrace;
 sub options_and_cmd {
     my ($maybe_optiondefaults)=@_;
@@ -90,8 +113,8 @@ sub options_and_cmd {
 	    $$options{'no-run-if-empty'}=0
 	},
        });
-    GetOptions($options,
-	       keys %$optionspec)
+    MyGetOptions($options,
+		 keys %$optionspec)
       or exit 1;
     usage unless @ARGV;
     #($options, [@ARGV]) well. rather?: well or not?
