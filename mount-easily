@@ -85,8 +85,9 @@ sub try_file {
     # hm.   (vs multiple cont vs x..)
     my ($devpath)=@_;
     # could also be file. no problem.
+    my $devrealpath= xrealpath $devpath; # to resolve symlinks
     my $in= Chj::IO::Command->new_sender
-      ("file","--brief","--special-files",$devpath);
+      ("file","--brief","--special-files",$devrealpath);
     my $cnt= $in->xcontent;
     my $res= $in->xfinish;
     ($res==0,$cnt)
