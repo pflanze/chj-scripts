@@ -80,7 +80,9 @@ sub MyGetOptions {
     my @argv1;
     while (@ARGV) {
 	my $v= shift @ARGV;
-	if ($v=~ /^-/) {
+	if ($v eq "--") {
+	    last;
+	} elsif ($v=~ /^-/) {
 	    push @argv1, $v;
 	} else {
 	    unshift @ARGV, $v; #'haha'  wl wsm
