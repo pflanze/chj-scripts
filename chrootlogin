@@ -19,10 +19,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_X;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
+	   "X"=> \$opt_X,
+	  ) or exit 1;
 usage unless @ARGV==2;
 
 our ($chrootbase,$user)=@ARGV;
@@ -54,6 +56,39 @@ if (not $devfs_is_initialized) {
 
 mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755', #against "Possible attempt to separate words with commas" warning gr.
   "tmpfs","$chrootbase/lib/init/rw";
+
+my $X= ($opt_X and $ENV{DISPLAY});
+
+use Chj::xopen 'xopen_read';
+use Chj::xtmpfile;
+# XXX: ignores any XAUTHORITY(?) env var setting.
+my $Xauth= $X ? xopen_read("$ENV{HOME}/.Xauthority")->xcontent : undef;
+
+#ps jo warum machen die nid nur env var verwendung "btw ??" h erlaubt mir zu rm aber ?.war das der grund?
+
+#how write the file. chroot and su in perl script would be most logically.senseful.foo.
+if ($X) {
+    if (xfork) {
+	xxwait;
+    } else {
+	xchroot $chrootbase;
+	my
+	  ($name,$passwd,$uid,$gid,
+	   $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam $user
+	     or die "could not look up user '$user'";
+	xchdir $dir;
+	#oh, don't forget the setuid stuff...
+	$( = $gid; $) = $gid;
+	$< = $uid; $> = $uid;
+	#or die? how ?  and  does it delete the secondary groups?
+	my $f= xtmpfile ".Xauthority";
+	$f->xprint($Xauth);
+	$f->xclose;
+	$f->xputback(0600);
+	exit 0;
+    }
+}
+
 
 #use Chj::Unix::User;
 #hm. really? or not?
