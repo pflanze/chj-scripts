@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+# Wed Dec 23 18:38:22 CET 2009
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname chrootbase user
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($chrootbase,$user)=@ARGV;
+
+#use Chj::Unix::User;
+#hm. really? or not?
+
+use Chj::xperlfunc;
+
+xexec "chroot", $chrootbase, "su", "-", $user;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
