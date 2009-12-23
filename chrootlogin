@@ -27,10 +27,36 @@ usage unless @ARGV==2;
 
 our ($chrootbase,$user)=@ARGV;
 
-#use Chj::Unix::User;
-#hm. really? or not?
+use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
+
+mount_if_not_already qw(-t proc proc), "$chrootbase/proc";
+mount_if_not_already qw(-t usbfs usbfs), "$chrootbase/proc/bus/usb";
+
+mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
+#mount_if_not_already qw(-t ), "$chrootbase/dev"; well no. k ?. start devfs instead.
+my $devfs_is_initialized= mounted "$chrootbase/dev";
+
+#sub chroot {
+#    "chroot", $chrootbase, "su", "-", $user;
+#} and add args. but also goto. well . so is es   manually.
+
 
 use Chj::xperlfunc;
+
+if (not $devfs_is_initialized) {
+    #    xsystem "chroot", $chrootbase, #actually gar kein su needed 'heh'x
+    #      "/etc/init.d/udev", "start";
+    #actually that's not even installed after debootstrap. and maybe I don't want it to scan all my devices twice, really, yes really.
+    #just bind mount it
+    mount "--bind", "/dev", "$chrootbase/dev";
+    mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
+}
+
+mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755', #against "Possible attempt to separate words with commas" warning gr.
+  "tmpfs","$chrootbase/lib/init/rw";
+
+#use Chj::Unix::User;
+#hm. really? or not?
 
 xexec "chroot", $chrootbase, "su", "-", $user;
 
