@@ -28,6 +28,15 @@ sub usage {
   --ro|--readonly
   [--noatime wll use as default anyway ok?]
 
+  Notes:
+  - if available, automatically uses the uuid of partitions as luks dev
+    mapper names and mount points
+  - tip: after having mounted easily a partition:
+     umount /mnt/\$uuid
+     cd /mnt
+     mv \$uuid \$what_you_want_to_see_in_mount_tab
+     ln -s \$what_you_want_to_see_in_mount_tab \$uuid
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
