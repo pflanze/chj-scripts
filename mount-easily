@@ -272,7 +272,7 @@ if ($opt_auto) {
 	    }
 	}
 	#use Chj::Backtrace; use Chj::repl; repl;
-	mount_easily( $_->path, (@newitems > 1 or $verbose)) for @newitems;
+	mount_easily( $_->path, 1) for @newitems;
     }
 } else {
     if (@ARGV) {
