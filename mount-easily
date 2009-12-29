@@ -5,11 +5,14 @@
 
 use strict;
 
+# how much older the next-older entry can be to still be automatically mounted
+our $auto_max_delay= 1; #seconds
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname device
+    print "$myname --auto|device(s)
 
   Automatically turns the device path into a mount path and mounts the
   device on that path. Errors out when something is mounted on the
@@ -27,6 +30,9 @@ sub usage {
             check the parent dir for 0700 perms? well no for now]
   --ro|--readonly
   [--noatime wll use as default anyway ok?]
+  --auto    mount the latest entries in /dev/disk/by-uuid/
+            (going backward from the latest and stopping when an entry
+            is more than $auto_max_delay second(s) younger)
 
   Notes:
   - if available, automatically uses the uuid of partitions as luks dev
@@ -48,6 +54,7 @@ our $verbose=0;
 our $mountoptions= { noatime => 1 };
 our $opt_createdir;
 our $opt_private;
+our $opt_auto;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "ro|readonly"=> sub {
@@ -58,8 +65,8 @@ GetOptions("verbose"=> \$verbose,
 	   },
 	   "c|create-dir"=> \$opt_createdir,
 	   "private"=> \$opt_private,
-	   ) or exit 1;
-usage unless @ARGV==1;
+	   "auto"=> \$opt_auto,
+	  ) or exit 1;
 
 use Chj::Unix::Mount 'mounted','mount';
 use Chj::xperlfunc qw(xmkdir basename dirname xstat);
@@ -119,7 +126,10 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
 use Chj::xperlfunc;
 
 sub mount_easily {
-    my ($device_path)=@_;
+    my ($device_path, $verbose)=@_;
+    if ($verbose) {
+	print "mounting '$device_path'..\n";
+    }
     #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
 
     # check whether we need -o loop: (safe enough?hopeso)
@@ -214,9 +224,63 @@ sub mount_easily {
 	    mydie "target dir '$dest_path' does not exist and --create-dir option not given"
 	}
     }
+    if ($verbose) {
+	print "done.\n";
+    }
 }
 
-mount_easily $_ for @ARGV;
+use Chj::xperlfunc qw(xlstat);
+
+{
+    package CHJ::mount_easily::item;
+    use Class::Array -fields=> -publica=>
+      ('path','lstat');
+    sub mtime {
+	my $s=shift;
+	$$s[Lstat]->mtime
+    }
+    end Class::Array;
+}
+
+if ($opt_auto) {
+    if (@ARGV) {
+	usage "both --auto and arguments given"
+    } else {
+	my $sortfn= sub {
+	    my ($v)=@_;
+	    $$v[1]->mtime
+	      #only extractfn should it be named.
+	};
+	local our @items = sort {
+	    #reverse sort
+	    &$sortfn ($b) <=> &$sortfn ($a)
+	} map {
+	    my $s= xlstat $_;
+	    bless [ $_, $s ], "CHJ::mount_easily::item"
+	} glob "/dev/disk/by-uuid/*";
+	local our @newitems;
+	my $first= shift @items
+	  or die "no items in /dev/disk/by-uuid/";
+	push @newitems, $first;
+	my $mtime= $first->mtime;
+	for my $item (@items) {
+	    if (($mtime - $item->mtime) > $auto_max_delay) {
+		last;
+	    } else {
+		push @newitems, $item;
+		$mtime= $item->mtime;
+	    }
+	}
+	#use Chj::Backtrace; use Chj::repl; repl;
+	mount_easily( $_->path, (@newitems > 1 or $verbose)) for @newitems;
+    }
+} else {
+    if (@ARGV) {
+	mount_easily( $_, (@ARGV > 1 or $verbose)) for @ARGV;
+    } else {
+	usage "neither --auto nor arguments given"
+    }
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
