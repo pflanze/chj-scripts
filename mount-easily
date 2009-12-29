@@ -126,7 +126,7 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
 use Chj::xperlfunc;
 
 sub mount_easily {
-    my ($device_path, $verbose)=@_;
+    my ($device_path, $verbose, $ignore_if_mountpoint_missing)=@_;
     if ($verbose) {
 	print "mounting '$device_path'..\n";
     }
@@ -221,7 +221,14 @@ sub mount_easily {
 		&$mount_on( $dest_path);
 	    }
 	} else {
-	    mydie "target dir '$dest_path' does not exist and --create-dir option not given"
+	    if ($ignore_if_mountpoint_missing) {
+		if ($verbose) {
+		    print "ignoring, mountpoint '$dest_path' does not exist.\n";
+		    return; #u oh well. (to 'miss' the below print on purpose)
+		}
+	    } else {
+		mydie "target dir '$dest_path' does not exist and --create-dir option not given"
+	    }
 	}
     }
     if ($verbose) {
@@ -272,7 +279,7 @@ if ($opt_auto) {
 	    }
 	}
 	#use Chj::Backtrace; use Chj::repl; repl;
-	mount_easily( $_->path, 1) for @newitems;
+	mount_easily( $_->path, 1, 1) for @newitems;
     }
 } else {
     if (@ARGV) {
