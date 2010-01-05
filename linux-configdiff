@@ -84,7 +84,20 @@ my @t= map { stripcomment_n_sort $_ } @args;
 
 #apply btw
 
-my $r= xsystem "diff","-u", map { $_->path } @t;
+my $r= do {
+    if (0) {
+	xsystem "diff","-u", map { $_->path } @t;
+    } else {
+	my $in= Chj::IO::Command->new_sender
+	  ("diff","-u", map { $_->path } @t);
+	while (<$in>) {
+	    #print $_ if /^[+-]/ or die $!;
+	    (print $_ or die $!) if /^[+-]/;
+	    #yp, tj ww.
+	}
+	$in->xfinish
+    }
+};
 
 $r==256 or $r==0 or die "diff exited with status $r";
 exit( $r ? 1 : 0);#klammern modal ehr  so
