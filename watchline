@@ -13,8 +13,8 @@ sub usage {
   given to a subshell so allows for metacharacters and
   redirections. (You know, perl is perl)
   Options:
-  -n seconds   interval (default 1)
-  -t           print timestamps
+  -n|-s seconds   interval (default 1)
+  -t              print timestamps
 ";
 exit @_;
 }
@@ -30,7 +30,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif ($_ eq '--') {
     	push @files, @ARGV[$i+1..$#ARGV];
     	last;
-    } elsif (/^-n$/) {
+    } elsif (/^-[ns]$/) {
 	$n= $ARGV[++$i];
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
