@@ -3,7 +3,13 @@
 #Fri, 31 May 2002 15:50:51 +0200
 #^--sigh, erst jetzt einen bug geflickt   bisher warn einzelne - in url nicht erkannt   weil es (-{2,}) war
 use strict;
-use Chj::Web::FileescapeUrl qw(fileescapeurl);
+use Chj::Web::FileescapeUrl (); #qw(fileescapeurl);
+sub fileescapeurl {
+    my ($url_with_everything)=@_;
+    my $url= $url_with_everything;
+    $url=~ s/#.*//s;
+    Chj::Web::FileescapeUrl::fileescapeurl($url);
+}
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;

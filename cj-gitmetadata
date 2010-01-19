@@ -6,6 +6,7 @@
 use strict;
 
 our $metadatapath=".METADATA";
+our $metadataignorepath= "$metadatapath.ignore";
 our $versionstring= "#cj-gitmetadata version 1"; #the whole first line of the file
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -16,7 +17,8 @@ sub usage {
 
   save: create a file '$metadatapath' which contains metadata
   information for all files in the current repository except for the
-  '$metadatapath' file itself (it does *not* git-add or commit it
+  '$metadatapath' file itself and, if present, the files listed in
+  '$metadataignorepath' (it does *not* git-add or commit it
   automatically currently).
 
   restore: read the file '$metadatapath', and restore the contained
@@ -168,6 +170,23 @@ use Chj::xperlfunc ':all';
 
 
 use Chj::xopen 'xopen_read';
+
+our $ignore=
+  +{
+    $metadatapath=> 1,
+    $metadataignorepath=> 1,
+   };
+
+if (-f $metadataignorepath) {
+    my $in=xopen_read $metadataignorepath;
+    while (<$in>) {
+	chomp;
+	#s/ +\z//;#k?.
+	$$ignore{$_}++;
+    }
+    $in->xclose;
+}
+
 use Chj::xtmpfile;
 use Chj::IO::Command;
 
@@ -182,7 +201,7 @@ our $commands=
 	while (<$c>) {
 	    chop;
 	    my $path=$_;
-	    if ($path eq $metadatapath) {
+	    if ($$ignore{$path}) {
 		# ignore
 	    } else {
 		my $metadata= CHJ::Metadata->new_from_path ($path);
