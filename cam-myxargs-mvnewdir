@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -eu
+
+if [ $# != 1 ]; then
+	echo "usage: $0 dirname"
+	exit 1
+fi
+
+dir="$1"
+
+mkdir -p "$dir"
+
+ls2list|myxargs mvto "$dir"
