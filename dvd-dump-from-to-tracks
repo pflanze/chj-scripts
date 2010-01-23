@@ -9,6 +9,10 @@ shift
 
 verbose=""
 
+if ! test -d "$todir"; then
+    mkdir "$todir"
+fi
+
 for i in "$@"; do
     time mplayer $verbose -dvd-device "$fromdir" dvd://"$i" -dumpstream -dumpfile "$todir"/"$i".vob
     echo "`date` --- done with $i ---"
