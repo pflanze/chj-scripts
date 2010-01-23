@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -eu
+
+fromdir="$1"
+shift
+todir="$1"
+shift
+
+verbose=""
+
+for i in "$@"; do
+    time mplayer $verbose -dvd-device "$fromdir" dvd://"$i" -dumpstream -dumpfile "$todir"/"$i".vob
+    echo "`date` --- done with $i ---"
+done
