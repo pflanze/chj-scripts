@@ -9,11 +9,20 @@ shift
 
 verbose=""
 
+logfile="$todir/log"
+
 if ! test -d "$todir"; then
     mkdir "$todir"
+else
+    if test -f "$logfile"; then
+	mvnumber "$logfile"
+    fi
 fi
 
+
+{
 for i in "$@"; do
     time mplayer $verbose -dvd-device "$fromdir" dvd://"$i" -dumpstream -dumpfile "$todir"/"$i".vob
     echo "`date` --- done with $i ---"
 done
+} 2>&1 | tee "$logfile"
