@@ -23,6 +23,6 @@ fi
 {
 for i in "$@"; do
     time mplayer $verbose -dvd-device "$fromdir" dvd://"$i" -dumpstream -dumpfile "$todir"/"$i".vob
-    echo "`date` --- done with $i ---"
+    echo "`date` --- done with $i, exit code $? ---"
 done
 } 2>&1 | tee "$logfile"
