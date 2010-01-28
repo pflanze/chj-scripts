@@ -71,7 +71,7 @@ my $date= `date -R`;
 
 $$a= "$firstline
 
-  * recompiled from unstable
+  * recompiled from testing
 
  -- $ENV{USER} <$email>  $date
 $$a";
