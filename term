@@ -18,10 +18,25 @@ if ($pid) {
     # setting to xterm seems to work? whereas without it
     #  (older) debian (without urxvt installed) usually gives
     # "Cannot find terminfo entry for 'rxvt-unicode'"
-    exec "urxvt", ("-tn", "xterm",
-		   ($> == 0 ? ("-bg", "#ffd8d8") : ()),
-		   @ARGV)
-      or exit 127;
+    my $run= sub {
+	my (@args)=@_;
+	exec "urxvt", ("-tn", "xterm",
+		       ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+		       @args)
+	  or exit 127;
+    };
+    if (@ARGV==1
+	# and stat $ARGV[0]
+	#and  regex? but relative paths. no way.
+	#just make sure options won't do wrong:
+	and not $ARGV[0]=~ /^-/
+       ) {
+	chdir $ARGV[0]
+	  or die "could not chdir '$ARGV[0]': $!";
+	&$run();
+    } else {
+	&$run(@ARGV)
+    }
 }
 
 
