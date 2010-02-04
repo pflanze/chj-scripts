@@ -34,10 +34,12 @@ exit (@_ ? 1 : 0);
 	 release_date
 	 num_packages_binary
 	 num_packages_source
-	 num_developers);
+	 num_developers
+	 securitysupport_termination_date
+	);
     sub new {
 	my $class=shift;
-	@_==6 or die;
+	@_==7 or die;
 	bless [@_],$class
     }
     sub as_string {
@@ -60,7 +62,9 @@ exit (@_ ? 1 : 0);
 	       } qw(release_date
 		    num_packages_binary
 		    num_packages_source
-		    num_developers)
+		    num_developers
+		    securitysupport_termination_date
+		   )
 	      )
 	."]")
     }
@@ -80,21 +84,21 @@ our $releases=
    map { new CHJ::Release @$_ }
    # name, number, release_date, num_packages_binary, num_packages_source,
    #    num_developers,
-   ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+" ],
+   ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+", undef ],
    #   ^ is the 1500+ number for binary packages really?
-   ["slink", "2.1", "1999-03-09", "~2250", undef, undef ],
+   ["slink", "2.1", "1999-03-09", "~2250", undef, undef, undef ],
    # ^ first to include apt; Alpha + Sparc
-   ["potato", "2.2", "2000-08-15", "3900+", "2600+", "450+"],
+   ["potato", "2.2", "2000-08-15", "3900+", "2600+", "450+", undef],
    # ^ PowerPC and ARM
    # Introduction of "Testing" distribution ("unstable" did already exist)
-   ["woody", "3.0", "2002-07-19", "~8500", undef, "900+" ],
+   ["woody", "3.0", "2002-07-19", "~8500", undef, "900+", undef ],
    # ^ first on DVD media
-   ["sarge", "3.1", "2005-06-06", "~15000", undef, "1500+" ],
+   ["sarge", "3.1", "2005-06-06", "~15000", undef, "1500+", undef ],
    # ^ *unofficial* AMD64 port; new installer (with RAID, XFS and LVM support)
    #   'aptitude as the selected tool for package management'
-   ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+" ], #hm muchless?.
+   ["etch", "4.0", "2007-04-08", "~18200", undef, "1030+", "2010-02-15" ], #hm muchless?.
    # ^ includes AMD64, but drops m68k (which was still in unstable, though)
-   ["lenny", "5.0", "2009-02-14", ">23000", ">12000", undef ],
+   ["lenny", "5.0", "2009-02-14", ">23000", ">12000", undef, undef ],
    # ^ adds support for Marvell's Orion platform, .. now supports several Netbooks, .. also contains the build tools for Emdebian .. includes the new ARM EABI port, ..
    #  With the integration of X.Org 7.3 the X server autoconfigures itself with most hardware.
    #  Overall improvements for notebooks have been introduced, such as out of the box support of CPU frequency scaling.
@@ -104,7 +108,7 @@ our $releases=
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
-   ["squeeze", undef, undef, undef, undef, undef ]
+   ["squeeze", undef, undef, undef, undef, undef, undef ]
   ];
 
 sub index_of_by {
