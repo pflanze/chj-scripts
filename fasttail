@@ -194,7 +194,3 @@ while (1) {
 
 print $rest;
 
-__END__
-
-  todo: timecode auslagrn, stat auf inodenr und damit filechange sehn.
-hmm und in c impl hätt ich sobald erstes zeichen kein digit ist auf sofortausgeben schalten koebnnen
