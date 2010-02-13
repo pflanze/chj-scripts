@@ -8,15 +8,15 @@ use strict;
 use Fcntl ":seek";
 
 my $sleepinterval= 1/4; # seconds
-my $check_interval=20;
-# this is in iterations, so with 20 iterations per second this means once each second
+my $check_interval=20; # after how many iterations of $sleepinterval the file is stat'ed
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [options] file
-  Same as tail -f, but checks the file 20 times per second not only once.
+  Same as tail -f, but checks the file all $sleepinterval seconds
+  instead of once per second by default
   Options:
   -t, --time   translate (possibly floatingpoint) unix seconds to
                a localtime representation
