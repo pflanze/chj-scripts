@@ -89,7 +89,7 @@ my $r= do {
 	xsystem "diff","-u", map { $_->path } @t;
     } else {
 	my $in= Chj::IO::Command->new_sender
-	  ("diff","-u", map { $_->path } @t);
+	  ("diff","-ub", map { $_->path } @t);
 	while (<$in>) {
 	    #print $_ if /^[+-]/ or die $!;
 	    (print $_ or die $!) if /^[+-]/;
