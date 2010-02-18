@@ -110,6 +110,8 @@ use Chj::xperlfunc ':all';
 	   }
 	   split /\t/, $str
 	  );
+	@v == 6
+	  or die "new_from_string: invalid number of fields in '$str'";
 	# pairing how?...
 	$$s[Path]= shift @v;
 	for (my $i=0; $i < @statfields; $i++) {
