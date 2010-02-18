@@ -110,6 +110,8 @@ use Chj::xperlfunc ':all';
 	   }
 	   split /\t/, $str
 	  );
+	@v == 6
+	  or die "new_from_string: invalid number of fields in '$str'";
 	# pairing how?...
 	$$s[Path]= shift @v;
 	for (my $i=0; $i < @statfields; $i++) {
@@ -221,15 +223,15 @@ our $commands=
 	  or die "unknown version line of '$metadatapath' file: '$first', expecting '$versionstring'";
 	while (<$in>) {
 	    chomp;
-	    local our $metadata= CHJ::Metadata->new_from_string ($_);
-	    my $path= $metadata->path;
-	    local our $s= xlstat $path;
-#	    if ($s->mtime > $metadata->mtime) {
-#		warn "file has changed (newer mtime), ignoring: '$path'\n";##
-#	    } else {
-		$metadata->restore($s); # need to be a method because it needs access to the field list. rite. harhar. (wl so hat man versch  hingehörigkeitn.)
-#	    }
-#	    use Chj::repl; repl;
+	    eval {
+		local our $metadata= CHJ::Metadata->new_from_string ($_);
+		my $path= $metadata->path;
+		local our $s= xlstat $path;
+		$metadata->restore($s);
+	    };
+	    if (ref $@ or $@) {
+		print STDERR "warn: one record failed: $@";
+	    }
 	}
     }
    };
