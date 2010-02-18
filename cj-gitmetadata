@@ -223,10 +223,15 @@ our $commands=
 	  or die "unknown version line of '$metadatapath' file: '$first', expecting '$versionstring'";
 	while (<$in>) {
 	    chomp;
-	    local our $metadata= CHJ::Metadata->new_from_string ($_);
-	    my $path= $metadata->path;
-	    local our $s= xlstat $path;
-	    $metadata->restore($s);
+	    eval {
+		local our $metadata= CHJ::Metadata->new_from_string ($_);
+		my $path= $metadata->path;
+		local our $s= xlstat $path;
+		$metadata->restore($s);
+	    };
+	    if (ref $@ or $@) {
+		print STDERR "warn: one record failed: $@";
+	    }
 	}
     }
    };
