@@ -226,12 +226,7 @@ our $commands=
 	    local our $metadata= CHJ::Metadata->new_from_string ($_);
 	    my $path= $metadata->path;
 	    local our $s= xlstat $path;
-#	    if ($s->mtime > $metadata->mtime) {
-#		warn "file has changed (newer mtime), ignoring: '$path'\n";##
-#	    } else {
-		$metadata->restore($s); # need to be a method because it needs access to the field list. rite. harhar. (wl so hat man versch  hingehörigkeitn.)
-#	    }
-#	    use Chj::repl; repl;
+	    $metadata->restore($s);
 	}
     }
    };
