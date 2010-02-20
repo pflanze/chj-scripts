@@ -18,11 +18,27 @@ if ($pid) {
     # setting to xterm seems to work? whereas without it
     #  (older) debian (without urxvt installed) usually gives
     # "Cannot find terminfo entry for 'rxvt-unicode'"
+
+    # Instead of just calling chdir, we use the shell's (bash's) cd
+    # functionality to save as much of the PWD variable as possible.
+
+    use Chj::singlequote 'singlequote_sh'; #XXX hope it is correct. versus overridings.wellw'vr?
+    my @scriptlines= "set -eu";
+    my $chdir= sub {
+	my ($path)=@_;
+	push @scriptlines, "cd ".singlequote_sh($path);
+    };
     my $run= sub {
 	my (@args)=@_;
-	exec "urxvt", ("-tn", "xterm",
-		       ($> == 0 ? ("-bg", "#ffd8d8") : ()),
-		       @args)
+	push @scriptlines,
+	  "exec ".join(" ",
+		       map {
+			   singlequote_sh $_
+		       }
+		       ("urxvt", ("-tn", "xterm",
+				  ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+				  @args)));
+	exec "/bin/bash", "-c", join("\n",@scriptlines)
 	  or exit 127;
     };
     if (@ARGV==1
@@ -31,8 +47,7 @@ if ($pid) {
 	#just make sure options won't do wrong:
 	and not $ARGV[0]=~ /^-/
        ) {
-	chdir $ARGV[0]
-	  or die "could not chdir '$ARGV[0]': $!";
+	&$chdir ($ARGV[0]);
 	&$run();
     } else {
 	&$run(@ARGV)
