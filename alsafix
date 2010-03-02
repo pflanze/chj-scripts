@@ -1,0 +1,78 @@
+#!/usr/bin/perl -w
+
+# Mon Mar  1 21:31:54 EST 2010
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Symptom: an application using (ALSA) audio simply hangs, typically
+  upon startup, even though no single other application using audio is
+  running. The only solution seems to be to reboot your computer and
+  it drives you crazy.
+
+  Reason: an application using ALSA has somehow left behind SysV-IPC
+  semaphores that have (probably) been set up by the alsa library; the
+  application might have been force-killed, or possibly there is an
+  issue related to suspend/resume. Sadly SysV-IPC semaphores (why
+  aren't developers avoiding them nowadays?) are staying around,
+  possibly in locked state, even after there is no application left
+  running to unlock them.
+
+  Solution: run this program as root (or as all users that have run
+  audio), which will remove all semaphores of group
+  'audio'. Restarting alsa applications will then automatically
+  recreate them.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+open my $in, "ipcs -cs |"
+  or die "starting ipcs: $!";
+
+our @sems;
+while (<$in>) {
+    chomp;
+    next if /^$/;
+    next if /^--/;
+    next if /^\s*semid\s+perms\s+cuid\s+cgid\s+uid\s+gid\s*$/;
+    #if (local our ($semid,$perms,$cuid,$cgid,$uid,$gid) = /^(?:(\S+)\b\s*)*\z/) {
+    if (local our ($semid,$perms,$cuid,$cgid,$uid,$gid) = /(\S+)\b/g) {
+	push @sems, $semid
+	  if ($gid eq "audio");
+    } else {
+	die "invalid format of line: $_";
+    }
+}
+
+my $count=0;
+for my $semid (@sems) {
+    print "removing semid $semid..";
+    if (0== (system "ipcrm","-s",$semid)) {
+	print "ok\n";
+	$count++;
+    } else {
+	print "failed\n";
+    }
+}
+
+print "removed $count semaphore(s)\n";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
