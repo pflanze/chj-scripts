@@ -48,21 +48,50 @@ sub _xxsystem ($ ) {
     xxsystem @_
 }
 
+our $datrate= 48000;
+
+our $use_oss4= 1;
+
+our $recordcmd=
+  ($use_oss4 ?
+   sub {
+       my ($maybe_rate)=@_;
+       "ossrecord -FRAW -s ".($maybe_rate||$datrate)." -c 1 - | "
+   }
+   :
+   # alsa
+   sub {
+       my ($maybe_rate)=@_;
+       "arecord -t raw -f dat ".($maybe_rate ? "-r $maybe_rate" : "")." -c 1 | "
+   });
+
+our $playcmd=
+  ($use_oss4 ?
+   sub {
+       my ($maybe_rate)=@_;
+       "ossplay -F -s ".($maybe_rate||$datrate)." -c 1 - "
+   }
+   :
+   # alsa
+   sub {
+       my ($maybe_rate)=@_;
+       "aplay -t raw -f dat ".($maybe_rate ? "-r $maybe_rate" : "")." -c 1 -"
+   });
+
 if ($opt_resample) {
     our $semilen= int($len/2);
-    our $datrate= 48000;
     our $prelen= int ($datrate*1.5/2);
     _xxsystem
-      ("arecord -t raw -f dat -c 1 | ".
+      (&$recordcmd (undef).
        "bfr -m $prelen | ".
        "sox -t raw -r $datrate -s -2 -c 1 -  -t raw -r $rate -".
        #recoding:
        "   resample -ql |".
        "bfr -m $semilen | ".
-       "aplay -t raw -f dat -r $rate -c 1 -");
+       &$playcmd($rate));
 } else {
     _xxsystem
-      ("arecord -t raw -f dat -r $rate -c 1 | ".
+      (&$recordcmd ($rate).
        "bfr -m $len | ".
-       "aplay -t raw -f dat -r $rate -c 1 -");
+       &$playcmd($rate));
 }
