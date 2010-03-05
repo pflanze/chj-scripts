@@ -56,7 +56,7 @@ our $recordcmd=
   ($use_oss4 ?
    sub {
        my ($maybe_rate)=@_;
-       "ossrecord -FRAW -s ".($maybe_rate||$datrate)." -c 1 - | "
+       "ossrecord -FRAW -fS16_LE -s ".($maybe_rate||$datrate)." -c 1 - | "
    }
    :
    # alsa
@@ -69,7 +69,7 @@ our $playcmd=
   ($use_oss4 ?
    sub {
        my ($maybe_rate)=@_;
-       "ossplay -F -s ".($maybe_rate||$datrate)." -c 1 - "
+       "ossplay -F -fS16_LE -s ".($maybe_rate||$datrate)." -c 1 - "
    }
    :
    # alsa
