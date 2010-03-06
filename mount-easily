@@ -261,12 +261,6 @@ if ($opt_auto) {
     if (@ARGV) {
 	usage "both --auto and arguments given"
     } else {
-# 	if ($opt_createdir) {
-# 	    usage "both --createdir and --auto given";
-# 	    # 'does not make sense'. well. or would break filtering of uninteresting partitions.
-# 	    die "X";
-# 	}
-#well, if user knows what he is doing then this is okay man.
 	my $sortfn= sub {
 	    my ($v)=@_;
 	    $$v[1]->mtime
