@@ -149,6 +149,7 @@ sub mount_easily {
     my $maybe_uuid= maybe_uuid_from_dev $device_path;
     my $id= defined($maybe_uuid)? $maybe_uuid : basename $device_path;
 
+    ##(BUG: should be recursive instead of only one deep)
     if (my $luks= maybe_luks $device_path) {
 	print $luks;
 	my $devicemapper_path= "/dev/mapper/$id"; #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
