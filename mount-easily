@@ -135,6 +135,8 @@ sub mount_easily {
     # check whether we need -o loop: (safe enough?hopeso)
     {
 	my $s= xstat $device_path;
+	##BUG,right: the following results in effects on all
+	##'subsequently' processed mounts."!". (Even/especially in --auto mode..)
 	if ($s->is_file) {#hm is_regular ?
 	    $$mountoptions{loop}=1
 	} elsif ($s->is_blockdevice) {
