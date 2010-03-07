@@ -69,7 +69,7 @@ GetOptions("verbose"=> \$verbose,
 	  ) or exit 1;
 
 use Chj::Unix::Mount 'mounted','mount';
-use Chj::xperlfunc qw(xmkdir basename dirname xstat);
+use Chj::xperlfunc qw(xmkdir basename dirname xstat xxsystem);
 sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
@@ -127,6 +127,7 @@ use Chj::xperlfunc;
 
 sub mount_easily {
     my ($device_path, $verbose, $ignore_if_mountpoint_missing)=@_;
+    my $device_fileinfo;
     if ($verbose) {
 	print "mounting '$device_path'..\n";
     }
@@ -169,6 +170,10 @@ sub mount_easily {
 	    # check whether it's still working
 	    my ($ok,$cnt)= try_file $devicemapper_path; # yeh it's a bit a misuse of that tool right?...
 	    if ($ok) {
+		#keep the file info, since "it is costly"(well it's
+		#not but whatever; play this game to see what kind of
+		#code results):
+		$device_fileinfo= $cnt; # $device_path assignment follows for sure here. [currently..(becarefulaboutcoding (how do i tell this myslf uswusf))]
 		#if ($cnt=~ )
 		#no need to check.
 		# already set up
@@ -183,7 +188,7 @@ sub mount_easily {
 	} else {
 	    &$open
 	}
-	# here comes the mutation:
+	# here comes the mutation: #careful, 'combine' this mentally with the setting of $device_fileinfo above.
 	$device_path= $devicemapper_path;
 	# hm and now get the id of the decrypted volume ?. or actually
 	# hide that??. hide / ignore it for now and we get the "same
@@ -191,6 +196,37 @@ sub mount_easily {
 	# Question: maybe I even *want* that behaviour of using the id
 	# of the (outmost) *container*?: I could mount a copy twice
 	# you "knw!"
+    }
+
+    if (not (defined $device_fileinfo)) {
+	#(kind of catch-all-the cases above where I didn't ~thread through )
+	$device_fileinfo= do {
+	    # well almost copypaste from 'try_file $devicemapper_path' above but well.
+	    my ($ok,$cnt)= try_file $device_path;
+	    if ($ok) {
+		$cnt
+	    } else {
+		die "error from try_file (cnt='$cnt')";#  better message?
+	    }
+	};
+    }
+
+    {
+	# fsck: (as a side effect, thus in a sub scope.)
+	if (my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem data/) {
+	    if (lc ($fstype) eq "ext2") {
+		if ($$mountoptions{ro}) {
+		    print "Warning: not running fsck because of readonly option; be careful (don't 'remount,rw')\n";
+		} else {
+		    xxsystem "e2fsck", $device_path;
+		}
+	    } else {
+		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n";# if verbose?
+	    }
+	} else {
+	    #die "unknown filesystem type
+	    die "couldn't find filesystem type in 'file' output '$device_fileinfo'";
+	}
     }
 
     my $dest_path=  "/mnt/".$id;
