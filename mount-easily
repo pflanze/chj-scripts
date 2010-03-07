@@ -216,9 +216,22 @@ sub mount_easily {
 	if (my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem data/) {
 	    if (lc ($fstype) eq "ext2") {
 		if ($$mountoptions{ro}) {
-		    print "Warning: not running fsck because of readonly option; be careful (don't 'remount,rw')\n";
+		    # run read-only check, die if there was an error:
+		    xxsystem "e2fsck","-n", $device_path;
 		} else {
-		    xxsystem "e2fsck", $device_path;
+		    # run a normal (interactive) check:
+		    my $res= xsystem "e2fsck", $device_path;
+		    if ($res==0) {
+			#ok
+		    } elsif ($res < 256) {
+			die "e2fsck died from signal $res";
+		    } else {
+			my $exitcode= $res >> 8;
+			if ($exitcode > 1) {
+			    die "e2fsck exited with code $exitcode, which means there was a more serious problem; not mounting";
+			}
+			# else ok
+		    }
 		}
 	    } else {
 		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n";# if verbose?
