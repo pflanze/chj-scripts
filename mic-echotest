@@ -50,7 +50,7 @@ sub _xxsystem ($ ) {
 
 our $datrate= 48000;
 
-our $use_oss4= 1;
+our $use_oss4= -d "/proc/opensound";
 
 our $recordcmd=
   ($use_oss4 ?
