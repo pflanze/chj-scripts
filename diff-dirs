@@ -1,0 +1,104 @@
+#!/usr/bin/perl -w
+
+# Wed Mar 10 17:46:36 EST 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dir1 dir2
+
+  Show differences of dirs. For now just the list of files (and
+  whether they are files or dirs).
+
+  Options:
+  --keep-files  don't remove temp files on exit
+                (although you only get to know the path from actual diff output)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_keep;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "keep-files"=>\$opt_keep,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+use Chj::xperlfunc;
+use Chj::xopendir;
+
+sub getlist {
+    my ($path)=@_;
+    my $rec;
+    $rec= sub {
+	my ($relpath)=@_;
+# 	my @items = map {
+# 	    my $s= xlstat $_;
+# 	    [$s->type, 
+# 	} 
+	my $in= xopendir "$path/$relpath";
+	#subpath.couldalsoname.
+	#{mtime Wed Mar 10 17:51:56 2010}
+	#{Wed Mar 10 17:54:00 2010}
+	#$in->xnread all ? well just 'list' context.
+	my @items= sort $in->xnread;
+	$in->xclose;
+	# und nun ? sorted isses. ach . map splicing just. mnasch wsch .
+	map {
+	    my $relpath= "$relpath/$_";
+	    my $abspath= "$path/$relpath";
+	    my $s= xlstat $abspath;
+	    (
+	     [$s->type,$relpath],
+	     do {
+		 if ($s->is_dir) {
+		     &$rec($relpath)
+		 } else {
+		     ()
+		 }
+	     }
+	    )
+	} @items
+    };
+    &$rec ("");
+}
+
+#map { &$rec( $_ ) } @ARGV;
+
+use Chj::xtmpfile;
+
+my @t= map {
+    #my $l= getdiff( $_ );
+    my $t= xtmpfile;
+    #for (getdiff( $_ )) {
+    for (getlist( $_ )) {
+	my ($type,$relpath)=@$_;
+	$t->xprint( "$type\t$relpath\n" );
+    }
+    if ($opt_keep) {
+	$t->autoclean(0);
+    }
+    $t
+} @ARGV;
+
+#sleep 100;
+#xxsystem "diff", "-u", map { $_->path } @t;
+my $res= xsystem "diff", "-u", map { $_->path } @t;
+exit (($res==0) ? 0 :
+      (($res==(1<<8) ? 1 :
+	2)));
+
+__END__
+
+use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
