@@ -12,11 +12,16 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname --auto|device(s)
+    print "$myname --auto|device(s)|mountpoint(s)
 
   Automatically turns the device path into a mount path and mounts the
   device on that path. Errors out when something is mounted on the
   choosen path already.
+
+  Or, if a mount point is given instead, is looking for it's basename
+  as device mapper name or device name or /dev/disk/by-uuid/ entry, or
+  for symlinks pointing to it and checking them the same way to find
+  the device to be mounted there and mounts it when found.
 
   Automatically uses -o loop if the 'device' path is a regular file.
 
@@ -69,7 +74,9 @@ GetOptions("verbose"=> \$verbose,
 	  ) or exit 1;
 
 use Chj::Unix::Mount 'mounted','mount';
-use Chj::xperlfunc qw(xmkdir basename dirname xstat xxsystem);
+use Chj::xperlfunc ":all";# qw(xmkdir basename dirname xstat xxsystem);
+use Chj::FP::lazy;
+
 sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
@@ -91,6 +98,74 @@ sub maybe_uuid_from_dev {
     }
     $d->xclose;
     undef
+}
+
+our $lookup = sub {
+    my ($name)=@_;
+    my $l=sub {
+	my ($path)=@_;
+	if (my $s= Xstat $path) {
+	    if ($s->is_file or $s->is_blockdevice) {
+		$path
+	    } else {
+		undef
+		  #und ja da is schm lisp #f besser.wlehlngweis
+	    }
+	} else {
+	    undef
+	}
+    };
+    (&$l ("/dev/mapper/$name")
+     or &$l ("/dev/$name")
+     or &$l ("/dev/disk/by-uuid/$name")
+    )
+};
+
+sub maybe_dev_from_mnt {
+    my ($mntpath)=@_;
+
+    #ps.  bei mapper  wenn futsch  auchweiterzurueck?  ps DAHER nicht namenswechselmachen??? "!".
+
+    my $symlinknames= sub {
+	# search for symlinks: #h lazily dann koent ich anfangs.gl.!.evenio.
+	my $dir= dirname $mntpath;
+	my $expandedorig= xrealpath $mntpath;
+	my $d= xopendir $dir;
+	#[and yes is this procedure similar to the one with reading dirs above.]
+	my @names;
+	while (defined (my$item=$d->xnread)) {
+	    my $path= "$dir/$item";
+	    #my $s= xlstat ($path);
+	    #if ($s->)
+	    if (my $target= readlink $path) {
+		# resolve target hm. and should it be direct or not ?
+		my $expanded= xrealpath $path; # X  ?. ##
+		#^'expanded' in language terms.
+		if ($expanded eq $expandedorig) {
+		    push @names, $item;
+		}
+	    }
+	}
+	$d->xclose;
+	@names;
+    };
+
+    (&$lookup (basename $mntpath)
+     or do{ # ach dann doch lazy actually want ing  &$lookup ()
+	 # ormap. ich mein ein or list eins wo abbricht eben und lazily consume wuerd tj
+	 # und auto turnthisway.h.  generatecodefromdescription frage nur welcher art description  j hh  koeme man darauf ? .
+	 #matter of outsmarting them.
+	 #(niederschrift in code)wlhaha
+	 #nun just mit map und leerenwertenhier dann firstnehmso.tj.ignoredaslz.  wl filter map.
+	 (
+	  grep {
+	      defined $_
+	  }
+	  map {
+	      &$lookup($_)
+	  } &$symlinknames()
+	 )[0]
+     })
 }
 
 use Chj::IO::Command;
@@ -126,34 +201,47 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
 use Chj::xperlfunc;
 
 sub mount_easily {
-    my ($device_path, $verbose, $ignore_if_mountpoint_missing)=@_;
+    my ($path, $verbose, $ignore_if_mountpoint_missing)=@_;
     my $device_fileinfo;
     if ($verbose) {
-	print "mounting '$device_path'..\n";
+	print "mounting '$path'..\n";
     }
-    #my $dir= dirname $device_path;###  how to use it ?. notatalll ?
+
+    my $device_path;
+    my $dest_path;
 
     # check whether we need -o loop: (safe enough?hopeso)
     {
-	my $s= xstat $device_path;
+	my $s= xstat $path;
 	##BUG,right: the following results in effects on all
 	##'subsequently' processed mounts."!". (Even/especially in --auto mode..)
 	if ($s->is_file) {#hm is_regular ?
+	    $device_path=$path;
 	    $$mountoptions{loop}=1
 	} elsif ($s->is_blockdevice) {
+	    $device_path=$path;
 	    delete $$mountoptions{loop} # =0 is not enough if I'm taking keys..
+	} elsif ($s->is_dir) {
+	    if (my $dev= maybe_dev_from_mnt $path) {
+		$device_path= $dev;
+		$dest_path= $path; #hm what in the case of mapper?
+	    } else {
+		die "could not find device to mount on '$path'";
+	    }
 	} else {
-	    die "hm?, file '$device_path' is neither block device nor regular file"
+	    die "hm?, file '$device_path' is neither block device nor regular file nor directory"
 	}
     }
 
-    my $maybe_uuid= maybe_uuid_from_dev $device_path;
-    my $id= defined($maybe_uuid)? $maybe_uuid : basename $device_path;
+    my $id_= Delay {
+	my $maybe_uuid= maybe_uuid_from_dev $device_path;
+	defined($maybe_uuid)? $maybe_uuid : basename $device_path;
+    };
 
     ##(BUG: should be recursive instead of only one deep)
     if (my $luks= maybe_luks $device_path) {
 	print $luks;
-	my $devicemapper_path= "/dev/mapper/$id"; #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
+	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
 	my $open= sub {
 	    if (-f $device_path) {
 		my $in=  Chj::IO::Command->new_sender("losetup","-fs",$device_path);
@@ -163,7 +251,7 @@ sub mount_easily {
 		#ah another (earlier) mutation:
 		$device_path=$new;
 	    }
-	    xxsystem "cryptsetup", "luksOpen", $device_path, $id;
+	    xxsystem "cryptsetup", "luksOpen", $device_path, Force($id_);
 	    ##hm what with failed pw's? retry?.
 	};
 	if (-e $devicemapper_path) {
@@ -244,7 +332,7 @@ sub mount_easily {
 	}
     }
 
-    my $dest_path=  "/mnt/".$id;
+    $dest_path ||=  "/mnt/".Force($id_);
     my $mount_on= sub ( $ ) {
 	my ($dest_path)=@_;
 	my $options= join(",", keys %$mountoptions);
