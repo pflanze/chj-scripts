@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# after mistyping, maybe I actually want this?
+
+g-push publish "$@"
