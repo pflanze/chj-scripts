@@ -11,6 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname chrootbase user
 
+  Options:
+  -X  give access to X server
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
