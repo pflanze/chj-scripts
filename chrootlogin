@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname chrootbase user
+    print "$myname chrootbase user [ cmd [arguments] ]
 
   (Christian Jaeger <$email>)
 ";
@@ -25,9 +25,9 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   "X"=> \$opt_X,
 	  ) or exit 1;
-usage unless @ARGV==2;
+usage unless @ARGV>=2;
 
-our ($chrootbase,$user)=@ARGV;
+our ($chrootbase,$user,@cmd)=@ARGV;
 
 use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
 
@@ -93,7 +93,7 @@ if ($X) {
 #use Chj::Unix::User;
 #hm. really? or not?
 
-xexec "chroot", $chrootbase, "su", "-", $user;
+xexec "chroot", $chrootbase, "su", "-", $user, @cmd;
 
 
 #use Chj::ruse;
