@@ -8,5 +8,5 @@ fi
 
 iface="${1:-eth0}"
 
-ifdown "$iface"
+ifdown --force "$iface"
 ifup "$iface"
