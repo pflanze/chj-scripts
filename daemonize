@@ -141,7 +141,7 @@ exit @_ ? 1 : 0;
 }
 
 
-xmkdir $basedir unless -d $basedir;
+(xmkdir $basedir, 0700) unless -d $basedir;
 if (-d $runbase) {
     utime time,time,$runbase  # for future cleaner, to ignore too new directories (though runfile check should be done anyway too)
 } else {
