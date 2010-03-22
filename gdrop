@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+
+# Mon Mar 22 14:41:52 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ tagsubname ]
+
+  Options:
+  -a   passed to git tag
+  -s   passed to git tag
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our @gitopts; our $addgitopt= sub {
+    my (@opts)=@_;
+    sub {
+	#push @gitopts, $_[0];
+	push @gitopts, @opts
+    }
+};
+#^hh currying with  sideeffect y y knw
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "a"=> &$addgitopt("-a"),
+	   "s"=> &$addgitopt("-s"),
+	   ) or exit 1;
+usage if @ARGV>1;
+
+our ($maybe_subname)=@ARGV;
+
+our $date_= `date_`; chomp $date_; #hum.
+our $tagname= "drop_".(defined ($maybe_subname) ? $maybe_subname."_" : "").$date_;
+
+use Chj::xperlfunc;
+
+xexec "git", "tag", @gitopts, $tagname;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
