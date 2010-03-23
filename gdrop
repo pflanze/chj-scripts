@@ -9,7 +9,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname tagsubname reset_to_commit
+    print "$myname tagsubname [reset_to_commit]
 
   Options:
   -a   passed to git tag
@@ -37,9 +37,9 @@ GetOptions("verbose"=> \$verbose,
 	   "a"=> &$addgitopt("-a"),
 	   "s"=> &$addgitopt("-s"),
 	   ) or exit 1;
-usage unless @ARGV==2;
+usage unless (@ARGV>=1 and @ARGV<=2);
 
-our ($maybe_subname, $reset_to_commit)=@ARGV;
+our ($maybe_subname, $maybe_reset_to_commit)=@ARGV;
 
 our $subname_= ((defined ($maybe_subname))# and length ($maybe_subname))
 		? $maybe_subname."_" : "");
@@ -59,7 +59,9 @@ our $instatus= $in->xfinish;
 if ($instatus==(1<<8) and
     $incnt=~ /\nnothing to commit .working directory clean/) {
     xxsystem "git", "tag", @gitopts, $tagname;
-    xxsystem "git", "reset", "--hard", $reset_to_commit;
+    if (defined $maybe_reset_to_commit) {
+	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
+    }
 } else {
     print STDERR "** work directory status is not clean:\n\n$incnt";
     exit 1;#well, die, but?,.
