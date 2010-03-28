@@ -13,7 +13,8 @@ sub usage {
   To be run from [the top of] a linux source tree.
 
   Uses git for grepping (with --cached) if .git exists, thereby
-  by-passing the working directory completely!
+  by-passing the working directory completely!  The 'old' behaviour
+  can be forced by setting the env var forceworkdir=1.
 
   (Christian Jaeger <$email>)
 ";
@@ -28,7 +29,7 @@ use Chj::singlequote 'singlequote_sh';
 use Chj::xperlfunc 'xexec';
 
 
-if (-d ".git") {
+if (!$ENV{forceworkdir} and -d ".git") {
     local our $regex=shift @ARGV;
     $regex=~ s/^CONFIG_//;
     local our @options= @ARGV;
