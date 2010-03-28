@@ -51,6 +51,8 @@ if (!$ENV{forceworkdir} and -d ".git") {
     my @files= map {
 	s/\0\z//s or die;
 	if (m{(?:^|/)Kconfig}) {
+	    ##^hmm, forgot requirement of non-/ after Kconfig; well,
+	    ##maybe useful, but different from the old implementation.
 	    $_
 	} else {
 	    ()
