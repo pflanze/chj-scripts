@@ -10,6 +10,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [options] regex [options]
 
+  To be run from [the top of] a linux source tree.
+
+  Uses git for grepping (with --cached) if .git exists, thereby
+  by-passing the working directory completely!
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -22,13 +27,41 @@ usage if (! @ARGV
 use Chj::singlequote 'singlequote_sh';
 use Chj::xperlfunc 'xexec';
 
-xexec ("find -name 'Kconfig*' -print0|xargs -0 egrep "
-       .
-       join(" ",
-	    map {
-		singlequote_sh $_
-	    }
-	    map {
-		s/^CONFIG_//; $_
-	    }
-	    @ARGV));
+
+if (-d ".git") {
+    local our $regex=shift @ARGV;
+    $regex=~ s/^CONFIG_//;
+    local our @options= @ARGV;
+
+    require Chj::IO::Command;
+    my $in= Chj::IO::Command->new_sender("git", "ls-files","-z");
+
+    #implement xargs "in userspace"
+    my @files= map {
+	s/\0\z//s or die;
+	if (m{(?:^|/)Kconfig}) {
+	    $_
+	} else {
+	    ()
+	}
+    } do {
+	local $/="\0";
+	<$in>
+    };
+    $in->xxfinish;
+
+    xexec "git", "grep", "--cached", @options, $regex, "--", @files;
+
+} else {
+
+    xexec ("find -name 'Kconfig*' -print0|xargs -0 egrep "
+	   .
+	   join(" ",
+		map {
+		    singlequote_sh $_
+		}
+		map {
+		    s/^CONFIG_//; $_
+		}
+		@ARGV));
+}
