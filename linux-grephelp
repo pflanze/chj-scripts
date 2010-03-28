@@ -33,6 +33,16 @@ if (!$ENV{forceworkdir} and -d ".git") {
     local our $regex=shift @ARGV;
     $regex=~ s/^CONFIG_//;
     local our @options= @ARGV;
+    my $opt_l = (do {
+	grep {
+	    (/^-[lL]$/
+	     or
+	     /^-[^-].*[lL]$/
+	     or
+	     /^--files-with(?:|out)-matches/
+	    )
+	} @options
+    });
 
     require Chj::IO::Command;
     my $in= Chj::IO::Command->new_sender("git", "ls-files","-z");
@@ -51,7 +61,9 @@ if (!$ENV{forceworkdir} and -d ".git") {
     };
     $in->xxfinish;
 
-    xexec "git", "grep", "--cached", @options, $regex, "--", @files;
+    xexec ("git", ($opt_l ?
+		   "--no-pager" : ()),
+	   "grep", "--cached", @options, $regex, "--", @files);
 
 } else {
 
