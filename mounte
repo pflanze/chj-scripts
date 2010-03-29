@@ -38,6 +38,8 @@ sub usage {
   --auto    mount the latest entries in /dev/disk/by-uuid/
             (going backward from the latest and stopping when an entry
             is more than $auto_max_delay second(s) younger)
+  -t type   passed on to mount, instead of (possibly failing) auto
+            detection
 
   Notes:
   - if available, automatically uses the uuid of partitions as luks dev
@@ -60,6 +62,7 @@ our $mountoptions= { noatime => 1 };
 our $opt_createdir;
 our $opt_private;
 our $opt_auto;
+our $opt_type;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "ro|readonly"=> sub {
@@ -71,6 +74,7 @@ GetOptions("verbose"=> \$verbose,
 	   "c|create-dir"=> \$opt_createdir,
 	   "private"=> \$opt_private,
 	   "auto"=> \$opt_auto,
+	   "t=s"=> \$opt_type,
 	  ) or exit 1;
 
 use Chj::Unix::Mount 'mounted','mount';
@@ -286,7 +290,7 @@ sub mount_easily {
 	# you "knw!"
     }
 
-    if (not (defined $device_fileinfo)) {
+    if (not (defined $device_fileinfo) and not $opt_type) {
 	#(kind of catch-all-the cases above where I didn't ~thread through )
 	$device_fileinfo= do {
 	    # well almost copypaste from 'try_file $devicemapper_path' above but well.
@@ -301,7 +305,11 @@ sub mount_easily {
 
     {
 	# fsck: (as a side effect, thus in a sub scope.)
-	if (my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem data/) {
+	my $fstype = $opt_type || do {
+	    my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem data/;
+	    $fstype
+	};
+	if ($fstype) {
 	    if (lc ($fstype) eq "ext2") {
 		if ($$mountoptions{ro}) {
 		    # run read-only check, die if there was an error:
