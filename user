@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Wed Mar 31 23:45:27 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname uid(s)
+
+  print user name of given user(s)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+sub user {
+    my ($uidstr)=@_;
+    $uidstr=~ /^(\d+)$/s
+      or die "not a uid: '$uidstr'";
+    my $uid=$1;
+    if (my $user= getpwuid $uid) {
+	$user
+    } else {
+	"<unknown uid $uid>"
+    }
+}
+
+for (@ARGV) {
+    print user($_),"\n";
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
