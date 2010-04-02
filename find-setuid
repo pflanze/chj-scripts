@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eu
+
+usage ()
+{
+    echo "$0"
+    echo "  create two tempfiles where to write big and setuid paths to,"
+    echo "  then in the end print the paths of those tempfiles"
+    exit 1
+}
+
+if [ $# -ne 0 ]; then
+	usage
+fi
+
+suid=`tempfile`
+big=`tempfile`
+
+# from man find:
+
+find /  \
+    \( -perm -4000 -fprintf "$suid" '%#m %u %p\n' \) , \
+    \( -size +100M -fprintf "$big" '%-10s %p\n' \) || echo "find exited with code $?"
+
+echo "suid: $suid"
+echo "big: $big"
