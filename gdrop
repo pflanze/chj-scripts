@@ -63,7 +63,7 @@ if ($instatus==(1<<8) and
 	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
     }
 } else {
-    print STDERR "** work directory status is not clean:\n\n$incnt";
+    print STDERR "\n  *** working directory status is not clean: ***\n\n$incnt";
     exit 1;#well, die, but?,.
 }
 
