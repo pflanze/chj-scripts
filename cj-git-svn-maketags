@@ -47,13 +47,23 @@ sub setenv_from_headerline {
     my ($key,$name,$email,$time,$zone)=
       $line=~ /^(author|committer) (.*?) <([^<>\s]+)> (\d{6,}) ([+-]\d{4})$/
 	or die "no match '$line'";
-    my $e=uc $key;
-    $ENV{"GIT_${e}_NAME"}= $name;
-    $ENV{"GIT_${e}_EMAIL"}= $email;
-    $ENV{"GIT_${e}_DATE"}= localtime($time); #s1ck as always...
-    # ZONE..HMMM.
-    die "currently only supporting zone 0000, '$zone'"
-      unless $zone==0;
+    my $set= sub {
+	my ($e)= @_;
+	$ENV{"GIT_${e}_NAME"}= $name;
+	$ENV{"GIT_${e}_EMAIL"}= $email;
+	$ENV{"GIT_${e}_DATE"}= localtime($time); #s1ck as always...
+	# ZONE..HMMM.
+	die "currently only supporting zone 0000, '$zone'"
+	  unless $zone==0;
+    };
+    if ($key eq "author") {
+	#&$set("TAGGER");  not used either
+	&$set("COMMITTER");
+    } elsif ($key eq "committer") {
+	# ignore
+    } else {
+	die "??"
+    }
 }
 
 sub xxbacktick {
