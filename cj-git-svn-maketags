@@ -41,6 +41,28 @@ sub Warn {
     print STDERR "$myname: @_\n"
 }
 
+
+sub setenv_from_headerline {
+    my ($line)=@_;
+    my ($key,$name,$email,$time,$zone)=
+      $line=~ /^(author|committer) (.*?) <([^<>\s]+)> (\d{6,}) ([+-]\d{4})$/
+	or die "no match '$line'";
+    my $e=uc $key;
+    $ENV{"GIT_${e}_NAME"}= $name;
+    $ENV{"GIT_${e}_EMAIL"}= $email;
+    $ENV{"GIT_${e}_DATE"}= localtime($time); #s1ck as always...
+    # ZONE..HMMM.
+    die "currently only supporting zone 0000, '$zone'"
+      unless $zone==0;
+}
+
+sub xxbacktick {
+    my $in= Chj::IO::Command->new_sender (@_);
+    my $cnt= $in->xcontent;
+    $in->xxfinish;
+    $cnt
+}
+
 my $branches= Chj::IO::Command->new_sender ("git","branch","-av");
 
 while (<$branches>) {
@@ -56,7 +78,15 @@ while (<$branches>) {
 		    Warn "WARNING: tag $name set to $exists, while we want it at $ancest";
 		}
 	    } else {
-		xxsystem "git","tag",$name,$ancest;
+		my $cnt= xxbacktick ("git","cat-file","-p",##nocheck?
+				     $id);
+		my ($head,$body)= split /\n\n/,$cnt,2;
+		my @headers= split /\n/, $head;
+		setenv_from_headerline (grep {
+		    not /^tree|parent/
+		} @headers);
+		xxsystem "git","tag","-a","-m",$body,
+		  $name,$ancest;
 	    }
 	} else {
 	    my $str= (@ancest==0) ? "no" : "more than one";
