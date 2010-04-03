@@ -5,8 +5,7 @@ set -eu
 usage () {
     echo "usage: $0 base onto"
     echo "  move commits \$base..HEAD onto \$onto"
-    echo "  which is just: git rebase --onto \$onto \$base"
-    echo "  but I tend to always forget."
+    echo "  and check out \$onto (well that's being done first actually)"
     exit 1
 }
 
@@ -14,4 +13,8 @@ if [ $# -ne 2 ]; then
 	usage
 fi
 
-exec git rebase --onto "$2" "$1"
+base="$1"
+onto="$2"
+
+git checkout "$onto"
+git rebase --onto "$2" "$1"
