@@ -5,7 +5,7 @@ set -eu
 usage () {
     echo "usage: $0 base onto"
     echo "  move commits \$base..HEAD onto \$onto"
-    echo "  and check out \$onto (well that's being done first actually)"
+    echo "  and check out \$onto"
     exit 1
 }
 
@@ -16,5 +16,9 @@ fi
 base="$1"
 onto="$2"
 
-git checkout "$onto"
+randomname=tmp_`head -c 4 /dev/urandom|md5sum|printfield 1`
+
+git checkout -b "$randomname"
 git rebase --onto "$2" "$1"
+
+git checkout "$onto"
