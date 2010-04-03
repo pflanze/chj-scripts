@@ -16,6 +16,9 @@ fi
 base="$1"
 onto="$2"
 
+origbranch="`gitfef symbolic-ref HEAD|sed 's/.*\///'`"
+# ^ dies if not on a branch, which is okay. good.
+
 # detach HEAD so as to not destroy the current branch:
 #  (note, the HEAD string being used in the reference is for choosing
 #  the commit we want in the HEAD; i.e. we want HEAD in the HEAD
@@ -29,4 +32,4 @@ git rebase --onto "$onto" "$base"
 git branch -f "$onto"
 
 # attach HEAD to some branch again:
-git checkout "$onto"
+git checkout "$origbranch"
