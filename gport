@@ -34,3 +34,5 @@ git branch -f "$onto"
 
 # attach HEAD to some branch again:
 git checkout "$origbranch"
+
+echo OK.
