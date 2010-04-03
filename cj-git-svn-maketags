@@ -44,7 +44,7 @@ sub Warn {
 my $branches= Chj::IO::Command->new_sender ("git","branch","-av");
 
 while (<$branches>) {
-    if (my ($name,$id)= m|^\s*tags/(\S+)\s+(\S+)|) {
+    if (my ($name,$id)= m|^\s*(?:remotes/)?tags/(\S+)\s+(\S+)|) {
 	my @ancest= git_merge_base__all ($mainbranch, $id);
 	if(@ancest==1) {
 	    my $ancest= $ancest[0];
