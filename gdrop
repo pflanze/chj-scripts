@@ -59,12 +59,13 @@ sub status_is_clean {
     my $incnt= $in->xcontent;
     my $instatus= $in->xfinish;
     [
-     ($instatus==(1<<8) and
-      $incnt=~ /\nnothing to commit .working directory clean/),
-     $incnt]
+     (scalar ($instatus==(1<<8) and
+	      $incnt=~ /\nnothing to commit .working directory clean/)),
+     $incnt
+    ]
 }
 
-my $cleanq= do {
+our $cleanq= do {
     my $res;
     sub {
 	$res ||= status_is_clean;
@@ -72,14 +73,14 @@ my $cleanq= do {
     }
 };
 
-if ($opt_force or (&$cleanq)->[1]) {
+if ($opt_force or (&$cleanq)->[0]) {
     xxsystem "git", "tag", @gitopts, $tagname;
     if (defined $maybe_reset_to_commit) {
 	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
     }
 } else {
     print STDERR "\n  *** working directory status is not clean: ***\n\n"
-      .(&$cleanq)->[0];
+      .(&$cleanq)->[1];
     exit 1;#well, die, but?,.
 }
 
