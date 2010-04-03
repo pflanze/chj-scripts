@@ -16,8 +16,6 @@ fi
 base="$1"
 onto="$2"
 
-randomname=tmp_`head -c 4 /dev/urandom|md5sum|printfield 1`
-
 # detach ourselves so as to not destroy the current branch:
 git checkout HEAD^{}
 
@@ -26,3 +24,5 @@ git rebase --onto "$onto" "$base"
 
 # give the result a name (well what was the point man) aha can be existing one?
 git branch -f "$onto"
+
+git checkout "$onto"
