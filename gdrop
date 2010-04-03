@@ -72,14 +72,14 @@ my $cleanq= do {
     }
 };
 
-if ($opt_force or (&$cleanq)->[0]) {
+if ($opt_force or (&$cleanq)->[1]) {
     xxsystem "git", "tag", @gitopts, $tagname;
     if (defined $maybe_reset_to_commit) {
 	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
     }
 } else {
     print STDERR "\n  *** working directory status is not clean: ***\n\n"
-      .(&$cleanq)->[1];
+      .(&$cleanq)->[0];
     exit 1;#well, die, but?,.
 }
 
