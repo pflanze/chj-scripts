@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 base onto"
+    echo "  copy commits \$base..HEAD onto \$onto"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+	usage
+fi
+
+base="$1"
+onto="$2"
+
+origbranch_raw="`git symbolic-ref HEAD`"
+# ^ dies if not on a branch, which is okay. good.
+# to avoid a pipe clobbering the exit code, we do it in two pieces.
+origbranch="`echo "$origbranch_raw"|sed 's/.*\///'`"
+
+# detach HEAD so as to not destroy the current branch:
+#  (note, the HEAD string being used in the reference is for choosing
+#  the commit we want in the HEAD; i.e. we want HEAD in the HEAD
+#  but we want it detached)
+git checkout HEAD^{}
+
+# do the rebase
+git rebase --onto "$onto" "$base"
+
+# overwrite $onto with the resulting HEAD:
+git branch -f "$onto"
+
+# attach HEAD to some branch again:
+git checkout "$origbranch"
+
+echo OK.

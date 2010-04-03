@@ -12,6 +12,7 @@ sub usage {
     print "$myname tagsubname [reset_to_commit]
 
   Options:
+  -f   force it even if the working directory is not clean
   -a   passed to git tag
   -s   passed to git tag
 
@@ -23,6 +24,7 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_force;
 our @gitopts; our $addgitopt= sub {
     my (@opts)=@_;
     sub {
@@ -36,6 +38,7 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   "a"=> &$addgitopt("-a"),
 	   "s"=> &$addgitopt("-s"),
+	   "force"=> \$opt_force,
 	   ) or exit 1;
 usage unless (@ARGV>=1 and @ARGV<=2);
 
@@ -50,20 +53,34 @@ our $tagname= "drop_".$subname_.$date_;
 use Chj::xperlfunc;
 
 use Chj::IO::Command;
-our $in= Chj::IO::Command->new_combinedsender( "git","status");
-our $incnt= $in->xcontent;
-our $instatus= $in->xfinish;
 
-#if ($instatus==0) {
-#ehr wrong. sigh.
-if ($instatus==(1<<8) and
-    $incnt=~ /\nnothing to commit .working directory clean/) {
+sub status_is_clean {
+    my $in= Chj::IO::Command->new_combinedsender( "git","status");
+    my $incnt= $in->xcontent;
+    my $instatus= $in->xfinish;
+    [
+     (scalar ($instatus==(1<<8) and
+	      $incnt=~ /\nnothing to commit .working directory clean/)),
+     $incnt
+    ]
+}
+
+our $cleanq= do {
+    my $res;
+    sub {
+	$res ||= status_is_clean;
+	$res
+    }
+};
+
+if ($opt_force or (&$cleanq)->[0]) {
     xxsystem "git", "tag", @gitopts, $tagname;
     if (defined $maybe_reset_to_commit) {
 	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
     }
 } else {
-    print STDERR "** work directory status is not clean:\n\n$incnt";
+    print STDERR "\n  *** working directory status is not clean: ***\n\n"
+      .(&$cleanq)->[1];
     exit 1;#well, die, but?,.
 }
 
