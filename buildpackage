@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if ! grep '^ -- ' debian/changelog | head -1 | grep -q -i "$USER" ; then
+if ! grep '^ -- ' debian/changelog | head -1 | grep -q "`perl -w -MChj::userfullname -e 'print userfullname'`" ; then
     if [ "$1" = "-f" ]; then
 	shift
     else
