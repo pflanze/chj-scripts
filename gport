@@ -18,7 +18,11 @@ onto="$2"
 
 randomname=tmp_`head -c 4 /dev/urandom|md5sum|printfield 1`
 
-git checkout -b "$randomname"
-git rebase --onto "$2" "$1"
+# detach ourselves so as to not destroy the current branch:
+git checkout HEAD^{}
 
-git checkout "$onto"
+# do the rebase
+git rebase --onto "$onto" "$base"
+
+# give the result a name (well what was the point man) aha can be existing one?
+git branch -f "$onto"
