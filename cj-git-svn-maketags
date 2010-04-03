@@ -73,6 +73,30 @@ sub xxbacktick {
     $cnt
 }
 
+sub xgcat ($ ) {
+    my ($id)=@_;
+    # no check for type!
+    xxbacktick ("git","cat-file","-p", $id)
+}
+
+sub maybe_git_tag_ref ($ ) {
+    my ($name)=@_;
+    if (my $id= maybe_git_rev_parse ($name)) {
+	my $cnt= xgcat($id);
+	## should really verify whether it is a tag object right.sgh.
+	if ($cnt=~ /^object (\S+)\stype commit\ntag /s) {
+	    $1
+	} elsif (/^tree /) { # should really check for the type
+	    # a direct tag
+	    $id
+	} else {
+	    die "what type is tag ref '$name'??"
+	}
+    } else {
+	undef
+    }
+}
+
 my $branches= Chj::IO::Command->new_sender ("git","branch","-av");
 
 while (<$branches>) {
@@ -80,7 +104,7 @@ while (<$branches>) {
 	my @ancest= git_merge_base__all ($mainbranch, $id);
 	if(@ancest==1) {
 	    my $ancest= $ancest[0];
-	    if (my $exists= maybe_git_rev_parse ($name)) {
+	    if (my $exists= maybe_git_tag_ref ($name)) {
 		if ($exists eq $ancest) {
 		    Warn "tag $name already set to $ancest"
 		      if $verbose;
@@ -88,8 +112,7 @@ while (<$branches>) {
 		    Warn "WARNING: tag $name set to $exists, while we want it at $ancest";
 		}
 	    } else {
-		my $cnt= xxbacktick ("git","cat-file","-p",##nocheck?
-				     $id);
+		my $cnt= xgcat($id);
 		my ($head,$body)= split /\n\n/,$cnt,2;
 		my @headers= split /\n/, $head;
 		setenv_from_headerline (grep {
