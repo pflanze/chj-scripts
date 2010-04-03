@@ -9,7 +9,6 @@ my $myname=$1;
 sub usage {
 	print "$myname
   Setzt den usernamen und email und so ins debian/changelog rein.
-  Geht zurzeit nur fuer chris
 ";
 exit @_;
 }
@@ -34,20 +33,20 @@ usage if @files;
 use lib "/opt/chj/perllib";
 use fileutils qw(fetchfile writebackfile);
 
+use Chj::Mailfrom 'mailfromaddress';
+use Chj::userfullname;
+use Chj::username;
 
-my %mapping= (# Note: & will be replaced by @; this is a precaution against spam robots
-	      # reading this script from my homepage
-	      do {
-		  my $cj= ["cj",'christian&jaeger.mine.nu'];
-		  (chris=> $cj,
-		   chriscompile=> $cj,
-		   chrisrebuild=> $cj)
-	      });
-#^- todo: finally replace all those with gecos etc tracking. I've got that even already in a module after all (almost).
+our $userfullname= userfullname;
+our $initials= do {
+    if ($userfullname eq "Christian Jaeger") {
+	"cj"
+    } else {
+	username
+    }
+};
+our $email= mailfromaddress;
 
-$_= $mapping{$ENV{USER}} or die "Kenne User '$ENV{USER}' nicht, bitte in $0 nachtragen.\n";
-my ($initials,$email)= @$_;
-$email=~ tr/&/@/;
 
 my $a= fetchfile "debian/changelog";
 
@@ -57,7 +56,7 @@ my $first=$1;
 
 $first=~ /\n -- ([^\n]*)/ or die "invalid format";
 my $firstuser=$1;
-if ($firstuser=~ /$ENV{USER}/) {
+if ($firstuser=~ /$userfullname/) {
   die "Scheint bereits angepasst worden zu sein. Breche ab.\n";
 }
 
@@ -73,7 +72,7 @@ $$a= "$firstline
 
   * recompiled from testing
 
- -- $ENV{USER} <$email>  $date
+ -- $userfullname <$email>  $date
 $$a";
 
 writebackfile("debian/changelog",$a);
