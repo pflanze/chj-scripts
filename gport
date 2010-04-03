@@ -4,8 +4,7 @@ set -eu
 
 usage () {
     echo "usage: $0 base onto"
-    echo "  move commits \$base..HEAD onto \$onto"
-    echo "  and check out \$onto"
+    echo "  copy commits \$base..HEAD onto \$onto"
     exit 1
 }
 
@@ -16,8 +15,10 @@ fi
 base="$1"
 onto="$2"
 
-origbranch="`gitfef symbolic-ref HEAD|sed 's/.*\///'`"
+origbranch_raw="`git symbolic-ref HEAD`"
 # ^ dies if not on a branch, which is okay. good.
+# to avoid a pipe clobbering the exit code, we do it in two pieces.
+origbranch="`echo "$origbranch_raw"|sed 's/.*\///'`"
 
 # detach HEAD so as to not destroy the current branch:
 #  (note, the HEAD string being used in the reference is for choosing
