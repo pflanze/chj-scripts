@@ -43,7 +43,7 @@ sub recode_file ( $ ) {
        "iconv",
        $opt_reverse ?
        ("--from=utf8", "--to=latin1")
-       : "--from=latin1", "--to=utf8");
+       : ("--from=latin1", "--to=utf8"));
     $recode->xxfinish;
     $in->xclose;
     $out->xclose;
