@@ -59,7 +59,8 @@ sub status_is_clean {
     my $incnt= $in->xcontent;
     my $instatus= $in->xfinish;
     [
-     (scalar ($instatus==(1<<8) and
+     (scalar ((($instatus==(1<<8)) or ($instatus==0))
+	      and
 	      $incnt=~ /\nnothing to commit .working directory clean/)),
      $incnt
     ]
