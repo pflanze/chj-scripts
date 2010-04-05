@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Mon Apr  5 11:17:34 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $default_nentries=20;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [ nentries ] [ gitk options ]
+
+  Run gitkg with the first nentries (or $default_nentries) commit id's listed by
+  git reflog and the remaining options after them.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+our ($nentries);
+
+if (@ARGV) {
+    usage if ($ARGV[0] eq "-h" or $ARGV[0] eq "--help");
+
+    if (($nentries)= $ARGV[0]=~ /^(\d+)$/) {
+	scalar shift @ARGV;
+    } else {
+	$nentries = $default_nentries;
+    }
+} else {
+    $nentries = $default_nentries;
+}
+
+use Chj::IO::Command;
+
+my $in= Chj::IO::Command->new_sender("git","reflog");
+
+our @id;
+my $n=0;
+while (<$in>) {
+    # don't put into while clause to avoid having to write out defined $_= ..:
+    last if $n >= $nentries;
+    m/^(\w+) / or die "'$_';";
+    push @id, $1;
+    $n++;
+}
+
+use Chj::xperlfunc;
+#use Chj::Backtrace; use Chj::repl; repl;
+xexec "gitkg", @id, @ARGV;
+
+#use Chj::ruse;
