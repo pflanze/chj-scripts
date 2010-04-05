@@ -15,11 +15,10 @@ sub usage {
   a private temporary directory holding a file with the user and
   password, so as to well keep it private.
 
-
-  ATTENTION: uses the user from the smtp config as from address,
-  together with the gcos user fullname. And REAL ATTENTION: does not
-  check the author info in the actual patch!!!! (If you send another
-  person's patch, it will probably look like from you)
+  NOTE: uses the user from the smtp config as from address, together
+  with the gcos user fullname. (git send-email seems to put the author
+  as a From line into the email body if it's different from the from
+  address of the email, so no risk it seems.)
 
   (Christian Jaeger <$email>)
 ";
@@ -96,7 +95,7 @@ xxsystem( "git", "send-email",
 	  ## The following assume that $user is fully 'qualified' with
 	  ## gmail.com, and that it's what the user wants:
 	  #"--from=$user",
-	  '--from="'.userfullname.'" <'.$user.'>',
+	  '--from='.userfullname.' <'.$user.'>',
 
 	  #hmmm The Cc list above has been expanded by additional
 	  # addresses found in the patch commit message. By default
