@@ -1,0 +1,124 @@
+#!/usr/bin/perl -w
+
+# Mon Apr  5 03:09:59 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname patch(es)
+
+  Wrapper around git send-email, that sends through gmail and creates
+  a private temporary directory holding a file with the user and
+  password, so as to well keep it private.
+
+
+  ATTENTION: uses the user from the smtp config as from address,
+  together with the gcos user fullname. And REAL ATTENTION: does not
+  check the author info in the actual patch!!!! (If you send another
+  person's patch, it will probably look like from you)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+
+sub MakeBox {
+    my $X;
+    \$X
+}
+our $opts=
+  [
+   ["--to", MakeBox ],
+   ["--cc", MakeBox ],
+   ["--bcc", MakeBox ],
+  ];
+sub StripMinusPlus {
+    my ($s)=@_;
+    $s=~ s/^--// or die;
+    $s."=s"  # MAN. RITE F .
+}
+
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   (
+	    map {
+		(StripMinusPlus($$_[0]), $$_[1])
+	    } @$opts
+	   )
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::IO::Command;
+
+our $pw= Chj::IO::Command->new_sender("$ENV{HOME}/.get-smtp-cred");
+our $user= $pw->xreadline_chomp;
+our $password= $pw->xreadline_chomp;
+
+use Chj::xtmpdir;
+use Chj::xtmpfile;
+
+our $d= xtmpdir;
+our $dpath= $d->path;
+our $configpath="$dpath/config";
+our $f= xtmpfile $configpath;
+$f->xprint(<<"END");
+[sendemail]
+    smtpuser = "$user"
+    smtppass = "$password"
+    smtpserver = smtp.gmail.com
+    smtpserverport = 587
+    smtpencryption = tls
+END
+$f->xclose;
+$f->xputback(0600);
+
+use Chj::xperlfunc ":all";
+
+use Chj::userfullname;
+
+$ENV{GIT_DIR}= $dpath;
+xxsystem( "git", "send-email",
+	  "--quiet",##
+	  "--no-chain-reply-to", # to silence it
+
+	  # Avoid having to confirm the from address (to be taken from the patch):
+	  ## PS would it be *correct* to change it? TODO! at least *check* it!
+	  # This would be ok if my env would be up to date:
+	  #"--from=".mailfrom,
+	  ## The following assume that $user is fully 'qualified' with
+	  ## gmail.com, and that it's what the user wants:
+	  #"--from=$user",
+	  '--from="'.userfullname.'" <'.$user.'>',
+
+	  #hmmm The Cc list above has been expanded by additional
+	  # addresses found in the patch commit message. By default
+	  # send-email prompts before sending whenever this occurs.
+	  # This behavior is controlled by the sendemail.confirm
+	  # configuration setting.
+
+	  (map {
+	      my $v= ${$$_[1]};
+	      ((defined $v) ?
+	       ($$_[0], $v)
+	       : ())
+	  } @$opts),
+	  @ARGV
+	);
+
+
+# (avoiding ordering issues?)
+unlink $configpath;
+END {
+    unlink $configpath;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
