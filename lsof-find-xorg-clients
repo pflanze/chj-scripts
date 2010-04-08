@@ -32,7 +32,7 @@ usage if @ARGV;
 
 use Chj::IO::Command;
 
-my $in= Chj::IO::Command->new_sender("lsof","-n");
+my $in= Chj::IO::Command->new_sender("lsof","-Un");
 
 #our $by_inode={};
 our @records;
@@ -48,6 +48,8 @@ while (<$in>) {
 	if (/^Xorg\s/) {
 	    $$is_xorginode{$inode}=1  #olde die wennschongeseztoderso wl or not wsm
 	}
+    } else {
+	/^COMMAND/ or warn "no match in line: $_"
     }
 }
 $in->xxfinish;
