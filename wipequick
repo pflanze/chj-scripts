@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Wed Apr  7 22:27:23 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Overwrite files contents with zeroes (once only, and does not call
+  sync).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xopen 'xopen_readwrite';
+
+sub wipequick ( $ ) {
+    my ($path)=@_;
+    my $f= xopen_readwrite $path; #hm because xopen_write truncates.
+    my $s=$f->xstat;
+    my $size= $s->size;
+      #/ 2 ;###
+    my $bufs= $size / 4096;
+    my $rem= $size % 4096;
+    #print "size=$size, bufs=$bufs, rem=$rem\n";#
+    my $buf= "\0"x4096;
+    #for (0..$bufs) {
+    for (my $i=1; $i<=$bufs; $i++) {
+	#print "would write a buf\n";
+	$f->xprint($buf);
+    }
+    $f->xprint(substr($buf,0,$rem));
+    $f->xclose;
+}
+
+wipequick $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
