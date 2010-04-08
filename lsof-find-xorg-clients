@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Wed Apr  7 20:38:50 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  NOTE: makes the probably fickle/ill-suited assumption that the
+  server side end of a unix domain socket has inode number one higher
+  than the client side end. (But, no other way found to get to the
+  connection.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::IO::Command;
+
+my $in= Chj::IO::Command->new_sender("lsof","-n");
+
+#our $by_inode={};
+our @records;
+our $is_xorginode={};
+while (<$in>) {
+    #chomp;
+    #if (my ($inode)=/unix 0x\S+\s+(\d+)\ssocket/) {
+    #heh die xorg ones sind mostly not. client vs server i guess hahahawow.
+    #XX: SOLLTE ICH DIES als kriterium fuer  is_xorginode nehmen  also  is_xorgserver_inode weisch ?.
+    if (my ($inode)=/unix 0x\S+\s+(\d+)\s/) {
+	#push @{$$by_inode{$inode}}, $_;
+	push @records, [$inode, $_];
+	if (/^Xorg\s/) {
+	    $$is_xorginode{$inode}=1  #olde die wennschongeseztoderso wl or not wsm
+	}
+    }
+}
+$in->xxfinish;
+
+#for my $key (keys %$b)
+
+for (@records) {
+    my ($inode, $line)=@$_;
+    if ($$is_xorginode{$inode+1}) {
+	print $line
+	  or die;
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
