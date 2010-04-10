@@ -50,8 +50,8 @@ if ($opt_sort) {
     } @files;
 }
 
-for (@files) {
-    if (sysopen STDIN,$_,O_RDONLY) {
+for my $path (@files) {
+    if (sysopen STDIN,$path,O_RDONLY) {
         my $buf;
         my $len= sysread (STDIN,$buf,128);
         if ($len > 0) {
@@ -74,6 +74,7 @@ for (@files) {
 	    };
 	    my $magic_gzip= &$magic(qr/^\x1f/);
 	    my $magic_bz2= &$magic(qr/^BZ/);
+	    my $magic_rz= &$magic(qr/^RZIP/);
 	    my $try= sub {
 		my (@cmd)=@_;
 		defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
@@ -86,12 +87,50 @@ for (@files) {
 		    0
 		}
 	    };
+	    my $try_runzip= sub {
+		use Chj::xtmpdir;
+		my $d= xtmpdir;
+		use Chj::xperlfunc;
+		use Chj::xrealpath;
+		my $p= xrealpath $path;
+		my $newp= "$d/foo.rz";
+		my $newpun= "$d/foo";
+		xsymlink $p, $newp;
+		my $res= eval {
+		    xsystem "runzip", $newp;
+		};
+		my $cleanup= sub {
+		    unlink $newp;
+		    unlink $newpun;
+		};
+		if (ref $@ or $@) {
+		    my $e=$@;
+		    &$cleanup;
+		    die $e;
+		}
+		if ($res == 0) {
+		    xxsystem "cat", "--", $newpun;   ####HE TODO: what if pipe errors? should it fail in the other places, too?!
+		    &$cleanup;
+		    1
+		} else {
+		    &$cleanup;
+		    if ($res < 256) {
+			die "runzip terminated by signal $res"
+		    } else {
+			0
+		    }
+		}
+	    };
             if ($maybe_zipped) {
 		do {
 		    my $try_for_gzip= sub {
 			(&$try("gunzip")
 			 or
-			 &$try("bunzip2"))
+			 &$try("bunzip2")
+			 or
+			 #&$try("cjrunzip")  well not feasible: would have to copy everything first
+			 &$try_runzip
+			)
 		    };
 		    if ($magic_gzip) {
 			#warn "GZIP?";
@@ -111,9 +150,9 @@ for (@files) {
 		&$try("cat")
 	    }
         } else {
-            warn "Ignoring empty file '$_'\n"
+            warn "Ignoring empty file '$path'\n"
         }
     } else {
-        warn "Could not open '$_': $!\n";
+        warn "Could not open '$path': $!\n";
     }
 }
