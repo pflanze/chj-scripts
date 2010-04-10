@@ -77,8 +77,14 @@ for (@files) {
 	    my $try= sub {
 		my (@cmd)=@_;
 		defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
-                system @cmd;
-		$? == 0
+                my $res= system @cmd;
+		if ($res==0) {
+		    1
+		} elsif ($res < 256) {
+		    die "command terminated by signal $res: @cmd"
+		} else {
+		    0
+		}
 	    };
             if ($maybe_zipped) {
 		do {
