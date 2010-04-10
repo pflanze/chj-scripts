@@ -97,29 +97,26 @@ for my $path (@files) {
 		my $newpun= "$d/foo";
 		xsymlink $p, $newp;
 		my $res= eval {
-		    xsystem "runzip", $newp;
-		};
-		my $cleanup= sub {
-		    unlink $newp;
-		    unlink $newpun;
+		    my $res= xsystem "runzip", $newp;
+		    if ($res==0) {
+			xxsystem "cat", "--", $newpun;
+			###TODO: make it fail in the other places for pipe errors etc, too!
+			$res
+		    } else {
+			if ($res < 256) {
+			    die "runzip terminated by signal $res"
+			} else {
+			    0
+			}
+		    }
 		};
 		if (ref $@ or $@) {
 		    my $e=$@;
-		    &$cleanup;
+		    unlink $newp;
+		    unlink $newpun;
 		    die $e;
 		}
-		if ($res == 0) {
-		    xxsystem "cat", "--", $newpun;   ####HE TODO: what if pipe errors? should it fail in the other places, too?!
-		    &$cleanup;
-		    1
-		} else {
-		    &$cleanup;
-		    if ($res < 256) {
-			die "runzip terminated by signal $res"
-		    } else {
-			0
-		    }
-		}
+		$res
 	    };
             if ($maybe_zipped) {
 		do {
