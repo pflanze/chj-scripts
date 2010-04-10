@@ -77,6 +77,10 @@ for (@files) {
             if ($maybe_zipped) {
                 defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
                 system "gunzip";
+		if ($? != 0) {
+		    defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
+		    system "bunzip2";
+		}
             }
             if (!$maybe_zipped or $? != 0) {
                 defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
