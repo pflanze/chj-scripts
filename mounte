@@ -7,6 +7,7 @@ use strict;
 
 # how much older the next-older entry can be to still be automatically mounted
 our $auto_max_delay= 1; #seconds
+our $pwlookup="/root/.mounte-pwlookup";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -24,6 +25,10 @@ sub usage {
   the device to be mounted there and mounts it when found.
 
   Automatically uses -o loop if the 'device' path is a regular file.
+
+  If encrypted, luksOpens the volume; if $pwlookup exists, runs it
+  with the device as key, and, if successful, use its stdout (after
+  chomp) as password, otherwise let cryptsetup ask.
 
   Options:
   -c|--create-dir  create mount path [if it doesn't exist already]
@@ -174,6 +179,18 @@ sub maybe_dev_from_mnt {
 
 use Chj::IO::Command;
 
+#sub xxbacktick {##once more ~
+#ehr actually:  and hm multivalreturnnow 'hheh'x
+#wl vs multi verschiedene typen weisch echt immer !!! in diesen fällen ist immer das zweite meaningless!  ich mein: das andre. das *jeweils* andere! jw!
+#((plainoldePerl6 hicktighchmeinheh))
+# und jo man wuerde requirement 2 wollenechtmensch ach  hask kanneven ach   .
+sub xbacktick {
+    my $in= Chj::IO::Command->new_sender(@_);
+    my $cnt= $in->xcontent;
+    my $res= $in->xfinish;
+    ($res, $cnt)
+}
+
 sub try_file {
     # do not throw exception on error, but return an error (not false in perl5..)
     # well why not the tuple case. boolean   there  still.
@@ -245,6 +262,22 @@ sub mount_easily {
     ##(BUG: should be recursive instead of only one deep)
     if (my $luks= maybe_luks $device_path) {
 	print $luks;
+	my $maybe_pw= do {
+	    # use device_path *before* having been set to losetup -fs output below!
+	    if (-x $pwlookup) {
+		my ($res,$cnt)= xbacktick $pwlookup, $device_path;
+		if ($res==0) {
+		    chomp $cnt;
+		    $cnt
+		} else {
+		    # not found, or error. just let the process speak
+		    # to stderr by itself.
+		    undef
+		}
+	    } else {
+		undef
+	    }
+	};
 	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
 	my $open= sub {
 	    if (-f $device_path) {
@@ -255,7 +288,17 @@ sub mount_easily {
 		#ah another (earlier) mutation:
 		$device_path=$new;
 	    }
-	    xxsystem "cryptsetup", "luksOpen", $device_path, Force($id_);
+	    my $cmd=sub {
+		my (@options)=@_;
+		("cryptsetup", "luksOpen",@options, $device_path, Force($id_))
+	    };
+	    if (defined $maybe_pw) {
+		my $out= Chj::IO::Command->new_receiver(&$cmd("--key-file=-"));
+		$out->xprint($maybe_pw);
+		$out->xxfinish;
+	    } else {
+		xxsystem (&$cmd());
+	    }
 	    ##hm what with failed pw's? retry?.
 	};
 	if (-e $devicemapper_path) {
