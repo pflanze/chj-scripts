@@ -101,7 +101,7 @@ for my $path (@files) {
 		    if ($res==0) {
 			xxsystem "cat", "--", $newpun;
 			###TODO: make it fail in the other places for pipe errors etc, too!
-			$res
+			1
 		    } else {
 			if ($res < 256) {
 			    die "runzip terminated by signal $res"
@@ -110,10 +110,10 @@ for my $path (@files) {
 			}
 		    }
 		};
-		if (ref $@ or $@) {
-		    my $e=$@;
-		    unlink $newp;
-		    unlink $newpun;
+		my $e=$@;
+		unlink $newp;
+		unlink $newpun;
+		if (ref $e or $e) {
 		    die $e;
 		}
 		$res
