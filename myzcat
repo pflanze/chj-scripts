@@ -59,7 +59,8 @@ for (@files) {
                 if ($len<16) { # 21 seems minimal possible length using gzip; 
                     0;
                 } else {
-                    my $nhigh=$buf=~ tr/\x80-\xff//;
+		    my $bufcopy= $buf;
+                    my $nhigh=$bufcopy=~ tr/\x80-\xff//;
                     #warn "NHIGH=$nhigh\n";
                     if ($nhigh / $len > 10/128) {
                         #warn "RATIO=".$nhigh / $len."\n";
