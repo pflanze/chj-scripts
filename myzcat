@@ -62,30 +62,48 @@ for (@files) {
 		    my $bufcopy= $buf;
                     my $nhigh=$bufcopy=~ tr/\x80-\xff//;
                     #warn "NHIGH=$nhigh\n";
-                    if ($nhigh / $len > 10/128) {
-                        #warn "RATIO=".$nhigh / $len."\n";
-                        1;
-                    } else {
-                        if ($buf=~ /^\x1f/) { # *still* try it on magic (general?) number
-                            1;
-                        } else {
-                            0;
-                        }
-                    }
-                }
-            };
-            if ($maybe_zipped) {
-                defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
-                system "gunzip";
-		if ($? != 0) {
-		    defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
-		    system "bunzip2";
+		    #warn "RATIO=".$nhigh / $len."\n";
+                    ($nhigh / $len > 10/128)
 		}
-            }
-            if (!$maybe_zipped or $? != 0) {
-                defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
-                system "cat";
-            }
+            };
+	    my $magic = sub {
+		my ($re)=@_;
+		#sub { ehr  and grrr
+		    ($buf=~ $re)
+		#}
+	    };
+	    my $magic_gzip= &$magic(qr/^\x1f/);
+	    my $magic_bz2= &$magic(qr/^BZ/);
+	    my $try= sub {
+		my (@cmd)=@_;
+		defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
+                system @cmd;
+		$? == 0
+	    };
+            if ($maybe_zipped) {
+		do {
+		    my $try_for_gzip= sub {
+			(&$try("gunzip")
+			 or
+			 &$try("bunzip2"))
+		    };
+		    if ($magic_gzip) {
+			#warn "GZIP?";
+			&$try_for_gzip
+		    } elsif ($magic_bz2) {
+			#warn "BZ2?";
+			(&$try("bunzip2")
+			 or
+			 &$try("gunzip"))
+		    } else {
+			#warn "UNKNOWNCOMPR?";
+			&$try_for_gzip
+		    }
+		} or
+		  &$try("cat")
+            } else {
+		&$try("cat")
+	    }
         } else {
             warn "Ignoring empty file '$_'\n"
         }
