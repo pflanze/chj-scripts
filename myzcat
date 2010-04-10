@@ -136,7 +136,18 @@ for my $path (@files) {
 			#warn "BZ2?";
 			(&$try("bunzip2")
 			 or
-			 &$try("gunzip"))
+			 &$try("gunzip")
+			 or
+			 &$try_runzip
+			)
+		    } elsif ($magic_rz) {
+			(
+			 &$try_runzip
+			 or
+			 &$try("gunzip")
+			 or
+			 &$try("bunzip2")
+			)
 		    } else {
 			#warn "UNKNOWNCOMPR?";
 			&$try_for_gzip
