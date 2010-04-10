@@ -73,7 +73,6 @@ for (@files) {
                     }
                 }
             };
-            #system "gzip","-d","-c",$_;
             if ($maybe_zipped) {
                 defined (sysseek STDIN,0,0) or die "ERROR: Could not seek: $!";
                 system "gunzip";
