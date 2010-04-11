@@ -63,7 +63,7 @@ if (my $child= xfork) {
 
     # most stuff 'from' Chj::Unix::User
 
-    $(= $gid; $)= "$gid ";
+    $(= $gid; $)= "$gid $gid ";
     $<= $uid; $>= $uid;
     # aha no xsetuid.
 
