@@ -59,6 +59,9 @@ if (my $child= xfork) {
     # aha for the tmpdir removal of course.
 
 } else {
+    # wow something I always forget hm?....:
+    $home->autoclean(0);
+
     xchown $uid,$gid, "$home";
 
     # most stuff 'from' Chj::Unix::User
