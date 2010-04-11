@@ -222,9 +222,9 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
 use Chj::xperlfunc;
 
 sub mount_easily {
-    my ($path, $verbose, $ignore_if_mountpoint_missing)=@_;
+    my ($path, $verbosevolume, $ignore_if_mountpoint_missing)=@_;
     my $device_fileinfo;
-    if ($verbose) {
+    if ($verbosevolume) {
 	print "mounting '$path'..\n";
     }
 
@@ -374,7 +374,7 @@ sub mount_easily {
 		}
 	    } else {
 		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n"
-		  if $verbose;
+		  if ($verbose or $verbosevolume);
 	    }
 	} elsif ($device_fileinfo=~ /^Reiser/) {
 	    #ok
@@ -424,7 +424,7 @@ sub mount_easily {
 	    }
 	} else {
 	    if ($ignore_if_mountpoint_missing) {
-		if ($verbose) {
+		if ($verbose or $verbosevolume) {
 		    print "ignoring, mountpoint '$dest_path' does not exist.\n";
 		    return; #u oh well. (to 'miss' the below print on purpose)
 		}
@@ -433,7 +433,7 @@ sub mount_easily {
 	    }
 	}
     }
-    if ($verbose) {
+    if ($verbose or $verbosevolume) {
 	print "done.\n";
     }
 }
