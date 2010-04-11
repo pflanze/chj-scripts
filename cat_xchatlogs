@@ -8,8 +8,10 @@ use strict;
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
-    print "$myname files
-  Print the logging entries in the files reordered after time.
+    print "$myname [files]
+
+  Print the logging entries in the files (or from stdin) reordered after time.
+
 ";
 exit @_;
 }
@@ -29,7 +31,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	push @files, $_
     }
 }
-usage unless @files;
+if (not @files) {
+    push @files, "-";
+}
 
 
 use Date::Parse;
