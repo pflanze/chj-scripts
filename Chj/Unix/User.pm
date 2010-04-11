@@ -101,7 +101,16 @@ sub su {
 
     #print "User $uid has main group $gid and supp groups @supplgroups\n";
 
-    $(= $gid; $)= "$gid @supplgroups"; #QUESTION: groups with spaces in their name ? TODO is it ever safe? probably not?........
+    $(= $gid;
+    if (@supplgroups) {
+	$)= "$gid @supplgroups";
+    } else {
+	# we *have* to give a second gid, or perl won't set the
+	# secondary groups at all! which means it would still inherit
+	# the current ones.
+	$)= "$gid $gid ";
+    }
+    #^ QUESTION: groups with spaces in their name ? TODO is it ever safe? probably not?........
     $<= $uid; $>= $uid;
 
     (($< == $uid) and ($> == $uid)) or die "could not change uid";#oder ist das auch falsch? ah nein scheint zu gehen ok so.   eben, aufgepasst, obwohl die saved uid nochimmer root ist. solang kein exec gemacht wird.
