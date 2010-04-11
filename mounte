@@ -28,7 +28,8 @@ sub usage {
 
   If encrypted, luksOpens the volume; if $pwlookup exists, runs it
   with the device as key, and, if successful, use its stdout (after
-  chomp) as password, otherwise let cryptsetup ask.
+  chomp) as password (if it returns exit code 2, retry incrementally
+  with parts after _ or . removed), otherwise let cryptsetup ask.
 
   Options:
   -c|--create-dir  create mount path [if it doesn't exist already]
@@ -265,15 +266,35 @@ sub mount_easily {
 	my $maybe_pw= do {
 	    # use device_path *before* having been set to losetup -fs output below!
 	    if (-x $pwlookup) {
-		my ($res,$cnt)= xbacktick $pwlookup, $device_path;
-		if ($res==0) {
-		    chomp $cnt;
-		    $cnt
-		} else {
-		    # not found, or error. just let the process speak
-		    # to stderr by itself.
-		    undef
-		}
+		my $lookup; $lookup= sub {
+		    my ($key)=@_;
+		    print "trying lookup for '$key'\n"
+		      if $verbose;
+		    my ($res,$cnt)= xbacktick $pwlookup, $key;
+		    if ($res==0) {
+			chomp $cnt;
+			print "found passphrase for '$key'\n";
+			undef $lookup;
+			$cnt
+		    } elsif($res== (2<<8)) {
+			# not found
+			# try to clip off some underscore or dot part at the end.
+			#if ($key=~ s/[_.].*?\z//s) {  nada, is from beginning still.
+			# Don't go below 4 characters:
+			if ($key=~ m/(.{4,})[_.]/s) {
+			    @_=($1); goto $lookup;
+			} else {
+			    undef $lookup;
+			    undef
+			}
+		    } else {
+			# error. just let the process speak
+			# to stderr by itself.
+			undef $lookup;
+			undef
+		    }
+		};
+		&$lookup ($device_path);
 	    } else {
 		undef
 	    }
