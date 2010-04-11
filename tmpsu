@@ -55,11 +55,14 @@ our $home= xtmpdir;
 if (my $child= xfork) {
 
     xxwait; ##hmm  correct propagation please or so hm oder tut es melden richtig?
+    # well why did I fork at all ?
+    # aha for the tmpdir removal of course.
 
 } else {
+    xchown $uid,$gid, "$home";
+
     # most stuff 'from' Chj::Unix::User
 
-    # assume 
     $(= $gid; $)= "$gid ";
     $<= $uid; $>= $uid;
     # aha no xsetuid.
@@ -67,6 +70,8 @@ if (my $child= xfork) {
     (($< == $uid) and ($> == $uid)) or die "could not change uid";#
 
     $ENV{HOME}= $home;
+    $ENV{PWD}= $home;# don't forget!!
+    xchdir "$home";
     $ENV{USER}= $uid;#yeah why not misuselikethat.bestyoucanget? exceptwhen prefixingwithastring
     #$ENV{LOGNAME}
     #$ENV{MAIL}
@@ -74,10 +79,6 @@ if (my $child= xfork) {
     #yeah, hehe, ich war da auch schon so sameweit hh wl hh.
     xexec @ARGV;
 }
-
-xsetuid $uid;
-
-
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
