@@ -1,0 +1,83 @@
+#!/usr/bin/perl -w
+
+# Sun Apr 11 14:16:19 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname --uid n -- cmd [arguments]
+
+  Change userid to a temporary user, with home directory under /tmp/randomid
+
+  After exiting it tries to remove the [[todo force?]] home dir.
+
+  Currently the --uid option is required; it should find a unused one
+  by itself in the future.
+  Currently sets the gid to the same number as the uid !
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_uid;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "uid=i"=> \$opt_uid,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc;
+
+#hm which env vars to drop etc?....
+# todo.
+
+our $uid= $opt_uid or die "missing --uid (and 0 is not allowed)";
+
+$uid=~ /^\d+\z/ or die "??";#should not happen from getoptions right?
+
+our $gid= $uid; ####WELL. ~krk.
+
+# also see Chj::Unix::User ?
+
+
+use Chj::xtmpdir;
+our $home= xtmpdir;
+
+if (my $child= xfork) {
+
+    xxwait; ##hmm  correct propagation please or so hm oder tut es melden richtig?
+
+} else {
+    # most stuff 'from' Chj::Unix::User
+
+    # assume 
+    $(= $gid; $)= "$gid ";
+    $<= $uid; $>= $uid;
+    # aha no xsetuid.
+
+    (($< == $uid) and ($> == $uid)) or die "could not change uid";#
+
+    $ENV{HOME}= $home;
+    $ENV{USER}= $uid;#yeah why not misuselikethat.bestyoucanget? exceptwhen prefixingwithastring
+    #$ENV{LOGNAME}
+    #$ENV{MAIL}
+    #$ENV{PATH}
+    #yeah, hehe, ich war da auch schon so sameweit hh wl hh.
+    xexec @ARGV;
+}
+
+xsetuid $uid;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
