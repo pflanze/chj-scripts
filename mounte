@@ -373,7 +373,8 @@ sub mount_easily {
 		    }
 		}
 	    } else {
-		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n";# if verbose?
+		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n"
+		  if $verbose;
 	    }
 	} elsif ($device_fileinfo=~ /^Reiser/) {
 	    #ok
