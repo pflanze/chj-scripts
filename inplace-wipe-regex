@@ -1,0 +1,75 @@
+#!/usr/bin/perl -w
+
+# Mon Apr 12 17:32:53 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname regex file(s)
+
+  Replace matches for regex with repeaded X chars, inplace (not using
+  a temporary file).
+
+  Options:
+  --dry-run  report read locations, show what would be done
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our $regex=shift @ARGV;
+our @files= @ARGV;
+
+
+use Chj::xopen 'xopen_read'; ##
+our $xopen= \&xopen_read;
+use Sys::Mmap;
+
+sub replace_in {
+    my ($path)=@_;
+    my $in= &$xopen( $path);
+    my $foo;
+    mmap ($foo, 0, PROT_READ, MAP_SHARED, $in)
+      or die "mmap '$path': $!";
+#     $foo=~ s/($regex)/
+#         if ($opt_dry) {
+#             print
+# /sg
+    my $count=0;
+    while ($foo=~ m/($regex)/sg) {
+	my $len= length($1);
+	#next unless $len; #um. endlessloop then?
+	my $endpos= pos($foo);
+	my $startpos= $endpos-$len;
+	print "$path: found '$1' at pos $startpos, len $len\n";
+	if (!$opt_dry) {
+	    die "";##
+	    # seek and write. wl hum. ? .
+
+	    $count++;
+	}
+    }
+    print "$path: $count replacements\n";
+    munmap ($foo)
+      or die "munmap '$path': $!";
+}
+
+replace_in $_
+  for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
