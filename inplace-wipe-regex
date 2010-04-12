@@ -36,17 +36,29 @@ our @files= @ARGV;
 
 
 use Chj::xopen 'xopen_read','xopen_readwrite';
-our $xopen= \&xopen_readwrite;
 use Sys::Mmap;
+
+our $use_inplace_updates=0;
+our $xopen= $use_inplace_updates ? \&xopen_readwrite : \&xopen_read;
 
 sub replace_in {
     my ($path)=@_;
     my $in= &$xopen( $path);
     my $foo;
-    mmap ($foo, 0, PROT_READ|PROT_WRITE, MAP_SHARED, $in)
+    mmap ($foo,
+	  0,
+	  ($use_inplace_updates ? (PROT_READ|PROT_WRITE) : PROT_READ),
+	  MAP_SHARED,
+	  $in)
       or die "mmap '$path': $!";
     my $count=0;
-    if (0) {
+    if ($use_inplace_updates) {
+	$foo=~ s/($regex)/
+            $count++;
+            "X"x(length $1)
+	/sge;
+	$in->xclose;
+    } else {
 	my $update= xopen_readwrite $path
 	  unless $opt_dry;
 	while ($foo=~ m/($regex)/sg) {
@@ -57,19 +69,12 @@ sub replace_in {
 	    print "$path: found '$1' at pos $startpos, len $len\n"
 	      if ($opt_dry or $verbose);
 	    if (!$opt_dry) {
-		# seek and write. wl hum. ? .
 		$update->xseek($startpos);
 		$update->xprint("X"x$len);
 		$update->xflush;# needed? guess not? well. butthen sure before the next seek, so do it anyway in case xseek doesn't.
 		$count++;
 	    }
 	}
-    } else {
-	$foo=~ s/($regex)/
-            $count++;
-            "X"x(length $1)
-	/sge;
-	$in->xclose;
     }
     print "$path: $count replacements\n";
     munmap ($foo)
