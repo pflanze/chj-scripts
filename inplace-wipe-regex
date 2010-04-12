@@ -36,19 +36,19 @@ our @files= @ARGV;
 
 
 use Chj::xopen 'xopen_read','xopen_readwrite';
-our $xopen= \&xopen_read;
+our $xopen= \&xopen_readwrite;
 use Sys::Mmap;
 
 sub replace_in {
     my ($path)=@_;
     my $in= &$xopen( $path);
-    my $update= xopen_readwrite $path
-      unless $opt_dry;
     my $foo;
-    mmap ($foo, 0, PROT_READ, MAP_SHARED, $in)
+    mmap ($foo, 0, PROT_READ|PROT_WRITE, MAP_SHARED, $in)
       or die "mmap '$path': $!";
     my $count=0;
     if (0) {
+	my $update= xopen_readwrite $path
+	  unless $opt_dry;
 	while ($foo=~ m/($regex)/sg) {
 	    my $len= length($1);
 	    #next unless $len; #um. endlessloop then?
@@ -68,7 +68,7 @@ sub replace_in {
 	$foo=~ s/($regex)/
             $count++;
             "X"x(length $1)
-        /sg
+        /sge
     }
     print "$path: $count replacements\n";
     munmap ($foo)
