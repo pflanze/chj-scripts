@@ -68,7 +68,8 @@ sub replace_in {
 	$foo=~ s/($regex)/
             $count++;
             "X"x(length $1)
-        /sge
+	/sge;
+	$in->xclose;
     }
     print "$path: $count replacements\n";
     munmap ($foo)
