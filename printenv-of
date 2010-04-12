@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Mon Apr 12 19:32:03 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+use Chj::xopen 'xopen_read';
+
+sub printenv_of {
+    my ($pidstr)=@_;
+    my ($pid)= $pidstr=~ /^(\d+)\z/
+      or die "not a pid: $pidstr";
+    my $in= xopen_read "/proc/$pid/environ";
+    local $/="\0";
+    while (<$in>) {
+	chomp;
+	print "$_\n"
+	  or die "stdout: $!";
+    }
+    $in->xclose;
+}
+
+printenv_of $_
+  for @ARGV;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
