@@ -47,25 +47,28 @@ sub replace_in {
     my $foo;
     mmap ($foo, 0, PROT_READ, MAP_SHARED, $in)
       or die "mmap '$path': $!";
-#     $foo=~ s/($regex)/
-#         if ($opt_dry) {
-#             print
-# /sg
     my $count=0;
-    while ($foo=~ m/($regex)/sg) {
-	my $len= length($1);
-	#next unless $len; #um. endlessloop then?
-	my $endpos= pos($foo);
-	my $startpos= $endpos-$len;
-	print "$path: found '$1' at pos $startpos, len $len\n"
-	  if ($opt_dry or $verbose);
-	if (!$opt_dry) {
-	    # seek and write. wl hum. ? .
-	    $update->xseek($startpos);
-	    $update->xprint("X"x$len);
-	    $update->xflush;# needed? guess not? well. butthen sure before the next seek, so do it anyway in case xseek doesn't.
-	    $count++;
+    if (0) {
+	while ($foo=~ m/($regex)/sg) {
+	    my $len= length($1);
+	    #next unless $len; #um. endlessloop then?
+	    my $endpos= pos($foo);
+	    my $startpos= $endpos-$len;
+	    print "$path: found '$1' at pos $startpos, len $len\n"
+	      if ($opt_dry or $verbose);
+	    if (!$opt_dry) {
+		# seek and write. wl hum. ? .
+		$update->xseek($startpos);
+		$update->xprint("X"x$len);
+		$update->xflush;# needed? guess not? well. butthen sure before the next seek, so do it anyway in case xseek doesn't.
+		$count++;
+	    }
 	}
+    } else {
+	$foo=~ s/($regex)/
+            $count++;
+            "X"x(length $1)
+        /sg
     }
     print "$path: $count replacements\n";
     munmap ($foo)
