@@ -1,0 +1,88 @@
+#!/usr/bin/perl -w
+
+# Mon Apr 12 17:32:53 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname regex file(s)
+
+  Replace matches for regex with repeaded X chars, inplace (not using
+  a temporary file).
+
+  Options:
+  --dry-run  report read locations, show what would be done
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our $regex=shift @ARGV;
+our @files= @ARGV;
+
+
+use Chj::xopen 'xopen_read','xopen_readwrite';
+use Sys::Mmap;
+
+our $use_inplace_updates=0;
+our $xopen= $use_inplace_updates ? \&xopen_readwrite : \&xopen_read;
+
+sub replace_in {
+    my ($path)=@_;
+    my $in= &$xopen( $path);
+    my $foo;
+    mmap ($foo,
+	  0,
+	  ($use_inplace_updates ? (PROT_READ|PROT_WRITE) : PROT_READ),
+	  MAP_SHARED,
+	  $in)
+      or die "mmap '$path': $!";
+    my $count=0;
+    if ($use_inplace_updates) {
+	$foo=~ s/($regex)/
+            $count++;
+            "X"x(length $1)
+	/sge;
+	$in->xclose;
+    } else {
+	my $update= xopen_readwrite $path
+	  unless $opt_dry;
+	while ($foo=~ m/($regex)/sg) {
+	    my $len= length($1);
+	    #next unless $len; #um. endlessloop then?
+	    my $endpos= pos($foo);
+	    my $startpos= $endpos-$len;
+	    print "$path: found '$1' at pos $startpos, len $len\n"
+	      if ($opt_dry or $verbose);
+	    if (!$opt_dry) {
+		$update->xseek($startpos);
+		$update->xprint("X"x$len);
+		$update->xflush;# needed? guess not? well. butthen sure before the next seek, so do it anyway in case xseek doesn't.
+		$count++;
+	    }
+	}
+    }
+    print "$path: $count replacements\n";
+    munmap ($foo)
+      or die "munmap '$path': $!";
+}
+
+replace_in $_
+  for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
