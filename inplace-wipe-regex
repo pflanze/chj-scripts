@@ -35,13 +35,15 @@ our $regex=shift @ARGV;
 our @files= @ARGV;
 
 
-use Chj::xopen 'xopen_read'; ##
+use Chj::xopen 'xopen_read','xopen_readwrite';
 our $xopen= \&xopen_read;
 use Sys::Mmap;
 
 sub replace_in {
     my ($path)=@_;
     my $in= &$xopen( $path);
+    my $update= xopen_readwrite $path
+      unless $opt_dry;
     my $foo;
     mmap ($foo, 0, PROT_READ, MAP_SHARED, $in)
       or die "mmap '$path': $!";
@@ -55,11 +57,13 @@ sub replace_in {
 	#next unless $len; #um. endlessloop then?
 	my $endpos= pos($foo);
 	my $startpos= $endpos-$len;
-	print "$path: found '$1' at pos $startpos, len $len\n";
+	print "$path: found '$1' at pos $startpos, len $len\n"
+	  if ($opt_dry or $verbose);
 	if (!$opt_dry) {
-	    die "";##
 	    # seek and write. wl hum. ? .
-
+	    $update->xseek($startpos);
+	    $update->xprint("X"x$len);
+	    $update->xflush;# needed? guess not? well. butthen sure before the next seek, so do it anyway in case xseek doesn't.
 	    $count++;
 	}
     }
