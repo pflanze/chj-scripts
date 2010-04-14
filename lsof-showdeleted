@@ -19,6 +19,11 @@ sub usage {
   been replaced by a package upgrade. For this reason, ignores
   /tmp|dev|var/ and a couple other uninteresting paths.
 
+  (It is more precisely filtering lsof output, but otherwise doing the
+  same as 'lsof |grep DEL' (but there is code to alternatively do our
+  own stat calls, too, see source) and ignoring uninteresting paths,
+  too.)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -31,24 +36,145 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 #usage unless @ARGV;
 
-use Chj::IO::Command;
 
-our $in= Chj::IO::Command->new_sender ("lsof", @ARGV);
-our $out= Chj::IO::Command->new_receiver ("less");
+sub Username {
+    my ($uid)=@_;
+    if(my $nam= getpwuid($uid)) {# [is this slow?shouldIcache?]
+	$nam
+    } else {
+	"<$uid>" #wl.or just $uid?
+    }
+}
 
-while (<$in>) {
-    if (/ (\S+) \(deleted\)$/) {
-	my $possiblypartial_path= $1;
-	if ($possiblypartial_path=~ m{^/(tmp|dev|var)/}
-	    or
-	    $possiblypartial_path=~ m|/\.galeon/mozilla/|) {
-	    # suppress
+sub mkJustify {
+    my ($adjoin)=@_;
+    sub {
+	my ($width, $val)=@_;
+	my $len= length $val;
+	if ($len>= $width) {
+	    $val
 	} else {
-	    $out->xprint($_);
+	    &$adjoin(" "x($width-$len), $val)
 	}
     }
-    # else suppress
 }
+
+*JustifyLeft= mkJustify
+  (sub {
+       my ($sp,$val)=@_;
+       $val.$sp
+   });
+*JustifyRight= mkJustify
+  (sub {
+       my ($sp,$val)=@_;
+       $sp.$val
+   });
+
+use Chj::IO::Command;
+
+use Chj::xperlfunc ':all';
+
+our $out= Chj::IO::Command->new_receiver ("less");
+#our $out= bless *STDOUT{IO}, "Chj::IO::File";#(ah hat sogar xxfinish)
+
+
+our $rely_on_lsof_DEL=1; # whether to rely on DEL reporting.
+
+sub process_entry {
+    my ($h)=@_;
+    my $f=$$h{fileSet}  or die;
+    return unless ($$f{t} eq "REG");
+    # and maybe also:
+    #return unless ($$f{f} eq "txt"); # ?   well or  whatever. maybe not.
+
+    local our $path= $$f{n};
+    $out->xprint ("  checking path: '$path'\n")
+      if $verbose;
+    if ($path eq '/SYSV00000000'
+	or
+	$path=~ m{^/(?:tmp|dev|var|proc)/}
+	or
+	$path=~ m|/\.galeon/mozilla/|) {
+	# suppress
+    } else {
+	my $report= sub {
+	    $out->xprint( JustifyLeft(15, $$h{c}),
+			  " ",
+			  JustifyRight(7, $$h{p}),
+			  " ",
+			  JustifyLeft(15, Username($$h{u})),
+			  " ",
+			  $path,
+			  "\n");
+	};
+	if ($rely_on_lsof_DEL) {
+	    if ($$f{f} eq "DEL") {
+		&$report;
+	    }
+	} else {
+	    if (my $s= Xlstat $path) {
+		my $inode= $$f{i};
+		if ($s->ino == $inode) {
+		    # no report
+		    $out->xprint("$inode is correct\n")
+		      if $verbose;
+		} else {
+		    &$report;
+		}
+	    } else {
+		$out->xprint( "process $$h{p}: can't stat '$path': $!\n"); ## assumes $! is still set.
+	    }
+	}
+    }
+}
+
+our $in= Chj::IO::Command->new_sender ("lsof", "-F", ##"-0",
+				       @ARGV);
+
+our $processSet=undef;
+# and inside, we put the file sets. or, each new file set. at key " 
+#our $fileSet= undef; # as i said, stored in the processSet. each time anew.
+
+##local $/="\0";
+
+#our $in_processSet; are we always  well i mean  just  not fileset rite'
+our $in_fileSet;
+#statemacshin.
+
+while (<$in>) {
+    chomp;
+    my $key= substr($_,0,1);
+    my $val= substr($_,1);
+    $out->xprint ("key '$key' -> '$val'\n")
+      if $verbose;
+    if ($key eq 'p') {
+	if ($$processSet{fileSet}) {
+	    # process it before deletion
+	    process_entry ($processSet);
+	}
+	#^isnt' that sooo hacky. +- copy from below. but? x.
+	$processSet={};
+	$$processSet{$key}=$val;
+	$in_fileSet=0;
+    } elsif ($key eq 'f') {
+	$in_fileSet=1;
+	if ($$processSet{fileSet}) {
+	    # process it before deletion
+	    process_entry ($processSet);
+	}
+	$$processSet{fileSet}={};#clear it.
+	$$processSet{fileSet}{$key}= $val;
+    } else {
+	# other fields for the last set decided.
+	unless ($in_fileSet) {
+	    $$processSet{$key}=$val;
+	} else {
+	    $$processSet{fileSet}{$key}= $val;
+	}
+    }
+
+}
+
 $in->xxfinish; # yeah gell better than in the shell where this is verschluckt.
 $out->xxfinish;# (well? should we exec less into ourselves? whatever?)
 
