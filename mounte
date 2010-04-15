@@ -397,6 +397,8 @@ sub mount_easily {
 		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n"
 		  if ($verbose or $verbosevolume);
 	    }
+	} elsif ($device_fileinfo=~ /^Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
+	    #ok
 	} else {
 	    #die "unknown filesystem type
 	    die "couldn't find filesystem type in 'file' output '$device_fileinfo'";
