@@ -11,6 +11,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [git ls-files parameters]
 
+  Use git blame and count lines by authors.
+
   Options:
   --sort-by authorname
           sort by number of lines that author contributed, as
