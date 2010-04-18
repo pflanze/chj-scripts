@@ -121,6 +121,15 @@ sub blame_path ( $ ) {
 	$s->maybe_lines_by("__ALL__")
 	  #hehe hier waer extra von maybe in hsk, whereas herenot.
     }
+    sub linesscore_by {
+	my $s=shift;
+	my ($key)=@_;
+	#$s->linespercent_by($key)
+	#  * $s->linestotal  #well.haha. hm.
+	#my ($key,$totaltotal)=@_;
+	#hm.
+	$s->linespercent_by($key) * log($s->linestotal)
+    }
     end Class::Array;
 }
 
@@ -134,9 +143,9 @@ our @entries= map {
 
 if ($opt_sort_by) {
     @entries= sort {
-	(($b->linespercent_by($opt_sort_by))
+	(($b->linesscore_by($opt_sort_by))
 	 <=>
-	 ($a->linespercent_by($opt_sort_by)))
+	 ($a->linesscore_by($opt_sort_by)))
     } @entries
 }
 
