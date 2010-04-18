@@ -101,8 +101,15 @@ sub blame_path ( $ ) {
 	my $s=shift;
 	my $path=$s->path;
 	my $authors=$s->authors;
-        print "$path:\n";
-	for my $author (sort keys %$authors) {
+	my $all= $$authors{__ALL__};
+        #print "$path ($all):\n";
+	print "$path:\n";
+	for my $author (sort {
+	    (($$authors{$b})
+	     <=>
+	     ($$authors{$a}))
+	} keys %$authors) {
+	    next if $author eq "__ALL__";
 	    print "  $author: $$authors{$author}\n";
 	}
     }
