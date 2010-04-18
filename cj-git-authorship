@@ -110,7 +110,7 @@ sub blame_path ( $ ) {
 	     ($$authors{$a}))
 	} keys %$authors) {
 	    next if $author eq "__ALL__";
-	    print "  $author: $$authors{$author}\n";
+	    printf '%5d %s'."\n", $$authors{$author}, $author;
 	}
     }
     sub maybe_lines_by {
