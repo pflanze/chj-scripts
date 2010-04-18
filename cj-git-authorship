@@ -1,0 +1,84 @@
+#!/usr/bin/perl -w
+
+# Sun Apr 18 16:18:00 EDT 2010
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [git ls-files parameters]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+our @lsfiles_opt=@ARGV;
+# no "-" options? well, possibly yes. after "--" to this script
+
+use Chj::IO::Command;
+
+our $ls= Chj::IO::Command->new_sender("git","ls-files","-z",@lsfiles_opt);
+our @ls= do {
+    local $/="\0";
+    map {
+	chop;
+	$_ #neverforgetit f
+    } <$ls>
+};
+$ls->xxfinish;
+#^ auch n code lib ding ?  ach wsmf 
+#abstratkions fehlen (nid leaken)
+
+sub blame_path ( $ ) {
+    my ($path)=@_;
+    my $authors={};
+    # not sure what -b does. (would it ever convert an id to eg. "master" or so without it?)
+    local our $in= Chj::IO::Command->new_sender
+      ("git","blame","-t","-l","-b",
+       # -c is necessary to suppress showing the ~source paths (which it otherwise does *sometimes*)
+       #  u wait, then it doesn't give the author full name. hmmm
+       $path);
+    while (<$in>) {
+	chomp;
+	/^
+	 # accept up to 80 char long id's to be compatible with future gits where it's not a sha-1 anymore (well?)
+	 [a-f0-9]{40,80}
+	 # ignore filenames if present. assume that they never contain a paren.ok?
+	 [^(]*
+
+	 # author fullname followed by unixtime, tz, lineno
+	 \((.*?)\s+\d+\ [+-]\d{4}\s+\d+\)
+	 /x
+	  or die "no match in '$_'";
+	my $author= $1;
+	$$authors{$author}++;
+    }
+    $in->xxfinish;
+
+    $authors
+}
+
+
+for my $path (@ls) {
+    my $authors= blame_path $path;
+    print "$path:\n";
+    for my $author (sort keys %$authors) {
+	print "  $author: $$authors{$author}\n";
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
