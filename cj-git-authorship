@@ -45,6 +45,7 @@ $ls->xxfinish;
 sub blame_path ( $ ) {
     my ($path)=@_;
     my $authors={};
+    my $total=0;
     # not sure what -b does. (would it ever convert an id to eg. "master" or so without it?)
     local our $in= Chj::IO::Command->new_sender
       ("git","blame","-t","-l","-b",
@@ -65,9 +66,11 @@ sub blame_path ( $ ) {
 	  or die "no match in '$_'";
 	my $author= $1;
 	$$authors{$author}++;
+	$total++;
     }
     $in->xxfinish;
 
+    $$authors{__ALL__}=$total; #wl. gensym?wll.
     $authors
 }
 
