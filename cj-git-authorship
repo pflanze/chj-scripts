@@ -11,6 +11,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [git ls-files parameters]
 
+  Options:
+  --sort-by authorname
+          sort by number of lines that author contributed, as
+          percentage in that file
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -18,9 +23,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_sort_by;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "sort-by=s"=> \$opt_sort_by,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 #usage unless @ARGV;
@@ -74,14 +81,67 @@ sub blame_path ( $ ) {
     $authors
 }
 
-
-for my $path (@ls) {
-    my $authors= blame_path $path;
-    print "$path:\n";
-    for my $author (sort keys %$authors) {
-	print "  $author: $$authors{$author}\n";
+{
+    package CJ_git_authorship;
+    use Class::Array -fields=> -publica=>
+      (
+       'path',
+       'authors',
+      );
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
     }
+    #sub output { ##can't use print as name oder?
+    sub printit {
+	my $s=shift;
+	my $path=$s->path;
+	my $authors=$s->authors;
+        print "$path:\n";
+	for my $author (sort keys %$authors) {
+	    print "  $author: $$authors{$author}\n";
+	}
+    }
+    sub maybe_lines_by {
+	my $s=shift;
+	my ($key)=@_;
+	$$s[Authors]{$key}
+    }
+    sub linespercent_by {
+	my $s=shift;
+	my ($key)=@_;
+	if (defined (my $l= $s->maybe_lines_by($key))) {
+	    $l / ($s->linestotal)
+	} else {
+	    0  # well hope it's not 0 lines total hehe.wh'evr
+	}
+    }
+    sub linestotal {
+	my $s=shift;
+	$s->maybe_lines_by("__ALL__")
+	  #hehe hier waer extra von maybe in hsk, whereas herenot.
+    }
+    end Class::Array;
 }
+
+our @entries= map {
+    my $path= $_;
+    my $authors= blame_path $path;
+    CJ_git_authorship->new($path,$authors)
+} (@ls);
+
+
+
+if ($opt_sort_by) {
+    @entries= sort {
+	(($b->linespercent_by($opt_sort_by))
+	 <=>
+	 ($a->linespercent_by($opt_sort_by)))
+    } @entries
+}
+
+$_->printit for @entries;
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
