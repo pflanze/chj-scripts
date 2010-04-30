@@ -116,7 +116,8 @@ xxsystem( "git", "send-email",
 # (avoiding ordering issues?)
 unlink $configpath;
 END {
-    unlink $configpath;
+    unlink $configpath
+      if defined $configpath;
 }
 
 #use Chj::ruse;
