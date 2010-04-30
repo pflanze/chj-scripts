@@ -40,7 +40,8 @@ Open a preexisting file readwrite.
 
 =item xsysopen_append
 
-Open a file in append mode, creating it if necessary (same as xopen_append).
+Open a file in append mode, creating it if necessary (same as
+xopen_append, but supports an umask as second argument).
 
 =item xsysopen_uappend
 
