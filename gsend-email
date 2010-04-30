@@ -32,6 +32,7 @@ sub MakeBox {
     my $X;
     \$X
 }
+# pass-through options:
 our $opts=
   [
    ["--to", MakeBox ],
