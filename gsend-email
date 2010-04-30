@@ -38,6 +38,7 @@ our $opts=
    ["--to", MakeBox ],
    ["--cc", MakeBox ],
    ["--bcc", MakeBox ],
+   ["--in-reply-to", MakeBox ],
   ];
 sub StripMinusPlus {
     my ($s)=@_;
