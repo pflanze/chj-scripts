@@ -19,37 +19,15 @@ sub Maybe_which ( $ ) {
     }
 }
 
-our $browser=
+our $displaytool=
   (
-   Maybe_which ("galeon-$ENV{USER}sbx")
+   Maybe_which ("eog")
    or
-   Maybe_which ("galeon")
+   Maybe_which ("display")
    or
-   #well, I haven't tested those..:
-   Maybe_which ("firefox")
-   or
-   Maybe_which ("mozilla")
-   or
-   "xmessage" #he
+   die "didn't find a tool to display png files"
   );
 
-sub Keyid32bithex ( $ ) {
-    my ($str)= @_;
-    #if (s/^0x//) {
-    ## just fine
-    #}
-    my $re= qr|[A-F0-9]{8}|;
-    if ($str=~ m{^(?:0x|)($re)\z}s) {
-	$1
-    } else {
-	die "key does not match 32bit hex format: '$str'";
-    }
-}
-
-our $makeurl=sub ( $ $ ) {
-    my ($from, $to)=@_;
-    'http://webware.lysator.liu.se/jc/wotsap/wots/latest/paths/0x'.Keyid32bithex($from).'-0x'.Keyid32bithex($to).'.png?size=2000x700'
-};
 
 # fetch the key from config:
 use Chj::xopen 'xopen_read';
@@ -103,10 +81,10 @@ sub usage {
       $maybe_default_key_short ? '0x'.$maybe_default_key_short : 'undefined';
     print "$myname openpgp-key-id
 
-  Open wotsap page url for the trust chain from your key
+  Show 'wotsap' graph for the trust chain from your key
   ($ownkeyid_str, taken from the default-key directive in
-  '$gpg_config_path') to the given key(s) in your browser
-  (choosen: $browser).
+  '$gpg_config_path')
+  (choosen: $displaytool).
 
   (Christian Jaeger <$email>)
 ";
