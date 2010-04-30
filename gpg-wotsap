@@ -125,12 +125,12 @@ my $default_key_short= $maybe_default_key_short
 
 use Chj::xperlfunc;
 
-sub open_key_in_galeon ( $ ) {
+sub open_key ( $ ) {
     my ($keyid)=@_;
-    xxsystem $browser, &$makeurl ($default_key_short, $keyid);
+    xxsystem "wotsap", $default_key_short, $keyid, "-O","eog";
 }
 
-open_key_in_galeon $_ for @ARGV;
+open_key $_ for @ARGV;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
