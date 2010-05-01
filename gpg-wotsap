@@ -19,7 +19,30 @@ sub Maybe_which ( $ ) {
     }
 }
 
-our $browser=
+
+# ============== local variant ===============================
+
+our $maybe_wotsap=
+  Maybe_which ("wotsap");
+
+our $maybe_displaytool=
+  (
+   Maybe_which ("eog")
+   or
+   Maybe_which ("display")
+  );
+
+
+use Chj::xperlfunc;
+
+sub open_key_locally ( $ ) {
+    my ($keyid)=@_;
+    xxsystem "wotsap", default_key_short(), $keyid, "-O","eog";
+}
+
+# ============= website variant ==============================
+
+our $maybe_browser=
   (
    Maybe_which ("galeon-$ENV{USER}sbx")
    or
@@ -29,8 +52,6 @@ our $browser=
    Maybe_which ("firefox")
    or
    Maybe_which ("mozilla")
-   or
-   "xmessage" #he
   );
 
 sub Keyid32bithex ( $ ) {
@@ -50,6 +71,13 @@ our $makeurl=sub ( $ $ ) {
     my ($from, $to)=@_;
     'http://webware.lysator.liu.se/jc/wotsap/wots/latest/paths/0x'.Keyid32bithex($from).'-0x'.Keyid32bithex($to).'.png?size=2000x700'
 };
+
+sub open_key_website ( $ ) {
+    my ($keyid)=@_;
+    xxsystem $maybe_browser, &$makeurl (default_key_short(), $keyid);
+}
+
+# ============ common code ===================================
 
 # fetch the key from config:
 use Chj::xopen 'xopen_read';
@@ -95,6 +123,28 @@ our $maybe_default_key_short= ($maybe_default_key_long and do {
     $1
 });#parens needed!..
 
+
+# which way should it be run, local or website?
+our ($whichway_txt, $open_key) = do {
+    if ($maybe_wotsap and $maybe_displaytool) {
+	("local wotsap ($maybe_wotsap), with display tool $maybe_displaytool",
+	 \&open_key_locally)
+    } elsif ($maybe_browser) {
+	("browser $maybe_browser on website",
+	 \&open_key_website)
+    } else {
+	# 'eleganter' Weg um doch lazy zu sein. trotz 2er tuple.?.
+	my $txt=
+	  "neither wotsap and a png display tool nor a web browser could be found";
+	($txt,
+	 sub {
+	     die $txt
+	 })
+    }
+};
+	
+
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -103,10 +153,17 @@ sub usage {
       $maybe_default_key_short ? '0x'.$maybe_default_key_short : 'undefined';
     print "$myname openpgp-key-id
 
-  Open wotsap page url for the trust chain from your key
+  Show 'wotsap' graph for the trust chain from your key
   ($ownkeyid_str, taken from the default-key directive in
-  '$gpg_config_path') to the given key(s) in your browser
-  (choosen: $browser).
+  '$gpg_config_path').
+
+  The program can either show it by opening the website in a web
+  browser (well, the website is currently BROKEN!), or by running
+  'wotsap' locally and opening the graph in some display tool. It
+  gives preference to the latter if installed. From what it could
+  find, it will choose the following:
+
+  $whichway_txt
 
   (Christian Jaeger <$email>)
 ";
@@ -120,17 +177,12 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-my $default_key_short= $maybe_default_key_short
-  or usage "need definition of default-key in '$gpg_config_path'";
-
-use Chj::xperlfunc;
-
-sub open_key_in_galeon ( $ ) {
-    my ($keyid)=@_;
-    xxsystem $browser, &$makeurl ($default_key_short, $keyid);
+sub default_key_short {
+    $maybe_default_key_short
+      or usage "need definition of default-key in '$gpg_config_path'";
 }
 
-open_key_in_galeon $_ for @ARGV;
+&$open_key($_) for @ARGV;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;

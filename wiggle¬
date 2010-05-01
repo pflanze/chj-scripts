@@ -1,0 +1,51 @@
+#!/usr/bin/perl -w
+
+# Fri Apr 30 07:41:08 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+sub cmd {
+    my ($rejfile)=@_;
+    my $file = $rejfile;
+    $file=~ s/\.rej$//
+      or die "file '$file' does not have suffix .rej";
+    ("wiggle","--replace",$file,$rejfile)
+}
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    my $somefile= "somefile.rej";
+    my @cmd= cmd $somefile;
+    print "$myname $somefile
+
+  Run @cmd
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+use Chj::xperlfunc;
+
+sub wiggle {
+    my ($rejfile)=@_;
+    my @cmd= cmd $rejfile;
+    xxsystem @cmd
+}
+
+wiggle $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

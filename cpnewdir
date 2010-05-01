@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Mon Apr 26 13:43:50 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+# in Perl because bash does not have pop, right?....(only shift; and
+# the cp mv etc have the (bad?*!*) habit to want the special argument
+# as the last (somuchforthoughtthroughunix (wellnobodyeverclaimedittobeor?)))
+
+use strict;
+
+our @standardoptions= ("-i");
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s) to-be-created-dir
+
+  Creates dir then runs cp @standardoptions file(s) dir.
+
+  Options: could be specified after --, but careful, the last of the
+  arguments really has to be the to-be-created-dir in that
+  case.
+
+  Specially supported, meaning, passed through to cp, are:
+  -a
+
+  (Note: careful about -- meaning, need to give -- -- to stop *cp*
+  from processing options. Hmm. I know. always that old thing.with
+  optionparsing and genial getopt. -> not guaranteed to stay that way)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our @cpoptions;
+sub passthrough {
+    my (@what)=@_;
+    sub {
+	push @cpoptions, @what
+    }
+}
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "a"=> passthrough("-a"),
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our $dir= pop @ARGV;
+our @files= @ARGV;
+
+use Chj::xperlfunc;
+
+xmkdir $dir; #perms?
+xexec "cp", @standardoptions, @cpoptions, @files, $dir;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

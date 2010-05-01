@@ -32,11 +32,13 @@ sub MakeBox {
     my $X;
     \$X
 }
+# pass-through options:
 our $opts=
   [
    ["--to", MakeBox ],
    ["--cc", MakeBox ],
    ["--bcc", MakeBox ],
+   ["--in-reply-to", MakeBox ],
   ];
 sub StripMinusPlus {
     my ($s)=@_;
@@ -116,7 +118,8 @@ xxsystem( "git", "send-email",
 # (avoiding ordering issues?)
 unlink $configpath;
 END {
-    unlink $configpath;
+    unlink $configpath
+      if defined $configpath;
 }
 
 #use Chj::ruse;
