@@ -29,6 +29,7 @@ our ($file2,
 use Chj::xperlfunc;
 use Chj::xtmpfile;
 use Chj::xopen 'xopen_read';
+use Chj::IO::MD5;
 
 sub filter_file {
     my ($file)=@_;
@@ -48,10 +49,25 @@ sub filter_file {
     }
 }
 
-print "@diff $file1 $file2\n"
-  or die $!;
-
 our @f= map { filter_file $_ } ($file1,$file2);
+our @p= map { $_->path } @f;
 
-xsystem @diff, map { $_->path } @f;
-# ^ instead of xexec, since git diff issues a warning if we don't exit true.
+sub md5 {
+    my ($path)=@_;
+    my $f= xopen_read $path;
+    my $r= $f->Chj::IO::MD5::md5;
+    $f->xclose;
+    $r
+}
+
+our @m= map { md5 $_ } @p;
+
+if ($m[0] ne $m[1]) {
+
+    print "@diff $file1 $file2\n"
+      or die $!;
+
+    xsystem @diff, @p;
+    # ^ instead of xexec, since git diff issues a warning if we don't exit true.
+
+}
