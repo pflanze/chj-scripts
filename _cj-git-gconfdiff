@@ -25,6 +25,23 @@ our ($file2,
     )= @ARGV;
 
 use Chj::xperlfunc;
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
 
-xsystem "tkdiff", $file1,$file2;
+sub filter_file {
+    my ($file)=@_;
+    my $in= xopen_read $file;
+    my $out= xtmpfile;
+    while (<$in>) {
+	s/mtime="\d{10}"/mtime="<REMOVED-BY-$myname>"/sg;
+	$out->xprint($_);
+    }
+    $in->xclose;
+    $out->xclose;
+    $out
+}
+
+our @f= map { filter_file $_ } ($file1,$file2);
+
+xsystem "diff","-u", map { $_->path } @f;
 # ^ instead of xexec, since git diff issues a warning if we don't exit true.

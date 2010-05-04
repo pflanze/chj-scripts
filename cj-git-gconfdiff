@@ -2,4 +2,4 @@
 
 # adapted COPY from cj-git-tkdiff, see there
 
-GIT_EXTERNAL_DIFF=_cj-git-tkdiff PAGER=cat git diff "$@"
+GIT_EXTERNAL_DIFF=_cj-git-gconfdiff PAGER=cat git diff "$@"
