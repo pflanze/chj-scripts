@@ -30,15 +30,20 @@ use Chj::xopen 'xopen_read';
 
 sub filter_file {
     my ($file)=@_;
-    my $in= xopen_read $file;
-    my $out= xtmpfile;
-    while (<$in>) {
-	s/mtime="\d{10}"/mtime="<REMOVED-BY-$myname>"/sg;
-	$out->xprint($_);
+    if (-e $file) {
+	my $in= xopen_read $file;
+	my $out= xtmpfile;
+	while (<$in>) {
+	    s/mtime="\d{10}"/mtime="<REMOVED-BY-$myname>"/sg;
+	    $out->xprint($_);
+	}
+	$in->xclose;
+	$out->xclose;
+	$out
+    } else {
+	xopen_read "/dev/null"
+	  #hehe, need an object with a path method, incidentally that works nicely
     }
-    $in->xclose;
-    $out->xclose;
-    $out
 }
 
 our @f= map { filter_file $_ } ($file1,$file2);
