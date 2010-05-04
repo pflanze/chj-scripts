@@ -49,6 +49,7 @@ sub filter_file {
     }
 }
 
+our ($file1_,$file2_)=($file1,$file2);
 our @f= map { filter_file $_ } ($file1,$file2);
 our @p= map { $_->path } @f;
 
@@ -64,7 +65,7 @@ our @m= map { md5 $_ } @p;
 
 if ($m[0] ne $m[1]) {
 
-    print "@diff $file1 $file2\n"
+    print "@diff $file1_ $file2_\n"
       or die $!;
 
     xsystem @diff, @p;
