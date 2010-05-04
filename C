@@ -9,9 +9,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname cmd [args] _ [other args]
+    print "$myname cmd [args] _ [other args [ _ [further args]]]
 
-  
+  shortcut for: lamda 'cmd args \"$1\" other args \"$2\" further args'
+
+  (Note: currently the _ cannot be parametrized. Sure not safe nor scalable)
 
   (Christian Jaeger <$email>)
 ";
@@ -20,6 +22,42 @@ exit (@_ ? 1 : 0);
 
 usage unless @ARGV;
 usage if (@ARGV==1 and ($ARGV[0] eq "-h" or $ARGV[0] eq "--help"));
+
+use Chj::xtmpfile;
+
+my $t= xtmpfile;
+
+$t->xprint("#/bin/sh\n");
+
+use Chj::singlequote 'singlequote_sh';
+#sub Q ($ ) {} # q is taken, as syntax
+#*Q= \&singlequote_sh;
+
+#$t->xprint (Q ) well don't treat cmd as something different?
+
+my $i=1;
+for (@ARGV) {
+    $t->xprint
+      (
+       do {
+	   if ($_ eq "_") {
+	       '"$'.$i.'"'
+	   } else {
+	       singlequote_sh $_
+	   }
+       },
+       " "
+      );
+}
+
+$t->xclose;
+$t->autoclean(0);
+my $path= $t->path;
+use Chj::xperlfunc;
+xchmod 0700, $path;
+
+print $path, "\n"
+  or die $!;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
