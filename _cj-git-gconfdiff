@@ -9,8 +9,6 @@ sub usage {
     print "$myname ..
 
   adapted COPY from _cj-git-tkdiff, see there
-
-  (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
