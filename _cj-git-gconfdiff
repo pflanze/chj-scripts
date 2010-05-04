@@ -2,6 +2,8 @@
 
 use strict;
 
+our @diff=("diff","-u");
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -46,7 +48,10 @@ sub filter_file {
     }
 }
 
+print "@diff $file1 $file2\n"
+  or die $!;
+
 our @f= map { filter_file $_ } ($file1,$file2);
 
-xsystem "diff","-u", map { $_->path } @f;
+xsystem @diff, map { $_->path } @f;
 # ^ instead of xexec, since git diff issues a warning if we don't exit true.
