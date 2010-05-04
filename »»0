@@ -1,0 +1,3 @@
+#!/bin/bash
+
+while read -d "`echo -e '\0'`" item; do "$@" "$item"; done
