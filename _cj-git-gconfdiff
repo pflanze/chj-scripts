@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-# Wed Sep 24 22:24:27 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
-
 use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -11,29 +8,14 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname ..
 
-  To be used with Git, as custom diff driver, see man gitattributes
-  (or the --ext-diff option in man git-diff).
-  HM WELL. .gitconfig doesn't work. Use it as such:
-
-  GIT_EXTERNAL_DIFF=_cj-git-tkdiff g-diff
-
-  grr really.(not even --ext-diff option necessary now.)
-  (This is with git version 1.6.0)
+  adapted COPY from _cj-git-tkdiff, see there
 
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
-# use Getopt::Long;
-# our $verbose=0;
-# GetOptions("verbose"=> \$verbose,
-# 	   "help"=> sub{usage},
-# 	   ) or exit 1;
 usage unless @ARGV==7;
-
-#use Data::Dumper;
-#print Dumper @ARGV;
 
 our ($file2,
      $file1,
@@ -47,17 +29,4 @@ our ($file2,
 use Chj::xperlfunc;
 
 xsystem "tkdiff", $file1,$file2;
-# ^ instead of xexec, since git diff issues a warning if we don't exit true. (and yep, not xxsystem heh)
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
-
-__END__
-Example:
-$VAR1 = 'Einfuehrung.txt';
-$VAR2 = '/tmp/.diff_BkEzS9';
-$VAR3 = 'b5012aea677ff412f452afe6ba1e3dbd608c3fb9';
-$VAR4 = '100644';
-$VAR5 = 'Einfuehrung.txt';
-$VAR6 = '0000000000000000000000000000000000000000';
-$VAR7 = '100644';
+# ^ instead of xexec, since git diff issues a warning if we don't exit true.
