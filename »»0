@@ -10,3 +10,5 @@ while (<STDIN>) {
 	die "command ".join(" ",map{"'$_'"}(@ARGV,$_))." exited with code $rv"
     }
 }
+close STDIN
+  or die $!;
