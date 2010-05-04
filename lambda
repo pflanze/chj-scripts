@@ -113,7 +113,7 @@ $prog->autoclean(0);
 my $path= $prog->path;
 xchmod 0700, $path;
 
-print $path
+print $path,"\n"
   or die "printing path to stdout: $!";
 
 #use Chj::ruse;
