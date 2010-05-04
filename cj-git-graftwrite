@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -eu
+
+graftpath_of () {
+    echo "$1/info/grafts"
+}
+
+usage () {
+    echo "usage: $0 < graftlist"
+    echo "  overwrites current `graftpath_of '$GIT_DIR'`"
+    exit 1
+}
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+#graftpath=`graftpath_of "$(git rev-parse --git-dir)"`
+#nope, check errors.
+
+gitdir=$(git rev-parse --git-dir)
+
+graftpath=$(graftpath_of "$gitdir")
+
+cat > "$graftpath"
