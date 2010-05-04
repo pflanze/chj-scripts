@@ -27,7 +27,24 @@ use Chj::xtmpfile;
 
 my $t= xtmpfile;
 
-$t->xprint("#/bin/sh\n");
+# need the number of _ already; so choose to walk @ARGV twice
+my $n = do {
+    my $n=0;
+    for (@ARGV) {
+	if ($_ eq "_") {
+	    $n++
+	}
+    }
+    $n
+};
+
+$t->xprint('#/bin/sh
+set -eu
+if [ $# -ne '.$n.' ]; then
+    echo "$0 called with wrong number of arguments, expecting '.$n.', got $#"
+    exit 1
+fi
+');
 
 use Chj::singlequote 'singlequote_sh';
 #sub Q ($ ) {} # q is taken, as syntax
@@ -41,7 +58,7 @@ for (@ARGV) {
       (
        do {
 	   if ($_ eq "_") {
-	       '"$'.$i.'"'
+	       '"$'.($i++).'"'
 	   } else {
 	       singlequote_sh $_
 	   }
