@@ -4,7 +4,10 @@
 
 use strict;
 use Chj::xsysopen;
+use Chj::xopen 'xopen_read';
 use Fcntl;
+
+our $devrandom= "/dev/urandom";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
@@ -20,6 +23,7 @@ sub usage {
   --non-sparse   fill the file with real zeroes (for linux 2.2)
   --truncate     reuse an existing file: truncate it and rebuild it.
                  Which means this option is dangerous!..
+  --random       fill the file with random bytes from $devrandom
 ";
 exit @_ ? 1 : 0;
 }
@@ -28,6 +32,7 @@ my @files;
 my $DEBUG=0;
 my $opt_nonsparse;
 my $opt_trunc;
+my $opt_random;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -41,6 +46,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_nonsparse=1;
     } elsif (/^--truncate$/) {
 	$opt_trunc=1;
+    } elsif (/^--random$/) {
+	$opt_random=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -85,12 +92,19 @@ for (@files) {
 	}
     }
     
-    if ($opt_nonsparse) {
+    if ($opt_nonsparse or $opt_random) {
 	my $blocksize= 1024*64;
 	my $blocks= do{ use integer; $sizebytes / $blocksize};
 	my $lastbytes= $sizebytes % $blocksize;
 	my $block= "\0"x$blocksize;
+	my $randomin= xopen_read $devrandom if $opt_random;
 	for (1..$blocks) {
+	    if ($opt_random) {
+		my $n= $randomin->xsysread($block,$blocksize);
+		$n == $blocksize
+		  or die "could not fill buffer with $blocksize random bytes, only got $n: $!";##
+		##should accept and fill rest, right?  methodforthat? .  xread not xsysread?
+	    }
 	    $f->xsyswrite($block);
 	}
 	$f->xsyswrite("\0"x$lastbytes);
