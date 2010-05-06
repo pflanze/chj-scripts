@@ -35,9 +35,10 @@ our $maybe_displaytool=
 
 use Chj::xperlfunc;
 
-sub open_key_locally ( $ ) {
-    my ($keyid)=@_;
-    xxsystem "wotsap", default_key_short(), $keyid, "-O","eog";
+sub open_key_locally {
+    @_==2 or die;
+    my ($sourceid, $targetid)=@_;
+    xxsystem "wotsap", $sourceid, $targetid, "-O","eog";
 }
 
 # ============= website variant ==============================
@@ -72,9 +73,10 @@ our $makeurl=sub ( $ $ ) {
     'http://webware.lysator.liu.se/jc/wotsap/wots/latest/paths/0x'.Keyid32bithex($from).'-0x'.Keyid32bithex($to).'.png?size=2000x700'
 };
 
-sub open_key_website ( $ ) {
-    my ($keyid)=@_;
-    xxsystem $maybe_browser, &$makeurl (default_key_short(), $keyid);
+sub open_key_website {
+    @_==2 or die;
+    my ($sourceid, $targetid)=@_;
+    xxsystem $maybe_browser, &$makeurl ($sourceid, $targetid);
 }
 
 # ============ common code ===================================
@@ -155,7 +157,7 @@ sub usage {
 
   Show 'wotsap' graph for the trust chain from your key
   ($ownkeyid_str, taken from the default-key directive in
-  '$gpg_config_path').
+  '$gpg_config_path') to the given keys.
 
   The program can either show it by opening the website in a web
   browser (well, the website is currently BROKEN!), or by running
@@ -165,6 +167,10 @@ sub usage {
 
   $whichway_txt
 
+  Options:
+    -s|--source-key id   use this key instead of $ownkeyid_str as
+           source key for the graph.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -172,17 +178,21 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_source_key;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "source-key=s"=> \$opt_source_key,
 	   ) or exit 1;
 usage unless @ARGV;
 
-sub default_key_short {
-    $maybe_default_key_short
-      or usage "need definition of default-key in '$gpg_config_path'";
-}
+our $source_key =
+  (
+   $opt_source_key ##todo: check to be short right?.
+   or $maybe_default_key_short
+   or usage "need definition of default-key in '$gpg_config_path', or -s option"
+  );#the parens are ESSENTIAL.
 
-&$open_key($_) for @ARGV;
+&$open_key($source_key, $_) for @ARGV;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;

@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Tue May  4 07:00:03 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd [args] _ [other args [ _ [further args]]]
+
+  shortcut for: lamda 'cmd args \"$1\" other args \"$2\" further args'
+
+  (Note: currently the _ cannot be parametrized. Sure not safe nor scalable)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+usage if (@ARGV==1 and ($ARGV[0] eq "-h" or $ARGV[0] eq "--help"));
+
+use Chj::xtmpfile;
+
+my $t= xtmpfile;
+
+# need the number of _ already; so choose to walk @ARGV twice
+my $n = do {
+    my $n=0;
+    for (@ARGV) {
+	if ($_ eq "_") {
+	    $n++
+	}
+    }
+    $n
+};
+
+$t->xprint('#/bin/sh
+set -eu
+if [ $# -ne '.$n.' ]; then
+    echo "$0 called with wrong number of arguments, expecting '.$n.', got $#"
+    exit 1
+fi
+');
+
+use Chj::singlequote 'singlequote_sh';
+#sub Q ($ ) {} # q is taken, as syntax
+#*Q= \&singlequote_sh;
+
+#$t->xprint (Q ) well don't treat cmd as something different?
+
+my $i=1;
+for (@ARGV) {
+    $t->xprint
+      (
+       do {
+	   if ($_ eq "_") {
+	       '"$'.($i++).'"'
+	   } else {
+	       singlequote_sh $_
+	   }
+       },
+       " "
+      );
+}
+
+$t->xclose;
+$t->autoclean(0);
+my $path= $t->path;
+use Chj::xperlfunc;
+xchmod 0700, $path;
+
+print $path, "\n"
+  or die $!;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

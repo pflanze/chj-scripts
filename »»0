@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+local $/="\0";
+while (<STDIN>) {
+    chomp;
+    my $rv= system @ARGV,$_;
+    if ($rv != 0) {
+	die "command ".join(" ",map{"'$_'"}(@ARGV,$_))." exited with code $rv"
+    }
+}
+close STDIN
+  or die $!;

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+cat <<EOF
+
+xdpyinfo - display information utility for X
+
+xprop - property displayer for X
+ individual windows (or all of them?)
+
+xwininfo - window information utility for X
+ well?
+
+xvinfo - Print out X-Video extension adaptor information
+
+EOF
