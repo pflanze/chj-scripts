@@ -2,12 +2,15 @@
 
 set -eu
 
+# not in PATH when run from crontab, so..:
+hwclock=/sbin/hwclock
+
 usage () {
     echo "usage: $0"
     echo " meant to be called from crontab, e.g. once per day in"
     echo " the evening (so that is-clock-correct works correctly)"
     echo
-    echo " exit code: whatever hwclock returns, or 2 if clock is not correct"
+    echo " exit code: whatever $hwclock returns, or 2 if clock is not correct"
     exit 1
 }
 
@@ -17,7 +20,7 @@ fi
 
 if /opt/chj/bin/is-clock-correct -q; then
     #echo "saving time" # if verbose.sgh
-    hwclock -w
+    $hwclock -w
 else
     #echo "clock is not correct"
     exit 2
