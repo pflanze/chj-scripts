@@ -25,14 +25,37 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_X;
+our $opt_untrusted;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "X"=> \$opt_X,
+	   "untrusted"=>\$opt_untrusted,
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
 our ($chrootbase,$user,@cmd)=@ARGV;
+
+use Chj::xperlfunc;
+#use Chj::xopen 'xopen_read';
+use Chj::xtmpfile;
+
+my $X= ($opt_X and $ENV{DISPLAY});
+
+use Chj::Trace;
+
+my $Xauth= do {
+    if ($X) {
+	my $t= xtmpfile;
+	tracing(\&xxsystem)->
+	  ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
+	    ($opt_untrusted ? "untrusted" : "trusted"));
+	#$t->xrewind;
+	$t->xcontent
+    } else {
+	undef
+    }
+};
 
 use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
 
@@ -43,8 +66,6 @@ mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
 
 my $devfs_is_initialized= mounted "$chrootbase/dev";
 
-use Chj::xperlfunc;
-
 if (not $devfs_is_initialized) {
     mount "--bind", "/dev", "$chrootbase/dev";
     mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
@@ -53,12 +74,6 @@ if (not $devfs_is_initialized) {
 mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
   "tmpfs","$chrootbase/lib/init/rw";
 
-my $X= ($opt_X and $ENV{DISPLAY});
-
-use Chj::xopen 'xopen_read';
-use Chj::xtmpfile;
-# XXX: ignores any XAUTHORITY(?) env var setting.
-my $Xauth= $X ? xopen_read("$ENV{HOME}/.Xauthority")->xcontent : undef;
 
 if ($X) {
     if (xfork) {
