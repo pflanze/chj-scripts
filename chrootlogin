@@ -58,7 +58,7 @@ my $Xauth= do {
 	my $d= xtmpdir;
 	{
 	    my $t= xtmpfile "$d/something";
-	    xxsystem
+	    tracing(\&xxsystem)->
 	      ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
 		($opt_untrusted ? "untrusted" : "trusted"),
 		"timeout", ($opt_timeout ? $opt_timeout :
