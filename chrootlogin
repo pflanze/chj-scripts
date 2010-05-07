@@ -48,14 +48,16 @@ use Chj::Trace;
 my $Xauth= do {
     if ($X) {
 	my $d= xtmpdir;
-	my $t= xtmpfile "$d/something";
-	xxsystem
-	  ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
-	    ($opt_untrusted ? "untrusted" : "trusted"));
-	# this replaced "$t", so reopen it:
-	# (but relying on $t not going out of scope yet)
-	my $t2= xopen_read $t->path; # "$t" does *not* work, unlike "$d"
-	$t2->xcontent
+	{
+	    my $t= xtmpfile "$d/something";
+	    xxsystem
+	      ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
+		($opt_untrusted ? "untrusted" : "trusted"));
+	    # this replaced "$t", so reopen it:
+	    # (but relying on $t not going out of scope yet)
+	    my $t2= xopen_read $t->path; # "$t" does *not* work, unlike "$d"
+	    $t2->xcontent
+	}
     } else {
 	undef
     }
