@@ -7,6 +7,9 @@
 
 use strict;
 
+our $timeout_untrusted=60;
+our $timeout_trusted=60*60*24*365;
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -16,6 +19,8 @@ sub usage {
   Options:
   -X  give access to X server
   --untrusted  give untrusted X connection only (default: trusted)
+  --timeout n  timeout for the X authority
+               (instead of $timeout_trusted or $timeout_untrusted for trusted/untrusted)
 
   (Christian Jaeger <$email>)
 ";
@@ -27,11 +32,13 @@ our $verbose=0;
 #our $opt_dry;
 our $opt_X;
 our $opt_untrusted;
+our $opt_timeout;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "X"=> \$opt_X,
 	   "untrusted"=>\$opt_untrusted,
+	   "timeout=n"=>\$opt_timeout,
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
@@ -53,7 +60,10 @@ my $Xauth= do {
 	    my $t= xtmpfile "$d/something";
 	    xxsystem
 	      ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
-		($opt_untrusted ? "untrusted" : "trusted"));
+		($opt_untrusted ? "untrusted" : "trusted"),
+		"timeout", ($opt_timeout ? $opt_timeout :
+			    ($opt_untrusted ? $timeout_untrusted : $timeout_trusted)),
+	      );
 	    # this replaced "$t", so reopen it:
 	    # (but relying on $t not going out of scope yet)
 	    my $t2= xopen_read $t->path; # "$t" does *not* work, unlike "$d"
