@@ -15,6 +15,7 @@ sub usage {
 
   Options:
   -X  give access to X server
+  --untrusted  give untrusted X connection only (default: trusted)
 
   (Christian Jaeger <$email>)
 ";
