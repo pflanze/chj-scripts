@@ -8,7 +8,7 @@
 use strict;
 
 our $timeout_untrusted=60;
-our $timeout_trusted=60*60*24*365;
+our $timeout_trusted=0;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -61,7 +61,7 @@ my $Xauth= do {
 	    tracing(\&xxsystem)->
 	      ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
 		($opt_untrusted ? "untrusted" : "trusted"),
-		"timeout", ($opt_timeout ? $opt_timeout :
+		"timeout", (defined($opt_timeout) ? $opt_timeout :
 			    ($opt_untrusted ? $timeout_untrusted : $timeout_trusted)),
 	      );
 	    # this replaced "$t", so reopen it:
