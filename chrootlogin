@@ -62,6 +62,7 @@ use Chj::xperlfunc;
 use Chj::xopen 'xopen_read';
 use Chj::xtmpfile;
 use Chj::xtmpdir;
+use Chj::IO::Command;
 
 my $X= ($opt_X and $ENV{DISPLAY});
 
@@ -78,9 +79,11 @@ my $Xauth= do {
 		"timeout", (defined($opt_timeout) ? $opt_timeout :
 			    ($opt_untrusted ? $timeout_untrusted : $timeout_trusted)),
 	      );
-	    # this replaced "$t", so reopen it:
-	    # (but relying on $t not going out of scope yet)
-	    my $t2= xopen_read $t->path; # "$t" does *not* work, unlike "$d"
+	    # this replaced "$t", but we don't bother. Still, we
+	    # rely on $t not going out of scope yet
+	    my $t2= Chj::IO::Command->new_sender
+	      ("xauth","-f", $t->path,# "$t" does *not* work, unlike "$d"
+	       "extract", "-", $ENV{DISPLAY});#hm DISPLAY for what's inside the file now.. still same?
 	    $t2->xcontent
 	}
     } else {
@@ -119,10 +122,14 @@ if ($X) {
 	$( = $gid; $) = $gid;
 	$< = $uid; $> = $uid;
 	#or die? how ?  and  does it delete the secondary groups?
-	my $f= xtmpfile ".Xauthority";
-	$f->xprint($Xauth);
-	$f->xclose;
-	$f->xputback(0600);
+	if ($X) {
+	    my $f= Chj::IO::Command->new_receiver
+	      ("xauth",
+	       # with default .Xauthority file location
+	       "merge", "-");
+	    $f->xprint($Xauth);
+	    $f->xxfinish;
+	}
 	exit 0;
     }
 }
