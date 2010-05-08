@@ -14,13 +14,14 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname chrootbase user [ cmd [arguments] ]
+    print "$myname chrootbase user [ -- cmd [arguments] ]
 
   Options:
   -X  give access to X server
   --untrusted  give untrusted X connection only (default: trusted)
   --timeout n  timeout for the X authority
                (instead of $timeout_trusted or $timeout_untrusted for trusted/untrusted)
+  -c 'code'  pass as -c option to su
 
   (Christian Jaeger <$email>)
 ";
@@ -33,16 +34,29 @@ our $verbose=0;
 our $opt_X;
 our $opt_untrusted;
 our $opt_timeout;
+our $opt_c;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "X"=> \$opt_X,
 	   "untrusted"=>\$opt_untrusted,
 	   "timeout=n"=>\$opt_timeout,
+	   "c=s"=>\$opt_c,
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
 our ($chrootbase,$user,@cmd)=@ARGV;
+
+if ($opt_c and @cmd) {
+    usage "both cmd and -c given"
+}
+
+# XXX: this is a *BAD* way to implement passing @cmd, but I don't know how
+# else to do it currently:
+use Chj::singlequote 'singlequote_sh';
+if (@cmd) {
+    $opt_c = join(" ",map { singlequote_sh $_ } @cmd);
+}
 
 use Chj::xperlfunc;
 use Chj::xopen 'xopen_read';
@@ -113,7 +127,8 @@ if ($X) {
     }
 }
 
-xexec "chroot", $chrootbase, "su", "-", $user, @cmd;
+xexec "chroot", $chrootbase, "su", "-", $user,
+  ($opt_c ? ("-c", $opt_c) : ());
 
 
 #use Chj::ruse;
