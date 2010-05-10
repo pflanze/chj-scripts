@@ -41,6 +41,7 @@ possibly_echo () {
 
 curday="`date|cut -c5-11`"
 lastlogentry="`grep 'ntpd.*adjusting local clock by' /var/log/daemon.log|tail -1|cut -c1-7`"
+echo ${PIPESTATUS[@]}
 
 # I hope I'm cutting at the right places?
 
