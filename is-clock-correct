@@ -49,12 +49,18 @@ assert_datepart () {
 }
 
 assert_datepart "$curday"
-assert_datepart "$lastlogentry"
 
-if [ "$curday" = "$lastlogentry" ]; then
-    # nope, clock was still in adjusting phase not long ago
-    possibly_echo "no"
-    exit 2
+if [ -n "$lastlogentry" ]; then
+    assert_datepart "$lastlogentry"
+
+    if [ "$curday" = "$lastlogentry" ]; then
+	# nope, clock was still in adjusting phase not long ago
+	possibly_echo "no"
+	exit 2
+    else
+	possibly_echo "yes"
+	exit 0
+    fi
 else
     possibly_echo "yes"
     exit 0
