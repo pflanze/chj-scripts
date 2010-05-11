@@ -7,14 +7,21 @@
 
 use strict;
 
+our $timeout_untrusted=60;
+our $timeout_trusted=0;
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname chrootbase user [ cmd [arguments] ]
+    print "$myname chrootbase user [ -- cmd [arguments] ]
 
   Options:
   -X  give access to X server
+  --untrusted  give untrusted X connection only (default: trusted)
+  --timeout n  timeout for the X authority
+               (instead of $timeout_trusted or $timeout_untrusted for trusted/untrusted)
+  -c 'code'  pass as -c option to su
 
   (Christian Jaeger <$email>)
 ";
@@ -25,14 +32,64 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_X;
+our $opt_untrusted;
+our $opt_timeout;
+our $opt_c;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "X"=> \$opt_X,
+	   "untrusted"=>\$opt_untrusted,
+	   "timeout=n"=>\$opt_timeout,
+	   "c=s"=>\$opt_c,
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
 our ($chrootbase,$user,@cmd)=@ARGV;
+
+if ($opt_c and @cmd) {
+    usage "both cmd and -c given"
+}
+
+# XXX: this is a *BAD* way to implement passing @cmd, but I don't know how
+# else to do it currently:
+use Chj::singlequote 'singlequote_sh';
+if (@cmd) {
+    $opt_c = join(" ",map { singlequote_sh $_ } @cmd);
+}
+
+use Chj::xperlfunc;
+use Chj::xopen 'xopen_read';
+use Chj::xtmpfile;
+use Chj::xtmpdir;
+use Chj::IO::Command;
+
+my $X= ($opt_X and $ENV{DISPLAY});
+
+use Chj::Trace;
+
+my $Xauth= do {
+    if ($X) {
+	my $d= xtmpdir;
+	{
+	    my $t= xtmpfile "$d/something";
+	    xxsystem
+	      ( "xauth","-f",$t->path,"generate",$ENV{DISPLAY},".",
+		($opt_untrusted ? "untrusted" : "trusted"),
+		"timeout", (defined($opt_timeout) ? $opt_timeout :
+			    ($opt_untrusted ? $timeout_untrusted : $timeout_trusted)),
+	      );
+	    # this replaced "$t", but we don't bother. Still, we
+	    # rely on $t not going out of scope yet
+	    my $t2= Chj::IO::Command->new_sender
+	      ("xauth","-f", $t->path,# "$t" does *not* work, unlike "$d"
+	       "extract", "-", $ENV{DISPLAY});#hm DISPLAY for what's inside the file now.. still same?
+	    $t2->xcontent
+	}
+    } else {
+	undef
+    }
+};
 
 use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
 
@@ -43,8 +100,6 @@ mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
 
 my $devfs_is_initialized= mounted "$chrootbase/dev";
 
-use Chj::xperlfunc;
-
 if (not $devfs_is_initialized) {
     mount "--bind", "/dev", "$chrootbase/dev";
     mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
@@ -53,12 +108,6 @@ if (not $devfs_is_initialized) {
 mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
   "tmpfs","$chrootbase/lib/init/rw";
 
-my $X= ($opt_X and $ENV{DISPLAY});
-
-use Chj::xopen 'xopen_read';
-use Chj::xtmpfile;
-# XXX: ignores any XAUTHORITY(?) env var setting.
-my $Xauth= $X ? xopen_read("$ENV{HOME}/.Xauthority")->xcontent : undef;
 
 if ($X) {
     if (xfork) {
@@ -73,15 +122,20 @@ if ($X) {
 	$( = $gid; $) = $gid;
 	$< = $uid; $> = $uid;
 	#or die? how ?  and  does it delete the secondary groups?
-	my $f= xtmpfile ".Xauthority";
-	$f->xprint($Xauth);
-	$f->xclose;
-	$f->xputback(0600);
+	if ($X) {
+	    my $f= Chj::IO::Command->new_receiver
+	      ("xauth",
+	       # with default .Xauthority file location
+	       "merge", "-");
+	    $f->xprint($Xauth);
+	    $f->xxfinish;
+	}
 	exit 0;
     }
 }
 
-xexec "chroot", $chrootbase, "su", "-", $user, @cmd;
+xexec "chroot", $chrootbase, "su", "-", $user,
+  ($opt_c ? ("-c", $opt_c) : ());
 
 
 #use Chj::ruse;
