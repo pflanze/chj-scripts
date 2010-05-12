@@ -56,7 +56,7 @@ sub dpkgli {
 sub listeners {
     my ($beforeafter)=@_;
     my $path= "$logdir/listeners_".$beforeafter;
-    xxsystem "show_listeners -w > ".singlequote_sh ($path);
+    xxsystem "show-listeners -w > ".singlequote_sh ($path);
     $path
 }
 

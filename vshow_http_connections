@@ -1,3 +1,3 @@
 #!/bin/sh
 
-_vserver_all_ncontexts_do show_tcpconnections --http|less
+_vserver_all_ncontexts_do show-tcpconnections --http|less
