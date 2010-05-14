@@ -1,6 +1,7 @@
 #!/bin/bash
 
-exec git commit -a -m "$(
+# copy from coma-l !
+exec git commit -m "$(
 echo '(commit)'
 echo
 g-l

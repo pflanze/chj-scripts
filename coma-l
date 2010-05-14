@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# copy in com-l !
 exec git commit -a -m "$(
 echo '(commit)'
 echo
