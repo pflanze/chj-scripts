@@ -124,6 +124,12 @@ if ($X) {
 	   $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam $user
 	     or die "could not look up user '$user'";
 	xchdir $dir;
+	$ENV{HOME}=$dir;
+	$ENV{USER}=$name;
+	$ENV{USERNAME}=$name;
+	#$ENV{LOGNAME}=$name;
+	# ^ ps all this code again?.... see Chj::Unix::Su or so.
+	delete $ENV{XAUTHORITY}; #oh yes
 	$( = $gid; $) = $gid;
 	$< = $uid; $> = $uid;
 	#or die? how ?  and  does it delete the secondary groups?
