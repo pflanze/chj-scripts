@@ -16,11 +16,12 @@ use Chj::Util::AskYN;
 use Time::HiRes 'sleep';
 use Chj::xtmpfile;
 *Class::Array::clone=sub {my $self=shift;my $new=[@$self]; bless $new,ref $self} unless *Class::Array::clone{CODE};
+use Chj::xhome;
 
 my $usage;
 my ($opt_stop, $opt_bg,$opt_nonice);
 my $runbase="(only calculated if cmd/arguments given)";
-my $basedir= "$ENV{HOME}/.daemonize-run";
+my $basedir= xhome."/.daemonize-run";
 my $maxwait=3;#seconds
 our $logfile= "nohup.out";
 our $opt_quiet;
