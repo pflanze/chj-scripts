@@ -85,8 +85,11 @@ my $Xauth= do {
 	    # rely on $t not going out of scope yet
 	    my $t2= Chj::IO::Command->new_sender
 	      ("xauth","-f", $t->path,# "$t" does *not* work, unlike "$d"
-	       "extract", "-", $display);#hm DISPLAY for what's inside the file now.. still same?
-	    $t2->xcontent
+	       "nextract", "-", $display);#hm DISPLAY for what's inside the file now.. still same?
+	    my $cnt=$t2->xcontent;
+	    $t2->xxfinish;
+	    #print "extracted: '$cnt'\n";#
+	    $cnt
 	}
     } else {
 	undef
@@ -128,7 +131,7 @@ if ($X) {
 	    my $f= Chj::IO::Command->new_receiver
 	      ("xauth",
 	       # with default .Xauthority file location
-	       "merge", "-");
+	       "nmerge", "-");
 	    $f->xprint($Xauth);
 	    $f->xxfinish;
 	}
