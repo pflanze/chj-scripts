@@ -2,6 +2,11 @@
 
 use strict;
 
+our $arithmatch= qr{^[\d()+\-*/\s]+\z};
+# ^wow is not parsed at that point (or unparsing is not done from the
+# parsed tree): mentioning some char multuple times is carried over to
+# the printing.
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -9,6 +14,9 @@ sub usage {
     print "$myname seconds-since-epoch
 
   Print localtime
+
+  seconds-since-epoch may be an arithmetic expression matching
+   $arithmatch
 
 ";
 exit (@_ ? 1 : 0);
@@ -22,5 +30,12 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV==1;
 
 our ($seconds_since_epoch)=@ARGV;
-print localtime($seconds_since_epoch)."\n"
+
+$seconds_since_epoch=~ /$arithmatch/
+  or die "not a number or arithmetic expression: '$seconds_since_epoch'";
+
+my $rv= eval $seconds_since_epoch;
+die "$myname: $@" if $@;
+
+print localtime($rv)."\n"
   or die $!;
