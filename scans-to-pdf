@@ -55,12 +55,14 @@ sub mk_scale_into {
     my $arearatio= $maxw/$maxh;
     sub {
 	my($origw,$origh)=@_;
+	# returns (width, height, verticaladjustment)
 	my $ratio= $origw/$origh;
 	if ($ratio > $arearatio) {
 	    # wider than  wasmmr"poss"
-	    ($maxw, $maxw / $ratio)
+	    my $h= $maxw / $ratio;
+	    ($maxw, $h, ($maxh-$h)/2)
 	} else {
-	    ($maxh * $ratio, $maxh)
+	    ($maxh * $ratio, $maxh, 0)
 	}
     }
 }
@@ -119,9 +121,11 @@ END
 	      or die "no match in '$cnt'";
 	    @r
 	};
-	my ($w,$h)= &$scale($origw,$origh);
+	my ($w,$h,$adjust)= &$scale($origw,$origh);
+	my $max_vspace= 3;## what should it be?
+	my $vspace = ($adjust < $max_vspace ? $adjust : $max_vspace); #wl plain old min.
 	$out->xprint (<<"END");
-\\vspace*{0.01cm}
+\\vspace*{${vspace}cm}
 \\includegraphics[width=${w}cm,height=${h}cm]{$name}
 END
     }
