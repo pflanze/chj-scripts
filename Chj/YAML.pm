@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-SP::YAML
+Chj::YAML
 
 =head1 SYNOPSIS
 
@@ -22,7 +22,7 @@ separately as UTFLoadFile_syck and UTFLoadFile_yamlpm.
 =cut
 
 
-package SP::YAML;
+package Chj::YAML;
 
 use strict;
 
