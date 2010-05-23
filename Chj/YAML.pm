@@ -16,8 +16,8 @@ Chj::YAML
 Proxy module for YAML and YAML::Syck (try to load the latter, fall
 back to the former if that fails).
 
-Additionally provide UTFLoadFile; also provide both variants of these
-separately as UTFLoadFile_syck and UTFLoadFile_yamlpm.
+Additionally provide UTF8LoadFile; also provide both variants of these
+separately as UTF8LoadFile_syck and UTF8LoadFile_yamlpm.
 
 =cut
 
@@ -47,7 +47,7 @@ $original_import=
   $original_class->can("import")
     or die "??";
 
-*UTFLoadFile_syck= do {
+*UTF8LoadFile_syck= do {
     my $s= sub ( $ ) {
 	local $YAML::Syck::ImplicitUnicode=1;
 	[ YAML::Syck::LoadFile($_[0]) ]
@@ -71,13 +71,13 @@ $original_import=
     }
 };
 
-*UTFLoadFile_yamlpm= do {
+*UTF8LoadFile_yamlpm= do {
     my $s= sub ( $ ) {
 	my ($path)=@_;
 	open my $in, "<:utf8", $path
-	  or die "UTFLoadFile: could not open '$path': $!";
+	  or die "UTF8LoadFile: could not open '$path': $!";
 	my $res= [ YAML::LoadFile($in) ];
-	close $in or die "UTFLoadFile: closing input '$path': $!"; # yes we check for errors, unlike either YAML.pm nor YAML::Syck!
+	close $in or die "UTF8LoadFile: closing input '$path': $!"; # yes we check for errors, unlike either YAML.pm nor YAML::Syck!
 	$res
     };
     if ($using_syck) {
@@ -94,13 +94,13 @@ $original_import=
     }
 };
 
-*UTFLoadFile= $using_syck ? \&UTFLoadFile_syck : \&UTFLoadFile_yamlpm;
+*UTF8LoadFile= $using_syck ? \&UTF8LoadFile_syck : \&UTF8LoadFile_yamlpm;
 
 my $exports=
   {
-   UTFLoadFile=> \&UTFLoadFile,
-   UTFLoadFile_yamlpm=> \&UTFLoadFile_yamlpm,
-   UTFLoadFile_syck=> \&UTFLoadFile_syck,
+   UTF8LoadFile=> \&UTF8LoadFile,
+   UTF8LoadFile_yamlpm=> \&UTF8LoadFile_yamlpm,
+   UTF8LoadFile_syck=> \&UTF8LoadFile_syck,
   };
 
 sub import {
