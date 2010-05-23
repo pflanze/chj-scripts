@@ -96,6 +96,43 @@ sub lookup {
 use Chj::DNS 'maybe_ip_forward_lookup','maybe_ip_reverse_lookup';
 use Chj::IO::Command;
 
+sub Whois_freechecker ($ ) {
+    my ($domain)=@_;
+    my ($tld_)= $domain=~ /\.(\w+)\z/
+      or die "???";
+    my $tld= lc $tld_;
+    my $c=
+      +{
+	com=> [
+	       sub {
+		   $_[0]=~ /\nNo match for.*$domain/i
+	       },
+	       sub {
+		   $_[0]=~ /\nRegistrars.Registrant:\n/
+	       }
+	      ],
+	ch=> [
+	      sub {
+		  $_[0] eq "We do not have an entry in our database matching your query.\n\n"
+	      },
+	      sub {
+		  $_[0]=~ /\nHolder of domain name:\n/
+	      }
+	     ]
+       }->{$tld}
+	 or die "don't know how to analyze results for TLD '$tld' yet";
+    my ($is_free,$is_allocated)=@$c;
+    sub {
+	if (&$is_free ($_[0])) {
+	    1
+	} elsif (&$is_allocated ($_[0])) {
+	    0
+	} else {
+	    die "analysis failed, neither detected as free nor as allocated: '$domain', '$_[0]'";
+	}
+    }
+}
+
 sub lookup_and_save_to_cache {
     my $s=shift;
     my ($domain)=@_;
@@ -117,10 +154,11 @@ sub lookup_and_save_to_cache {
 	     ]
 	    ]
 	} else {
+	    my $freechecker= Whois_freechecker ($domain);
 	    my $in= Chj::IO::Command-> new_sender("whois","-H",$domain);
 	    my $cnt= $in->xcontent;
 	    $in->xxfinish;
-	    if ($cnt=~ /^No match for.*$domain/i) {
+	    if (&$freechecker($cnt)) {
 		[
 		 "free"
 		]
