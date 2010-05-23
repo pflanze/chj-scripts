@@ -117,7 +117,7 @@ sub lookup_and_save_to_cache {
 	     ]
 	    ]
 	} else {
-	    my $in= Chj::IO::Command-> new_sender("whois",$domain);
+	    my $in= Chj::IO::Command-> new_sender("whois","-H",$domain);
 	    my $cnt= $in->xcontent;
 	    $in->xxfinish;
 	    if ($cnt=~ /^No match for.*$domain/i) {
