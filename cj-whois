@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+# Sun May 23 17:37:33 EDT 2010
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::Whois::Cached;
+use Chj::xhome;
+
+our $datadir= xhome."/.$myname";
+use Chj::xperlfunc;
+if (! -d $datadir) {
+    xmkdir $datadir, 0700;
+}
+
+our $whois= Chj::Whois::Cached->new ($datadir);
+
+sub check {
+    my ($d)=@_;
+    my $res= $whois->free($d);
+    print "$d\t$res\n";#wl 'free' undso  better? aber rg.
+}
+
+check $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+
