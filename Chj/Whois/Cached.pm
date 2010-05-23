@@ -111,6 +111,8 @@ sub Whois_freechecker ($ ) {
 		    $_[0]=~ /\nexpires:/i
 		    or
 		    $_[0]=~ /\nRegistrant:/
+		    or
+		    $_[0]=~ /\nAdmin Name\.\./
 		    )
 	       }
 	      ],
