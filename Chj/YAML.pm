@@ -96,11 +96,26 @@ $original_import=
 
 *UTF8LoadFile= $using_syck ? \&UTF8LoadFile_syck : \&UTF8LoadFile_yamlpm;
 
+*DumpFile= $using_syck ? \&YAML::Syck::DumpFile : \&YAML::DumpFile;
+
+sub UTF8DumpFile ( $ $ ) {
+    # to following the "same" interface as UTF8LoadFile, take exactly
+    # 1 data argument
+    @_==2 or die;
+    #[does it require an additional copy versus just accessing @_? but
+    #I don't care right now.]
+    my ($file,$data)=@_;
+    ###is this correct??  and does it throw exceptions?:
+    DumpFile($file,@$data)
+      or die "didn't get true";#
+}
+
 my $exports=
   {
    UTF8LoadFile=> \&UTF8LoadFile,
    UTF8LoadFile_yamlpm=> \&UTF8LoadFile_yamlpm,
    UTF8LoadFile_syck=> \&UTF8LoadFile_syck,
+   UTF8DumpFile=> \&UTF8DumpFile,
   };
 
 sub import {
