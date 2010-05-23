@@ -33,6 +33,25 @@ use Chj::xtmpdir;
 use Chj::xperlfunc ':all'; # :all for basename
 use Chj::xrealpath;
 use Chj::xtmpfile;
+use Chj::IO::Command;
+
+sub mk_scale_into {
+    my ($maxw,$maxh)=@_;
+    my $arearatio= $maxw/$maxh;
+    sub {
+	my($origw,$origh)=@_;
+	my $ratio= $origw/$origh;
+	if ($ratio > $arearatio) {
+	    # wider than  wasmmr"poss"
+	    ($maxw, $maxw / $ratio)
+	} else {
+	    ($maxh * $ratio, $maxh)
+	}
+    }
+}
+our $scale= mk_scale_into(20, 28.28);
+#use Chj::Backtrace; use Chj::repl; repl;
+#__END__
 
 my $outdir= xtmpdir;
 
@@ -69,9 +88,24 @@ END
 	$out->xprint (<<'END') if $i;
 \newpage
 END
+	my $name= "img_$i.png";
+	my $path= "$outdir/$name";
+	# keep ratio:
+	my ($origw,$origh)= do {
+	    my $in= Chj::IO::Command->new_sender("file","-L","--",$path);
+	    my $cnt= $in->xcontent;
+	    $in->xxfinish;
+	    # tmp variable necessary -- it seems the "or" otherwise forces scalar mode.
+	    # Perl is   fun
+	    #or, an  [academic?na]experiment.F?
+	    my @r= $cnt=~ m/PNG image, (\d+) x (\d+),/
+	      or die "no match in '$cnt'";
+	    @r
+	};
+	my ($w,$h)= &$scale($origw,$origh);
 	$out->xprint (<<"END");
 \\vspace*{0.01cm}
-\\includegraphics[width=20cm,height=28.28cm]{img_$i.png}
+\\includegraphics[width=${w}cm,height=${h}cm]{$name}
 END
     }
     $out->xprint (<<'END');
