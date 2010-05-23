@@ -38,7 +38,7 @@ our $outbasename= "pdf";
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "n=s"=> sub {
-	       my ($n)=@_;
+	       my ($_key,$n)=@_;
 	       $n=~ m|/| and usage "no slashes allowed in outbasename";
 	       $outbasename=$n
 	   },
