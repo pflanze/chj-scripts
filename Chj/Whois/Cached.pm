@@ -50,20 +50,19 @@ use Chj::YAML 'UTF8LoadFile','UTF8DumpFile'; # and stores??
 
 # locking ? . WARNING: no locking done.
 
-sub xassert_domain {
+sub xlcdomain {
     shift;
     my ($domain)=@_;
     $domain=~ m|^[^/.\0]+\.[^/.\0]+\z|
       or die "not matching domain pattern: '$domain'";#and the old 'is it dangerous to even use such strings (unsafe ones) in something like die?... [b'cause warn is already broken...]
+    lc $domain
 }
 
 sub xpath_of {
     my $s=shift;
     my ($domain)=@_;
-    $s->xassert_domain ($domain);
-    # stat? or: hope this works:
-    #grrrr. I do not have an Xopen. right.
-    $s->dbdir."/$domain";#and this is not yet de dingslet. convert oben. nid assert.
+    my $lcdomain= $s->xlcdomain ($domain);
+    $s->dbdir."/$lcdomain"
 }
 
 use POSIX 'ENOENT'; #well portability?...
@@ -97,15 +96,14 @@ use Chj::DNS 'maybe_ip_forward_lookup','maybe_ip_reverse_lookup';
 use Chj::IO::Command;
 
 sub Whois_freechecker ($ ) {
-    my ($domain)=@_;
-    my ($tld_)= $domain=~ /\.(\w+)\z/
+    my ($lcdomain)=@_;
+    my ($lctld)= $lcdomain=~ /\.(\w+)\z/
       or die "???";
-    my $tld= lc $tld_;
     my $c=
       +{
 	com=> [
 	       sub {
-		   $_[0]=~ /\nNo match for.*$domain/i
+		   $_[0]=~ /\nNo match for.*$lcdomain/i
 	       },
 	       sub {
 		   $_[0]=~ /\nRegistrars.Registrant:\n/
@@ -119,8 +117,8 @@ sub Whois_freechecker ($ ) {
 		  $_[0]=~ /\nHolder of domain name:\n/
 	      }
 	     ]
-       }->{$tld}
-	 or die "don't know how to analyze results for TLD '$tld' yet";
+       }->{$lctld}
+	 or die "don't know how to analyze results for TLD '$lctld' yet";
     my ($is_free,$is_allocated)=@$c;
     sub {
 	if (&$is_free ($_[0])) {
@@ -128,7 +126,7 @@ sub Whois_freechecker ($ ) {
 	} elsif (&$is_allocated ($_[0])) {
 	    0
 	} else {
-	    die "analysis failed, neither detected as free nor as allocated: '$domain', '$_[0]'";
+	    die "analysis failed, neither detected as free nor as allocated: '$lcdomain', '$_[0]'";
 	}
     }
 }
@@ -136,9 +134,10 @@ sub Whois_freechecker ($ ) {
 sub lookup_and_save_to_cache {
     my $s=shift;
     my ($domain)=@_;
+    my $lcdomain= $s->xlcdomain($domain);
 
     my $res= do {
-	if (my @fw= maybe_ip_forward_lookup ($domain)) {
+	if (my @fw= maybe_ip_forward_lookup ($lcdomain)) {
 	    [
 	     "allocated",
 	     [
@@ -146,7 +145,7 @@ sub lookup_and_save_to_cache {
 	     ]
 	    ]
 	} elsif (#my
-		 @fw= maybe_ip_forward_lookup ("www.".$domain)) {
+		 @fw= maybe_ip_forward_lookup ("www.".$lcdomain)) {
 	    [
 	     "allocated",
 	     [
@@ -154,8 +153,8 @@ sub lookup_and_save_to_cache {
 	     ]
 	    ]
 	} else {
-	    my $freechecker= Whois_freechecker ($domain);
-	    my $in= Chj::IO::Command-> new_sender("whois","-H",$domain);
+	    my $freechecker= Whois_freechecker ($lcdomain);
+	    my $in= Chj::IO::Command-> new_sender("whois","-H",$lcdomain);
 	    my $cnt= $in->xcontent;
 	    $in->xxfinish;
 	    if (&$freechecker($cnt)) {
