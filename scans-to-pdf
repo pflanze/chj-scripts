@@ -5,11 +5,27 @@
 
 use strict;
 
+use Chj::IO::Command;
+use Chj::xopen 'xopen_read';
+our $papertype= do {
+    # "a4paper", "letterpaper"
+    my $in = xopen_read("/etc/papersize");
+    my $cnt= $in->xcontent;
+    $in->xclose;
+    $cnt=~ s/\s*\z//s;
+    $cnt=~ /\n/ and die "multiple lines";
+    $cnt."paper"
+      # another way might be to look at the time zone.. y know. for me. w'ever.
+      #or: what about an env var?
+};
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [-n outbasename] scanfiles
+
+  Autochoosen paper type: $papertype
 
   (Christian Jaeger <$email>)
 ";
@@ -33,7 +49,6 @@ use Chj::xtmpdir;
 use Chj::xperlfunc ':all'; # :all for basename
 use Chj::xrealpath;
 use Chj::xtmpfile;
-use Chj::IO::Command;
 
 sub mk_scale_into {
     my ($maxw,$maxh)=@_;
@@ -77,8 +92,10 @@ for my $file (@ARGV) {
 {
     my $outfile= "$outdir/$outbasename.tex";
     my $out= xtmpfile $outfile;
+    $out->xprint (<<"END");
+\\documentclass[$papertype]{article}
+END
     $out->xprint (<<'END');
-\documentclass[a4paper]{article}
 \usepackage{graphicx}
 \usepackage[cm]{fullpage}\pagestyle{empty}
 \usepackage[margin=0.1cm,noheadfoot]{geometry}
