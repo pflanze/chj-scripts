@@ -19,6 +19,21 @@ our $papertype= do {
       #or: what about an env var?
 };
 
+our ($paperwidth,$paperheight)= do {
+    @{
+	+{
+	  letterpaper=> [21.59, 27.94],
+	  a4paper=> [21.0, 29.7],
+	 }->{$papertype}
+	   or die "missing paper dimensions for paper type '$papertype'"
+       }
+};
+
+our ($printwidth,$printheight)= do {
+    my $w= $paperwidth - 1;
+    ($w, ($paperheight * ($w/$paperwidth)))
+};
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -66,7 +81,8 @@ sub mk_scale_into {
 	}
     }
 }
-our $scale= mk_scale_into(20, 28.28);
+our $scale= mk_scale_into($printwidth, $printheight);
+
 #use Chj::Backtrace; use Chj::repl; repl;
 #__END__
 
