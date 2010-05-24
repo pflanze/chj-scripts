@@ -129,6 +129,8 @@ sub Whois_freechecker ($ ) {
 		    $_[0]=~ /\n *Administrative [Cc]ontact/
 		    or
 		    $_[0]=~ /\nHolder Contact\n/
+		    or # various possibilities, check:
+		    $_[0]=~ /\nnserver:/
 		    )
 	       }
 	      ],
