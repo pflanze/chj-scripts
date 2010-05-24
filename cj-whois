@@ -24,10 +24,12 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_dns_only;
+our $opt_no_dns;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "dns-only"=> \$opt_dns_only,
+	   "no-dns"=> \$opt_no_dns,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -40,7 +42,7 @@ if (! -d $datadir) {
     xmkdir $datadir, 0700;
 }
 
-our $whois= Chj::Whois::Cached->new ($datadir,$opt_dns_only);
+our $whois= Chj::Whois::Cached->new ($datadir,$opt_dns_only,$opt_no_dns);
 
 sub check {
     my ($d)=@_;
