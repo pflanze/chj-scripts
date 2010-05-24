@@ -125,7 +125,7 @@ sub Whois_freechecker ($ ) {
 		    or
 		    $_[0]=~ /\nRegistrant Contact:/
 		    or
-		    $_[0]=~ /\nAdministrative contact:/
+		    $_[0]=~ /\nAdministrative [Cc]ontact/
 		    )
 	       }
 	      ],
