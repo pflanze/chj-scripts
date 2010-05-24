@@ -16,6 +16,8 @@ look up whois info for a domain, but only if dns doesn't resolve it to
 an ip (and neither with www. prefix) and then (and for first step,
 too) cache the info, too.
 
+If dnsonly is true, then no actual whois lookups are being done, but
+undef returned in that case.
 
 =cut
 
@@ -27,13 +29,13 @@ use strict;
 use Class::Array -fields=>
   -publica=>
   'dbdir',
+  'dnsonly',#bool  [kans nid in namen coden? kein is?well]
   ;
-
 
 sub new {
     my $class=shift;
     my $s= $class->SUPER::new;
-    (@$s[Dbdir])=@_;
+    (@$s[Dbdir,Dnsonly])=@_;
     $s
 }
 
@@ -83,12 +85,19 @@ sub maybe_lookup_from_cache {
     }
 }
 
+#use Chj::oerr;
+sub Oerr {
+    for (@_) {
+	my $r= &$_;
+	return $r if defined $r;
+    }
+    undef
+}
 sub lookup {
     my $s=shift;
     my ($domain)=@_;
-    ($s->maybe_lookup_from_cache ($domain)
-     or
-     $s->lookup_and_save_to_cache ($domain))
+    Oerr(sub { $s->maybe_lookup_from_cache ($domain) },
+	 sub { $s->lookup_and_save_to_cache ($domain) })
 }
 
 # No match for "DIRECTTRADEWEFEFEWF.COM".
@@ -160,21 +169,26 @@ sub lookup_and_save_to_cache {
 	     ]
 	    ]
 	} else {
-	    my $freechecker= Whois_freechecker ($lcdomain);
-	    my $in= Chj::IO::Command-> new_sender("whois","-H",$lcdomain);
-	    my $cnt= $in->xcontent;
-	    $in->xxfinish;
-	    if (&$freechecker($cnt)) {
-		[
-		 "free"
-		]
+	    if ($s->dnsonly) {
+		return undef # the 'return' is important.. to avoid saving
+		  #well. it *does* avoid caching dns. but I'm not worried about this so ok?
 	    } else {
-		[
-		 "allocated",
-		 [
-		  whois=> $cnt
-		 ]
-		]
+		my $freechecker= Whois_freechecker ($lcdomain);
+		my $in= Chj::IO::Command-> new_sender("whois","-H",$lcdomain);
+		my $cnt= $in->xcontent;
+		$in->xxfinish;
+		if (&$freechecker($cnt)) {
+		    [
+		     "free"
+		    ]
+		} else {
+		    [
+		     "allocated",
+		     [
+		      whois=> $cnt
+		     ]
+		    ]
+		}
 	    }
 	}
     };
@@ -187,6 +201,8 @@ sub free {
     my $s=shift;
     my ($domain)=@_;
     my $res= $s->lookup($domain);
+    defined $res
+      or return undef;
     my $r= $$res[0];
     if ($r eq "allocated") {
 	0
