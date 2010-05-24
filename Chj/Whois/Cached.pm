@@ -122,7 +122,7 @@ sub Whois_freechecker ($ ) {
 		    or
 		    $_[0]=~ /\nRegistrant:/
 		    or
-		    $_[0]=~ /\nAdmin Name\.\./
+		    $_[0]=~ /\nAdmin Name(?::|\.\.)/
 		    or
 		    $_[0]=~ /\nRegistrant Contact:/
 		    or
