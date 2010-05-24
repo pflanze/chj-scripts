@@ -30,12 +30,13 @@ use Class::Array -fields=>
   -publica=>
   'dbdir',
   'dnsonly',#bool  [kans nid in namen coden? kein is?well]
+  'no_dns', #bool, "artificially make dns fail" (do not look up, assume it fails, go directly to whois)
   ;
 
 sub new {
     my $class=shift;
     my $s= $class->SUPER::new;
-    (@$s[Dbdir,Dnsonly])=@_;
+    (@$s[Dbdir,Dnsonly,No_dns])=@_;
     $s
 }
 
@@ -159,14 +160,15 @@ sub lookup_and_save_to_cache {
     my $lcdomain= $s->xlcdomain($domain);
 
     my $res= do {
-	if (my @fw= maybe_ip_forward_lookup ($lcdomain)) {
+	if (!($s->no_dns) and my @fw= maybe_ip_forward_lookup ($lcdomain)) {
 	    [
 	     "allocated",
 	     [
 	      forward=> \@fw
 	     ]
 	    ]
-	} elsif (#my
+	} elsif (!($s->no_dns) and
+		 #my
 		 @fw= maybe_ip_forward_lookup ("www.".$lcdomain)) {
 	    [
 	     "allocated",
