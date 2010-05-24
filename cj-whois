@@ -11,6 +11,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname ..
 
+  Options:
+  --dns-only  only check dns, do not do actual whois queries,
+              display 'undef' in case a whois query would be necessary
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -19,9 +23,11 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_dns_only;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
+	   "dns-only"=> \$opt_dns_only,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -34,12 +40,13 @@ if (! -d $datadir) {
     xmkdir $datadir, 0700;
 }
 
-our $whois= Chj::Whois::Cached->new ($datadir);
+our $whois= Chj::Whois::Cached->new ($datadir,$opt_dns_only);
 
 sub check {
     my ($d)=@_;
     my $res= $whois->free($d);
-    print "$d\t$res\n";#wl 'free' undso  better? aber rg.
+    my $resstr= defined($res) ? $res : "undef";
+    print "$d\t$resstr\n";#wl 'free' undso  better? aber rg.
 }
 
 check $_ for @ARGV;
