@@ -113,7 +113,12 @@ sub Whois_freechecker ($ ) {
       +{
 	com=> [
 	       sub {
-		   $_[0]=~ /\nNo match for.*$lcdomain/i
+		   ($_[0]=~ /\nNo match for.*$lcdomain/i
+		    or
+		    # +-sick: not so sure this is really designating
+		    # truly a free entry.. but assume it is.
+		    $_[0]=~ /Registrar: DOMAINPEOPLE, INC..*\nThe Registry database contains ONLY .COM, .NET, .EDU domains and\nRegistrars.Domain not found.\n\z/s
+		    )
 	       },
 	       sub {
 		   ($_[0]=~ /\nRegistrars.Registrant:\n/
