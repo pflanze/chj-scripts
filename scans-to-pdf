@@ -19,20 +19,7 @@ our $papertype= do {
       #or: what about an env var?
 };
 
-our ($paperwidth,$paperheight)= do {
-    @{
-	+{
-	  letterpaper=> [21.59, 27.94],
-	  a4paper=> [21.0, 29.7],
-	 }->{$papertype}
-	   or die "missing paper dimensions for paper type '$papertype'"
-       }
-};
-
-our ($printwidth,$printheight)= do {
-    my $w= $paperwidth - 1;
-    ($w, ($paperheight * ($w/$paperwidth)))
-};
+our $horiz_border= 1; #cm
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -41,6 +28,9 @@ sub usage {
     print "$myname [-n outbasename] scanfiles
 
   Autochoosen paper type: $papertype
+
+  Options:
+   --horiz-border n   instead of $horiz_border cm
 
   (Christian Jaeger <$email>)
 ";
@@ -57,8 +47,29 @@ GetOptions("verbose"=> \$verbose,
 	       $n=~ m|/| and usage "no slashes allowed in outbasename";
 	       $outbasename=$n
 	   },
+	   "horiz-border=s"=> \$horiz_border,
+	   # ^ch. =n does not work for floating point. and maybe it's
+	   # not bad: allow latex 'sizeentities'(ehrwiesagtman) (or
+	   # even code...)
 	   ) or exit 1;
 usage unless @ARGV;
+
+
+our ($paperwidth,$paperheight)= do {
+    @{
+	+{
+	  letterpaper=> [21.59, 27.94],
+	  a4paper=> [21.0, 29.7],
+	 }->{$papertype}
+	   or die "missing paper dimensions for paper type '$papertype'"
+       }
+};
+
+our ($printwidth,$printheight)= do {
+    my $w= $paperwidth - $horiz_border;
+    ($w, ($paperheight * ($w/$paperwidth)))
+};
+
 
 use Chj::xtmpdir;
 use Chj::xperlfunc ':all'; # :all for basename
