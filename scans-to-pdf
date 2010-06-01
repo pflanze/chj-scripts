@@ -138,7 +138,7 @@ END
 	    @r
 	};
 	my ($w,$h,$adjust)= &$scale($origw,$origh);
-	my $max_vspace= 3;## what should it be?
+	my $max_vspace= 1;## what should it be?
 	my $vspace = ($adjust < $max_vspace ? $adjust : $max_vspace); #wl plain old min.
 	$out->xprint (<<"END");
 \\vspace*{${vspace}cm}
