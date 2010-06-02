@@ -220,6 +220,11 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
     }
 }
 
+sub is_uuiddev ( $ ) {
+    my ($str)=@_;
+    $str=~ m |/dev/.*by-uuid/|
+}
+
 use Chj::xperlfunc;
 
 sub mount_easily {
@@ -267,34 +272,62 @@ sub mount_easily {
 	    # use device_path *before* having been set to losetup -fs output below!
 	    if (-x $pwlookup) {
 		my $lookup; $lookup= sub {
-		    my ($key)=@_;
-		    print "trying lookup for '$key'\n"
-		      if $verbose;
-		    my ($res,$cnt)= xbacktick $pwlookup, $key;
-		    if ($res==0) {
-			chomp $cnt;
-			print "found passphrase for '$key'\n";
-			undef $lookup;
-			$cnt
-		    } elsif($res== (2<<8)) {
-			# not found
-			# try to clip off some underscore or dot part at the end.
-			#if ($key=~ s/[_.].*?\z//s) {  nada, is from beginning still.
-			# Don't go below 4 characters:
-			if ($key=~ m/(.{4,})[_.]/s) {
-			    @_=($1); goto $lookup;
+		    my ($key,$next)=@_;
+		    if (defined $key) {
+			print "trying lookup for '$key'\n"
+			  if $verbose;
+			my ($res,$cnt)= xbacktick $pwlookup, $key;
+			if ($res==0) {
+			    chomp $cnt;
+			    print "found passphrase for '$key'\n";
+			    undef $lookup;
+			    $cnt
+			} elsif($res== (2<<8)) {
+			    # not found
+			    # try to clip off some underscore or dot part at the end.
+			    #if ($key=~ s/[_.].*?\z//s) {  nada, is from beginning still.
+			    # Don't go below 4 characters:
+			    my ($maybe_newkey)= $key=~ m/(.{4,})[_.]/s;
+			    # $1 might be undef. But we leave it up to
+			    # $next to decide when to terminate
+			    @_=($maybe_newkey,$lookup); goto $next;
+			    ## hmm. who will release $lookup if $next is something else than $lookup, and it's called as last? hm maybe that will never be with my alternative nexts.[?]
 			} else {
+			    # error. just let the process speak
+			    # to stderr by itself.
 			    undef $lookup;
 			    undef
 			}
 		    } else {
-			# error. just let the process speak
-			# to stderr by itself.
+			print "reached end of key simplification (how was this called, termination rule or so)\n"
+			  if $verbose;
 			undef $lookup;
 			undef
 		    }
 		};
-		&$lookup ($device_path);
+		&$lookup ($device_path,
+			  (is_uuiddev($device_path) ? $lookup :
+			   sub {
+			       my ($key1,$_next)=@_;
+			       print "as second try, resolve to and check the uuid first\n"
+				 if $verbose;
+			       if (my $uuid= maybe_uuid_from_dev ($device_path)) {
+				   print "found uuid '$uuid'\n"
+				     if $verbose;
+				   @_=("/dev/disk/by-uuid/$uuid",sub {
+					   my ($_key,$_next)=@_;
+					   # third try is key1 then key   hmm forever?..
+					   # ah no, $_key is schrott. derived from $uuidkey.
+					   print "instead continue with '$key1'\n"
+					     if $verbose;
+					   @_=($key1, $lookup); goto $lookup;
+				       }); goto $lookup;
+			       } else {
+				   print "found no uuidkey, falling back to stepping forward\n"
+				     if $verbose;
+				   @_=($key1, $lookup); goto $lookup;
+			       }
+			   }));
 	    } else {
 		undef
 	    }
