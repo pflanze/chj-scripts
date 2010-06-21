@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 file targetdir"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+mkdir -p "$2"
+
+gunzip < "$1" | {
+    set -eu
+    cd "$2"
+    cpio --extract --make-directories
+}
