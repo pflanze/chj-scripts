@@ -5,8 +5,8 @@
 
 use strict;
 
-our $optM= "-M40";
-our $optC= "-C40";
+our @optM= ("-M40");
+our @optC= ("-C40", "-C40");
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -14,7 +14,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [further arguments and/or files]
 
-  run git log --raw $optM $optC, additionally with --follow if exactly 1
+  run git log --raw @optM @optC, additionally with --follow if exactly 1
   file has been given.
 
   (Christian Jaeger <$email>)
@@ -27,7 +27,7 @@ if (@ARGV==1 and ($ARGV[0] eq "-h" or $ARGV[0] eq "--help")) {
 }
 
 sub lg {
-    exec "git","log","--raw",$optM,$optC,@_,@ARGV
+    exec "git","log","--raw",@optM,@optC,@_,@ARGV
       or die $!
 }
 
