@@ -9,12 +9,18 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [-s]
 
   NOTE: makes the probably fickle/ill-suited assumption that the
   server side end of a unix domain socket has inode number one higher
   than the client side end. (But, no other way found to get to the
   connection.)
+
+  Options:
+  -s|--sort  sort
+             (well, the main intention is, to group, but yeah it is
+             also sorted by group then)
+             by username
 
   (Christian Jaeger <$email>)
 ";
@@ -23,9 +29,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_sort;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "sort" => \$opt_sort,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage if @ARGV;
@@ -56,12 +64,40 @@ $in->xxfinish;
 
 #for my $key (keys %$b)
 
-for (@records) {
+my @output= map {
     my ($inode, $line)=@$_;
     if ($$is_xorginode{$inode+1}) {
-	print $line
-	  or die;
+	$line
+    } else {
+	()
     }
+}(@records);
+
+
+
+for my $line (do {
+    if ($opt_sort) {
+	(
+	 map {
+	     $$_[1]
+	 }
+	 sort { $$a[0] cmp $$b[0] }
+	 map {
+	     m/.* +\d+ +(\S+) +\d+u +unix 0x\S+ +\d+ socket\s*\z/
+	       or die "no match: '$_'";
+	     [
+	      $1,
+	      $_
+	     ]
+	 }
+	 @output
+	)
+    } else {
+	@output
+    }
+}) {
+    print $line
+      or die;
 }
 
 
