@@ -83,7 +83,7 @@ for my $line (do {
 	 }
 	 sort { $$a[0] cmp $$b[0] }
 	 map {
-	     m/.* +\d+ +(\S+) +\d+u +unix 0x\S+ +\d+ socket\s*\z/
+	     m/.*\s+\d+\s+(\S+)\s+\d+u\s+unix\s+0x\S+\s+\d+\s+socket\s*\z/
 	       or die "no match: '$_'";
 	     [
 	      $1,
