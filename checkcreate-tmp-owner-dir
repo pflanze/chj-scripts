@@ -13,7 +13,8 @@ sub usage {
 
   Create /tmp/\$USER if it doesn't exist already (checking whether
   \$USER matches uid in getpwent data), or check whether it's owned by
-  the current user. Return with success if everything's fine (for cd
+  the current user and it's got private permissions.
+  Return with success if everything's fine (for cd
   to enter and use the dir).
 
   (Christian Jaeger <$email>)
@@ -52,6 +53,8 @@ if (my $s= Xlstat $tmp_owner_dir) {
     # no need to check whether it's a symlink or dir, right? since if
     # it's a symlink, the followup check is "racy" anyway (hm in which
     # sense?) but anyway, cd will then fail, 'as easy as that', k?
+    $s->permissions == 0700
+      or Die "item '$tmp_owner_dir' does not have private permissions";
 } else {
     xmkdir $tmp_owner_dir, 0700;
     # done.
