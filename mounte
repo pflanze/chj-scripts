@@ -41,6 +41,7 @@ sub usage {
             check the parent dir for 0700 perms? well no for now]
   --ro|--readonly
   [--noatime wll use as default anyway ok?]
+  [--nosuid wll use as default anyway ok?]
   --auto    mount the latest entries in /dev/disk/by-uuid/
             (going backward from the latest and stopping when an entry
             is more than $auto_max_delay second(s) younger)
@@ -64,7 +65,11 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our @mountoptions=(); ehr no,
-our $mountoptions= { noatime => 1 };
+our $mountoptions=
+  +{
+    noatime => 1,
+    nosuid => 1,
+   };
 our $opt_createdir;
 our $opt_private;
 our $opt_auto;
@@ -76,6 +81,9 @@ GetOptions("verbose"=> \$verbose,
 	   },
 	   "noatime"=> sub {
 	       $$mountoptions{noatime}=1;
+	   },
+	   "nosuid"=> sub {
+	       $$mountoptions{nosuid}=1;
 	   },
 	   "c|create-dir"=> \$opt_createdir,
 	   "private"=> \$opt_private,
@@ -441,7 +449,7 @@ sub mount_easily {
     $dest_path ||=  "/mnt/".Force($id_);
     my $mount_on= sub ( $ ) {
 	my ($dest_path)=@_;
-	my $options= join(",", keys %$mountoptions);
+	my $options= join(",", keys %$mountoptions); ### XXX: BUG right, should filter for those with true as value!
 	mount( (length $options ? ("-o",$options) : ()),
 	       $device_path,
 	       $dest_path);
