@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Mit Feb 13 13:22:44 CET 2008
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
 
 use strict;
 use Time::HiRes 'time','sleep';
