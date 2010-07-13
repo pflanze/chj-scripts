@@ -39,6 +39,7 @@ package Chj::Git::Functions;
 
 	      git_branches_local
 	      git_branches_all
+	      git_tags
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -430,5 +431,16 @@ sub git_branches_all {
     git_branches "-a"
 }
 
+
+sub git_tags () {
+    my $in= Chj::IO::Command->new_sender ("git","tag","-l");
+    my @res;
+    while (<$in>) {
+	chomp;
+	push @res, $_
+    }
+    $in->xxfinish;
+    @res
+}
 
 1
