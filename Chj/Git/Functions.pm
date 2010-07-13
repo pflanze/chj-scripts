@@ -36,6 +36,9 @@ package Chj::Git::Functions;
 	      parse_tag
 	      xgit_do
 	      git_unquote_path
+
+	      git_branches_local
+	      git_branches_all
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -397,5 +400,35 @@ sub git_unquote_path ( $ ) {
 	$str   # correct, are thingies needing unquote always in double quotes?
     }
 }
+
+
+# strange I could swear I did something these (parsing and checking
+# for or ignoring '* ') multiple times but I can't even find it in bin
+# more than once.
+
+use Chj::Git::Branch;
+
+sub git_branches { # "git branch" 'but' returns 'list'
+    my $in= Chj::IO::Command->new_sender ("git","branch",@_);
+    my @res;
+    while (<$in>) {
+	chomp;
+	my ($selected, $name)=  /^(\*\s+)?\s*(\S+)$/
+	  or die "invalid line '$_'";
+	# now what to do with it, some object [with stringify overload?]?
+	push @res, Chj::Git::Branch->new($selected, $name);
+    }
+    $in->xxfinish;
+    @res
+}
+
+sub git_branches_local {
+    git_branches
+}
+
+sub git_branches_all {
+    git_branches "-a"
+}
+
 
 1
