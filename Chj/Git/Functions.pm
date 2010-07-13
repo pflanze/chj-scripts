@@ -52,7 +52,7 @@ sub _UndefThrowing ( $ $ ) {
     sub {
 	# assuming scalar context
 	my $res= &$routine; # Oerr..but not the function I wrote there..
-	defined ($res) ? $res : croak $message.singlequote_many(@_)
+	defined ($res) ? $res : croak $message.(@_ ? ": ".singlequote_many(@_) : "")
     }
 }
 
