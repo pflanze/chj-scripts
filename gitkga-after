@@ -1,0 +1,116 @@
+#!/usr/bin/perl -w
+
+# Tue Jul 13 14:29:37 EDT 2010
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname id..
+
+  show all branches and tags that have one of the listed id's as ancestor
+
+  Idea: to avoid showing other parts of the whole tree where I'm not
+  working on right now.
+
+  A problem is that it does not actually call gitk -a, and reload in
+  gitk will thus not find new references.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+our (@refs,@options);
+{
+    my $i;
+    #for ($i=0; $i< @ARGV; $i++) {
+    $i=0;
+    while($i < @ARGV) {
+	my $v= $ARGV[$i];
+	if ($v=~ /^-/) {
+	    #end, split it here.
+	    last;
+	}
+	$i++;
+    }
+    @refs= @ARGV[0..($i-1)];
+    @options= @ARGV[$i..@ARGV-1];
+}
+
+#use Chj::repl; repl;
+#__END__    tht was  hell of a testing.
+
+# cache: yes no. for  id\0is or something like ethat.
+# oh, for branches   well   do rev-parse first. then it's stable. [effect: excluding mutation]
+# id:id -> boolean
+
+use Chj::FileStore::PIndex;
+# even use a global cache, across git repositories.
+
+our $cachedir= ($ENV{HOME}||die "missing HOME")."/.$myname";
+mkdir $cachedir,0700;
+
+our $cache= Chj::FileStore::PIndex->new($cachedir);
+
+use Chj::Git::Functions ':all';
+
+sub cached_is_ancestor_of {
+    my ($id1,$id2)=@_;
+    my $key= "$id1:$id2";
+    if (defined (my $v= $cache->maybe_get($key))) {
+	$v
+    } else {
+	$v= is_ancestor_of ($id1,$id2);
+	$cache->set($key, $v);
+	$v
+    }
+}
+
+
+# so, get listing of all references and filter it:
+
+#my $in= Chj::IO::Command->new_sender("
+#g-branch |cut -c3-
+##ugh and already gaga wegen shitty zeugs
+
+our @ancestors= map { xgit_rev_parse $_ } @refs;
+sub is_ancestored {
+    my ($ref)=@_;
+    my $id= xgit_rev_parse $ref;
+    for my $ancestor (@ancestors) {
+	return 1 if cached_is_ancestor_of($ancestor,$id);
+    }
+    0
+}
+
+our @list= grep {
+    is_ancestored $_
+} (
+   (
+    map {
+	$_->name
+    } git_branches_local #ok ? never remote?
+   ),
+   (
+    git_tags
+   )
+  );
+
+use Chj::xperlfunc;
+xexec "gitk", @options, @list;
+
+#use Chj::ruse;
+#use Chj::Backtrace;
