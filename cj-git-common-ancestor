@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# NOT sure this is really 'what I want' tho?  "best", ?
+
+git merge-base "$@"
