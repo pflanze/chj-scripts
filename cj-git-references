@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Mon Aug  2 12:16:51 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  list all local branches and tags
+
+  [local tags ? ]  all tags for now.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::Git::Functions qw(
+	      git_branches_local
+	      git_branches_all
+	      git_tags
+			  );
+
+#print "$_\n" or die $!
+#nope, not overloaded.
+print($_->name."\n") or die $!
+  for git_branches_local;
+print "$_\n" or die $!
+  for git_tags;
+
+#idea: order by date? of the commit being pointed to ? .
+#wl.
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
