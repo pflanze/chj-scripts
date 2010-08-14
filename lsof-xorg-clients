@@ -83,12 +83,15 @@ for my $line (do {
 	 }
 	 sort { $$a[0] cmp $$b[0] }
 	 map {
-	     m{.*\s+\d+\s+(\S+)\s+\d+u\s+unix\s+0x\S+\s+\d+\s+(?:/tmp/\.X11\S+|socket)\s*\z}
-	       or die "no match: '$_'";
-	     [
-	      $1,
-	      $_
-	     ]
+	     if (m{.*\s+\d+\s+(\S+)\s+\d+u\s+unix\s+0x\S+\s+\d+\s+(?:/tmp/\.X11\S+|socket)\s*\z}) {
+		 [
+		  $1,
+		  $_
+		 ]
+	     } else {
+		 warn "no match: '$_'";
+		 ()
+	     }
 	 }
 	 @output
 	)
