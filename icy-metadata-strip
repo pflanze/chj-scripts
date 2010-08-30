@@ -7,6 +7,12 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+use Chj::xhome;
+
+our $logfile= xhome."/.$myname.log";
+our $ignoreposition_v= "ICY_METADATA_STRIP_IGNORE_TILL";
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname file
@@ -23,6 +29,10 @@ sub usage {
   in which case it outputs a list with the lengths of all gaps and live parts,
   usable for serving (by a yet-to-be-written program) without having to save
   the stripped binary data.
+
+
+  Always logs output to $logfile, too, although it skips entries with
+  positions lower than what $ignoreposition_v contains, if set.
 
   (Christian Jaeger <$email>)
 ";
@@ -43,6 +53,7 @@ our ($file)=@ARGV;
 # through?. well latter since anyway blah.
 
 use Chj::xopen 'xopen_read';
+use Chj::xsysopen 'xsysopen_append';
 use Chj::chompspace;
 
 local our $in=xopen_read $file;
@@ -68,6 +79,7 @@ while (<$in>) {
 }
 
 local our $pos= $in->xtell;
+our $maybe_ignoreposition= $ENV{$ignoreposition_v};
 
 use Chj::xperlfunc;
 
@@ -89,6 +101,8 @@ local our $metainterval= $$headers{'icy-metaint'}
 
 local our $out= bless *STDOUT{IO},"Chj::IO::File";#usual crack
 
+local our $log = xsysopen_append($logfile,0600);
+
 my $buf;
 my $pos_shrunk=0;
 while (1) {
@@ -103,7 +117,16 @@ while (1) {
 	local our $str= read_icy_data_block ($in);
 	if (length $str) {
 	    if ($str=~ /StreamTitle='(.*?)';/i) {
-		print STDERR "$pos_shrunk\t$1\n";
+		my $msg="$pos_shrunk\t$1\n";
+		print STDERR $msg;
+		if ($log
+		    and
+		    (not ($maybe_ignoreposition)
+		     or
+		     ($pos_shrunk >= $maybe_ignoreposition))) {
+		    $log->xprint (time, " ", $msg);
+		    $log->xflush;
+		}
 	    } else {
 		#if (DEBUG) {
 		#    use Chj::Backtrace; use Chj::repl; repl
