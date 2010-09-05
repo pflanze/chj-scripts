@@ -96,53 +96,74 @@ sub read_icy_data_block ( $ ) {
     $buf
 }
 
-local our $metainterval= $$headers{'icy-metaint'}
-  or die "no icy-metaint header, thus no icy metadata present, right?";
+our ($justcopy,
+     $chunksize,
+     $metainterval)=
+  do {
+      if (my $v= $$headers{'icy-metaint'}) {
+	  (0,
+	   $v,
+	   $v)
+      } else {
+	  warn "no icy-metaint header, thus no icy metadata present, right?";
+	  warn "just copying remainder of input verbatim";#'verbatim'?
+	  (1,
+	   4096,
+	   undef)
+      }
+  };
 
 local our $out= bless *STDOUT{IO},"Chj::IO::File";#usual crack
 
-local our $log = xsysopen_append($logfile,0600);
+local our $log = xsysopen_append($logfile,0600)
+  unless $justcopy;
 
 my $buf;
 my $pos_shrunk=0;
 while (1) {
-    my $len= $in->xread($buf, $metainterval);
+    my $len= $in->xread($buf, $chunksize);
     if ($len==0) {
 	last;
-    } elsif ($len == $metainterval) {
-	#$pos_shrunk+= $out->xprint ($buf);  NOPE that's wrong. grr todo fix my lib?
-	$out->xprint ($buf);
-	$pos_shrunk+=length($buf);
-	# now skip until \0 found. or capture if you want
-	local our $str= read_icy_data_block ($in);
-	if (length $str) {
-	    if ($str=~ /StreamTitle='(.*?)';/i) {
-		my $msg="$pos_shrunk\t$1\n";
-		print STDERR $msg;
-		if ($log
-		    and
-		    (not ($maybe_ignoreposition)
-		     or
-		     ($pos_shrunk >= $maybe_ignoreposition))) {
-		    $log->xprint (time, " ", $msg);
-		    $log->xflush;
+    } else {
+	if ($justcopy) {
+	    $out->xprint ($buf);
+	} else {
+	    if ($len == $metainterval) {
+		#$pos_shrunk+= $out->xprint ($buf);  NOPE that's wrong. grr todo fix my lib?
+		$out->xprint ($buf);
+		$pos_shrunk+=length($buf);
+		# now skip until \0 found. or capture if you want
+		local our $str= read_icy_data_block ($in);
+		if (length $str) {
+		    if ($str=~ /StreamTitle='(.*?)';/i) {
+			my $msg="$pos_shrunk\t$1\n";
+			print STDERR $msg;
+			if ($log
+			    and
+			    (not ($maybe_ignoreposition)
+			     or
+			     ($pos_shrunk >= $maybe_ignoreposition))) {
+			    $log->xprint (time, " ", $msg);
+			    $log->xflush;
+			}
+		    } else {
+			#if (DEBUG) {
+			#    use Chj::Backtrace; use Chj::repl; repl
+			#} else {
+			    die "no match in icy meta data";
+			#}
+		    }
 		}
 	    } else {
-		#if (DEBUG) {
-		#    use Chj::Backtrace; use Chj::repl; repl
-		#} else {
-		    die "no match in icy meta data";
-		#}
+		warn "nearing end of file? only got $len bytes ".
+		  "(after outputting $pos_shrunk bytes)";
+		#$pos_shrunk+= $out->xprint ($buf);
+		$out->xprint ($buf);
+		$pos_shrunk+=length($buf);
+		## set flag which makes us terminate if it proceeds?.
+		## well or just <> here and expect eof.
 	    }
 	}
-    } else {
-	warn "nearing end of file? only got $len bytes ".
-	  "(after outputting $pos_shrunk bytes)";
-	#$pos_shrunk+= $out->xprint ($buf);
-	$out->xprint ($buf);
-	$pos_shrunk+=length($buf);
-	## set flag which makes us terminate if it proceeds?.
-	## well or just <> here and expect eof.
     }
 }
 
