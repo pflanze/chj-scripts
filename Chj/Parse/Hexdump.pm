@@ -68,7 +68,7 @@ sub parse_hexdump {
     while ($$datarf=~ /(.*)/mg) {
 	my $v=$1;
 	next unless length $v;
-	if ($v=~ /^0x$DIGIT+\s+((?:${DIGIT}{2} ?)+)/) {
+	if ($v=~ /0x$DIGIT+:?\s+((?:${DIGIT}{2} ?)+)/) {
 	    my $hex=$1;
 	    my $linestr="";
 	    while ($hex=~ /(${DIGIT}{2})/g) {
