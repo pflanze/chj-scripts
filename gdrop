@@ -25,19 +25,37 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_force;
-our @gitopts; our $addgitopt= sub {
-    my (@opts)=@_;
-    sub {
-	#push @gitopts, $_[0];
-	push @gitopts, @opts
-    }
+our @gitopts;
+
+sub passgitopt ( $ ) {
+    # we have to parse to know whether it will give 2 things to pass to git or 1.
+    my ($designator)= @_;
+    my @spl= split /=/, $designator;
+    @spl==1 or @spl==2 or die "??? @spl";
+    my ($_optname,$maybe_opttype)=@spl;
+    my $optname= "-$_optname"; # just assuming one - is enough
+    (
+     $designator,
+     do {
+	 if (defined $maybe_opttype) {
+	     sub {
+		 my ($_Namobj,$val,@_something)=@_;
+		 push @gitopts, $optname, $val
+	     }
+	 } else {
+	     sub {
+		 push @gitopts, $optname
+	     }
+	 }
+     }
+    )
 };
-#^hh currying with  sideeffect y y knw
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
-	   "a"=> &$addgitopt("-a"),
-	   "s"=> &$addgitopt("-s"),
+	   passgitopt "a",
+	   passgitopt "s",
+	   passgitopt  "m=s",
 	   "force"=> \$opt_force,
 	   ) or exit 1;
 usage unless (@ARGV>=1 and @ARGV<=2);
