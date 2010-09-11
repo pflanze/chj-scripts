@@ -23,7 +23,7 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
 our $opt_force;
 our @gitopts;
 
@@ -52,7 +52,7 @@ sub passgitopt ( $ ) {
 };
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
 	   passgitopt "a",
 	   passgitopt "s",
 	   passgitopt  "m=s",
@@ -92,10 +92,20 @@ our $cleanq= do {
     }
 };
 
+##old:
+sub _xxsystem {
+    if ($opt_dry) {
+	require Chj::singlequote;
+	print "would call: ".Chj::singlequote::singlequote_many(@_)."\n";
+    } else {
+	xxsystem @_
+    }
+}
+
 if ($opt_force or (&$cleanq)->[0]) {
-    xxsystem "git", "tag", @gitopts, $tagname;
+    _xxsystem "git", "tag", @gitopts, $tagname;
     if (defined $maybe_reset_to_commit) {
-	xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
+	_xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
     }
 } else {
     print STDERR "\n  *** working directory status is not clean: ***\n\n"
