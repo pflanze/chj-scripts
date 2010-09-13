@@ -5,6 +5,8 @@ set -eu
 usage () {
     echo "usage: $0 base onto"
     echo "  copy commits \$base..HEAD onto \$onto"
+    echo
+    echo "  (See also: grebaseget)"
     exit 1
 }
 

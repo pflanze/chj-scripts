@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+set -x
+
+usage () {
+    echo "usage: $0 id"
+    echo "  rebase the patches from id on top of the current branch"
+    echo
+    echo "  (See also: gport)"
+    exit 1
+}
+
+if [ $# != 1 ]; then
+    usage
+fi
+
+id="$1"
+shift
+
+# hm get current branch, how?
+#and I *did* this *somewhere*, *where*?
+# 2010
+# Apr 03 14:32:17 <pflanze>       Hello. How can I set a branch HEAD without touching the working dir  (i.e. without using reset --hard)?
+# Apr 03 14:32:36 <thiago>        git push . something:branchname
+# Aha, gport
+
+origbranch_raw="`git symbolic-ref HEAD`"
+# ^ dies if not on a branch, which is okay. good.
+# to avoid a pipe clobbering the exit code, we do it in two pieces.
+origbranch="`echo "$origbranch_raw"|sed 's/.*\///'`"
+
+git checkout "$id"
+git rebase "$origbranch"
+git push . HEAD:"$origbranch"
+git checkout "$origbranch"
+
+echo OK.
