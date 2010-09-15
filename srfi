@@ -5,13 +5,16 @@
 
 use strict;
 
+our $browser= $ENV{BROWSER}||"galeon-chrissbx";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [options] [number]
 
-  Shows that srfi using links.
+  Shows that srfi using $browser (overridable through the BROWSER env
+  var).
 
   Options:
   --top|--parent|--overview  show the overview page instead
@@ -55,7 +58,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 use Chj::xperlfunc;
 
 if ($opt_index) {
-    xexec "links", "http://srfi.schemers.org/"
+    xexec $browser, "http://srfi.schemers.org/"
 } else {
     usage "expecting one argument" unless @args==1;
 
@@ -74,7 +77,7 @@ if ($opt_index) {
     # http://srfi.schemers.org/srfi-73/
     # http://srfi.schemers.org/srfi-73/srfi-73.html
 
-    xexec "links",
+    xexec $browser,
       ($opt_overview ?
        "http://srfi.schemers.org/srfi-$num/"
        : "http://srfi.schemers.org/srfi-$num/srfi-$num.html");
