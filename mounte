@@ -47,6 +47,9 @@ sub usage {
             is more than $auto_max_delay second(s) younger)
   -t type   passed on to mount, instead of (possibly failing) auto
             detection
+  -o option(,..)  options to be passed through to mount; can appear
+            multiple times. (There is no way to disable an option once
+            it has been issued.)
 
   Notes:
   - if available, automatically uses the uuid of partitions as luks dev
@@ -74,6 +77,7 @@ our $opt_createdir;
 our $opt_private;
 our $opt_auto;
 our $opt_type;
+our $opt_o="";
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "ro|readonly"=> sub {
@@ -89,6 +93,10 @@ GetOptions("verbose"=> \$verbose,
 	   "private"=> \$opt_private,
 	   "auto"=> \$opt_auto,
 	   "t=s"=> \$opt_type,
+	   "o=s"=> sub { # allow multiple -o calls?
+	       my ($key,$val)=@_;
+	       $opt_o.=",".$val
+	   },
 	  ) or exit 1;
 
 use Chj::Unix::Mount 'mounted','mount';
@@ -98,6 +106,14 @@ use Chj::FP::lazy;
 sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
+
+for my $o (split /,/, $opt_o) {
+    next if $o eq '';
+    die "-o value contains whitespace: '$o'"
+      if $o=~ /\s/;
+    $$mountoptions{$o}++;
+}
+
 
 use Chj::xrealpath;
 use Chj::xopendir;
