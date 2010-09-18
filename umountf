@@ -1,0 +1,122 @@
+#!/usr/bin/perl -w
+
+# Sat Sep 18 05:21:46 EDT 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname paths
+
+  'forced' umount: try to umount, if it fails, search for programs
+  ((not other stuff yet?)) that has it open, offer to kill them, kill
+  them umount again.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::Unix::Mount 'umount','mounted';
+
+sub Xumount {
+    my ($path)=@_;
+    if (mounted $path) {
+	my $res= umount $path;
+	# no docs of return codes in man umount. man.
+	return 1 if $res==0;
+	return 0 if $res==256;
+	die "umount '$path' exited with code $res";
+    } else {
+	warn "not mounted: '$path'";#
+    }
+}
+
+use Chj::xtmpfile;
+use Chj::IO::Command;
+use Chj::Util::AskYN;
+use Time::HiRes 'sleep','time';
+
+sub robustsleep {
+    my ($t)=@_;
+    my $start= time;
+    my $end= $start+$t;
+
+    my $d= $t;
+    while(1) {
+	sleep $d;
+	$d= $end - time;
+	last if $d < 0;
+    }
+}
+
+sub umountf {
+    my ($path)=@_;
+    return if (Xumount $path);
+    # fd 2 was machen ewg rg f
+    my $f2= xtmpfile;
+    # und dann ?
+    # ach hl.
+    my $cmd= "lsof 2> ".quotemeta($f2)."|grep -F ".quotemeta($path);
+    #my $in= Chj::IO::Command->new_sender ($cmd);
+    #ach  why  wenn jus ausgeben hahaha
+    #xxsystem $cmd;
+    #if (askyn "
+    #ach ich depp muss die pids haben hjahaahha
+    my $in= Chj::IO::Command->new_sender ($cmd);
+    my $pid={};
+    while (<$in>){
+	m/\s(\d+)\s/ or die "invalid input '$_'";
+	$$pid{$1}++;
+	print or die $!;
+    }
+    my @pid= keys %$pid; # @ as plural?.r
+    if (@pid) {
+	if (askyn "** Kill the above  processes? ") {
+	  DO: {
+		my $n=10;
+		while (# INT
+		       kill 2, @pid
+		       #or u no,
+		       and
+		       # HUP
+		       kill 1, @pid) {
+		    #sleep 0.5;
+		    #robust sleep how did that go  SIGH.
+		    robustsleep 0.5;
+		    $n--;
+		    last DO if $n==0;
+		}
+		#die "timed out waiting for processes to be killed";#
+		return if (Xumount $path);
+		die "still can't umount '$path'";
+	    }
+	    die "timed out waiting for processes to be killed";#
+	    #return if (Xumount $path);
+	    #die "still can't umount '$path'";
+	} else {
+	    die "terminated by user";#nicer msg?
+	}
+    } else {
+	die "can't umount '$path' but haven't found processes; bind or other mounts?";#wl jkus t run that other tool of mine  sgh
+    }
+}
+
+umountf $_ for @ARGV;  # wl dies in some cases  well.
+# must bi given in order the paths.sensible.
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
