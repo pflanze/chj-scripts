@@ -69,7 +69,7 @@ sub umountf {
     my $f2= xtmpfile;
     # und dann ?
     # ach hl.
-    my $cmd= "lsof 2> ".quotemeta($f2)."|grep -F ".quotemeta($path);
+    my $cmd= "lsof 2> ".quotemeta($f2->path)."|grep -F ".quotemeta($path);
     #my $in= Chj::IO::Command->new_sender ($cmd);
     #ach  why  wenn jus ausgeben hahaha
     #xxsystem $cmd;
