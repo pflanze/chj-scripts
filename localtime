@@ -11,12 +11,15 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname seconds-since-epoch
+    print "$myname seconds-since-epoch|-
 
   Print localtime
 
   seconds-since-epoch may be an arithmetic expression matching
    $arithmatch
+
+  When given -, filters stdin to stdout, replacing the number in the
+  first column with the localtime string.
 
 ";
 exit (@_ ? 1 : 0);
@@ -29,13 +32,31 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
-our ($seconds_since_epoch)=@ARGV;
+sub one {
+    my ($seconds_since_epoch)=@_;
 
-$seconds_since_epoch=~ /$arithmatch/
-  or die "not a number or arithmetic expression: '$seconds_since_epoch'";
+    $seconds_since_epoch=~ /$arithmatch/
+      or die "not a number or arithmetic expression: '$seconds_since_epoch'";
 
-my $rv= eval $seconds_since_epoch;
-die "$myname: $@" if $@;
+    my $rv= eval $seconds_since_epoch;
+    die "$myname: $@" if $@;
 
-print localtime($rv)."\n"
-  or die $!;
+    print localtime($rv)."\n"
+      or die $!;
+}
+
+sub many {
+    my ($in)=@_;
+    while (<$in>) {
+	s/^(\d{9,10})\b/localtime($1)/e;
+	print or die $!;
+    }
+}
+
+our ($arg)=@ARGV;
+if ($arg eq "-") {
+    many *STDIN{IO}
+} else {
+    one $arg
+}
+
