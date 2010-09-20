@@ -40,7 +40,7 @@ sub Xumount {
 	return 0 if $res==256;
 	die "umount '$path' exited with code $res";
     } else {
-	warn "not mounted: '$path'";#
+	warn "not mounted: '$path'\n";
     }
 }
 
