@@ -2,7 +2,7 @@
 
 usage () {
 	echo "$0 packagename"
-	echo "  show which packages are recommending it. [not requiring! hm]"
+	echo "  show which packages are depending on or recommending packagename."
 	exit 1
 }
 
@@ -10,7 +10,11 @@ if [ $# -ne 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
 	usage
 fi
 
-reqs=$(apt-cache rdepends "$1" --important --recommends --no-depends --no-pre-depends | sed '/^[^ ]/ d')
+
+#nodepends=--no-depends
+nodepends=""
+
+reqs=$(apt-cache rdepends "$1" --important --recommends $nodepends --no-pre-depends | sed '/^[^ ]/ d')
 
 if [ -z "$reqs" ]; then
 	echo "no packages recommend $1."
