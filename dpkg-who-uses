@@ -21,11 +21,12 @@ show () {
     if [ -z "$reqs" ]; then
 	    echo "no packages $1 $packagename."
     else
-	    dpkg -l $reqs 2> >(grep -v "No packages found matching" >&2 ) |egrep '^(i|.i)'
+	    dpkg -l $reqs 2> >(grep -v "No packages found matching" >&2 ) |egrep '^(i|.i)' \
+		|| echo "no packages that $1 $packagename are installed."
     fi
 }
 
 echo " -- depends: --"
-show "depends on" ""
+show "depend on" ""
 echo " -- recommends: --"
-show recommends "--recommends --no-depends"
+show recommend "--recommends --no-depends"
