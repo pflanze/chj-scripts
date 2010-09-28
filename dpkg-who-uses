@@ -10,14 +10,22 @@ if [ $# -ne 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
 	usage
 fi
 
+set -eu
 
-#nodepends=--no-depends
-nodepends=""
+packagename="$1"
 
-reqs=$(apt-cache rdepends "$1" --important --recommends $nodepends --no-pre-depends | sed '/^[^ ]/ d')
+show () {
+    what="$1"
+    flags="$2"
+    reqs=$(apt-cache rdepends "$packagename" --important $flags --no-pre-depends | sed '/^[^ ]/ d')
+    if [ -z "$reqs" ]; then
+	    echo "no packages $1 $packagename."
+    else
+	    dpkg -l $reqs 2> >(grep -v "No packages found matching" >&2 ) |egrep '^(i|.i)'
+    fi
+}
 
-if [ -z "$reqs" ]; then
-	echo "no packages recommend $1."
-else
-	dpkg -l $reqs 2> >(grep -v "No packages found matching" >&2 ) |egrep '^(i|.i)'
-fi
+echo " -- depends: --"
+show "depends on" ""
+echo " -- recommends: --"
+show recommends "--recommends --no-depends"
