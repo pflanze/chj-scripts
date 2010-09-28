@@ -1,0 +1,19 @@
+#!/bin/bash
+
+usage () {
+	echo "$0 packagename"
+	echo "  show which packages are recommending it. [not requiring! hm]"
+	exit 1
+}
+
+if [ $# -ne 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
+	usage
+fi
+
+reqs=$(apt-cache rdepends "$1" --important --recommends --no-depends --no-pre-depends | sed '/^[^ ]/ d')
+
+if [ -z "$reqs" ]; then
+	echo "no packages recommend $1."
+else
+	dpkg -l $reqs
+fi
