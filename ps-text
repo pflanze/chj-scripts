@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# (see Wed_Sep_29_175232_EDT_2010)
+set -eux
+ps2ascii "$@"
