@@ -50,7 +50,7 @@ while (<$in>) {
     #if (my ($inode)=/unix 0x\S+\s+(\d+)\ssocket/) {
     #heh die xorg ones sind mostly not. client vs server i guess hahahawow.
     #XX: SOLLTE ICH DIES als kriterium fuer  is_xorginode nehmen  also  is_xorgserver_inode weisch ?.
-    if (my ($inode)=/unix 0x\S+\s+(\d+)\s/) {
+    if (my ($inode)=/unix 0x\S+\s+(?:0t0\s+)?(\d+)\s/) {
 	#push @{$$by_inode{$inode}}, $_;
 	push @records, [$inode, $_];
 	if (/^Xorg\s/) {
@@ -83,7 +83,7 @@ for my $line (do {
 	 }
 	 sort { $$a[0] cmp $$b[0] }
 	 map {
-	     if (m{.*\s+\d+\s+(\S+)\s+\d+u\s+unix\s+0x\S+\s+\d+\s+(?:/tmp/\.X11\S+|socket)\s*\z}) {
+	     if (m{.*\s+\d+\s+(\S+)\s+\d+u\s+unix\s+0x\S+\s+(?:0t0\s+)?\d+\s+(?:/tmp/\.X11\S+|socket)\s*\z}) {
 		 [
 		  $1,
 		  $_
