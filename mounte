@@ -24,7 +24,9 @@ sub usage {
   for symlinks pointing to it and checking them the same way to find
   the device to be mounted there and mounts it when found.
 
-  Automatically uses -o loop if the 'device' path is a regular file.
+  Automatically uses -o loop if the 'device' path is a regular file
+  (except 'of course' not when the regular file isn't the file being
+  passed to mount anymore, i.e. because of a crypt layer)
 
   If encrypted, luksOpens the volume; if $pwlookup exists, runs it
   with the device as key, and, if successful, use its stdout (after
@@ -409,6 +411,10 @@ sub mount_easily {
 	# Question: maybe I even *want* that behaviour of using the id
 	# of the (outmost) *container*?: I could mount a copy twice
 	# you "knw!"
+
+	# re-delete loop mount flag, since we're going to feed it a
+	# device now
+	delete $$mountoptions{loop};
     }
 
     if (not (defined $device_fileinfo) and not $opt_type) {
