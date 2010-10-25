@@ -12,17 +12,20 @@ sub usage {
     print "$0 dir
   options:
   --blocksize|-b n   blocks are n bytes big
+  -x, --one-file-system   skip directories on different file systems
 ";
     exit 1;
 }
 our $blocksize;
 our $flag_blocksize_given;
 our $opt_reverse;
+our $opt_x;
 use Getopt::Long;
 GetOptions (
 	    "h|help"=> sub {usage},
 	    "blocksize|b=i"=> \$blocksize,
 	    "reverse|r"=> \$opt_reverse,
+	    "x|one-file-system"=> \$opt_x,
 	   ) or usage;
 usage unless @ARGV<=1;
 our ($dir)=@ARGV ? @ARGV : ".";
@@ -49,7 +52,8 @@ if (opendir DIR,$dir) {
     while (defined ($item= readdir DIR)) {
         next if $item eq '.' or $item eq '..';
         if (-d "$dir$item") {
-            my $line= execute('du','-sk','--',"$dir$item");
+            my $line= execute('du','-sk',($opt_x ? '-x' : ()),
+			      '--',"$dir$item");
             chomp $line;
             if ($line=~ /^(\d+)/) {
                 $total+=$1;
