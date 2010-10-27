@@ -20,12 +20,17 @@ $myname filenamewithoutsuffix_suffix
   If only 1 argument is given, it is checked for an underscore,
   and then split just before that underscore. If no underscore
   is found, a minus is searched.
+
+  Options
+   -f|--force  unlink target even if it's not a symlink
+
 ";
 exit (@_ ? 1 : 0);
 }
 
 my @files;
 my $DEBUG=0;
+my $opt_force;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -35,6 +40,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?f(orce)?$/) {
+	$opt_force=1;
     } elsif (/^-/) {
 	warn "Unknown option '$_'\n";
 	usage(1)
@@ -66,6 +73,16 @@ if (@files==1 or @files==2) {
     my $with= "$without$suffix";
     if (-l $without) {
 	unlink $without or die "could not unlink old link '$without': $!";
+    } elsif (-e $without) {
+	if ($opt_force) {
+	    #unlink $without or die "could not unlink file at '$without': $!";
+	    #well, or keep a backup? maybe a good idea.
+	    rename $without, $without."~"
+	      or die "could not rename '$without' to '$without~': $!";
+	    warn "renamed '$without' to '$without~'";#
+	} else {
+	    die "target '$without' exists and is not a symlink"
+	}
     }
     if (! -e $with) {
 	warn "warning: symlink target '$with' does not exist.\n";
