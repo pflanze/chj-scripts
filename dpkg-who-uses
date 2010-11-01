@@ -1,0 +1,32 @@
+#!/bin/bash
+
+usage () {
+	echo "$0 packagename"
+	echo "  show which packages are depending on or recommending packagename."
+	exit 1
+}
+
+if [ $# -ne 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
+	usage
+fi
+
+set -eu
+
+packagename="$1"
+
+show () {
+    what="$1"
+    flags="$2"
+    reqs=$(apt-cache rdepends "$packagename" --important $flags --no-pre-depends | sed '/^[^ ]/ d')
+    if [ -z "$reqs" ]; then
+	    echo "no packages $1 $packagename."
+    else
+	    dpkg -l $reqs 2> >(grep -v "No packages found matching" >&2 ) |egrep '^(i|.i)' \
+		|| echo "no packages that $1 $packagename are installed."
+    fi
+}
+
+echo " -- depends: --"
+show "depend on" ""
+echo " -- recommends: --"
+show recommend "--recommends --no-depends"

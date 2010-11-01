@@ -80,12 +80,15 @@ use Chj::xperlfunc ':all';
 	}
 	$s
     }
-    use Chj::xperlfunc 'xlstat','xutime','xchmod','xchown';
-    sub new_from_path {
+    use Chj::xperlfunc 'xlstat','xutime','xchmod','xchown','Xlstat';
+    sub maybe_new_from_path {
 	my $cl=shift;
 	my ($path)=@_;
-	$cl->new_from_stat($path,
-			   scalar xlstat($path));
+	if (my $s= Xlstat($path)) {
+	    $cl->new_from_stat($path, $s);
+	} else {
+	    undef
+	}
     }
     use Chj::schemestring 'schemestring_oneline','parse_schemestring';
     sub stringify {
@@ -206,8 +209,11 @@ our $commands=
 	    if ($$ignore{$path}) {
 		# ignore
 	    } else {
-		my $metadata= CHJ::Metadata->new_from_path ($path);
-		$out->xprint($metadata->stringify,"\n\n\n");
+		if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
+		    $out->xprint($metadata->stringify,"\n\n\n");
+		} else {
+		    warn "path '$path' doesn't exist (anymore)\n";
+		}
 	    }
 	}
 	$c->xxfinish;
