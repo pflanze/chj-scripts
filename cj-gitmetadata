@@ -199,7 +199,7 @@ our $commands=
 	my $c= Chj::IO::Command->new_sender ("git","ls-files","-z");
 	local $/="\0";
 	my $out= xtmpfile $metadatapath;
-	$out->xprint("$versionstring\n");
+	$out->xprint("$versionstring\n\n\n");
 	while (<$c>) {
 	    chop;
 	    my $path=$_;
@@ -207,7 +207,7 @@ our $commands=
 		# ignore
 	    } else {
 		my $metadata= CHJ::Metadata->new_from_path ($path);
-		$out->xprint($metadata->stringify,"\n");
+		$out->xprint($metadata->stringify,"\n\n\n");
 	    }
 	}
 	$c->xxfinish;
@@ -223,6 +223,7 @@ our $commands=
 	  or die "unknown version line of '$metadatapath' file: '$first', expecting '$versionstring'";
 	while (<$in>) {
 	    chomp;
+	    next unless length;
 	    eval {
 		local our $metadata= CHJ::Metadata->new_from_string ($_);
 		my $path= $metadata->path;
