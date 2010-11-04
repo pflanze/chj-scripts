@@ -5,12 +5,44 @@
 
 use strict;
 
+use Chj::xopen 'xopen_read';
+
 sub cmd {
-    my ($rejfile)=@_;
-    my $file = $rejfile;
-    $file=~ s/\.rej$//
-      or die "file '$file' does not have suffix .rej";
-    ("wiggle","--replace",$file,$rejfile)
+    my ($inpfile)=@_;
+    # checks:
+    my ($file,$suff)= $inpfile=~ m/(.*)\.(rej|patch|diff)$/
+      or die "file '$inpfile' does not have a nice suspected suffix";
+    if ($suff eq "rej") {
+	# ok
+    } elsif (($suff eq "patch") or ($suff eq "diff")) {
+	# check for only containing one file; and which one
+	my $in= xopen_read $inpfile;
+	my @files;
+	while (<$in>) {
+	    #if (/^diff )
+	    if (my ($file0)= /^--- (.*)/) {
+		local $_= <$in>; defined $_ or die;
+		if (my ($file1)= /^\+\+\+ (.*)/) {
+		    # assume that -p1 is to be used with this patch...
+		    $file0=~ s|[^/]+/+|| or die;
+		    $file1=~ s|[^/]+/+|| or die;
+		    if ($file1 eq $file0) {
+			push @files, $file0
+		    } else {
+			die "bug? not the same files, $file0  vs $file1"
+		    }
+		} else {
+		    die "broken patch?, --- not followed by +++"
+		}
+	    }
+	}
+	$in->xclose;
+	@files==1 or die "not exactly 1 file found in patch, but: @files";
+	# mutate
+	$file= $files[0];
+    } else { die "?" }
+    # run:
+    ("wiggle","--replace",$file,$inpfile)
 }
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
