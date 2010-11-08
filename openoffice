@@ -1,4 +1,8 @@
 #!/bin/sh
 
 ulimit -S -v 1400000
-/usr/bin/openoffice "$@"
+if [ -e /usr/bin/openoffice.org ]; then
+    /usr/bin/openoffice.org "$@"
+else
+    /usr/bin/openoffice "$@"
+fi
