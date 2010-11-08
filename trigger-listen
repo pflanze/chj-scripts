@@ -50,6 +50,8 @@ sub usage {
                multiple triggers have been given, but instead runs as
                many times as triggers have been sent, but still
                serialized. Also switches off sleeping.
+  --no-wait    don't wait for the command to exit before running the
+               next.
 
   (Christian Jaeger <$email>)
 ";
@@ -62,12 +64,14 @@ our $DEBUG;
 our $umask;
 our $opt_accept_arguments;
 our $opt_sleeptime;
+our $opt_no_wait;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime=s"=> \$opt_sleeptime,
 	   "debug"=> \$DEBUG,
 	   "umask=s"=> \$umask,
 	   "accept-arguments"=>\$opt_accept_arguments,
+	   "no-wait"=>\$opt_no_wait,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
@@ -94,7 +98,18 @@ our $socket= IO::Socket::UNIX->new
   )
   or die "opening socket '$socketpath': $!";#!
 
-use Chj::xperlfunc;
+use Chj::xperlfunc ":all";
+
+sub xrun {
+    if ($opt_no_wait) {
+	#if (xfork) {
+	#    # return right away
+	#hm just use what I already wrote!
+	return xlaunch @_; ## sensible code?
+    } else {
+	return xsystem @_;
+    }
+}
 
 my $numchildren=0;
 
@@ -144,7 +159,7 @@ our $start_triggered_handler = sub {
 		    uninterrupted_sleep $sleeptime;
 		    warn "runner_child going to run command now" if $DEBUG;
 		    $flag=0;
-		    my $res= xsystem @cmd;
+		    my $res= xrun @cmd;
 		    ## todo: print if there was a problem  ?
 		    if ($flag) {
 			redo RUNIT;
@@ -180,7 +195,7 @@ our $start_piped_handler= sub {
 	    chomp;
 	    if (my $args= maybe_parsemsg ($_)) {
 		warn "runner_child got request to run command" if $DEBUG;
-		my $res= xsystem @cmd,@$args;
+		my $res= xrun @cmd,@$args;
 		## todo: print if there was a problem  ?
 	    } else {
 		die "piped_handler: got strange message '$_'";
