@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -eq 1 ]; then
     if test -f "$1"; then
 	echo "File $1 existiert bereits!" >&2
     else
-	echo -n -e "#!/bin/sh\n\n"> "$1"
+	echo -n -e '#!/bin/sh\n\n'> "$1"
 	if [ "$EDITOR" = "nc" ]; then
 	    echo >> "$1"   # nedit overwrites the selected line upon typing
 	fi
