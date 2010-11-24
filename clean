@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -gt 1 -o "$1" == "--help" -o "$1" == "-h" ]; then
     {
