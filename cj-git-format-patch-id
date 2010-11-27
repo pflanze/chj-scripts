@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+# Sat Nov 27 18:43:42 EST 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname 'number id'
+
+  Expect an argument as created by a listing of commit ids prefixed by
+  the 'number' program.
+
+  Calls cj-git-format-patch-as with patch-number, where number is
+  prefixed with zeroes to make text sorting work.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($number_id)=@ARGV;
+
+our @s= split /\s+/, $number_id;
+@s==2 or die "expecting number whitespace id, but got: '$number_id'";
+our ($number,$id)=@s;
+
+my ($n)= $number=~ /^(\d+)\z/
+  or die "not a natural number or zero: '$number'";
+
+my $nstr= sprintf '%05d', $n;
+
+#use Chj::xperlfunc 'xe
+exec "cj-git-format-patch-as", $id, "patch-".$nstr
+  or exit 127;#k?
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
