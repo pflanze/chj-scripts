@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Sat Nov 27 18:27:50 EST 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname id outfile
+
+  Unlike git format-patch, expects a spec resolving to exactly 1
+  commit.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($id,$outfile)=@ARGV;
+
+#use Chj::xperlfunc 'x
+#use Chj::IO::Command;  ehr. nid stdout.
+use Chj::xperlfunc;
+
+use Chj::xtmpdir;
+
+my $d= xtmpdir ".";#?, doch geht.
+my $dpath="$d";
+
+xxsystem "git","format-patch","-o", $dpath, "$id^..$id";
+
+my ($badpath)= glob "$dpath/*";
+
+xrename $badpath, $outfile;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
