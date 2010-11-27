@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+
+# Sat Nov 27 18:19:11 EST 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $default_start=0;
+our $delim= "\t";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [start]
+
+  Prepend numbering to lines read from stdin to stdout.
+
+  start is $default_start by default.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV > 1;
+
+our $start= @ARGV ? $ARGV[0] ## XX check for number~
+  : $default_start;
+
+my $n=$start;
+while (<>) {
+    print $n, $delim, $_
+      or die "print to stdout: $!";
+    $n++;
+}
+close STDIN or die $!;
+close STDOUT or die $!;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
