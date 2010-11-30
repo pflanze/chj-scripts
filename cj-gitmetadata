@@ -56,11 +56,45 @@ sub xContent ( $ ) {
     $$cntrf
 }
 #use Chj::xtmpfile;
+use POSIX 'ENOENT';
 sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     my ($path,$str)=@_;
     #my $f= xtmpfile $path;
     #or, really just write directly, here, since in a tmpdir anyway already.'man', heh.
-    my $f= xopen_write $path;
+    my $f= do {
+	my $f= eval {
+	    xopen_write $path;
+	};
+	if (ref $@ or $@) {
+	    my $e=$@;
+	    my $errno=$!+0;
+	    if ($errno == ENOENT) {
+		# have to create parent directories.
+		#hm. wieder mal wo linked list toll waer.gell?.rg.
+		#wl still auf "" name checken needed tho. 2 enden.
+		my $lp; $lp= sub {
+		    my ($d)= @_;
+		    if ($d eq "." or $d eq "/") {
+			# end
+		    } else {
+			if (-e $d) {
+			    # end
+			} else {
+			    mkdir $d;
+			    &$lp (dirname $d);
+			}
+		    }
+		};
+		&$lp (dirname $path);
+		undef $lp;
+		xopen_write $path;
+	    } else {
+		die $e
+	    }
+	} else {
+	    $f
+	}
+    };
     $f->xprint ($str);
     $f->xclose;
     # thatsit
@@ -214,6 +248,7 @@ if (-f $metadataignorepath) {
 
 use Chj::xtmpdir;
 use Chj::IO::Command;
+use Chj::IO::DirDeep;
 
 our $commands=
   +{
@@ -246,10 +281,12 @@ our $commands=
 	# add and commit it?
     },
     restore=> sub {
-	my $in= xopendir $metadatadir
-	while (defined ($_= $in->xnread_deep)) {
+	my $in= Chj::IO::DirDeep->new( $metadatadir);
+	local $_; my $stat;
+	while (($_,$stat)= $in->xnread_deep_files) {
 	    next unless length;
 	    eval {
+		##could pass $stat for performance benefit
 		local our $metadata= CHJ::Metadata->new_from_path_string
 		  ($_, xContent("$metadatadir/$_"));
 		my $path= $metadata->path;
