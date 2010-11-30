@@ -309,13 +309,12 @@ our $commands=
     },
     restore=> sub {
 	my $in= Chj::IO::DirDeep->new( $metadatadir);
-	local $_; my $stat;
-	while (($_,$stat)= $in->xnread_deep_files) {
-	    next unless length;
+	while (my ($metadatapath,$stat)= $in->xnread_deep_files) {
+	    my $path= substr($metadatapath,length ($metadatadir) + 1);
 	    eval {
 		##could pass $stat for performance benefit
 		local our $metadata= CHJ::Metadata->new_from_path_string
-		  ($_, xContent("$metadatadir/$_"));
+		  ($path, xContent($metadatapath));
 		my $path= $metadata->path;
 		local our $s= xlstat $path;
 		$metadata->restore($s);
