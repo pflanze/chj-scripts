@@ -47,8 +47,7 @@ our ($command)= @ARGV;
 use Chj::xperlfunc ':all';
 
 ##ENDLESS lib stuff:
-use Chj::xopen 'xopen_read';
-use Chj::xsysopen 'xsysopen_write';
+use Chj::xopen 'xopen_read', 'xopen_write';
 sub xContent ( $ ) {
     my ($path)= @_;
     my $f= xopen_read $path;
@@ -64,7 +63,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     #or, really just write directly, here, since in a tmpdir anyway already.'man', heh.
     my $f= do {
 	my $f= eval {
-	    xsysopen_write $path;
+	    xopen_write $path;
 	};
 	if (ref $@ or $@) {
 	    my $e=$@;
@@ -88,7 +87,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		};
 		&$lp (dirname $path);
 		undef $lp;
-		xsysopen_write $path;
+		xopen_write $path;
 	    } else {
 		die $e
 	    }
