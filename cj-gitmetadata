@@ -46,6 +46,28 @@ our ($command)= @ARGV;
 
 use Chj::xperlfunc ':all';
 
+##ENDLESS lib stuff:
+use Chj::xopen 'xopen_read', 'xopen_write';
+sub xContent ( $ ) {
+    my ($path)= @_;
+    my $f= xopen_read $path;
+    my $cntrf= $f->xcontentref;
+    $f->xclose;
+    $$cntrf
+}
+#use Chj::xtmpfile;
+sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
+    my ($path,$str)=@_;
+    #my $f= xtmpfile $path;
+    #or, really just write directly, here, since in a tmpdir anyway already.'man', heh.
+    my $f= xopen_write $path;
+    $f->xprint ($str);
+    $f->xclose;
+    # thatsit
+}
+##/lib
+
+
 {
     package CHJ::Metadata;
     our @statfields;
@@ -190,7 +212,7 @@ if (-f $metadataignorepath) {
     $in->xclose;
 }
 
-use Chj::xtmpfile;
+use Chj::xtmpdir;
 use Chj::IO::Command;
 
 our $commands=
@@ -225,7 +247,7 @@ our $commands=
     },
     restore=> sub {
 	my $in= xopendir $metadatadir
-	while (defined ($_= $in->xnread)) { ####OH. deep readdir!!! heh.ç
+	while (defined ($_= $in->xnread_deep)) {
 	    next unless length;
 	    eval {
 		local our $metadata= CHJ::Metadata->new_from_path_string
