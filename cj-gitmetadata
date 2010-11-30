@@ -312,7 +312,6 @@ our $commands=
 	while (my ($metadatapath,$stat)= $in->xnread_deep_files) {
 	    my $path= substr($metadatapath,length ($metadatadir) + 1);
 	    eval {
-		##could pass $stat for performance benefit
 		local our $metadata= CHJ::Metadata->new_from_path_string
 		  ($path, xContent($metadatapath));
 		my $path= $metadata->path;
