@@ -35,6 +35,8 @@ use Class::Array -fields=>
   ;
 
 
+use Chj::xopendir;
+
 sub new {
     my $proto=shift;
     my ($path)=@_;
@@ -44,25 +46,44 @@ sub new {
 	$$s[Fhs]= Chj::FP::Pair->cons($fh, $$s[Fhs]);
 	()
     } else {
-	my $s= $class->SUPER::new;
+	my $s= $proto->SUPER::new;
 	$$s[Fhs]= Chj::FP::Pair->cons($fh, undef); # undef?.well why not.
 	$s
     }
 }
 
+use Chj::xperlfunc 'Xlstat';
+
 #sub xnread_deep {
 #hm actually only interested in files?
-sub xnread_deep_files {
+sub xnread_deep_files { # returns a (path,stat) for each call
     my $self=shift;
-    if (wantarray) {
-	die "not implemented";
-    } else {
-	if (defined (my $c= $$s[Fhs])) { #that's why we use undef above. 'CL.'
-	    my $fh= $c->car;
-	    if (defined (my $item= $fh->xnread)) {
-		
+    if (defined (my $c= $$self[Fhs])) { #that's why we use undef above. 'CL.'
+	my $fh= $c->car;
+	if (defined (my $item= $fh->xnread)) {
+	    my $path= $fh->path."/$item";
+	    if (my $s= Xlstat $path) {
+		if ($s->is_dir) {
+		    $self->new ($path); # side-effecting $self
+		    $self->xnread_deep_files; #should be tail call, well.
+		} elsif ($s->is_file) {
+		    ($path, $s)
+		      #^oh, wantarray mode wouldbenogood.hah
+		} else {
+		    # warn ignoring non-file...
+		    $self->xnread_deep_files; #should be tail call, well.
+		}
 	    } else {
-		
+		warn "(ignoring path that could not be stat'ed: '$path': $!)";
+		$self->xnread_deep_files; #should be tail call, well.
+	    }
+	} else {
+	    $fh->xclose;
+	    $$self[Fhs]= $$self[Fhs]->cdr;
+	    $self->xnread_deep_files; #should be tail call, well.
+	}
+    } else {
+	()
     }
 }
 
