@@ -113,9 +113,9 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	   # inode: nope, since not 'portable' (can't be 'ported' to another sys)
 	   'permissions', #inkl setuid and such, right?.
 	   'type', #not settable of course. but checkable, ok?. like symlink vs file.
-	   'username', #not uid, right?
+	   'caching_username', #not uid, right?
 	   #'uid', #keep anyway? well but no would give bad diff
-	   'groupname',
+	   'caching_groupname',
 	  );
     }
     use Class::Array -fields=>
@@ -223,8 +223,8 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     }
     sub xuid; sub xgid;#prevent warning sigh.
     use Chj::xperlfunc 'caching_getpwnam','caching_getgrnam';
-    *xuid= mkx_id ("uid", "username", \&caching_getpwnam);
-    *xgid= mkx_id ("gid", "groupname", \&caching_getgrnam);
+    *xuid= mkx_id ("uid", "caching_username", \&caching_getpwnam);
+    *xgid= mkx_id ("gid", "caching_groupname", \&caching_getgrnam);
     end Class::Array;
 }
 
