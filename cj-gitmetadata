@@ -5,9 +5,8 @@
 
 use strict;
 
-our $metadatapath=".METADATA";
-our $metadataignorepath= "$metadatapath.ignore";
-our $versionstring= "#cj-gitmetadata version 1"; #the whole first line of the file
+our $metadatadir=".METADATA-v2";
+our $metadataignorepath= "$metadatadir.ignore";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -15,18 +14,18 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname save|restore
 
-  save: create a file '$metadatapath' which contains metadata
+  save: create a directory '$metadatadir' which contains metadata
   information for all files in the current repository except for the
-  '$metadatapath' file itself and, if present, the files listed in
+  '$metadatadir' dir itself and, if present, the files listed in
   '$metadataignorepath' (it does *not* git-add or commit it
   automatically currently).
 
-  restore: read the file '$metadatapath', and restore the contained
-  metadata to all files, [except if they have a newer mtime than
-  stored in the metadatafile?]
+  restore: read '$metadatadir', and restore the contained metadata to
+  all files, [except if they have a newer mtime than stored in the
+  metadatafile?]
 
   NOTE: saves/expects on the current directory and subdirs only and
-  expects '$metadatapath' in the current directory. So if you want to
+  expects '$metadatadir' in the current directory. So if you want to
   track metadata of the whole repository, cd to the root of the
   working dir first.
 
@@ -98,13 +97,12 @@ use Chj::xperlfunc ':all';
 		 scalar schemestring_oneline(scalar $s->$_)
 	     }
 	     (
-	      'path',
 	      @statfields,
 	     ))
     }
-    sub new_from_string { #parse
+    sub new_from_path_string { #parse
 	my $cl=shift;
-	my ($str)=@_;
+	my ($path,$str)=@_;
 	my $s=$cl->SUPER::new;
 	my @v=
 	  (
@@ -113,10 +111,10 @@ use Chj::xperlfunc ':all';
 	   }
 	   split /\t/, $str
 	  );
-	@v == 6
+	@v == 5
 	  or die "new_from_string: invalid number of fields in '$str'";
 	# pairing how?...
-	$$s[Path]= shift @v;
+	$$s[Path]= $path;
 	for (my $i=0; $i < @statfields; $i++) {
 	    my $field= $statfields[$i];
 	    my $setmethod="set_$field";
@@ -178,7 +176,7 @@ use Chj::xopen 'xopen_read';
 
 our $ignore=
   +{
-    $metadatapath=> 1,
+    $metadatadir=> 1,
     $metadataignorepath=> 1,
    };
 
@@ -201,8 +199,7 @@ our $commands=
     save=> sub {
 	my $c= Chj::IO::Command->new_sender ("git","ls-files","-z");
 	local $/="\0";
-	my $out= xtmpfile $metadatapath;
-	$out->xprint("$versionstring\n\n\n");
+	my $outdir= xtmpdir $metadatadir;
 	while (<$c>) {
 	    chop;
 	    my $path=$_;
@@ -210,28 +207,29 @@ our $commands=
 		# ignore
 	    } else {
 		if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
-		    $out->xprint($metadata->stringify,"\n\n\n");
+		    xPutfile("$outdir/$path", $metadata->stringify."\n");
 		} else {
 		    warn "path '$path' doesn't exist (anymore)\n";
 		}
 	    }
 	}
 	$c->xxfinish;
-	$out->xclose;
-	$out->xputback(0644);#k?.
+
+	# XX really should have a xputback method for tmpdirs as
+	# well!! Perms not kept, here. Ah at least it's got private perms.
+	xxsystem ("trash",$metadatadir);
+	$outdir->autoclean(0);
+	xrename "$outdir", $metadatadir;
+
 	# add and commit it?
     },
     restore=> sub {
-	my $in= xopen_read $metadatapath;
-	my $first= <$in>;
-	chomp $first;
-	$first eq $versionstring
-	  or die "unknown version line of '$metadatapath' file: '$first', expecting '$versionstring'";
-	while (<$in>) {
-	    chomp;
+	my $in= xopendir $metadatadir
+	while (defined ($_= $in->xnread)) { ####OH. deep readdir!!! heh.ç
 	    next unless length;
 	    eval {
-		local our $metadata= CHJ::Metadata->new_from_string ($_);
+		local our $metadata= CHJ::Metadata->new_from_path_string
+		  ($_, xContent("$metadatadir/$_"));
 		my $path= $metadata->path;
 		local our $s= xlstat $path;
 		$metadata->restore($s);
