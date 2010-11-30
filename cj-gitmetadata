@@ -240,6 +240,7 @@ if (-f $metadataignorepath) {
     my $in=xopen_read $metadataignorepath;
     while (<$in>) {
 	chomp;
+	next if (/^\s*\z/ or /^\s*#/);
 	my $orig=$_;
 	#s/ +\z//;#k?.
 	s|//+|/|g;
