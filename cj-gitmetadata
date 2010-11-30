@@ -222,8 +222,9 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	}
     }
     sub xuid; sub xgid;#prevent warning sigh.
-    *xuid= mkx_id ("uid", "username", sub { getpwnam $_[0] });
-    *xgid= mkx_id ("gid", "groupname", sub { getgrnam $_[0] });
+    use Chj::xperlfunc 'caching_getpwnam','caching_getgrnam';
+    *xuid= mkx_id ("uid", "username", \&caching_getpwnam);
+    *xgid= mkx_id ("gid", "groupname", \&caching_getgrnam);
     end Class::Array;
 }
 
