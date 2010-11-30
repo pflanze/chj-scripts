@@ -297,6 +297,10 @@ our $commands=
 
 	# XX really should have a xputback method for tmpdirs as
 	# well!! Perms not kept, here. Ah at least it's got private perms.
+	# ((Also, could use an abstraction, with the implementation
+	# overwriting old files in place and removing files not used
+	# anymore; would be cheaper than both rm -rf and trash, I
+	# guess))
 	xxsystem ("trash",$metadatadir);
 	$outdir->autoclean(0);
 	xrename "$outdir", $metadatadir;
