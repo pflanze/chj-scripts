@@ -240,7 +240,12 @@ if (-f $metadataignorepath) {
     my $in=xopen_read $metadataignorepath;
     while (<$in>) {
 	chomp;
+	my $orig=$_;
 	#s/ +\z//;#k?.
+	s|//+|/|g;
+	s|/\z||; # also ok for '/' entry?
+	#XX what to do about "./foo" vs "foo"?
+	die "invalid entry '$orig'" unless length;
 	$$ignore{$_}++;
     }
     $in->xclose;
