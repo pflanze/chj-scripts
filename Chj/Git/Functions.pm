@@ -40,6 +40,8 @@ package Chj::Git::Functions;
 	      git_branches_local
 	      git_branches_all
 	      git_tags
+
+	      status_is_clean
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -442,5 +444,19 @@ sub git_tags () {
     $in->xxfinish;
     @res
 }
+
+
+sub status_is_clean {
+    my $in= Chj::IO::Command->new_combinedsender( "git","status");
+    my $incnt= $in->xcontent;
+    my $instatus= $in->xfinish;
+    [
+     (scalar ((($instatus==(1<<8)) or ($instatus==0))
+	      and
+	      $incnt=~ /\nnothing to commit .working directory clean/)),
+     $incnt
+    ]
+}
+
 
 1
