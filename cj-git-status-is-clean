@@ -1,0 +1,47 @@
+#!/usr/bin/perl -w
+
+# Fri Dec  3 21:16:03 EST 2010
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  If git status is clean, exit 0. Otherwise output a message to stdout
+  unless --silent was given, and exit 2.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_silent; #was it quiet?  whvr
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "silent"=> \$opt_silent,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::Git::Functions 'status_is_clean';
+
+my $s= status_is_clean;
+
+if ($$s[0]) {
+    exit 0
+} else {
+    print "\n  *** working directory status is not clean: ***\n\n"
+      .$$s[1]
+	unless $opt_silent;
+    exit 2;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
