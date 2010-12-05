@@ -8,24 +8,28 @@ use Chj::xperlfunc;
 
 sub sys_is_x86 {
     my $sys= `uname -m`;
-    $sys =~ /86/ and not $sys=~/86_64/  # we actually don't want "-mpreferred-stack-boundary=2", that gives "error: -mpreferred-stack-boundary=2 is not between 4 and 12"
+    $sys =~ /86/ and not $sys=~/86_64/
+      # we actually don't want "-mpreferred-stack-boundary=2", that
+      # gives "error: -mpreferred-stack-boundary=2 is not between 4
+      # and 12"
 }
 
-my @cflags= (
-	     # Flags for elvis = athlon32 machine.
-	     "-O3",
-	     #"-D___SINGLE_HOST", Nein, das verlangsamt, jedenfalls fib! (0m0.840s vs. 0m0.740s
-	     "-fomit-frame-pointer", # ja bringt bissel was, 0m0.730s vs. 0m0.760s
-	     #"-fstrict-aliasing", # bringt keinen sichtbaren unterschied bei fib
-	     #"-mcpu=i586", # hm bringt auch keinen ersichtlichen unterschied bei fib
-	     #"-mcpu=athlon", nein machts langsamer, 0m0.770s vs. 0m0.730s
-	     #"-mcpu=i686",  nein, 0m0.740s vs. 0m0.730s
-	     #  ^- well, eh rechte variabilitaet, nicht sicher dass ich echte untrschiede gesehen
-	     #    aber he, fib isch eh ein doofer test für dies wohl.
-	     (sys_is_x86() ? "-mpreferred-stack-boundary=2" : ()), # auch kein unterschied gesehen.   ##mannnnn !!! () nach sys_is_x86 sind nötig.
-  #"-Wall",#not interesting.
-#  "-Wdisabled-optimization",#maybe interesting -> but doesn't work with gcc on woody.
-	    );
+my @cflags=
+  (
+   # Flags for athlon32 machine.
+   "-O3",
+   #"-D___SINGLE_HOST", Nein, das verlangsamt, jedenfalls fib! (0m0.840s vs. 0m0.740s
+   "-fomit-frame-pointer", # ja bringt bissel was, 0m0.730s vs. 0m0.760s
+   #"-fstrict-aliasing", # bringt keinen sichtbaren unterschied bei fib
+   #"-mcpu=i586", # hm bringt auch keinen ersichtlichen unterschied bei fib
+   #"-mcpu=athlon", nein machts langsamer, 0m0.770s vs. 0m0.730s
+   #"-mcpu=i686",  nein, 0m0.740s vs. 0m0.730s
+   #  ^- well, eh rechte variabilitaet, nicht sicher dass ich echte untrschiede gesehen
+   #    aber he, fib isch eh ein doofer test für dies wohl.
+   (sys_is_x86() ? "-mpreferred-stack-boundary=2" : ()), # auch kein unterschied gesehen.   ##mannnnn !!! () nach sys_is_x86 sind nötig.
+   #"-Wall",#not interesting.
+   #  "-Wdisabled-optimization",#maybe interesting -> but doesn't work with gcc on woody.
+  );
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
