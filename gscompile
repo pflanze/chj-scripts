@@ -37,44 +37,28 @@ sub usage {
 exit @_ ? 1 : 0;
 }
 
-my @args;
-my $VERBOSE=0;
 my $opt_debug;
 my $opt_track_scheme;
 my $opt_warnings=1;
 my $opt_chpax;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-    	usage
-    } elsif ($_ eq '--') {
-    	push @args, @ARGV[$i+1..$#ARGV];
-    	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$opt_debug=1;
-	$opt_track_scheme=1 unless defined $opt_track_scheme;#oder so. muss explizit abschalten damit das nöd kommt.
-	$opt_chpax=1 unless defined $opt_chpax;
-    } elsif (/^--?(no-?)t(rack(-scheme)?)?$/) {
-	$opt_track_scheme= ! $1;
-    } elsif (/^--?(no-?)w(arn(ings)?)?$/) {
-	$opt_warnings= ! $1;
-    } elsif (/^--?(v+)(erbose)?$/) {
-	$VERBOSE+=length($1);
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
-    } elsif (/^-./) {
-    	usage("Unknown option '$_'\n");
-    } else {
-    	push @args, $_
-    }
-}
-usage unless @args;
 
-for (@args) {
+use Getopt::Long;
+GetOptions
+  (
+   "help"=> sub{usage},
+   "debug"=> sub {
+       $opt_debug=1;
+       $opt_track_scheme=1
+	 unless defined $opt_track_scheme;
+       $opt_chpax=1
+	 unless defined $opt_chpax;
+   },
+   "track-scheme!"=> \$opt_track_scheme,
+   "warnings!"=> \$opt_warnings,
+  ) or exit 1;
+usage unless @ARGV;
+
+for (@ARGV) {
     /\.(scm|c)$/
       or not /\.\w{1,4}$/
 	or die "invalid argument '$_': only accepting .c and .scm files currently (files without suffix are meant to be .scm files)";
@@ -88,7 +72,7 @@ sub Do {
 
 
 my @schemesource=
-  map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @args;
+  map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @ARGV;
 
 
 Do "gsc",
@@ -101,7 +85,7 @@ Do "gsc",
 
 
 my @allcsource=
-  map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @args;
+  map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @ARGV;
 
 my $linkfile= do {
     # guess: last scm file?
