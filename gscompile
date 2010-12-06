@@ -29,9 +29,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname sourcefile(s)
 
-  automatic compiler
-  kind of like csc for chicken
-  does *not* currently check for already available still-valid results
+  automatic compiler, kind of like csc for chicken. Does *not*
+  currently check for already available still-valid results
 
   (Christian Jaeger <$email>)
 ";
@@ -76,7 +75,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @args;
 
 for (@args) {
-    /\.(scm|c)$/ or not /\.\w{1,4}$/ or die "invalid argument '$_': only accepting .c and .scm files currently (files without suffix are meant to be .scm files)";
+    /\.(scm|c)$/
+      or not /\.\w{1,4}$/
+	or die "invalid argument '$_': only accepting .c and .scm files currently (files without suffix are meant to be .scm files)";
 }
 
 
@@ -86,7 +87,8 @@ sub Do {
 }
 
 
-my @schemesource= map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @args;
+my @schemesource=
+  map{ local $_=$_; s/\.scm$//; $_} grep { ! /\.c$/ } @args;
 
 
 Do "gsc",
@@ -98,7 +100,8 @@ Do "gsc",
   @schemesource;
 
 
-my @allcsource= map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @args;
+my @allcsource=
+  map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @args;
 
 my $linkfile= do {
     # guess: last scm file?
