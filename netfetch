@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/bash 
 
 if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
     echo "$0 [-z] server [ port ]"
