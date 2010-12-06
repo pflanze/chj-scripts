@@ -40,7 +40,6 @@ exit @_ ? 1 : 0;
 my $opt_debug;
 my $opt_track_scheme;
 my $opt_warnings=1;
-my $opt_chpax;
 
 use Getopt::Long;
 GetOptions
@@ -50,8 +49,6 @@ GetOptions
        $opt_debug=1;
        $opt_track_scheme=1
 	 unless defined $opt_track_scheme;
-       $opt_chpax=1
-	 unless defined $opt_chpax;
    },
    "track-scheme!"=> \$opt_track_scheme,
    "warnings!"=> \$opt_warnings,
@@ -115,6 +112,3 @@ Do "gcc",
   "-o",$executablename,
   ;
 
-if ($opt_chpax) {
-    Do "chpax","-sr",$executablename
-}
