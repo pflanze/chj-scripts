@@ -9,26 +9,18 @@ use Chj::xperlfunc;
 sub sys_is_x86 {
     my $sys= `uname -m`;
     $sys =~ /86/ and not $sys=~/86_64/
-      # we actually don't want "-mpreferred-stack-boundary=2", that
-      # gives "error: -mpreferred-stack-boundary=2 is not between 4
-      # and 12"
 }
 
 my @cflags=
   (
-   # Flags for athlon32 machine.
    "-O3",
-   #"-D___SINGLE_HOST", Nein, das verlangsamt, jedenfalls fib! (0m0.840s vs. 0m0.740s
-   "-fomit-frame-pointer", # ja bringt bissel was, 0m0.730s vs. 0m0.760s
-   #"-fstrict-aliasing", # bringt keinen sichtbaren unterschied bei fib
-   #"-mcpu=i586", # hm bringt auch keinen ersichtlichen unterschied bei fib
-   #"-mcpu=athlon", nein machts langsamer, 0m0.770s vs. 0m0.730s
-   #"-mcpu=i686",  nein, 0m0.740s vs. 0m0.730s
-   #  ^- well, eh rechte variabilitaet, nicht sicher dass ich echte untrschiede gesehen
-   #    aber he, fib isch eh ein doofer test für dies wohl.
-   (sys_is_x86() ? "-mpreferred-stack-boundary=2" : ()), # auch kein unterschied gesehen.   ##mannnnn !!! () nach sys_is_x86 sind nötig.
+   "-fomit-frame-pointer",
+   #"-fstrict-aliasing",
+   #"-mcpu=i586",
+   #"-mcpu=athlon",
+   #"-mcpu=i686",
+   (sys_is_x86() ? "-mpreferred-stack-boundary=2" : ()),
    #"-Wall",#not interesting.
-   #  "-Wdisabled-optimization",#maybe interesting -> but doesn't work with gcc on woody.
   );
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
@@ -102,16 +94,14 @@ Do "gsc",
   "-link",
   ($opt_debug ? "-debug" : ()),
   ($opt_track_scheme ? "-track-scheme" : ()),
-  ($opt_warnings ? "-warnings" : ()), # aber beachte: eher viele Nontail call with interrupts disabled  wenn meine üblichen declare's verwenden.
-  #"-expansion", nein. geht wirkli auch hier zu stdout  aber .c code auch generiert  also will ich wohl nur andere zwecke. in less pipen oder sowas.
+  ($opt_warnings ? "-warnings" : ()),
   @schemesource;
 
 
 my @allcsource= map{ local $_=$_; s/\.(scm|c)$//; "$_.c"} @args;
 
 my $linkfile= do {
-    #hmm?  wie?
-    # guess: letztes scm file?
+    # guess: last scm file?
     $schemesource[-1]."_.c"
 };
 my $executablename= do {
@@ -131,7 +121,7 @@ Do "gcc",
   "-Wl,-rpath", "$gambinstdir/lib",
   # ^ so that the path needn't be in the ld.so.conf
   "-lgambc",
-  # und, nur für linux aber nicht für macosx: (gem. doku)
+  # according to docs only for linux, not macosx:
   "-lm",
   "-lutil",
   "-ldl",
