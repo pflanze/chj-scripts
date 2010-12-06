@@ -4,7 +4,6 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
-use Chj::xperlfunc;
 
 sub sys_is_x86 {
     my $sys= `uname -m`;
@@ -62,6 +61,11 @@ for (@ARGV) {
 }
 
 
+sub xxsystem {
+    my $c= system @_;
+    $c == 0
+      or die "command exited with: $c";
+}
 sub Do {
     print join(" ",@_),"\n";
     xxsystem @_
