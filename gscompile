@@ -118,14 +118,17 @@ my $executablename= do {
     $schemesource[-1]
 };
 
+# assuming all Gambit dirs are in the same location:
+my $gambinstdir= `gsc -e '(display (path-expand "~~"))'`;
+
 Do "gcc",
   @cflags,
   ($opt_debug ? "-g" : ()),
   @allcsource,
   $linkfile,
-  "-I/usr/local/Gambit-C/current/include",
-  "-L/usr/local/Gambit-C/current/lib",
-  "-Wl,-rpath", "/usr/local/Gambit-C/current/lib",
+  "-I$gambinstdir/include",
+  "-L$gambinstdir/lib",
+  "-Wl,-rpath", "$gambinstdir/lib",
   # ^ so that the path needn't be in the ld.so.conf
   "-lgambc",
   # und, nur für linux aber nicht für macosx: (gem. doku)
