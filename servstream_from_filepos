@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # cj Thu, 15 Jan 2004 21:14:30 +0100
 
 if [ -z "$PORT" ]; then
