@@ -57,8 +57,19 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 use Chj::xperlfunc;
 
+# split $browser  hm
+our @browser= do {
+    use Chj::IO::Command;
+    my $in= Chj::IO::Command->new_sender("bash","-c", 'for f in '.$browser.'; do echo -n $f; echo -ne '."'".'\0'."'".'; done');
+    local $/="\0";
+    my @browser= <$in>;
+    $in->xxfinish;
+    map { chop $_ ; $_ } @browser;
+};
+#use Chj::repl;repl;
+
 if ($opt_index) {
-    xexec $browser, "http://srfi.schemers.org/"
+    xexec @browser, "http://srfi.schemers.org/"
 } else {
     usage "expecting one argument" unless @args==1;
 
@@ -77,7 +88,7 @@ if ($opt_index) {
     # http://srfi.schemers.org/srfi-73/
     # http://srfi.schemers.org/srfi-73/srfi-73.html
 
-    xexec $browser,
+    xexec @browser,
       ($opt_overview ?
        "http://srfi.schemers.org/srfi-$num/"
        : "http://srfi.schemers.org/srfi-$num/srfi-$num.html");
