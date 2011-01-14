@@ -35,6 +35,69 @@ my $rl= Term::ReadLine->new("rename");
 
 $rl->ornaments(0);
 
+#use Chj::xtmpfile;
+use Chj::xsysopen 'xsysopen_excl';
+#our $assumed_minimal_length=
+our $seed_length=20; # bytes of binary input
+use Chj::Random::Formatted 'random_passwd_string';
+use POSIX 'ENAMETOOLONG';
+sub _maxfilenamelen {
+    @_==2 or die "args";
+    my ($in_folder, $upto_n)=@_;
+    #my $f= xtmpfile $in_folder;
+    #my $spath= $f->path;
+    # use link or rename? problem with link on sshfs, sigh. and rename
+    # saves unlink.  but then, it is not safe. as long as it's under
+    # some considerable length.
+    # so, do not use xtmpfile but instead?:
+    my $sname= random_passwd_string $seed_length;
+    #hm, guarantee there are no / in it:
+    $sname=~ s|/||g; length ($sname) > 25 or die "shouldn't happen";
+    #my $spath= "$in_folder/$sname"; wrong, $in_folder can be "" which actually means "." in this case, not the filesystem root.
+    my $spath= length($in_folder) ? "$in_folder/$sname" : $sname;
+    my $f= xsysopen_excl $spath;
+    $f->xclose;
+    #my $morerandom= random_passwd_string $seed_length; # wl ? really stupid right.
+    my $len= length ($sname);
+  LP: {
+	my $path= $spath . "a";
+	$!= 0; # !!!
+	if (rename $spath, $path) {
+	    $spath=$path;
+	    $len++;
+	    if ($len <= $upto_n) {
+		redo LP;
+	    } else {
+		die "overran given limit $upto_n while testing maxfilenamelen in '$in_folder'"
+	    }
+	} else {
+	    if ($! == ENAMETOOLONG) {
+		unlink $spath
+		  or die "??? could not unlink '$spath': $!";
+		$len
+	    } else {
+		die "error while testing maxfilenamelen in '$in_folder': rename '$spath','$path': $!"
+	    }
+	}
+    }
+}
+
+my %cached_maxfilenamelen;
+sub cached_maxfilenamelen {
+    @_==2 or die "args";
+    my ($in_folder, $upto_n)=@_;
+    # only consider first argument, since if it succeeded, then the
+    # second argument becomes moot
+    #$cached_maxfilenamelen{$in_folder}||= _maxfilenamelen ($in_folder, $upto_n)
+    if (defined (my $v= $cached_maxfilenamelen{$in_folder})) {
+	$v
+    } else {
+	$v = _maxfilenamelen ($in_folder, $upto_n);
+	$cached_maxfilenamelen{$in_folder}= $v;
+	$v
+    }
+}
+
 sub ren {
     my ($path)=@_;
 
@@ -76,7 +139,9 @@ sub ren {
 		    my $e=$@;
 		    if (ref $e or $e) {
 			if ($e=~ /too long/) {
-			    print "$e";
+			    my $actual= length $newname;
+			    my $allowed= cached_maxfilenamelen $folder, $actual;
+			    print "The new name is ".($actual - $allowed)." character(s) too long.\n";#ordie
 			    redo REDO;
 			} else {
 			    die $e

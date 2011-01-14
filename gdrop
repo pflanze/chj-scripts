@@ -69,20 +69,7 @@ our $date_= `date_`; chomp $date_; #hum.
 our $tagname= "drop_".$subname_.$date_;
 
 use Chj::xperlfunc;
-
-use Chj::IO::Command;
-
-sub status_is_clean {
-    my $in= Chj::IO::Command->new_combinedsender( "git","status");
-    my $incnt= $in->xcontent;
-    my $instatus= $in->xfinish;
-    [
-     (scalar ((($instatus==(1<<8)) or ($instatus==0))
-	      and
-	      $incnt=~ /\nnothing to commit .working directory clean/)),
-     $incnt
-    ]
-}
+use Chj::Git::Functions 'status_is_clean';
 
 our $cleanq= do {
     my $res;
