@@ -14,7 +14,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [file(s)]
 
-  filter
+  remove hex numbers from objdump style disassembly
+
+  Options
+   --gambit  also remove differences due to .oX object file endings
 
   (Christian Jaeger <$email>)
 ";
@@ -24,8 +27,10 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_gambit;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "gambit"=> \$opt_gambit,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 #usage unless @ARGV;
@@ -39,6 +44,9 @@ sub substitute {
 }
 
 while (<>) {
+    if ($opt_gambit) {
+	s/\b(___\w+_2e_o)(\d+)\b/$1."YY"/ge;
+    }
     # for intel only atm...
     if (my ($pre, $adr, $w1, $bytecode, $w2, $opcode, $rest)=
 	m/^(\s*)($hexnumber):(\s*)((?:$hex1byte\s)+)(\s*)(\w+)(.*)/
