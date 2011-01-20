@@ -40,11 +40,12 @@ sub substitute {
 
 while (<>) {
     # for intel only atm...
-    if (my ($pre, $adr, $bytecode, $code)=
-	m/^(\s*)($hexnumber):(\s*(?:\s$hex1byte)+\s*+)(.*)/
+    if (my ($pre, $adr, $w1, $bytecode, $w2, $opcode, $rest)=
+	m/^(\s*)($hexnumber):(\s*)((?:$hex1byte\s)+)(\s*)(\w+)(.*)/
        ) {
-	$code=~ s/([$hexdigit]{2,})/substitute $1/ge;
-	print " ".$pre.substitute($adr).":".substitute($bytecode).$code."\n"
+	$rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute $2/ge;
+	print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
+	  .$opcode.$rest."\n"
 	  #ordie
     } else {
 	print "# $_"  # or die? but, sigpipe anyway?....  r i less faire
