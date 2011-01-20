@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+#I already did that somewhere.... sgh
+
+
+# Thu Jan 20 13:38:31 EST 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [file(s)]
+
+  filter
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+our $hexdigit= "0-9a-f";
+our $hex1byte= "\\b[$hexdigit]{2}\\b";
+our $hexnumber= "\\b[$hexdigit]+\\b";
+
+sub substitute {
+    "X" x length($_[0])
+}
+
+while (<>) {
+    # for intel only atm...
+    if (my ($pre, $adr, $bytecode, $code)=
+	m/^(\s*)($hexnumber):(\s*(?:\s$hex1byte)+\s*+)(.*)/
+       ) {
+	$code=~ s/([$hexdigit]{2,})/substitute $1/ge;
+	print " ".$pre.substitute($adr).":".substitute($bytecode).$code."\n"
+	  #ordie
+    } else {
+	print "# $_"  # or die? but, sigpipe anyway?....  r i less faire
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
