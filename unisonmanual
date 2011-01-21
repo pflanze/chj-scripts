@@ -1,4 +1,4 @@
 #!/bin/sh
 
 settitle unisonmanual
-exec zless /usr/share/doc/unison/unison-manual.txt.gz
+exec zless /usr/share/doc/unison-gtk/unison-manual.txt.gz
