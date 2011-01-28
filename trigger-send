@@ -20,6 +20,8 @@ sub usage {
 
   Options:
   --timeout seconds   instead of the default $timeout
+  --inet       Interpret socketpath as listen address[:port] instead of
+               filesystem path
 
   (Christian Jaeger <$email>)
 ";
@@ -28,34 +30,54 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_inet;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "timeout"=> \$timeout,
-	   ) or exit 1;
+	   "inet"=>\$opt_inet,
+	  ) or exit 1;
 usage unless @ARGV;
 
 our $socketpath= shift @ARGV;
 
-use IO::Socket::UNIX;
+our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+use Chj::load;
+load $IO_Socket_class; import $IO_Socket_class;
+
 
 $SIG{ALRM}= sub {
     die "$myname on '$socketpath': timed out\n";
 };
 alarm $timeout;
 
-our $socket= IO::Socket::UNIX->new
+our $socket= $IO_Socket_class->new
   (
-   Type=> SOCK_STREAM,
-   Peer=> $socketpath,
+   Type=> &SOCK_STREAM,
+   $opt_inet ? (Proto=> "tcp") : (),
+   #(Listen=> 0),
+   ($opt_inet ?
+    do {
+	my @spl= split ":", $socketpath;
+	@spl == 2 or die "expecting addr:port, got: '$socketpath'";
+	my ($addr,$port)=@spl;
+	(PeerAddr=> $addr,
+	 PeerPort=> $port)
+    }
+    : ("Peer"=> $socketpath)),
   )
   or die "opening socket '$socketpath': $!";#!
 
 use Chj::schemestring 'schemestring_oneline';
+
+#warn "START";
 $socket->send(@ARGV ?
 	      "trigger: ".join("\t",map { schemestring_oneline $_ } @ARGV)."\n"
 	      :
 	      "trigger\n")
-  or die "send: $!";
+  or do {
+      #warn "DED";  ach kommt EH nicht hierhin? throws exception schon selber???
+      die "send: $!";
+      };
 my $result= <$socket>;
 if ($result ne "ok\n") {
     die "$myname: did not get an ok from the server, but: $result";
