@@ -52,6 +52,8 @@ sub usage {
                serialized. Also switches off sleeping.
   --no-wait    don't wait for the command to exit before running the
                next.
+  --inet       Interpret socketpath as listen address[:port] instead of
+               filesystem path
 
   (Christian Jaeger <$email>)
 ";
@@ -65,6 +67,7 @@ our $umask;
 our $opt_accept_arguments;
 our $opt_sleeptime;
 our $opt_no_wait;
+our $opt_inet;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sleeptime=s"=> \$opt_sleeptime,
@@ -72,6 +75,7 @@ GetOptions("verbose"=> \$verbose,
 	   "umask=s"=> \$umask,
 	   "accept-arguments"=>\$opt_accept_arguments,
 	   "no-wait"=>\$opt_no_wait,
+	   "inet"=>\$opt_inet,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
 $DEBUG||=$verbose;
@@ -82,19 +86,28 @@ if ($opt_accept_arguments and $opt_sleeptime) {
 }
 $sleeptime= $opt_sleeptime if defined $opt_sleeptime;
 
-use IO::Socket::UNIX;
+our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+#require $IO_Socket_class; import $IO_Socket_class;
+#GRRR no. replace :: etc...
+use Chj::load;
+load $IO_Socket_class; import $IO_Socket_class;
+
 
 if (defined $umask) {
     umask oct($umask)
       or die "umask: $!";
 }
 
-unlink $socketpath; #okay?  check for running daemons...
-our $socket= IO::Socket::UNIX->new
+unlink $socketpath #okay?  check for running daemons...
+  unless $opt_inet;
+our $socket= $IO_Socket_class->new
   (
-   Type=> SOCK_STREAM,
-   Local=> $socketpath,
-   Listen=> 1,
+   Type=> &SOCK_STREAM,
+   $opt_inet ? (LocalAddr=> $socketpath) : (Local=> $socketpath),
+   $opt_inet ? (Proto=> "tcp") : (),
+   #:
+   (Listen=> 1), # wow for INET Listen means queue size, for UNIX it's boolean  -- ehr, or BAH?!f
+   $opt_inet ? (ReuseAddr=> 1) : (),
   )
   or die "opening socket '$socketpath': $!";#!
 
