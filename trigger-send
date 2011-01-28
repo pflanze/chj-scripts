@@ -55,20 +55,19 @@ our $socket= $IO_Socket_class->new
    Type=> &SOCK_STREAM,
    $opt_inet ? (Proto=> "tcp") : (),
    #(Listen=> 0),
-   #($opt_inet ? "PeerAddr" : "Peer"), $socketpath,
+   ($opt_inet ?
+    do {
+	my @spl= split ":", $socketpath;
+	@spl == 2 or die "expecting addr:port, got: '$socketpath'";
+	my ($addr,$port)=@spl;
+	(PeerAddr=> $addr,
+	 PeerPort=> $port)
+    }
+    : ("Peer"=> $socketpath)),
   )
   or die "opening socket '$socketpath': $!";#!
 
 use Chj::schemestring 'schemestring_oneline';
-
-#ach DAS nicht gvergessen!:
-if ($opt_inet) {
-    # usage: $sock->connect(NAME) or $sock->connect(PORT, ADDR) at /opt/chj/bin/trigger-send line 66
-    $socket->connect ($socketpath)
-      or die "connect: $!";
-    #connect: Transport endpoint is already connected at /opt/chj/bin/trigger-send line 67.
-    #GOFP WAS DANN?
-}
 
 #warn "START";
 $socket->send(@ARGV ?
