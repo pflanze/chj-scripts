@@ -123,6 +123,7 @@ if (defined $usage) {
   --quiet|-q  be quiet (do not output the pid of the daemon)
   --no-error-if-running|--no-error  do not report an error if the
               daemon is already running
+              (with --quiet, suitable to be run repeatedly from crontab)
   --         terminate option processing
 
   Note: the pid file (and the output if nohup.out is not used)-- ehr?.
