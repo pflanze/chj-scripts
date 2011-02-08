@@ -194,10 +194,23 @@ sub fork {
 	eval {
 	    $read->xclose;
 	    $$s[_Runfile]= Chj::Unix::DaemonRunfile->new($$s[Runpath],$$s[Namegiver]);
-	    $$s[_Runfile]->writefile (undef, $maybe_alreadyrunningcb && sub { die (bless {}, "ALREADYRUNNING")});# throws exception if already in use. ##interessant: erst nach dem fork?
-	    #$$s[_Runfile]->autoclean;#(well, doch ziemlich unnötig dass dies eine extra methode ist?)
-	    # ^- rather dangerous since we do not know if the user is keeping the daemonizer instance till the end? well no, it'll release the lock anyway at that point so we loose nothing.
-	    # ^- AH f*ck, yes it is a problem, in the case where the daemon forks off a perl child which does not exec but exit itself, it will remove the pidfile while the parent is still running. no chance switching that off except manually or hooking into fork.
+	    $$s[_Runfile]->writefile
+	      (undef,
+	       $maybe_alreadyrunningcb && sub {
+		   die (bless {}, "ALREADYRUNNING")
+	       });
+	    # ^ throws exception if already in use. ##interessant: erst nach dem fork?
+	    #$$s[_Runfile]->autoclean;#(well, doch ziemlich unnötig
+	    #   dass dies eine extra methode ist?)
+	    # ^- rather dangerous since we do not know if the user is
+	    # keeping the daemonizer instance till the end? well no,
+	    # it'll release the lock anyway at that point so we loose
+	    # nothing.
+	    # ^- AH f*ck, yes it is a problem, in the case where the
+	    # daemon forks off a perl child which does not exec but
+	    # exit itself, it will remove the pidfile while the parent
+	    # is still running. no chance switching that off except
+	    # manually or hooking into fork.
 	    setsid or die "setsid: $!";
 	    if (defined $$s[In]) {
 		if (length $$s[In]) {
