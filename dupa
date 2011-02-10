@@ -27,7 +27,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-use Chj::perlfunc ':all';
+use Chj::xperlfunc ':all';
 sub splitpath ( $ ) {
     my ($path)=@_;
     ((scalar dirname $path),
@@ -48,9 +48,30 @@ sub dupa {
     my ($dir,$file)= splitpath $path;
     $file=~ s/^(\d+)(.*)/${1}b${2}/
       or die "no match: '$file'";
-    xcp $path, "$dir/$file"
+    my $path2="$dir/$file";
+    #(
+    #neinnein.haha
+    [
+     sub {
+	 xcp $path, $path2;
+     },
+     #$path1,
+     #$path2
+     sub {
+	 xlaunch "E", $path, $path2
+     }
+    ]
 }
 
+my @act= map { dupa $_ } @ARGV;
+
+for (@act) {
+    $_->[0]()
+}
+
+for (@act) {
+    $_->[1]()
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
