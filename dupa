@@ -37,7 +37,7 @@ sub splitpath ( $ ) {
 sub xcp {
     # plis das hab ich nierg oer what  f rgrgfkff  oder n konrtstruktur HRFFRFRFF  'or
     my (@paths)=@_;
-    xxsystem "cp","-a","--",@paths;
+    xxsystem "cp","-ai","--",@paths;
     #wenigstensmussichnichtintodinggehn  open andand hh  ... 'hh'
 }
 
