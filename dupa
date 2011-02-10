@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Thu Feb 10 16:09:36 EST 2011
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname patchfile(s)
+
+  dupe patch: copy patchfile to patchfile with appendix, then start E on it
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::perlfunc ':all';
+sub splitpath ( $ ) {
+    my ($path)=@_;
+    ((scalar dirname $path),
+     (scalar basename $path))
+}
+
+sub xcp {
+    # plis das hab ich nierg oer what  f rgrgfkff  oder n konrtstruktur HRFFRFRFF  'or
+    my (@paths)=@_;
+    xxsystem "cp","-a","--",@paths;
+    #wenigstensmussichnichtintodinggehn  open andand hh  ... 'hh'
+}
+
+sub dupa {
+    my ($path)=@_;
+    #my $path2=$path;
+    #$path2=~ s|
+    my ($dir,$file)= splitpath $path;
+    $file=~ s/^(\d+)(.*)/${1}b${2}/
+      or die "no match: '$file'";
+    xcp $path, "$dir/$file"
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
