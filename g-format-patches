@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#for commit in "$@"; do
+#    echo "$commit"^.."$commit"
+#done # |myxargs git format-patch
+# doesn't work, it only outputs the last one and ignores the others, wow
+
+for commit in "$@"; do
+    # will all start with 0001, senselessly, what to do about that? wh'tever?
+    git format-patch "$commit"^.."$commit"
+done
