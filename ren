@@ -29,7 +29,7 @@ GetOptions("d|debug"=> \$DEBUG,
 	  ) or exit 1;
 usage unless @ARGV;
 
-use Chj::xperlfunc qw(xrename xlinkunlink);
+use Chj::xperlfunc qw(xrename xlinkunlink Xlstat);
 use Term::ReadLine;
 my $rl= Term::ReadLine->new("rename");
 
@@ -132,7 +132,23 @@ sub ren {
 				xrename $path,$newpath;
 			    } else {
 				# be unrisky to race conds
-				xlinkunlink $path,$newpath;
+				eval {
+				    xlinkunlink $path,$newpath;
+				    1
+				} or do {
+				    my $e=$@;
+				    if ($e=~
+					m/can't link to target: Function not implemented/
+				       ) {
+					# sshfs.
+					die "target already exists (maybe as symlink): '$newpath'"
+					  if Xlstat( $newpath);
+					#^ah checked anyway already, "unfini" above. whatever.
+					xrename $path,$newpath;
+				    } else {
+					die $e
+				    }
+				};
 			    }
 			}
 		    };
