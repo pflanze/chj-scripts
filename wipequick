@@ -14,6 +14,8 @@ sub usage {
   Overwrite files contents with zeroes (once only, and does not call
   sync).
 
+  -a  also call sync afterwards then unlink the files
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -22,8 +24,10 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_all;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "a"=>\$opt_all,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -50,6 +54,12 @@ sub wipequick ( $ ) {
 }
 
 wipequick $_ for @ARGV;
+
+use Chj::xperlfunc qw(xxsystem xunlink);
+if ($opt_all) {
+    xxsystem "sync";
+    xunlink $_ for @ARGV;
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
