@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# to be used for compiling kernels etc for 32 bit, using novo as a
+# distcc server
+
+gcc -m32 "$@"
