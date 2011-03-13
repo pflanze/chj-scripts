@@ -1,0 +1,4 @@
+#!/bin/bash
+
+gcat HEAD|grep ^committer|perl -wne 'm|> (\d{8,12}) | or die; print localtime($1)."\n"'
+
