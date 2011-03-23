@@ -11,6 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname pid
 
+  Options:
+   -s|--shell  shell-escape values and prepend lines with 'export '
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -19,13 +22,16 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_shell;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "shell"=> \$opt_shell,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
 use Chj::xopen 'xopen_read';
+use Chj::singlequote 'singlequote_sh';
 
 sub printenv_of {
     my ($pidstr)=@_;
@@ -35,8 +41,14 @@ sub printenv_of {
     local $/="\0";
     while (<$in>) {
 	chomp;
-	print "$_\n"
-	  or die "stdout: $!";
+	if ($opt_shell) {
+	    my ($k,$v)= split "=", $_, 2;
+	    print "export $k=".singlequote_sh($v)."\n"
+	      or die "stdout: $!";
+	} else {
+	    print "$_\n"
+	      or die "stdout: $!";
+	}
     }
     $in->xclose;
 }
