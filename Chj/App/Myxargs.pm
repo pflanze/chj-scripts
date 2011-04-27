@@ -166,7 +166,7 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 		     .@$args." additional arguments of total size $tot_size: $err\n");
 	    }
 	};
-	my $npar= $$options{"num-parallel"};  $npar >= 1 or die;
+	my $npar= $$options{"num-parallel"} || 1;  $npar >= 1 or die;
 	if ($npar == 1) {
 	    &$ex (\@args)
 	} else {
