@@ -37,6 +37,7 @@ our $optionspec=
     "no-run-if-empty"=> "do not run if stdin doesn't deliver any items",
     "run-if-empty" => "inverse of --no-run-if-empty",
     "null|0|z"=> "split stdin on \\0 instead of \\n", #wow that's cool, that | thingie. for here.same way usable.
+    "num-parallel"=> "number of processes to run in parallel, default 1",
    };
 #^ well sort of dumb idea since ordering will be lost  but  i  do not care now.
 
@@ -114,6 +115,7 @@ sub options_and_cmd {
 	'run-if-empty'=> sub {
 	    $$options{'no-run-if-empty'}=0
 	},
+	"num-parallel"=> 1,
        });
     MyGetOptions($options,
 		 keys %$optionspec)
@@ -150,16 +152,62 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
     }
 
     if (!$$options{"no-run-if-empty"} or @args) {
-	do {
-	    no warnings;
-	    exec @$cmd,@args
-	} or do {
-	    my $err="$!";
-	    require Chj::singlequote;
-	    die ("$myname: could not exec "
-		 .Chj::singlequote::singlequote_many(@$cmd)
-		 ." with "
-		 .@args." additional arguments of total size $tot_size: $err\n");
+	my $ex= sub {
+	    my ($args)=@_;
+	    do {
+		no warnings;
+		exec @$cmd,@$args
+	    } or do {
+		my $err="$!";
+		require Chj::singlequote;
+		die ("$myname: could not exec "
+		     .Chj::singlequote::singlequote_many(@$cmd)
+		     ." with "
+		     .@$args." additional arguments of total size $tot_size: $err\n");
+	    }
+	};
+	my $npar= $$options{"num-parallel"};  $npar >= 1 or die;
+	if ($npar == 1) {
+	    &$ex (\@args)
+	} else {
+	    # split args. or, how ? .
+	    # yeah in the interest to make few calls? well. for now.
+	    # totally randomize or what ?
+	    # yeah maybe
+	    my @argss;
+	    while (@args) {
+		my $i= int(rand() * $npar); # parens after rand required!
+		push @{$argss[$i]}, pop @args;
+	    }
+	    # (well that's not totally randomized, 'partial sequencing' still observed, wl.)
+	    my $subex= sub {
+		my ($args)=@_;
+		my $pid= fork;
+		defined $pid or die "fork: $!";
+		if ($pid) {
+		    $pid
+		} else {
+		    if (@$args) { ##  check for no-run-if-empty? probably not ?
+			&$ex($args)
+		    } else {
+			exit 0
+		    }
+		}
+	    };
+	    my @ps= map { &$subex ($_||[]) } @argss; # ||[] needed or it will fail with 'Can't use an undefined value as an ARRAY reference'. Perl Perl Perl.
+	    my @ss= map {
+		waitpid ($_, 0) == $_ or die "??";
+		$?
+	    } @ps;
+	    my $excode=0;
+	    for (@ss) {
+		if ($_ != 0) {
+		    require Chj::Unix::exitcode;
+		    warn "$myname: one of the subprocesses returned with ".Chj::Unix::exitcode($_)."\n";
+		    $excode=1;
+		}
+	    }
+	    exit $excode
 	}
     }
 }
