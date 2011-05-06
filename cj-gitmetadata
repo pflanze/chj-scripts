@@ -80,8 +80,8 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 			if (-e $d) {
 			    # end
 			} else {
-			    mkdir $d;
 			    &$lp (dirname $d);
+			    mkdir $d;
 			}
 		    }
 		};
