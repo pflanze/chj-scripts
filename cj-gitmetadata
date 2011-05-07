@@ -188,8 +188,12 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	# also handarbeit.
 	if ($stat->type eq $s->type) { ##aber warum mach ich mtime check vorher zersch? und nid beideshierorso.?. wl nj.hier quasi assert dass es sich umsrichtigehandelt? . [weil link utime nid accessible]
 	    if ($stat->mtime != $s->mtime) {
-		# (keep old atime)
-		xutime $stat->atime,$s->mtime, $$s[Path];
+		if ($stat->is_link) {
+		    warn "note: don't know how to set mtime of symlink '".$s->path."'\n";
+		} else {
+		    # (keep old atime)
+		    xutime $stat->atime,$s->mtime, $$s[Path];
+		}
 	    }
 	    if (($stat->uid != $s->xuid)
 		or
