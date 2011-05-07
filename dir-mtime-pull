@@ -9,17 +9,16 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname dir
+    print "$myname dir(s)
 
-  Set mtime of dir, and, recursively, all its child directories to the
-  latest mtime of all items contained in it.
+  Set mtime of dir, and, recursively, all of its child directories to
+  the latest inferred creation time of all items contained in it.
 
-  This is not what happens when creating then modifying files and
-  directories in place, of course, but since there's no creation time
-  (short of misusing atime maybe) we have to assume that
-  mtime==creation time. (For directories, we could infer that creation
-  time is the oldest contained mtime or creation time, but for now,
-  don't do that.)
+  Algorithm for deriving creation times:
+
+  - for files, take the older of atime and mtime
+  - for directories, take the oldest creation time of all contained
+    items; if empty, ignore it
 
   (Christian Jaeger <$email>)
 ";
@@ -34,6 +33,60 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
+
+
+{
+    package CHJdirmtimepull::item;
+    use Class::Array -fields=> -publica=>
+      (
+       'path',
+       'stat',
+      );
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
+    }
+    end Class::Array;
+}
+
+{
+    package CHJdirmtimepull::file;
+    use Class::Array -extend=> -publica=>
+      (
+      );
+    use Chj::Env 'min';
+    sub creationtime {
+	my $s=shift;
+	my $st= $$s[Stat];
+	min($st->atime, $st->mtime)
+    }
+    end Class::Array;
+}
+
+{
+    package CHJdirmtimepull::dir;
+    use Class::Array -extend=> -publica=>
+      (
+       '_creationtime',
+      );
+    use Chj::Env 'min';
+    sub creationtime {
+	my $s=shift;
+	$$s[_Creationtime]||= do { #olde doof wegen 0=falsewllnone h. (oder, kein op)
+	    my $d= 
+	}
+    }
+    end Class::Array;
+}
+
+use Chj::xperlfunc ':all';
+
+sub xlstatitem {
+    my ($path)=@_;
+    my $s= xlstat $path;
+    ($s->is_dir ? "CHJdirmtimepull::dir" : "CHJdirmtimepull::file")->new($path,$s)
+}
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
