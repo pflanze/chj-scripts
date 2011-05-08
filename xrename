@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Sun May  8 02:50:15 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname frompath(s) topath
+
+  Call rename(2) with the given arguments.
+
+  If topath is an existing directory, append the source basename
+  (hence work like mv, but never move files by copying).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+
+sub for_each {
+    my ($proc,$args)=@_;
+    for (@$args) {
+	&$proc ($_)
+    }
+}
+use Chj::xperlfunc 'basename','xrename';
+
+our $to= pop @ARGV;
+
+for_each (((-d $to) ? sub {
+	      my ($from)=@_;
+	      my $bn= basename $from;
+	      xrename( $from, "$to/$bn")
+	  } : sub {
+	      my ($from)=@_;
+	      xrename( $from, $to)
+	  }),
+	  \@ARGV);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
