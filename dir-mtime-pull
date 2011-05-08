@@ -20,6 +20,10 @@ sub usage {
   - for directories, take the oldest creation time of all contained
     items; if empty, ignore it
 
+  Meant to be used after cj-gitmetadata restore (i.e. spull) to change
+  directory mtimes back to something close to what they would be where
+  the files were created and stored with cj-gitmetadata save (scoma).
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
