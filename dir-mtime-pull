@@ -67,14 +67,46 @@ usage unless @ARGV;
     package CHJdirmtimepull::dir;
     use Class::Array -extend=> -publica=>
       (
+       '_items', # array of CHJdirmtimepull::item
        '_creationtime',
       );
     use Chj::Env 'min';
-    sub creationtime {
+    sub items {
 	my $s=shift;
-	$$s[_Creationtime]||= do { #olde doof wegen 0=falsewllnone h. (oder, kein op)
-	    my $d= 
+	$$s[_Items]||= do {
+	    my @it;
+	    my $path=$$s[Path];
+	    my $d= xopendir $path;
+	    while (defined (my $item= $d->xnread)) {
+		push @it, main::xlstatitem("$path/$item");
+	    }
+	    $d->xclose;
+	    \@it
 	}
+    }
+    our $creationtime_none= -3; #wl
+    sub maybe_creationtime {
+	my $s=shift;
+	my $ct= $$s[_Creationtime]||= do { #olde doof wegen 0=falsewllnone h. (oder, kein op)
+	    my @ct= map { $_->creationtime } @{$s->items};
+	    if (@ct) {
+		min @ct
+	    } else {
+		$creationtime_none
+	    }
+	};
+	($ct == $creationtime_none ? undef : $ct)
+    }
+    sub mtime {
+	my $s=shift;
+	
+    }
+
+    # action:
+    use Chj::xperlfunc 'xutime';
+    sub write_mtime {
+	my $s=shift;
+	xutime ($s->path, $s->stat->atime, $s->mtime)
     }
     end Class::Array;
 }
