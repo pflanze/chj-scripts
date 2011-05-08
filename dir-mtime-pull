@@ -51,26 +51,31 @@ usage unless @ARGV;
 
 {
     package CHJdirmtimepull::file;
-    use Class::Array -extend=> -publica=>
+    use Class::Array -class=>"CHJdirmtimepull::item", -extend=> -publica=>
       (
       );
     use Chj::Env 'min';
-    sub creationtime {
+    sub is_dir { 0 }
+    sub maybe_creationtime { # always given for files, but same api as dirs
 	my $s=shift;
 	my $st= $$s[Stat];
 	min($st->atime, $st->mtime)
+    }
+    sub possibly_write_mtime_recursively {
+	# noop
     }
     end Class::Array;
 }
 
 {
     package CHJdirmtimepull::dir;
-    use Class::Array -extend=> -publica=>
+    use Class::Array -class=>"CHJdirmtimepull::item", -extend=> -publica=>
       (
        '_items', # array of CHJdirmtimepull::item
-       '_creationtime',
       );
-    use Chj::Env 'min';
+    use Chj::Env 'min','max';
+    sub is_dir { 1 }
+    use Chj::xopendir;
     sub items {
 	my $s=shift;
 	$$s[_Items]||= do {
@@ -84,39 +89,42 @@ usage unless @ARGV;
 	    \@it
 	}
     }
-    our $creationtime_none= -3; #wl
-    sub maybe_creationtime {
-	my $s=shift;
-	my $ct= $$s[_Creationtime]||= do { #olde doof wegen 0=falsewllnone h. (oder, kein op)
-	    my @ct= map { $_->creationtime } @{$s->items};
+
+    my $mk_tm = sub {
+	my ($minmax)=@_;
+	sub {
+	    my $s=shift;
+    	    my @ct= grep { defined $_ } map { $_->maybe_creationtime } @{$s->items};
 	    if (@ct) {
-		min @ct
+		&$minmax( @ct)
 	    } else {
-		$creationtime_none
+		undef
+
 	    }
-	};
-	($ct == $creationtime_none ? undef : $ct)
-    }
-    sub maybe_mtime {
-	my $s=shift;
-	# well same as maybe_creationtime except using min. but
-	# caching doesn't make sense anyway, right, so I'll already
-	# write a new method anyway:
-	my @ct= map { $_->creationtime } @{$s->items};
-	if (@ct) {
-	    max @ct
-	} else {
-	    undef
 	}
-    }
+    };
+    sub maybe_creationtime;
+    sub maybe_mtime;
+    *maybe_creationtime= &$mk_tm (\&min);
+    *maybe_mtime= &$mk_tm (\&max);
 
     # action:
     use Chj::xperlfunc 'xutime';
     sub possibly_write_mtime {
 	my $s=shift;
+	my $path=$s->path;
 	if (defined (my $mtime= $s->maybe_mtime)) {
-	    xutime ($s->path, $s->stat->atime, $mtime)
-	}# else warn ?
+	    xutime ($s->stat->atime, $mtime,  $path)
+	} else {
+	    warn "directory is empty, not setting mtime: '$path'\n";
+	}
+    }
+    sub possibly_write_mtime_recursively {
+	my $s=shift;
+	for (@{$s->items}) {
+	    $_->possibly_write_mtime_recursively
+	}
+	$s->possibly_write_mtime;
     }
     end Class::Array;
 }
@@ -127,6 +135,16 @@ sub xlstatitem {
     my ($path)=@_;
     my $s= xlstat $path;
     ($s->is_dir ? "CHJdirmtimepull::dir" : "CHJdirmtimepull::file")->new($path,$s)
+}
+
+our @it= map {
+    my $it= xlstatitem $_;
+    $it->is_dir or die "not a directory: '".$it->path."'";
+    $it
+} @ARGV;
+
+for (@it) {
+    $_->possibly_write_mtime_recursively
 }
 
 
