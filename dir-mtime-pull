@@ -97,16 +97,26 @@ usage unless @ARGV;
 	};
 	($ct == $creationtime_none ? undef : $ct)
     }
-    sub mtime {
+    sub maybe_mtime {
 	my $s=shift;
-	
+	# well same as maybe_creationtime except using min. but
+	# caching doesn't make sense anyway, right, so I'll already
+	# write a new method anyway:
+	my @ct= map { $_->creationtime } @{$s->items};
+	if (@ct) {
+	    max @ct
+	} else {
+	    undef
+	}
     }
 
     # action:
     use Chj::xperlfunc 'xutime';
-    sub write_mtime {
+    sub possibly_write_mtime {
 	my $s=shift;
-	xutime ($s->path, $s->stat->atime, $s->mtime)
+	if (defined (my $mtime= $s->maybe_mtime)) {
+	    xutime ($s->path, $s->stat->atime, $mtime)
+	}# else warn ?
     }
     end Class::Array;
 }
