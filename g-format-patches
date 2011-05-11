@@ -1,11 +1,77 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-#for commit in "$@"; do
-#    echo "$commit"^.."$commit"
-#done # |myxargs git format-patch
-# doesn't work, it only outputs the last one and ignores the others, wow
+# Sun Apr 17 17:23:40 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-for commit in "$@"; do
-    # will all start with 0001, senselessly, what to do about that? wh'tever?
-    git format-patch "$commit"^.."$commit"
-done
+use strict;
+
+our $startnum=1;
+
+sub formatnum {
+    my ($n)=@_;
+    sprintf '%04d', $n
+}
+
+sub nextnum {
+    my $n= $startnum++;
+    formatnum($n)
+}
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname commitids..
+
+  Also re-numbers them starting with ".formatnum( $startnum)."
+
+  Example:
+   glg paredit.el|grep ^commit|printfield 2|tac|» g-format-patches
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+#habe das schon mal gemacht. create mit -o, dann mit glob rausholen. wo? wsmr???f .sgh.
+#diesmal auch renamen (oderwars last time exaktsame?)
+#ACHGOSH   cj-g-format-patch-as
+# cj-git-format-patch-as
+#naja. 'simpleenoughirgsgh'
+
+use Chj::xperlfunc ':all';
+
+use Chj::xtmpdir;
+
+
+for my $id (@ARGV) {
+    eval {
+	my $d= xtmpdir ".";#?, doch geht.
+	my $dpath="$d";
+	# von hier an abweichend. wl oben schon anderer kontext
+
+	my $n= nextnum;
+	xxsystem "git","format-patch","-o", $dpath, "$id^..$id";
+	my ($badpath)= glob "$dpath/*";
+	my $name= basename $badpath;
+	$name=~ s/^(0001)-/$n-/ or die "error, '$badpath' is not matching";
+	# xlinkunlink? or behave like g-format-patch?
+	xrename $badpath, $name;
+	#$d-> remove  sigh I don't have that. (wanted to use it for error checking)
+	1
+    } or warn "warning for id '$id': $@";#right way to handle now exn in perl right ?.
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

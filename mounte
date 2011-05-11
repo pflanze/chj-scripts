@@ -22,7 +22,9 @@ sub usage {
   Or, if a mount point is given instead, is looking for it's basename
   as device mapper name or device name or /dev/disk/by-uuid/ entry, or
   for symlinks pointing to it and checking them the same way to find
-  the device to be mounted there and mounts it when found.
+  the device to be mounted there and mounts it when found, or if that
+  fails, looks up the same strings in /dev/disk/by-id/ (hm (todo?)
+  actually looks up not in the very end now but somewhere inbetween?).
 
   Automatically uses -o loop if the 'device' path is a regular file
   (except 'of course' not when the regular file isn't the file being
@@ -154,6 +156,7 @@ our $lookup = sub {
     (&$l ("/dev/mapper/$name")
      or &$l ("/dev/$name")
      or &$l ("/dev/disk/by-uuid/$name")
+     or &$l ("/dev/disk/by-id/$name")
     )
 };
 
