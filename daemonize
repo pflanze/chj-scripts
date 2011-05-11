@@ -22,7 +22,7 @@ my $usage;
 my ($opt_stop, $opt_bg,$opt_nonice);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
-my $maxwait=3;#seconds
+our $maxwait=3;#seconds
 our $logfile= "nohup.out";
 our $opt_quiet;
 our $opt_no_error_if_running;
@@ -45,8 +45,17 @@ ARG:{
 		    $opt_nonice=0;
 		} elsif ($1 eq 'out') {
 		    $logfile=$ARGV[0]; shift @ARGV;
-		    defined $ARGV[0] or do {
+		    defined $logfile or do {
 			$usage= "missing argument to --out option";
+			last ARG;
+		    };
+		} elsif ($1 eq 'maxwait') {
+		    $maxwait=$ARGV[0]; shift @ARGV;
+		    if (defined $maxwait) {
+			$maxwait =~ /^\d+(?:\.\d+)?$/
+			  or die " --maxwait needs a number, got '$maxwait'";
+		    } else {
+			$usage= "missing argument to --maxwait option";
 			last ARG;
 		    };
 		} elsif ($1 eq 'help') {
@@ -116,7 +125,8 @@ if (defined $usage) {
              stop the previously started daemon; you have to give
              the exact same arguments.
              First kills with SIGHUP, then if there are still
-             processes after $maxwait seconds, kills with SIGKILL.
+             processes after maxwait seconds, kills with SIGKILL.
+  --maxwait N  change default of $maxwait sec to wait before sending SIGKILL
   -N|--no-nice  do not lower priority
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
