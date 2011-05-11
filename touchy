@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ $# -ne 0 ]; then
+    echo "usage: touchy"
+    echo "  readline and touch files that don't already exist"
+    echo "  (as comment-in-dir tool)"
+    exit 1
+fi
+
+while read f; do
+    if [ -e "$f" -o -L "$f" ]; then
+	echo " ---already exists, ignoring---"
+    else
+	touch "$f"
+    fi
+done
