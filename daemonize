@@ -26,7 +26,7 @@ our $maxwait=3;#seconds
 our $logfile= "nohup.out";
 our $opt_quiet;
 our $opt_no_error_if_running;
-our $signal=1;
+our $signal=15; # SIGTERM   instead of 1 SIGHUP that it was;  hmm is this change ok ?
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
