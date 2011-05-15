@@ -68,18 +68,27 @@ sub in_range_p {
 use Chj::xperlfunc ':all';
 
 our $stat= ($opt_f ? \&xstat : \&xlstat);
+sub maybe_stat {
+    my ($path)= @_;
+    my $s= eval {
+	$stat->($path)
+    };
+    defined $s or warn "$@";
+    $s
+}
 
 sub find {
     my ($dir)=@_;
     my $d=xopendir $dir;
     while (defined (my $item= $d->xnread)) {
 	my $path= "$dir/$item";
-	my $s= $stat->($path);
-	if (in_range_p $s) {
-	    print($path, ($opt_z ? "\0" : "\n")) or die;
-	}
-	if ($s->is_dir) {
-	    find ($path)
+	if (defined (my $s= maybe_stat($path))) {
+	    if (in_range_p $s) {
+		print($path, ($opt_z ? "\0" : "\n")) or die;
+	    }
+	    if ($s->is_dir) {
+		find ($path)
+	    }
 	}
     }
     $d->xclose;
