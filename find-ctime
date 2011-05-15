@@ -19,6 +19,7 @@ sub usage {
   Options:
    --follow|-f   follow symlinks, but remember visited nodes to avoid cycles
    -z            use zero entry terminator instead of newline
+   -xdev         as usual
 
   (Christian Jaeger <$email>)
 ";
@@ -28,11 +29,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
-our ($opt_z,$opt_f);
+our ($opt_xdev,$opt_z,$opt_f);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "follow|f" => \$opt_f,
 	   "zero|z" => \$opt_z,
+	   "xdev" => \$opt_xdev,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV==3;
@@ -77,6 +79,8 @@ sub maybe_stat {
     $s
 }
 
+our $thedev= ($opt_xdev and $stat->($dir)->dev);
+
 sub find {
     my ($dir)=@_;
     my $d=xopendir $dir;
@@ -86,7 +90,9 @@ sub find {
 	    if (in_range_p $s) {
 		print($path, ($opt_z ? "\0" : "\n")) or die;
 	    }
-	    if ($s->is_dir) {
+	    if ($s->is_dir
+		and (! $opt_xdev
+		     or ($s->dev == $thedev))) {
 		find ($path)
 	    }
 	}
