@@ -1,0 +1,106 @@
+#!/usr/bin/perl -w
+
+# Sun May 15 12:28:17 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from to dir
+
+  +-hack to search better than find -ctime
+
+  from and to are parsed by Date::Parse::str2time;
+  from is inclusive, to isn't
+
+  Options:
+   --follow|-f   follow symlinks, but remember visited nodes to avoid cycles
+   -z            use zero entry terminator instead of newline
+   -xdev         as usual
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our ($opt_xdev,$opt_z,$opt_f);
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "follow|f" => \$opt_f,
+	   "zero|z" => \$opt_z,
+	   "xdev" => \$opt_xdev,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==3;
+
+use Date::Parse 'str2time';
+
+sub xstr2time ($ ) {
+    my ($str)=@_;
+    my $d= str2time $str;
+    defined $d or die "invalid date format of '$str'";
+    $d
+}
+
+our ($from_,$to_,$dir)=@ARGV;
+
+our ($from,$to) = map { xstr2time $_ } ($from_,$to_);
+
+our ($froms, $tos)=  map { "".localtime $_ } ($from,$to);
+#warn "searching in range $froms - $tos ..\n";
+warn "searching for $froms <= ctime < $tos ..\n";
+
+die "$myname error: from time must be smaller than to\n"
+  unless $from < $to;
+
+use Chj::xopendir;
+
+sub in_range_p {
+    my ($s)= @_;
+    my $ct= $s->ctime;
+    (($ct >= $from) and ($ct < $to))
+}
+
+use Chj::xperlfunc ':all';
+
+our $stat= ($opt_f ? \&xstat : \&xlstat);
+sub maybe_stat {
+    my ($path)= @_;
+    my $s= eval {
+	$stat->($path)
+    };
+    defined $s or warn "$@";
+    $s
+}
+
+our $thedev= ($opt_xdev and $stat->($dir)->dev);
+
+sub find {
+    my ($dir)=@_;
+    my $d=xopendir $dir;
+    while (defined (my $item= $d->xnread)) {
+	my $path= "$dir/$item";
+	if (defined (my $s= maybe_stat($path))) {
+	    if (in_range_p $s) {
+		print($path, ($opt_z ? "\0" : "\n")) or die;
+	    }
+	    if ($s->is_dir
+		and (! $opt_xdev
+		     or ($s->dev == $thedev))) {
+		find ($path)
+	    }
+	}
+    }
+    $d->xclose;
+}
+
+find $dir;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
