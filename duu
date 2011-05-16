@@ -7,28 +7,37 @@
 
 # Sun, 21 Nov 2004 20:15:04 +0100: lstat instead of stat. man.
 
+our $default_blocksize=512;
 
 sub usage {
     print "$0 dir
   options:
-  --blocksize|-b n   blocks are n bytes big
+  --blocksize|-b n   blocks are n bytes big (default $default_blocksize)
+  --no-blocksize     determine blocksize from seen data (doesn't seem to be right)
   -x, --one-file-system   skip directories on different file systems
 ";
     exit 1;
 }
 our $blocksize;
-our $flag_blocksize_given;
+our $flag_blocksize_given=1;
 our $opt_reverse;
 our $opt_x;
 use Getopt::Long;
 GetOptions (
 	    "h|help"=> sub {usage},
 	    "blocksize|b=i"=> \$blocksize,
+	    "no-blocksize"=> sub {
+		$flag_blocksize_given=0;
+	    },
 	    "reverse|r"=> \$opt_reverse,
 	    "x|one-file-system"=> \$opt_x,
 	   ) or usage;
 usage unless @ARGV<=1;
-$flag_blocksize_given= defined $blocksize;
+
+$flag_blocksize_given|= defined $blocksize;
+if ($flag_blocksize_given) {
+    $blocksize=$default_blocksize unless defined $blocksize;
+}
 
 our ($dir)=@ARGV ? @ARGV : ".";
 
