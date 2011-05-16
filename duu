@@ -28,6 +28,8 @@ GetOptions (
 	    "x|one-file-system"=> \$opt_x,
 	   ) or usage;
 usage unless @ARGV<=1;
+$flag_blocksize_given= defined $blocksize;
+
 our ($dir)=@ARGV ? @ARGV : ".";
 
 my $sortfunc=
