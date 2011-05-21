@@ -17,6 +17,7 @@ sub usage {
   Options:
   -c | --clean  not only make new linebreaks but also make
                 tags lowercase and reorder attributes alphabetically.
+  --text   remove all html tags (by regex, hack?)
 ";
 exit @_ ? 1 : 0;
 }
@@ -24,6 +25,7 @@ exit @_ ? 1 : 0;
 my @files;
 my $DEBUG=0;
 my $opt_clean;
+our $opt_text;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -35,6 +37,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?c(lean)?$/) {
 	$opt_clean=1;
+    } elsif (/^--?t(ext)?$/) {
+	$opt_text=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -79,7 +83,7 @@ sub tagcleanup {
 sub diffprepare {
     my ($sr)= \ (@_);
     $$sr=~ s/\s+/ /sg;
-    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".tagcleanup($1)."\n"/sge;
+    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
     $$sr=~ s/\. /.\n/sg;
     $$sr=~ s/\n\n/\n/sg; # warum eigtl is das notig?
     $$sr=~ s/^\n//s; # und warum das?
