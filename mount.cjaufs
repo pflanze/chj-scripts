@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+# Sun May 29 21:20:56 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname source dest options
+
+  source must be the path prefix that when appending
+  {squashfs,mnt,write} will match a file and two dirs.
+  (By convention, end source in a dot.)
+
+  Options:
+  -o x
+  -t x
+
+  Note to installation: needs
+    lns /opt/chj/bin/mount.cjaufs /sbin/
+  to make \"mount -t cjaufs source dest\" work
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our ($opt_o);
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "o=s"=> \$opt_o,
+	   ) or exit 1;
+usage unless @ARGV==2;
+warn "o=$opt_o";
+our ($source,$dest)=@ARGV;
+
+use Chj::xperlfunc;
+
+for (["source",$source], ["dest", $dest]) {
+    my ($w,$p)=@$_;
+    die "$w contains colon, probably not allowed: '$p'"
+      if $p=~ /:/;
+}
+
+our ($squash,$mnt,$write)= map { $source . $_ } qw(squashfs mnt write);
+
+sub mount {
+    xxsystem "mount", @_;
+}
+
+#hm find out loop 'dynamically'?
+mount "-o","loop", $squash, $mnt;
+mount "-t", "aufs", "-o", "br:${write}=rw:${mnt}=ro", "aufs", $dest;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
