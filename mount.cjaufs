@@ -61,7 +61,7 @@ sub mount {
 
 #hm find out loop 'dynamically'?
 mount "-o","loop", $squash, $mnt;
-mount "-t", "aufs", "-o", "br:${write}=rw:${mnt}=ro", "aufs", $dest;
+mount "-t", "aufs", "-o", "noatime,br:${write}=rw:${mnt}=ro", "aufs", $dest;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
