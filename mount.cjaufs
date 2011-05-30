@@ -55,6 +55,25 @@ for (["source",$source], ["dest", $dest]) {
 
 our ($squash,$mnt,$write)= map { $source . $_ } qw(squashfs mnt/mnt write/mnt);
 
+our $is_dir=sub {
+    -d $_[0]
+};
+our $is_file=sub {
+    -f $_[0]
+};
+our $mkassert =sub {
+    my ($f,$what)=@_;
+    sub {
+	my ($p)=@_;
+	&$f($p) or die "not a $what: '$p'";
+    }
+};
+our $assert_dir= &$mkassert($is_dir,"dir");
+our $assert_file= &$mkassert($is_file,"file");
+&$assert_file($_) for ($squash); # well,  or device file if no loop ? wl
+&$assert_dir($_) for ($mnt,$write);
+
+
 sub mount {
     xxsystem "mount", @_;
 }
