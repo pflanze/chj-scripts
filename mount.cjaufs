@@ -12,7 +12,7 @@ sub usage {
     print "$myname source dest options
 
   source must be the path prefix that when appending
-  {squashfs,mnt,write} will match a file and two dirs.
+  {squashfs,mnt/mnt,write/mnt} will match a file and two dirs.
   (By convention, end source in a dot.)
 
   Options:
@@ -49,7 +49,7 @@ for (["source",$source], ["dest", $dest]) {
       if $p=~ /:/;
 }
 
-our ($squash,$mnt,$write)= map { $source . $_ } qw(squashfs mnt write);
+our ($squash,$mnt,$write)= map { $source . $_ } qw(squashfs mnt/mnt write/mnt);
 
 sub mount {
     xxsystem "mount", @_;
