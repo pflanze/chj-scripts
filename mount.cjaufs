@@ -31,14 +31,18 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
-our ($opt_o);
+our $o_dflt="rw";
+our $opt_o=$o_dflt;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "o=s"=> \$opt_o,
 	   ) or exit 1;
 usage unless @ARGV==2;
-warn "o=$opt_o";
+
+die "expecting -o rw, got '$opt_o'"
+  unless $opt_o eq $o_dflt;
+
 our ($source,$dest)=@ARGV;
 
 use Chj::xperlfunc;
