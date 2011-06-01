@@ -92,6 +92,10 @@ sub process_entry {
       if $verbose;
     if ($path eq '/SYSV00000000'
 	or
+	$path=~ m{^/SYSV[0-9a-f]{8}\z}
+	or
+	$path eq '/drm mm object'
+	or
 	$path=~ m{^/(?:tmp|dev|var|proc)/}
 	or
 	$path=~ m|/\.galeon/mozilla/|) {
