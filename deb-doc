@@ -7,4 +7,4 @@ if [ $# -ne 1 ]; then
      exit 1
 fi
 
-zless /usr/share/doc/"$1"/changelog.Debian.gz
+links /usr/share/doc/"$1"/
