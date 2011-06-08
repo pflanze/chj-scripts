@@ -100,8 +100,12 @@ while (@ARGV) {
 		    $is_preoption{$v} ? \@preargs : \@args
 		}, $v, @optargs;
 	    } else {
-		# non option argument, or unknown option
-		push @args, $v
+		if ($v=~ /^-/) {
+		    fail "unknown option '$v'";
+		} else {
+		    # non option argument
+		    push @args, $v
+		}
 	    }
 	}
     }
