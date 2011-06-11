@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# just because I forgot the name
+
+echo "use update-rc.d, dude"
