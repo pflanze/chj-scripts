@@ -58,9 +58,29 @@ our $options1=
 our %option_arity= (@$options0, @$options1);
 # the movable options (not all can be moved, right, like --and|--or|(|)|-e ?)
 our %is_preoption= @{l2ha 1,
-		       # the one that led me to write this program:
-		       '-l'
-		   };
+		       # prefixed with "?" if I'm unsure, with "X" if
+		       # I'm sure it's not ok to move it
+		       qw{
+	-a --text
+	-I
+	-i --ignore-case
+	-w --word-regexp
+	-v --invert-match
+	-h -H
+	--full-name
+	-E --extended-regexp
+	-G --basic-regexp
+	-F --fixed-strings -n
+	-l --files-with-matches
+	-L --files-without-match
+	-z --null
+	-c --count
+	?--all-match
+	-q --quiet
+	?--color ?--no-color
+	X--and X--or X--not X( X)
+	--cached --no-index
+		   }};
 
 our @preargs;
 our @args;

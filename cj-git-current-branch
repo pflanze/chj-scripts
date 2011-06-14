@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -eu
+
+h=`git rev-parse --symbolic-full-name HEAD`
+
+echo "${h##refs/heads/}"
+# hm I'd prefer to die if that doesn't match. how to do?
+# grr
