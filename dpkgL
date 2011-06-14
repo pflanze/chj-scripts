@@ -1,6 +1,10 @@
 #!/bin/bash
 
-exec dpkg -L "$@"|csort
+{
+    for p in "$@"; do
+	dpkg -L "$p"
+    done
+} |csort
 
 # sort!!! so that I won't confuse myself anymore in the future. And
 # yes it will show symlinks--just at the end maybe.
