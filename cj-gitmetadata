@@ -305,7 +305,7 @@ our $commands=
 	# overwriting old files in place and removing files not used
 	# anymore; would be cheaper than both rm -rf and trash, I
 	# guess))
-	xxsystem ("trash",$metadatadir);
+	xxsystem ("rm","-rf","--",$metadatadir);
 	$outdir->autoclean(0);
 	xrename "$outdir", $metadatadir;
 
