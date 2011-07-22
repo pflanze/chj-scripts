@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# wrapper around daemonize to turn start|stop into --bg|--stop, right, just?
+
+#but how
+# a wl env vars to the rescue
+
+# CMD   bash code to exec the daemon (inluding the exec, preferably)
+# NAME  name of the service, to use instead of cj-startstop
+## USAGE usage string to use
+# LOG   where to write log file
+
+set -eu
+
+usage () {
+    echo "usage: ${NAME-$0} start|stop|restart"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+    #well or allow daemonize options after the first argument?
+    # or, rather feed those through another env var
+fi
+
+
+start () {
+    daemonize --out "$LOG" --quiet --bg -- bash -c "$CMD"
+}
+
+stop () {    
+    daemonize --stop -- bash -c "$CMD"
+}
+
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart)
+    stop || true
+    start
+    ;;
+    *)
+    usage
+    ;;
+esac

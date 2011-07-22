@@ -108,6 +108,7 @@ sub rotate($) {
 sub move($) {
     my $item= _cleaneditem(@_);
     my $dir=FolderOfThisFile($item);
+    $dir = "/" if $dir eq ""; ##HACK and actually working around a bug in FolderOfThisFile, well should use sth else anyw
     my $itemname= Filename($item);
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my $usenumber=1;

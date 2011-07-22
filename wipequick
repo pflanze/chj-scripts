@@ -15,6 +15,7 @@ sub usage {
   sync).
 
   -a  also call sync afterwards then unlink the files
+  -r|--random  use random bytes instead of zeroes
 
   (Christian Jaeger <$email>)
 ";
@@ -25,14 +26,30 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_all;
+our $opt_random;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "a"=>\$opt_all,
+	   "random"=>\$opt_random,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
 use Chj::xopen 'xopen_readwrite';
+use Chj::IO::Command;
+
+our $rand= Chj::IO::Command->new_sender("fastrandom")
+  if $opt_random;
+
+our $BUFSIZ= 4096;
+
+my $buf= "\0"x4096;
+
+sub dorandbuf {
+    my $res= $rand->xread($buf,$BUFSIZ);
+    $res == $BUFSIZ
+      or die "expected $BUFSIZ bytes, got $res";
+}
 
 sub wipequick ( $ ) {
     my ($path)=@_;
@@ -43,11 +60,12 @@ sub wipequick ( $ ) {
     my $bufs= $size / 4096;
     my $rem= $size % 4096;
     #print "size=$size, bufs=$bufs, rem=$rem\n";#
-    my $buf= "\0"x4096;
     #for (0..$bufs) {
+    dorandbuf if $opt_random;
     for (my $i=1; $i<=$bufs; $i++) {
 	#print "would write a buf\n";
 	$f->xprint($buf);
+	dorandbuf if $opt_random;
     }
     $f->xprint(substr($buf,0,$rem));
     $f->xclose;

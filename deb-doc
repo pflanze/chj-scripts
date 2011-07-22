@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -eu
+
+if [ $# -ne 1 ]; then
+     echo "usage: $0 packagename"
+     exit 1
+fi
+
+links /usr/share/doc/"$1"/

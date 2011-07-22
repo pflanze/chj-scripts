@@ -17,6 +17,8 @@ sub usage {
   Options:
   -c | --clean  not only make new linebreaks but also make
                 tags lowercase and reorder attributes alphabetically.
+  -t|--text   remove all html tags (by regex, hack?)
+  --diff      run diff -u instead of tkdiff
 ";
 exit @_ ? 1 : 0;
 }
@@ -24,6 +26,10 @@ exit @_ ? 1 : 0;
 my @files;
 my $DEBUG=0;
 my $opt_clean;
+our (
+     $opt_text,
+     $opt_diff,
+    );
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -31,10 +37,14 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif ($_ eq '--') {
     	push @files, @ARGV[$i+1..$#ARGV];
     	last;
-    } elsif (/^--?d(ebug)?$/) {
+    } elsif (/^--debug$/) {
 	$DEBUG=1;
     } elsif (/^--?c(lean)?$/) {
 	$opt_clean=1;
+    } elsif (/^--?t(ext)?$/) {
+	$opt_text=1;
+    } elsif (/^--diff$/) {
+	$opt_diff=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -79,7 +89,7 @@ sub tagcleanup {
 sub diffprepare {
     my ($sr)= \ (@_);
     $$sr=~ s/\s+/ /sg;
-    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".tagcleanup($1)."\n"/sge;
+    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
     $$sr=~ s/\. /.\n/sg;
     $$sr=~ s/\n\n/\n/sg; # warum eigtl is das notig?
     $$sr=~ s/^\n//s; # und warum das?
@@ -133,6 +143,6 @@ for(0..1){
     $tmpfiles[$_]= [$fh,$filename];
 }
 
-system "tkdiff", map {$_->[1]} @tmpfiles;
+system( ($opt_diff ? ("diff", "-u") : "tkdiff"), map {$_->[1]} @tmpfiles);
 
 unlink0(@$_) for @tmpfiles;

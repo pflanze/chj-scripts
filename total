@@ -1,9 +1,5 @@
 #!/usr/bin/perl -w
 
-# Mon Jan 20 04:54:45 MET 2003
-# hmm, mit *welchem* gnu tool kann man schon wieder summieren? uniq isses nicht. sort auch nicht. ?
-# dann halt so.
-
 use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -12,12 +8,16 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname
   Sum all numbers given on stdin.
+
+  Options:
+  -s|--statistics  print sum, n, mean, stdev
 ";
 exit @_ ? 1 : 0;
 }
 
 my @files;
 my $DEBUG=0;
+our $opt_s;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -27,6 +27,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?s(tatistics?)?$/) {
+	$opt_s=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -37,10 +39,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage if @files;
 
 my $tot=0;
+my $n=0;
+my $totsquares=0;
 while (defined(local $_=<STDIN>)){
     chomp;
     /^\s*[+-]?\s*\d+(\.\d*)?\s*$/
-      # könnte auch noch zulassen:
+      # could also accept:
       # 1_324   1_134.245_123
       # 1,324 -> europ. oder amerik.?
       or do{
@@ -49,5 +53,17 @@ while (defined(local $_=<STDIN>)){
       };
     s/\s+//sg;
     $tot+=$_;
+    if ($opt_s) {
+	$totsquares+= $_ * $_;
+	$n++;
+    }
 }
-print "$tot\n";
+if ($opt_s) {
+    # n, sum,  mean and stdev
+    my $mean= $tot/$n;
+    my $stdev= sqrt($totsquares/$n - $mean ** 2);
+    print "$tot\t$n\t$mean\t$stdev\n";
+} else {
+    print "$tot\n";
+}
+

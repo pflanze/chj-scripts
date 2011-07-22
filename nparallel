@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Fri May 27 12:13:34 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname n [--] prog args
+
+  run n instances of prog with args in parallel
+  for benchmarking purposes only?
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV >= 2;
+
+use Chj::xperlfunc;
+
+our ($n,@cmd)=@ARGV;
+
+$n == 0 and exit 0;
+$n >= 1 or die "n must be positive";
+
+sub frk {
+    my ($n)=@_;
+    if ($n == 1) {
+	xexec @cmd;
+    } else {
+	if (xfork) {
+	    xxsystem @cmd; # another fork. r
+	    xwait;
+	    exit 0;
+	} else {
+	    frk ( $n - 1)
+	}
+    }
+}
+
+frk $n;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

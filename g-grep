@@ -1,3 +1,139 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-git --no-pager grep "$@"
+# Wed Jun  8 18:40:29 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+
+sub l2ha {
+    my $n= shift;
+    #+{
+    [
+     map { ($_=>$n) } @_
+    ]
+}
+
+our $options0=
+  l2ha
+  (0,
+   qw{
+	-a --text
+	-I
+	-i --ignore-case
+	-w --word-regexp
+	-v --invert-match
+	-h -H
+	--full-name
+	-E --extended-regexp
+	-G --basic-regexp
+	-F --fixed-strings -n
+	-l --files-with-matches
+	-L --files-without-match
+	-z --null
+	-c --count
+	--all-match
+	-q --quiet
+	--color --no-color
+	--and --or --not ( )
+	--cached --no-index
+ });
+# --color=<when> will need removal of = part before lookup.
+
+our $options1=
+  l2ha
+  (
+   1,
+   '-O', '--open-files-in-pager', # <pager>
+   '--max-depth', # <depth>
+   '-A', # <post-context>
+   '-B', # <pre-context>
+   '-C', # <context>
+   '-f', # <file>
+   '-e', # <pattern>... hm? multiple for one -e ?
+  );
+
+our %option_arity= (@$options0, @$options1);
+# the movable options (not all can be moved, right, like --and|--or|(|)|-e ?)
+our %is_preoption= @{l2ha 1,
+		       # prefixed with "?" if I'm unsure, with "X" if
+		       # I'm sure it's not ok to move it
+		       qw{
+	-a --text
+	-I
+	-i --ignore-case
+	-w --word-regexp
+	-v --invert-match
+	-h -H
+	--full-name
+	-E --extended-regexp
+	-G --basic-regexp
+	-F --fixed-strings -n
+	-l --files-with-matches
+	-L --files-without-match
+	-z --null
+	-c --count
+	?--all-match
+	-q --quiet
+	?--color ?--no-color
+	X--and X--or X--not X( X)
+	--cached --no-index
+		   }};
+
+our @preargs;
+our @args;
+
+our @ARGVcopy= @ARGV;
+sub ggrep {
+    exec "git","--no-pager","grep",@_
+      or exit 127;
+}
+sub fail {
+    print STDERR "$myname: @_, passing arguments unmodified to git\n";
+    ggrep @ARGVcopy;
+}
+
+while (@ARGV) {
+    my $v=shift @ARGV;
+    if ($v eq '--') {
+	push @args, $v, @ARGV;
+	last;
+    } else {
+	# only one case with "="? Or, is it always unary in this case, ok?
+	if ($v=~ /^(-[^=]+)(=.*)/s) {
+	    my ($vkey,$vval)=($1,$2);
+	    push @{
+		$is_preoption{$vkey} ? \@preargs : \@args
+	    }, $v;
+	} else {
+	    if (defined (my $n= $option_arity{$v})) {
+		my @optargs;
+		while ($n) {
+		    @ARGV or fail "not enough option arguments to option '$v'";
+		    my $v=shift @ARGV;
+		    push @optargs, $v;
+		    $n--
+		}
+		push @{
+		    $is_preoption{$v} ? \@preargs : \@args
+		}, $v, @optargs;
+	    } else {
+		if ($v=~ /^-/) {
+		    fail "unknown option '$v'";
+		} else {
+		    # non option argument
+		    push @args, $v
+		}
+	    }
+	}
+    }
+}
+
+ggrep @preargs,@args;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+

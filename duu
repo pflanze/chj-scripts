@@ -7,27 +7,42 @@
 
 # Sun, 21 Nov 2004 20:15:04 +0100: lstat instead of stat. man.
 
+our $default_blocksize=512;
 
 sub usage {
     print "$0 dir
   options:
-  --blocksize|-b n   blocks are n bytes big
-  -x, --one-file-system   skip directories on different file systems
+  --blocksize|-b n   blocks are n bytes big (default $default_blocksize)
+  --no-blocksize     determine blocksize from seen data (doesn't seem to be right)
+  -x, --one-file-system   skip directories on different file systems, but run
+                          through all subdirs
+  -xx                skip subdirs on different file systems than dir
 ";
     exit 1;
 }
 our $blocksize;
-our $flag_blocksize_given;
+our $flag_blocksize_given=1;
 our $opt_reverse;
 our $opt_x;
+our $opt_xx;
 use Getopt::Long;
 GetOptions (
 	    "h|help"=> sub {usage},
 	    "blocksize|b=i"=> \$blocksize,
+	    "no-blocksize"=> sub {
+		$flag_blocksize_given=0;
+	    },
 	    "reverse|r"=> \$opt_reverse,
 	    "x|one-file-system"=> \$opt_x,
+	    "xx"=> \$opt_xx,
 	   ) or usage;
 usage unless @ARGV<=1;
+
+$flag_blocksize_given|= defined $blocksize;
+if ($flag_blocksize_given) {
+    $blocksize=$default_blocksize unless defined $blocksize;
+}
+
 our ($dir)=@ARGV ? @ARGV : ".";
 
 my $sortfunc=
@@ -40,8 +55,10 @@ if (defined($dir)&&length($dir)) {
     $dir="./";
 }
 
+use Chj::xperlfunc ':all';
 
 if (opendir DIR,$dir) {
+    my $dev= (xstat $dir)->dev if $opt_xx;
     my @items;
     my $total=0;
     my $totalfiles= 0; # blocks
@@ -51,16 +68,21 @@ if (opendir DIR,$dir) {
     my ($blocks,$bytes);
     while (defined ($item= readdir DIR)) {
         next if $item eq '.' or $item eq '..';
-        if (-d "$dir$item") {
-            my $line= execute('du','-sk',($opt_x ? '-x' : ()),
-			      '--',"$dir$item");
-            chomp $line;
-            if ($line=~ /^(\d+)/) {
-                $total+=$1;
-                push @items,[$item,$1];#[$item,$1,$line];
-            } else {
-                warn "Problem: line is '$line'";
-            }
+	my $s= xlstat "$dir$item";
+        if ($s->is_dir) {
+	    if (not($opt_xx) or ($s->dev == $dev)) {
+		my $line= execute('du','-sk',(($opt_x || $opt_xx) ? '-x' : ()),
+				  '--',"$dir$item");
+		chomp $line;
+		if ($line=~ /^(\d+)/) {
+		    $total+=$1;
+		    push @items,[$item,$1];#[$item,$1,$line];
+		} else {
+		    warn "Problem: line is '$line'";
+		}
+	    } else {
+		warn "ignoring dir on different fs: '$item'\n" #wl?
+	    }
         } else {
             ($blocks,$bytes)=(lstat("$dir$item"))[12,7];
             next unless $blocks; #zero lenghts

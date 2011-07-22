@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+
+# Wed Jun  1 15:38:31 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+# hacky workaround attempt to reactivate DPMS after running smplayer,
+# based on the assumption that it's smplayer which foils my screen
+# power settings. (GR)
+
+# I'm wrapping smplayer because it might actually be smplayer itself
+# (instead of feeding a flag to mplayer) (and because this way I don't
+# have to dpkg-divert, hence automatically active everywhere)
+
+use strict;
+
+use Chj::xperlfunc;
+
+END {
+    local $!; # needed?
+    local $@; # well this probably not; or yet?
+    xsystem "xset", "+dpms";
+}
+
+xxsystem "/usr/bin/smplayer", @ARGV;

@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w
+
+# Sun May 29 21:20:56 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname source dest options
+
+  source must be the path prefix that when appending
+  {squashfs,mnt/mnt,write/mnt} will match a file and two dirs.
+  (By convention, end source in a dot.)
+
+  Options:
+  -o x
+  -t x
+
+  Note to installation: needs
+    lns /opt/chj/bin/mount.cjaufs /sbin/
+  to make \"mount -t cjaufs source dest\" work
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $o_dflt="rw";
+our $opt_o=$o_dflt;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "o=s"=> \$opt_o,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+die "expecting -o rw, got '$opt_o'"
+  unless $opt_o eq $o_dflt;
+
+our ($source,$dest)=@ARGV;
+
+use Chj::xperlfunc;
+
+for (["source",$source], ["dest", $dest]) {
+    my ($w,$p)=@$_;
+    die "$w contains colon, probably not allowed: '$p'"
+      if $p=~ /:/;
+}
+
+our ($squash,$mnt,$write)= map { $source . $_ } qw(squashfs mnt/mnt write/mnt);
+
+our $is_dir=sub {
+    -d $_[0]
+};
+our $is_file=sub {
+    -f $_[0]
+};
+our $mkassert =sub {
+    my ($f,$what)=@_;
+    sub {
+	my ($p)=@_;
+	&$f($p) or die "not a $what: '$p'";
+    }
+};
+our $assert_dir= &$mkassert($is_dir,"dir");
+our $assert_file= &$mkassert($is_file,"file");
+&$assert_file($_) for ($squash); # well,  or device file if no loop ? wl
+&$assert_dir($_) for ($mnt,$write);
+
+
+sub mount {
+    xxsystem "mount", @_;
+}
+
+#hm find out loop 'dynamically'?
+mount "-o","loop", $squash, $mnt;
+mount "-t", "aufs", "-o", "noatime,br:${write}=rw:${mnt}=ro", "aufs", $dest;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
