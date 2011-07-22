@@ -323,7 +323,7 @@ our $commands=
 		$metadata->restore($s);
 	    };
 	    if (ref $@ or $@) {
-		print STDERR "warn: one record failed: $@";
+		print STDERR "warn: '$path': $@";
 	    }
 	}
     }
