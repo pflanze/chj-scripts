@@ -117,10 +117,10 @@ sub maybe_gpg_config_get_single ( $ ) {
 	}
     }
 }
-our $maybe_default_key_long= maybe_gpg_config_get_single ("default-key");
-our $maybe_default_key_short= ($maybe_default_key_long and do {
-    my $str= $maybe_default_key_long;
-    $str=~ m|^[A-F0-9]{8}([A-F0-9]{8})\z|
+our $maybe_default_key= maybe_gpg_config_get_single ("default-key");
+our $maybe_default_key_short= ($maybe_default_key and do {
+    my $str= $maybe_default_key;
+    $str=~ m/^(?:|[A-F0-9]{8}|[A-F0-9]{32})([A-F0-9]{8})\z/
       or die "seems like invalid default-key setting, does not match our regex: '$str'";
     $1
 });#parens needed!..
