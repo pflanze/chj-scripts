@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Wed Aug  3 16:14:04 EDT 2011
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+use Chj::Fileutil 'xCatfile';
+use Chj::xperlfunc;
+use Chj::xhome;
+use Chj::singlequote 'singlequote_sh';
+
+our $sourceaddressfile= xhome."/.maps-sourceaddress";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [targetaddress]
+
+  or read targetaddress from stdin,
+
+  then open browser (set \$BROWSER env var) with google maps url
+  using given targetaddress, and sourceaddress from the file
+    $sourceaddressfile
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+our $sourceaddress= xCatfile ($sourceaddressfile);
+
+our $targetaddress= @ARGV? $ARGV[0] : do {
+    local $/;
+    <STDIN>
+};
+
+sub cleanup {
+    my ($s)=@_;
+    $s=~ s/\s+/ /sg;
+    $s
+}
+
+use URI::Escape 'uri_escape';
+
+sub mapsurl {
+    my ($from,$to)=@_;
+    # url 'discovered' from the chain link item in the maps.google.com
+    # web interface, then simplified
+    ('http://maps.google.com/maps?saddr='
+     .
+     uri_escape ($from)
+     .
+     '&daddr='
+     .
+     uri_escape ($to)
+     .
+     #'&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0&noal=0&sort=def&z=12&start=0'
+     '&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0'
+    )
+}
+
+my $browser= $ENV{BROWSER} or die "missing BROWSER env var";
+
+xexec ($browser
+       .
+       ' '
+       .
+       singlequote_sh (mapsurl (cleanup ($sourceaddress), cleanup ($targetaddress))));
+
