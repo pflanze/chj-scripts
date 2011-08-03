@@ -45,7 +45,11 @@ sub open_key_locally {
 
 our $maybe_browser=
   (
+   Maybe_which ("chromium-$ENV{USER}sbx")
+   or
    Maybe_which ("galeon-$ENV{USER}sbx")
+   or
+   Maybe_which ("chromium-browser")
    or
    Maybe_which ("galeon")
    or
