@@ -13,7 +13,6 @@ use Chj::Chomp;
 
 our $home= xhome;
 our $sourceaddressfile= "$home/.maps-sourceaddress";
-our $geocodefile= "$home/.maps-geocode";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -27,15 +26,10 @@ sub usage {
   using given targetaddress, and sourceaddress from the file
     $sourceaddressfile
 
-  If the file $geocodefile exists, it is expected to contain the
-  part of the URI that is shown when clicking on the chain link symbol
-  in the google maps web interface for queries near your sourceaddress
-  that is represented by 'X' below:
-    ..&geocode=X&..
-
-  This will make maps find targetaddress when incomplete, like when it
-  doesn't mention the city. Without it, you have to specify the whole
-  target address or select which one from the resulting window.
+  ISSUE: unlike in the web UI, targetaddress has to be given
+  completely including town, otherwise google maps will show all
+  possible matches in the world instead of choosing the closest one.
+  Do you see any way to solve this?
 
   Options:
     --dry  only show cmd
@@ -55,7 +49,6 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV<=1;
 
 our $sourceaddress= xCatfile ($sourceaddressfile);
-our $maybe_geocode= (-f $geocodefile) ? xCatfile ($geocodefile) : undef;
 
 our $targetaddress= @ARGV? $ARGV[0] : do {
     local $/;
@@ -84,8 +77,6 @@ sub mapsurl {
      .
      #'&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0&noal=0&sort=def&z=12&start=0'
      '&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0'
-     .
-     ($maybe_geocode ? '&geocode='.Chomp($maybe_geocode) : '')
     )
 }
 
