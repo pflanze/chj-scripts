@@ -9,8 +9,11 @@ use Chj::Fileutil 'xCatfile';
 use Chj::xperlfunc;
 use Chj::xhome;
 use Chj::singlequote 'singlequote_sh';
+use Chj::Chomp;
 
-our $sourceaddressfile= xhome."/.maps-sourceaddress";
+our $home= xhome;
+our $sourceaddressfile= "$home/.maps-sourceaddress";
+our $geocodefile= "$home/.maps-geocode";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -24,6 +27,19 @@ sub usage {
   using given targetaddress, and sourceaddress from the file
     $sourceaddressfile
 
+  If the file $geocodefile exists, it is expected to contain the
+  part of the URI that is shown when clicking on the chain link symbol
+  in the google maps web interface for queries near your sourceaddress
+  that is represented by 'X' below:
+    ..&geocode=X&..
+
+  This will make maps find targetaddress when incomplete, like when it
+  doesn't mention the city. Without it, you have to specify the whole
+  target address or select which one from the resulting window.
+
+  Options:
+    --dry  only show cmd
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -31,14 +47,15 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV<=1;
 
 our $sourceaddress= xCatfile ($sourceaddressfile);
+our $maybe_geocode= (-f $geocodefile) ? xCatfile ($geocodefile) : undef;
 
 our $targetaddress= @ARGV? $ARGV[0] : do {
     local $/;
@@ -67,14 +84,22 @@ sub mapsurl {
      .
      #'&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0&noal=0&sort=def&z=12&start=0'
      '&hl=en&ie=UTF8&mra=ltm&dirflg=r&ttype=now&noexp=0'
+     .
+     ($maybe_geocode ? '&geocode='.Chomp($maybe_geocode) : '')
     )
 }
 
 my $browser= $ENV{BROWSER} or die "missing BROWSER env var";
 
-xexec ($browser
-       .
-       ' '
-       .
-       singlequote_sh (mapsurl (cleanup ($sourceaddress), cleanup ($targetaddress))));
+my $cmd=
+  ($browser
+   .
+   ' '
+   .
+   singlequote_sh (mapsurl (cleanup ($sourceaddress), cleanup ($targetaddress))));
 
+if ($opt_dry) {
+    print "$cmd\n";
+} else {
+    xexec $cmd;
+}
