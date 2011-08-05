@@ -370,6 +370,10 @@ sub mount_easily {
 		print "using loop device: '$new'\n";# to stderr? xprint ?
 		#ah another (earlier) mutation:
 		$device_path=$new;
+		# seems necessary?:, got "couldn't find filesystem type
+		# in 'file' output 'symbolic link to `../dm-3'"
+		# randomly
+		sleep 1;
 	    }
 	    my $cmd=sub {
 		my (@options)=@_;
