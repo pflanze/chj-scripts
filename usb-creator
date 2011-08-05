@@ -2,3 +2,5 @@
 
 echo "Use unetbootin"
 echo "  version 549-1.chris (not squeeze) is needed, I think"
+echo "  You can ignore the 'extlinux not found' message (as long"
+echo "  as the 'syslinux' package actually is installed)."
