@@ -1,3 +1,4 @@
 #!/bin/bash
 
 echo "Use unetbootin"
+echo "  version 549-1.chris (not squeeze) is needed, I think"
