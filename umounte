@@ -1,0 +1,106 @@
+#!/usr/bin/perl -w
+
+# Sat Aug  6 17:52:27 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname mountpoint(s)
+
+  Options:
+   -c|--create-dir  remove mount dirs (and parent dirs if the
+                    mount dirs where /mnt/X/mnt)
+
+  Some other options that mounte takes are ignored (for easy changing
+  of mounte cmd line into an umounte one).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_createdir;
+our $opt_private;#ignored
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "c|create-dir"=> \$opt_createdir,
+           "private"=> \$opt_private,
+	   "o=s"=> sub { }, # ignore
+	   "t=s"=> sub { }, # ignore
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::Unix::Mount 'mounted','umount';
+use Chj::xperlfunc ":all";
+
+sub do_umount {
+    my ($path)=@_;
+    umount $path;
+    if ($opt_createdir) {
+	xrmdir $path;
+	if ($path=~ m{^(/+mnt/+[^/]+)/+mnt/*\z}s) {
+	    xrmdir $1;
+	}
+    }
+}
+
+sub Warn {
+    warn "$myname: @_\n";
+}
+
+sub Die {
+    die "$myname: @_\n";
+}
+
+sub umounte {
+    my ($path)=@_;
+    my $s= xstat $path;
+    if ($s->is_blockdevice or $s->is_file) {
+	if ($path=~ m{^/+dev/+(.*)}s) {
+	    my $rest=$1;
+	    #hm better than 'basename'?
+	    my @rest= split m{/+},$rest;
+	    if (@rest==1) {
+		umounte( "/mnt/$rest[0]")
+		  # yep, without trailing /mnt
+	    } else {
+		Die "'$path': TODO how to convert name correctly"
+	    }
+	} elsif (not $path=~ m{/}) {
+	    umounte( "/mnt/$path")
+	      # yep, without trailing /mnt
+	} else {
+	    Die "'$path' is a (device) file but not in /dev, don't know how to handle"
+	}
+    } elsif ($s->is_dir) {
+	if (mounted $path) {
+	    do_umount $path
+	} else {
+	    # really always try this? or only if -p given (and then only this?)?
+	    if ($path=~ m{^(/+mnt/+[^/]+)/*\z}s) {
+		my $path2= "$path/mnt";
+		if (mounted $path2) {
+		    do_umount $path2
+		} else {
+		    Warn "'$path' and '$path2' are not mounted";
+		}
+	    } else {
+		Warn "'$path' is not mounted";
+	    }
+	}
+    } else {
+	Die "'$path' is of unknown type"
+    }
+}
+
+umounte $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
