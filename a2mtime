@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Sat Aug  6 12:19:20 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  set the mtime of the given file(s) to their atime
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc qw(xlstat xutime);
+
+sub a2mtime {
+    my ($path)=@_;
+    my $t= xlstat ($path);
+    my $at= $t->atime;
+    if ($t->mtime != $at) {
+	xutime $at,$at, $path;
+    }
+}
+
+a2mtime $_ foreach @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
