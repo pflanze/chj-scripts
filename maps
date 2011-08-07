@@ -9,10 +9,13 @@ use Chj::Fileutil 'xCatfile';
 use Chj::xperlfunc;
 use Chj::xhome;
 use Chj::singlequote 'singlequote_sh';
-use Chj::Chomp;
+use Chj::chompspace;
+use Chj::load;
 
 our $home= xhome;
 our $sourceaddressfile= "$home/.maps-sourceaddress";
+our $targetaddonsfilebase= "$home/.maps-targetaddons";
+my $targetaddonsfile= $targetaddonsfilebase.".pm";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -30,6 +33,15 @@ sub usage {
   completely including town, otherwise google maps will show all
   possible matches in the world instead of choosing the closest one.
   Do you see any way to solve this?
+  WORKAROUND:
+  If the file '$targetaddonsfile' exists, it is expected to contain an
+  array of arrays of a reqular expression match and a string, the
+  latter being added to the targetaddress+comma+space if the former does
+  not match.
+  For example:
+    [
+     [qr/Montr.{1,2}al/i, 'Montreal']
+    ]
 
   Options:
     --dry  only show cmd
@@ -50,9 +62,21 @@ usage unless @ARGV<=1;
 
 our $sourceaddress= xCatfile ($sourceaddressfile);
 
+our $targetaddons= -f $targetaddonsfile ? Chj::load $targetaddonsfilebase : [];
+
 our $targetaddress= @ARGV? $ARGV[0] : do {
-    local $/;
-    <STDIN>
+    my $addr= do {
+	local $/;
+	chompspace(scalar <STDIN>);
+    };
+    my @addons;
+    for (@$targetaddons) {
+	my ($m,$s)=@$_;
+	if (not $addr=~ m/$m/) {
+	    push @addons,$s
+	}
+    }
+    join(", ",$addr,@addons)
 };
 
 sub cleanup {
