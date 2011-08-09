@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Mon Aug  8 22:05:58 EDT 2011
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+our ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+our $url=
+  +{
+    leo=> 'http://dict.leo.org/?search=$1&searchLoc=0&relink=on&deStem=standard&lang=en',
+    fleo=> 'http://dict.leo.org/frde?search=$1&lp=frde',
+   }->{$myname}
+  or die "'$myname' unknown";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname word(s)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+our $key= join(" ",@ARGV);
+
+#use Chj::xopen 'xopen_append';
+#sgh logging hattichacuh rg .
+#f
+# a gosH hab ich ja ? !!!
+#beim andern nid gemkr ?
+#ah wl  remap  ehr  sodof
+#a h nur in process wl  e   wl but stll nd ws ich woll
+
+use Chj::load;
+our $Log='Chj::Logtimed';
+load $Log;
+
+use Chj::xhome;
+
+my $log= $Log->open_priv(xhome."/.$myname.log");
+
+$log->x ($key);
+$log->xclose;
+
+use URI::Escape 'uri_escape';
+my $ekey= uri_escape($key);
+$url=~ s/\$1/$ekey/g;
+
+exec "links", $url;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
