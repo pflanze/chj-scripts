@@ -1,14 +1,13 @@
 #!/usr/bin/perl -w
 
+use strict;
+
 my $query= join(" ",@ARGV);
 
-$query=~ s/ /%20/sg; # + geht still nicht, aber issja egal.
-exec "links", "http://bugs.debian.org/$query";
+use URI::Escape 'uri_escape';
 
-__END__
-#!/bin/sh
-query="$@"
-query="$(echo "$query"|tr ' ' '%20')" 
-	# tr nach '+' ging nicht bei "RFC 1430! ?!
-#echo links "http://www.google.ch/search?q=$query"
-exec links "http://www.google.ch/search?q=$query"
+my $uri= "http://bugs.debian.org/" . uri_escape($query);
+
+use Chj::Browser;
+
+Browser_exec $uri;
