@@ -5,16 +5,14 @@
 
 use strict;
 
-our $browser= $ENV{BROWSER}||"local-webbrowser";
-
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [options] [number]
 
-  Shows that srfi using $browser (overridable through the BROWSER env
-  var).
+  Shows that srfi using the browser in the BROWSER env
+  var.
 
   Options:
   --top|--parent|--overview  show the overview page instead
@@ -55,21 +53,11 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 
-use Chj::xperlfunc;
+use Chj::Browser;
 
-# split $browser  hm
-our @browser= do {
-    use Chj::IO::Command;
-    my $in= Chj::IO::Command->new_sender("bash","-c", 'for f in '.$browser.'; do echo -n $f; echo -ne '."'".'\0'."'".'; done');
-    local $/="\0";
-    my @browser= <$in>;
-    $in->xxfinish;
-    map { chop $_ ; $_ } @browser;
-};
-#use Chj::repl;repl;
 
 if ($opt_index) {
-    xexec @browser, "http://srfi.schemers.org/"
+    Browser_exec "http://srfi.schemers.org/"
 } else {
     usage "expecting one argument" unless @args==1;
 
@@ -88,7 +76,7 @@ if ($opt_index) {
     # http://srfi.schemers.org/srfi-73/
     # http://srfi.schemers.org/srfi-73/srfi-73.html
 
-    xexec @browser,
+    Browser_exec
       ($opt_overview ?
        "http://srfi.schemers.org/srfi-$num/"
        : "http://srfi.schemers.org/srfi-$num/srfi-$num.html");

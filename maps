@@ -8,9 +8,9 @@ use strict;
 use Chj::Fileutil 'xCatfile';
 use Chj::xperlfunc;
 use Chj::xhome;
-use Chj::singlequote 'singlequote_sh';
 use Chj::chompspace;
 use Chj::load;
+use Chj::Browser;
 
 our $home= xhome;
 our $sourceaddressfile= "$home/.maps-sourceaddress";
@@ -104,17 +104,11 @@ sub mapsurl {
     )
 }
 
-my $browser= $ENV{BROWSER} or die "missing BROWSER env var";
-
-my $cmd=
-  ($browser
-   .
-   ' '
-   .
-   singlequote_sh (mapsurl (cleanup ($sourceaddress), cleanup ($targetaddress))));
+my $url= (mapsurl (cleanup ($sourceaddress), cleanup ($targetaddress)));
 
 if ($opt_dry) {
-    print "$cmd\n";
+    print "$url\n";
 } else {
-    xexec $cmd;
+    Browser_exec $url;
 }
+
