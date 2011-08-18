@@ -46,6 +46,7 @@ sub usage {
   --ro|--readonly
   [--noatime wll use as default anyway ok?]
   [--nosuid wll use as default anyway ok?]
+  [--nodev wll use as default anyway ok?]
   --auto    mount the latest entries in /dev/disk/by-uuid/
             (going backward from the latest and stopping when an entry
             is more than $auto_max_delay second(s) younger)
@@ -76,6 +77,7 @@ our $mountoptions=
   +{
     noatime => 1,
     nosuid => 1,
+    nodev=> 1,
    };
 our $opt_createdir;
 our $opt_private;
@@ -92,6 +94,9 @@ GetOptions("verbose"=> \$verbose,
 	   },
 	   "nosuid"=> sub {
 	       $$mountoptions{nosuid}=1;
+	   },
+	   "nodev"=> sub {
+	       $$mountoptions{nodev}=1;
 	   },
 	   "c|create-dir"=> \$opt_createdir,
 	   "private"=> \$opt_private,
