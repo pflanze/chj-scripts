@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# make fdisk compatible with WD-EARS and SSDs, ok?
+# (according to places on the web, like
+# http://ldn.linuxfoundation.org/blog-entry/aligning-filesystems-ssd%E2%80%99s-erase-block-size
+# )
+
+# also switch off DOS mode and switch on sector mode as otherwise
+# recommended interactively by fdisk itself.
+
+set -x
+
+fdisk -H 224 -S 56 -u -c "$@"
