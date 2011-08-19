@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 file sourcedir"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+{
+    set -eu
+    cd "$2"
+    find . | cpio -H newc -o
+} | gzip -9 > "$1"
+
