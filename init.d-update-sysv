@@ -2,4 +2,10 @@
 
 # just because I forgot the name
 
-echo "use update-rc.d, dude"
+echo "run: "
+#echo "  update-rc.d service start"
+#echo "  update-rc.d service enable"
+#echo "both needed??"
+
+echo "  update-rc.d servicename defaults"
+echo "while there are no symlinks done yet!"
