@@ -1,0 +1,15 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my $baseuri= shift @ARGV;
+
+my $query= join(" ",@ARGV);
+
+use URI::Escape 'uri_escape';
+
+my $uri= $baseuri . uri_escape($query);
+
+use Chj::Browser;
+
+Browser_exec $uri;

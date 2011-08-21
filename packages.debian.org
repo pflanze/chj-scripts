@@ -1,13 +1,3 @@
-#!/usr/bin/perl -w
+#!/bin/bash
 
-use strict;
-
-my $query= join(" ",@ARGV);
-
-use URI::Escape 'uri_escape';
-
-my $uri= "http://packages.debian.org/" . uri_escape($query);
-
-use Chj::Browser;
-
-Browser_exec $uri;
+_browser-url-args "http://packages.debian.org/" "$@"
