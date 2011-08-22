@@ -52,4 +52,4 @@ my ($cvecode)=@args;
 
 uc($cvecode)=~ /^CVE-(\d+)-\d+\z/ or usage "'$cvecode' doesn't seem to match the usual format of cve codes";
 
-xexec "links", $baseurl.$cvecode
+xexec "_browser-url-args", $baseurl, $cvecode
