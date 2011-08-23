@@ -9,8 +9,8 @@ if [ $# -gt 1 -o "$1" == "--help" -o "$1" == "-h" ]; then
 fi
 
 if [ "$1" ]; then
-    exec trash "$1/"*~
+    exec trash -- "$1/"*~
 else
-    exec trash *~
+    exec trash -- *~
 fi
 
