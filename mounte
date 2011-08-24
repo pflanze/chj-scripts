@@ -314,7 +314,6 @@ sub mount_easily {
 			if ($res==0) {
 			    chomp $cnt;
 			    print "found passphrase for '$key'\n";
-			    undef $lookup;
 			    $cnt
 			} elsif($res== (2<<8)) {
 			    # not found
@@ -329,13 +328,11 @@ sub mount_easily {
 			} else {
 			    # error. just let the process speak
 			    # to stderr by itself.
-			    undef $lookup;
 			    undef
 			}
 		    } else {
 			print "reached end of key simplification (how was this called, termination rule or so)\n"
 			  if $verbose;
-			undef $lookup;
 			undef
 		    }
 		};
@@ -361,7 +358,17 @@ sub mount_easily {
 				     if $verbose;
 				   @_=($key1, $lookup); goto $lookup;
 			       }
-			   }));
+			   }))
+		  # I'm too lazy to figure out the whole chain of attempts above,
+		  # and anyway better just try at the end if the above failed?:
+		  || do {
+		      my $bn=basename($device_path);
+		      if ($bn eq $device_path) {
+			  undef
+		      } else {
+			  &$lookup($bn,$lookup)
+		      }
+		  };
 	    } else {
 		undef
 	    }
