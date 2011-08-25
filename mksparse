@@ -4,10 +4,12 @@
 
 use strict;
 use Chj::xsysopen;
-use Chj::xopen 'xopen_read';
+#use Chj::xopen 'xopen_read';
+use Chj::IO::Command;
 use Fcntl;
 
-our $devrandom= "/dev/urandom";
+#our $devrandom= "/dev/urandom";
+our @fastrandom= ("fastrandom");
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
@@ -23,7 +25,7 @@ sub usage {
   --non-sparse   fill the file with real zeroes (for linux 2.2)
   --truncate     reuse an existing file: truncate it and rebuild it.
                  Which means this option is dangerous!..
-  --random       fill the file with random bytes from $devrandom
+  --random       fill the file with random bytes from @fastrandom
 ";
 exit @_ ? 1 : 0;
 }
@@ -91,13 +93,18 @@ for (@files) {
 	    die $@;
 	}
     }
-    
+
     if ($opt_nonsparse or $opt_random) {
-	my $blocksize= 1024*64;
+	my $blocksize=
+	  #1024*64;
+	  1024*4;
 	my $blocks= do{ use integer; $sizebytes / $blocksize};
 	my $lastbytes= $sizebytes % $blocksize;
 	my $block= "\0"x$blocksize;
-	my $randomin= xopen_read $devrandom if $opt_random;
+	my $randomin= do {
+	    #xopen_read $devrandom
+	    Chj::IO::Command->new_sender(@fastrandom);
+	} if $opt_random;
 	for (1..$blocks) {
 	    if ($opt_random) {
 		my $n= $randomin->xsysread($block,$blocksize);
