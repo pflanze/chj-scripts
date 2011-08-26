@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+# Fri Aug 26 16:34:34 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  Asserts that in every given path, every path segment is not a
+  symlink.
+
+  Given foo/bar/baz and /boo/x, it will only return true if none of
+  these paths is a symlink:
+   foo/bar/baz
+   foo/bar
+   foo
+   /boo/x
+   /boo
+
+  ('/' and '.' aren't checked since they can't be a symlink.)
+
+  Dies pointing out the offending path; also dies if any of the paths
+  doesn't exist.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc 'dirname','xlstat';
+
+sub checkpath {
+    my ($path)=@_;
+    if ($path eq "/" or $path eq "" or $path eq ".") {
+	#end
+    } else {
+	my $s= xlstat $path;
+	if ($s->is_symlink) {
+	    die "$myname: symlink at '$path'\n";
+	} else {
+	    checkpath (dirname $path)
+	}
+    }
+}
+
+checkpath $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
