@@ -114,11 +114,17 @@ our $_remove_perlmatch= sub {
     $shellcode
 };
 
+
+sub die_expecting {
+    my ($msg)=@_;
+    die "$myname: expecting $msg, but got ".@ARGV." arguments\n";
+}
+
 our $remove_perlmatch= &$make_filter
   (
    sub {
        @ARGV==1
-	 or die "$myname: expecting 1 argument, the perl code for the test, but got ".@ARGV." arguments\n";
+	 or die_expecting "1 argument, the perl code for the test";
        &$_remove_perlmatch ($ARGV[0])
    },
    sub { $commit_filter_script__skip_empty_commits}
@@ -129,7 +135,7 @@ our $remove_all_but_those_in= &$make_filter
   (
    sub {
        @ARGV==1
-	 or die "$myname: expecting 1 argument, the path containing the filelist, but got ".@ARGV." arguments\n";
+	 or die_expecting "1 argument, the path containing the filelist";
        my ($path)=@ARGV;
        my $realpath= xrealpath $path;
        my $code= ('BEGIN { { local $/="\n"; open my $in, "<",'
