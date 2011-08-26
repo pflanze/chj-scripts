@@ -35,6 +35,7 @@ echo "seeing a merge: $@" >&2
 
 our $opt_dry;
 our $opt_rev;
+our $opt_f;
 
 our $make_filter= sub {
     my ($index_filter_thunk, $commit_filter_thunk)=@_;
@@ -43,6 +44,7 @@ our $make_filter= sub {
 	my @cmd= (
 		  'git',
 		  'filter-branch',
+		  ($opt_f ? "-f" : ()),
 
 		  '--index-filter',
 		  &$index_filter_thunk,
@@ -176,6 +178,7 @@ $cmdsstr
   --dry-run     show what git filter-branch instance would be run.
   --rev         rev-list option(not plural, hm), passed to git filter-branch
                 to specify the range to be filtered.
+  -f|--force    pass -f option to filter-branch (ingore those pesky refs/original/)
 
   (Christian Jaeger <$email>)
 ";
@@ -190,6 +193,7 @@ GetOptions("verbose"=> \$verbose,
 	   "quiet-rm"=> \$opt_quiet_rm,
 	   "dry-run"=> \$opt_dry,
 	   "rev=s"=> \$opt_rev,
+	   "f|force"=> \$opt_f,
 	   map {
 	       my($key,$cmd)= @$_[0,1];
 	       ($key,
