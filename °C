@@ -1,0 +1,54 @@
+#!/usr/bin/perl -w
+
+# Sat Aug 27 20:56:49 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname temp[s]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+sub temp;
+
+*temp=
+  +{
+    "C"=> sub {
+	my ($v)=@_;
+	#use fatal warnings somethng ?
+	["F", ($v*9/5)+32]
+    },
+    "F"=> sub {
+	my ($v)=@_;
+	["C", ($v - 32)*5/9]
+    }
+   }->{substr $myname, -1,1}
+  or die "unknown name '$myname'";
+
+sub print_temp {
+    my ($U,$v)=@{ temp ($_[0])};
+    print "$v °$U\n"
+      or die $!;
+}
+
+print_temp $_ for @ARGV;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
