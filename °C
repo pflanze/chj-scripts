@@ -16,14 +16,9 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-use Getopt::Long;
-our $verbose=0;
-#our $opt_dry;
-GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
 usage unless @ARGV;
+my $first=$ARGV[0];
+usage if $first eq "-h" or $first eq "--help";
 
 sub temp;
 
