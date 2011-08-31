@@ -116,6 +116,26 @@ sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
 }
 
+sub Warn {
+    require Carp;
+    #&Carp::croak( @_);
+    #warn "HELLO";
+    #&Carp::carp( @_);
+    #warn @_;
+    push @_, "HIIII";
+    #goto \&Carp::carp;
+    warn @_;
+    #3gopf will dort wo es herkommt pliis how  .?.  ohne backtrac
+}
+
+sub Cluck {
+    require Carp;
+    #warn "HMM";
+    goto (\&Carp::cluck);
+    #\&Carp::cluck(@_);
+    #warn "HO";
+}
+
 for my $o (split /,/, $opt_o) {
     next if $o eq '';
     die "-o value contains whitespace: '$o'"
@@ -145,8 +165,10 @@ sub maybe_uuid_from_dev {
 
 our $lookup = sub {
     my ($name)=@_;
+    Cluck "lookup '$name'";
     my $l=sub {
 	my ($path)=@_;
+	Warn "path '$path'";
 	if (my $s= Xstat $path) {
 	    if ($s->is_file or $s->is_blockdevice) {
 		$path
@@ -155,6 +177,7 @@ our $lookup = sub {
 		  #und ja da is schm lisp #f besser.wlehlngweis
 	    }
 	} else {
+	    Warn "undef";
 	    undef
 	}
     };
@@ -174,6 +197,7 @@ sub maybe_dev_from_mnt {
 	# search for symlinks: #h lazily dann koent ich anfangs.gl.!.evenio.
 	my $dir= dirname $mntpath;
 	my $expandedorig= xrealpath $mntpath;
+	Warn "dir '$dir'";
 	my $d= xopendir $dir;
 	#[and yes is this procedure similar to the one with reading dirs above.]
 	my @names;
@@ -183,6 +207,7 @@ sub maybe_dev_from_mnt {
 	    #if ($s->)
 	    if (my $target= readlink $path) {
 		# resolve target hm. and should it be direct or not ?
+		Cluck "path='$path'";
 		my $expanded= xrealpath $path; # X  ?. ##
 		#^'expanded' in language terms.
 		if ($expanded eq $expandedorig) {
