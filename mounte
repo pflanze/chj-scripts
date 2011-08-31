@@ -207,7 +207,7 @@ sub maybe_dev_from_mnt {
 	    my $path= "$dir/$item";
 	    #my $s= xlstat ($path);
 	    #if ($s->)
-	    if (my $target= readlink $path) {
+	    if (-l $path and -e $path) {
 		# resolve target hm. and should it be direct or not ?
 		Cluck "path='$path'";
 		my $expanded= xrealpath $path; # X  ?. ##
