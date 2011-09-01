@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -eu
+
+error () {
+    echo "$0: $@" >&2
+    exit 1
+}
+
+usage () {
+    echo "$0 frompath/ topath [file-with-paths-to-keep]"
+    echo "  copy (with hardlinks) frompath/ to (nonexisting) topath,"
+    echo "  then remove all paths from the history except for those "
+    echo "  listed in file-with-paths-to-keep if given, or stdin otherwise."
+    echo " (Note: does not parse options, i.e. treats '--' as argument.)"
+    exit 1
+}
+
+if test $# -lt 2; then
+    usage
+fi
+frompath="$1"
+shift
+topath="$1"
+shift
+
+if test $# -gt 0; then
+    keeps="$1"
+    shift
+else
+    keeps="`tempfile`"
+    #todo remove it, wll
+    cat > "$keeps"
+fi
+
+if test -e "$topath"
+then
+    error "topath exists"
+fi
+
+if test ! -r "$keeps"
+then
+    error "can't read from '$keeps'"
+fi
+
+cp -r -l -- "$frompath" "$topath"
+
+cd "$topath"
+
+# git status is primarily needed to re-index after the linking
+tmpfile="`tempfile`"
+git status > "$tmpfile" 2>&1 || {
+    cat "$tmpfile"
+    error "can't proceed with dirty work dir"
+}
+rm -f "$tmpfile"
+
+cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefixes
