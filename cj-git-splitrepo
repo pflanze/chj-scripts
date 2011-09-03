@@ -55,4 +55,4 @@ git status > "$tmpfile" 2>&1 || {
 }
 rm -f "$tmpfile"
 
-cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefixes
+cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefix
