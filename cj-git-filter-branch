@@ -33,12 +33,22 @@ our $_commit_filter_script__skip_empty_commits=
   '      my_tree="$1"
          shift
 
+         tmpd="/tmp/cj-git-filter-branch.$$"
+         (
+             umask 0077; mkdir "$tmpd"
+         )
          declare -a allparents=()
          for p in "$@"; do
+             # eliminate "-p"s
              if [ ! x"$p" = x"-p" ]; then
-                 allparents+=("$p")
+                 # eliminate parent doubles
+                 if [ ! -e "$tmpd/$p" ]; then
+                     touch "$tmpd/$p"
+                     allparents+=("$p")
+                 fi
              fi
          done
+         rm -rf "$tmpd"
 
          declare -a sametreeparents=()
          declare -a notsametreeparents=()
@@ -81,6 +91,7 @@ our $_commit_filter_script__skip_empty_commits=
                  git commit-tree "$my_tree" "${newargs[@]}"
              fi
          else
+             # (could have doubles in $@ ? anyway, let git get rid of them)
              git commit-tree "$my_tree" "$@"
 	 fi'
       :
