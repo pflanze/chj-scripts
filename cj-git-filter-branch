@@ -11,25 +11,80 @@ my ($mydir, $myname)=($1,$2);
 use Chj::xperlfunc;
 use Chj::singlequote qw(singlequote_sh singlequote);
 
+our $opt_ignore_empty_merge_commits=1;##XX used before option parsing, so not really an opt
 our $commit_filter_script__skip_empty_commits=
   'if [ initial = "${3-initial}" ]; then
-      if [ z"$1" = z"4b825dc642cb6eb9a060e54bf8d69288fbee4904" ]; then
+      if [ "$1" = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" ]; then
          skip_commit "$@"
       else
          git commit-tree "$@"
       fi
    else
       if [ znot_a_merge = z"${5-not_a_merge}" ]; then
-	 if [ z"$1" = z"$(git rev-parse "$3"^{tree})" ]; then
+	 if [ "$1" = "$(git rev-parse "$3"^{tree})" ]; then
 	    skip_commit "$@"
 	 else
 	    git commit-tree "$@"
 	 fi
       else
-         # always commit merges, so that they end up in the right place. hm.
-         # rather: this is a cheap way of not having to check for more arguments above.
-echo "seeing a merge: $@" >&2
-         git commit-tree "$@"
+         echo "seeing a merge: $@" >&2
+   '.($opt_ignore_empty_merge_commits ?
+  '      my_tree="$1"
+         shift
+
+         declare -a allparents=()
+         for p in "$@"; do
+             if [ ! x"$p" = x"-p" ]; then
+                 allparents+=("$p")
+             fi
+         done
+
+         declare -a sametreeparents=()
+         declare -a notsametreeparents=()
+         for p in "${allparents[@]}"; do
+             if [ "$my_tree" = "$(git rev-parse "$p"^{tree})" ]; then
+                 sametreeparents+=("$p")
+             else
+                 notsametreeparents+=("$p")
+             fi
+         done
+
+         if [ "${#sametreeparents[@]}" = 1 ]; then
+             sametreeparent="${sametreeparents[0]}"
+             declare -a neededparents=()
+             for p in "${notsametreeparents[@]}"; do
+                 set +e
+                 mb=$(git merge-base "$sametreeparent" "$p")
+                 rc=$?
+                 set -e
+                 if [ $rc = 0 ]; then
+                     if [ ! "$mb" = "$p" ]; then
+                         neededparents+=("$p")
+                     fi
+                 elif [ $rc = 1 ]; then
+                     echo "non-common ancestors, keeping merge" >&2
+                 else
+                     echo "die" >&2
+                     false  #XX does it work?
+                 fi
+             done
+
+             if [ "${#neededparents[@]}" = 0 ]; then
+                 skip_commit "$my_tree" "$@"
+             else
+                 # still drop the parents that have no effect, ok?
+                 declare -a newargs=(-p "$sametreeparent")
+                 for p in "${neededparents[@]}"; do
+                     newargs+=(-p)
+                     newargs+=("$p")
+                 done
+                 git commit-tree "$my_tree" "${newargs[@]}"
+             fi
+         else
+             git commit-tree "$my_tree" "$@"
+	 fi'
+      :
+  '      git commit-tree "$@"').'
       fi
    fi';
 
