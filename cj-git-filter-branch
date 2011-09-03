@@ -12,7 +12,7 @@ use Chj::xperlfunc;
 use Chj::singlequote qw(singlequote_sh singlequote);
 
 our $opt_ignore_empty_merge_commits=1;##XX used before option parsing, so not really an opt
-our $commit_filter_script__skip_empty_commits=
+our $_commit_filter_script__skip_empty_commits=
   '
    if [ initial = "${3-initial}" ]; then
       if [ "$1" = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" ]; then
@@ -88,6 +88,70 @@ our $commit_filter_script__skip_empty_commits=
       fi
    fi
 ';
+
+# copy from /usr/lib/git-core/git-filter-branch from Debian git 1:1.7.2.5-2
+our $_commit_filter_script__skip_empty_commits_lib= <<'END';
+warn () {
+        echo "$*" >&2
+}
+
+map()
+{
+	# if it was not rewritten, take the original
+	if test -r "$workdir/../map/$1"
+	then
+		cat "$workdir/../map/$1"
+	else
+		echo "$1"
+	fi
+}
+
+# if you run 'skip_commit "$@"' in a commit filter, it will print
+# the (mapped) parents, effectively skipping the commit.
+
+skip_commit()
+{
+	shift;
+	while [ -n "$1" ];
+	do
+		shift;
+		map "$1";
+		shift;
+	done;
+}
+
+# if you run 'git_commit_non_empty_tree "$@"' in a commit filter,
+# it will skip commits that leave the tree untouched, commit the other.
+git_commit_non_empty_tree()
+{
+	if test $# = 3 && test "$1" = $(git rev-parse "$3^{tree}"); then
+		map "$3"
+	else
+		git commit-tree "$@"
+	fi
+}
+# override die(): this version puts in an extra line break, so that
+# the progress is still visible
+
+die()
+{
+	echo >&2
+	echo "$*" >&2
+	exit 1
+}
+END
+;
+
+our $commit_filter_script__skip_empty_commits=
+  ('exec /bin/bash -c '
+   .
+   singlequote_sh
+   ($_commit_filter_script__skip_empty_commits_lib
+    .
+    $_commit_filter_script__skip_empty_commits)
+   .
+   ' "git commit-tree" "$@"');
+
 
 our $opt_dry;
 our $opt_rev;
