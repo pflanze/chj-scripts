@@ -13,7 +13,8 @@ use Chj::singlequote qw(singlequote_sh singlequote);
 
 our $opt_ignore_empty_merge_commits=1;##XX used before option parsing, so not really an opt
 our $commit_filter_script__skip_empty_commits=
-  'if [ initial = "${3-initial}" ]; then
+  '
+   if [ initial = "${3-initial}" ]; then
       if [ "$1" = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" ]; then
          skip_commit "$@"
       else
@@ -85,7 +86,8 @@ our $commit_filter_script__skip_empty_commits=
       :
   '      git commit-tree "$@"').'
       fi
-   fi';
+   fi
+';
 
 our $opt_dry;
 our $opt_rev;
