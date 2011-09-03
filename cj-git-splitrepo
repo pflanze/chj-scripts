@@ -26,10 +26,11 @@ shift
 
 if test $# -gt 0; then
     keeps="$1"
+    remove_keeps=0
     shift
 else
     keeps="`tempfile`"
-    #todo remove it, wll
+    remove_keeps=1
     cat > "$keeps"
 fi
 
@@ -56,3 +57,8 @@ git status > "$tmpfile" 2>&1 || {
 rm -f "$tmpfile"
 
 cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefix
+
+if [ "$remove_keeps" = 0 ]; then
+    rm "$keeps"
+fi
+
