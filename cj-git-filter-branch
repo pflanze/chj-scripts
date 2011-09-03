@@ -64,8 +64,7 @@ our $commit_filter_script__skip_empty_commits=
                  elif [ $rc = 1 ]; then
                      echo "non-common ancestors, keeping merge" >&2
                  else
-                     echo "die" >&2
-                     false  #XX does it work?
+                     die "git merge-base had a problem"
                  fi
              done
 
