@@ -70,7 +70,7 @@ our $commit_filter_script__skip_empty_commits=
              done
 
              if [ "${#neededparents[@]}" = 0 ]; then
-                 skip_commit "$my_tree" "$@"
+                 skip_commit "$my_tree" -p "$sametreeparent"
              else
                  # still drop the parents that have no effect, ok?
                  declare -a newargs=(-p "$sametreeparent")
