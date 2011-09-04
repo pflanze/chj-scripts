@@ -7,4 +7,22 @@ if [ $# -ne 1 ]; then
      exit 1
 fi
 
-zless /usr/share/doc/"$1"/changelog.Debian.gz
+dir=/usr/share/doc/"$1"
+
+triedfiles=""
+try () {
+    path="$dir"/"$1"
+    if [ -e "$path" ]; then
+        zless "$path"
+        return 0
+    else
+	triedfiles="$triedfiles $path"
+        return 1
+    fi
+}
+
+try changelog.Debian.gz || try changelog.gz || {
+    echo "could not find either of these files:$triedfiles" >&2
+    exit 1
+}
+
