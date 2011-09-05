@@ -52,14 +52,6 @@ cd "$topath"
 
 git reset --hard
 
-# git status is primarily needed to re-index after the linking
-tmpfile="`tempfile`"
-git status > "$tmpfile" 2>&1 || {
-    cat "$tmpfile"
-    error "can't proceed with dirty work dir"
-}
-rm -f "$tmpfile"
-
 cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefix
 
 if [ "$remove_keeps" = 1 ]; then
