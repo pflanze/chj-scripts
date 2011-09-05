@@ -318,12 +318,15 @@ sub usage {
 
 $cmdsstr
 
-  ATTENTION: THIS SCRIPT OR PROCEDURE SUCKS HORRIBLY.
+  PROBLEMS? (still relevant?):
   - it will not drop branches if they got totally empty, but instead
     add the initial commit of that branch (with empty tree!) to
     the next newer commit in the new history (making it a merge commit,
     even if it wasn't a merge originally)
+    (hm, should not be a problem with --remove-files anymore,
+    XX: investigate where this is still a problem)
   - it will not treat the initial commit.
+    (XX: dito, check again)
 
 
   Options:
