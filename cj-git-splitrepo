@@ -62,7 +62,7 @@ rm -f "$tmpfile"
 
 cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefix
 
-if [ "$remove_keeps" = 0 ]; then
+if [ "$remove_keeps" = 1 ]; then
     rm "$keeps"
 fi
 
