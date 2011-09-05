@@ -44,9 +44,13 @@ then
     error "can't read from '$keeps'"
 fi
 
-cp -r -l -- "$frompath" "$topath"
+mkdir "$topath"
+
+cp -r -l -- "$frompath"/.git "$topath"/.git
 
 cd "$topath"
+
+git reset --hard
 
 # git status is primarily needed to re-index after the linking
 tmpfile="`tempfile`"
