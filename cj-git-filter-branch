@@ -261,18 +261,34 @@ our $remove_perlmatch= &$make_filter
    sub { $commit_filter_script__skip_empty_commits}
   );
 
-use Chj::xrealpath;
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
 our $opt_prefix;
+our @HACK_keeparound;# prevent too early GC
 our $remove_all_but_those_in= &$make_filter
   (
    sub {
        @ARGV==1
 	 or die_expecting "1 argument, the path containing the filelist";
-       my ($path)=@ARGV;
-       my $realpath= xrealpath $path;
-       my $code= ('BEGIN { { local $/="\n";'.
-		  'open my $in, "<",'.singlequote($realpath).' or die;'.
-		  '%exclude=map { chomp; $_=>1} <$in>;'.
+       my ($filelist_path)=@ARGV;
+       my $filelisttmp= xtmpfile;
+       {
+	   my $in= xopen_read $filelist_path;
+	   while (<$in>) {
+	       # remove comments and whitespace, too, or what? no. Just correctify paths
+	       chomp;my $p=$_;
+	       s|//+|/|sg;
+	       s|/+\z||sg;
+	       s|^\./+||sg;
+	       die "path contains '.' or '..' in the middle: '$p'"
+		 if m{(^|/)\.\.?(/|\z)};
+	       $filelisttmp->xprint($_,"\0");
+	   }
+	   $filelisttmp->xclose;
+       }
+       my $code= ('BEGIN { { local $/="\0";'.
+		  'open my $in, "<",'.singlequote($filelisttmp->path).' or die $!;'.
+		  '%exclude=map { chop; $_=>1} <$in>;'.
 		  'close $in or die; } } '.
 		  ($opt_prefix ?
 		   'use Chj::xperlfunc "dirname";'.
@@ -287,8 +303,9 @@ our $remove_all_but_those_in= &$make_filter
 		    'print unless exclude($_)')
 		   :
 		   'print unless $exclude{$_}')
-		 );
-       &$_remove_perlmatch ($code)
+	    );
+	push @HACK_keeparound, $filelisttmp;
+	&$_remove_perlmatch ($code)
    },
    sub { $commit_filter_script__skip_empty_commits}
   );
