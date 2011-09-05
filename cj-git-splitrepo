@@ -24,24 +24,22 @@ shift
 topath="$1"
 shift
 
+keeps="`tempfile`"
+
+filterkeeps () {
+    filter_whitespace|filter_trimspace
+}
+
 if test $# -gt 0; then
-    keeps="$1"
-    remove_keeps=0
+    filterkeeps < "$1" > "$keeps"
     shift
 else
-    keeps="`tempfile`"
-    remove_keeps=1
-    cat > "$keeps"
+    filterkeeps > "$keeps"
 fi
 
 if test -e "$topath"
 then
     error "topath exists"
-fi
-
-if test ! -r "$keeps"
-then
-    error "can't read from '$keeps'"
 fi
 
 mkdir "$topath"
@@ -54,7 +52,5 @@ git reset --hard
 
 cj-git-filter-branch -f --remove-all-but-those-in "$keeps" --prefix
 
-if [ "$remove_keeps" = 1 ]; then
-    rm "$keeps"
-fi
+rm "$keeps"
 
