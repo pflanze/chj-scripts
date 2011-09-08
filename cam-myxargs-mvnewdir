@@ -11,4 +11,4 @@ dir="$1"
 
 mkdir -p "$dir"
 
-ls2list|myxargs mvto "$dir"
+ls2list|myxargs mvto "$dir" --
