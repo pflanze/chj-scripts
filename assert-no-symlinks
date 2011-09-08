@@ -27,6 +27,8 @@ sub usage {
   Dies pointing out the offending path; also dies if any of the paths
   doesn't exist.
 
+  GRR I've already had check_paths_for_symlinks in this repo.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
