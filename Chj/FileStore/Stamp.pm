@@ -58,14 +58,23 @@ sub exists {
 
 sub xtouch {
     my $s=shift;
-    if (-e $$s[Path]) {
+    my ($maybe_perms)=@_;
+    # be safe for manipulations by root at least in the 'dead' case
+    # (stopped vserver clients), by being careful handling symlinks
+    # (checking for symlinks in dirname(Path) is the responsibility of
+    # the user, though)
+    if (-l $$s[Path]) {
+	die "path exists as a symlink already: '$$s[Path]'";
+    }
+    elsif (-f _) {
 	my $t=time;
 	utime $t,$t, $$s[Path]
 	  or croak "xtouch: utime('$$s[Path]'): $!";
     }
     else {
-	open O,">",$$s[Path]
-	  or croak "xtouch: open('$$s[Path]'): $!";
+	sysopen O,$$s[Path], O_WRONLY|O_EXCL|O_CREAT,
+	  (defined $maybe_perms ? $maybe_perms : ())
+	    or croak "xtouch: open('$$s[Path]'): $!";
 	close O or croak "xtouch: close of '$$s[Path]': $!";
     }
 }
