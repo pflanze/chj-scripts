@@ -56,6 +56,8 @@ sub exists {
     defined $s->mtime
 }
 
+use Fcntl;
+
 sub xtouch {
     my $s=shift;
     my ($maybe_perms)=@_;
@@ -73,7 +75,7 @@ sub xtouch {
     }
     else {
 	sysopen O,$$s[Path], O_WRONLY|O_EXCL|O_CREAT,
-	  (defined $maybe_perms ? $maybe_perms : ())
+	  (defined $maybe_perms ? $maybe_perms : 0)
 	    or croak "xtouch: open('$$s[Path]'): $!";
 	close O or croak "xtouch: close of '$$s[Path]': $!";
     }
