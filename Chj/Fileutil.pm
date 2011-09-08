@@ -70,6 +70,7 @@ package Chj::Fileutil;
 	      xChecklink
 	      xSymlink
 	      Getlock
+	      Existglob
 	     );
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
 
@@ -341,5 +342,11 @@ sub Getlock ($ ; $ ; $ ; $ ) {
     }
 }
 
+sub Existglob ( $ ) {
+    my ($gl)=@_;
+    grep {
+	-e $_
+    } glob $gl
+}
 
 1
