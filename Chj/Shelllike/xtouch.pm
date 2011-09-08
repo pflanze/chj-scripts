@@ -6,7 +6,7 @@
 
 =head1 NAME
 
-Chj::FileStore::xtouch
+Chj::Shelllike::xtouch
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,7 @@ Chj::FileStore::xtouch
 =cut
 
 
-package Chj::FileStore::xtouch;
+package Chj::Shelllike::xtouch;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(xtouch);
 @EXPORT_OK=qw();
