@@ -118,6 +118,20 @@ sub add_segment { # functionally. hm.
 	  ], $cl;
 }
 
+sub dirname { # functional
+    my $s=shift;
+    my $seg= $$s[Segments];
+    @$seg or die "can't take dirname of empty path";
+    my $cl= ref $s;
+    bless [
+	   [
+	    @{$seg}[0..($#$seg-1)]
+	   ],
+	   0, # no forced endslash anymore
+	   @$s[2..$#$s]
+	  ], $cl;
+}
+
 sub contains_dotdot {
     my $s=shift;
     for my $segment (@{$$s[Segments]}) {
@@ -184,3 +198,11 @@ calc> :l (new_from_string Chj::Path "baz/..")->contains_dotdot
 1
 calc> :l (new_from_string Chj::Path "baz/..")->clean->contains_dotdot
 1
+
+calc> :d Chj::Path->new_from_string(".")->clean->dirname
+can't take dirname of empty path at /usr/local/lib/site_perl/Chj/Path.pm line 124.
+calc> :d Chj::Path->new_from_string("foo")->clean->dirname->string
+$VAR1 = '';
+#HM XXX: ->string was meant to give paths that are OS compatible, this is not.
+calc> :d Chj::Path->new_from_string("foo/bar")->clean->dirname->string
+$VAR1 = 'foo';
