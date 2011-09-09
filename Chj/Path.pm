@@ -100,6 +100,21 @@ sub clean {
 	  ], $cl;
 }
 
+sub add_segment { # functionally. hm.
+    my $s=shift;
+    my ($segment)=@_;
+    die "segment contains slash: '$segment'" if $segment=~ m{/};
+    my $cl= ref $s;
+    bless [
+	   [
+	    @{$$s[Segments]},
+	    $segment
+	   ],
+	   0, # no forced endslash anymore
+	   @$s[2..$#$s]
+	  ], $cl;
+}
+
 sub contains_dotdot {
     my $s=shift;
     for my $segment (@{$$s[Segments]}) {
