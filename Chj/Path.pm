@@ -73,7 +73,17 @@ sub string {
 	    }
 	}
     } else {
-	$str
+	if (length $str) {
+	    $str
+	} else {
+	    # PS. if I would split ..,1, then I could do away with
+	    # this test (and also some others), right?
+	    if ($s->is_absolute) {
+		"/"
+	    } else {
+		"."
+	    }
+	}
     }
 }
 
@@ -202,7 +212,6 @@ calc> :l (new_from_string Chj::Path "baz/..")->clean->contains_dotdot
 calc> :d Chj::Path->new_from_string(".")->clean->dirname
 can't take dirname of empty path at /usr/local/lib/site_perl/Chj/Path.pm line 124.
 calc> :d Chj::Path->new_from_string("foo")->clean->dirname->string
-$VAR1 = '';
-#HM XXX: ->string was meant to give paths that are OS compatible, this is not.
+$VAR1 = '.';
 calc> :d Chj::Path->new_from_string("foo/bar")->clean->dirname->string
 $VAR1 = 'foo';
