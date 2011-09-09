@@ -28,6 +28,7 @@ sub usage {
   doesn't exist.
 
   GRR I've already had check_paths_for_symlinks in this repo.
+  (Also, there's Chj::Path::Expand now which could accept certain symlinks)
 
   (Christian Jaeger <$email>)
 ";
