@@ -19,6 +19,9 @@ I think.
 
 And where did I do it previously? Maildir?
 
+This doesn't access the file system, and it doesn't resolve
+"..". These are things that have to be implemented by the user.
+
 =cut
 
 
