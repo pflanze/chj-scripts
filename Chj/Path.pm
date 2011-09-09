@@ -100,6 +100,14 @@ sub clean {
 	  ], $cl;
 }
 
+sub contains_dotdot {
+    my $s=shift;
+    for my $segment (@{$$s[Segments]}) {
+	return 1 if $segment eq ".."
+    }
+    0
+}
+
 end Class::Array;
 
 __END__
@@ -147,3 +155,14 @@ calc> :l (new_from_string Chj::Path "/./")->string
 /./
 calc> :l (new_from_string Chj::Path "/.")->string
 /.
+
+calc> :l (new_from_string Chj::Path "/.")->contains_dotdot
+0
+calc> :l (new_from_string Chj::Path "foo/bar/../baz")->contains_dotdot
+1
+calc> :l (new_from_string Chj::Path "../baz")->contains_dotdot
+1
+calc> :l (new_from_string Chj::Path "baz/..")->contains_dotdot
+1
+calc> :l (new_from_string Chj::Path "baz/..")->clean->contains_dotdot
+1
