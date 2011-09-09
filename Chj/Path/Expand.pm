@@ -36,7 +36,9 @@ use Chj::xperlfunc 'xreadlink','xlstat';
 use Chj::Path;
 
 sub _expand {
-    my ($p,$segments)=@_;
+    my ($p,$segments,$level)=@_;
+    die "too many levels of symlinks (cycle?)"
+      if $level > 100;
     if (not @$segments) {
 	$p
     } else {
@@ -49,7 +51,7 @@ sub _expand {
 	    # XX relying on getting an exception if walking out. And,
 	    # has to be changed if maybe_base is implemented
 	    my $p2= $p->dirname;
-	    _expand ($p2, $segments2)
+	    _expand ($p2, $segments2, $level)
 	} else {
 	    my $p2= $p->add_segment($segment);
 
@@ -60,9 +62,11 @@ sub _expand {
 		my $targ= Chj::Path->new_from_string($targstr);
 		die "absolute symlink '$targstr' at '$path2'"
 		  if $targ->is_absolute;
-		_expand (_expand ($p, $targ->segments), $segments2);
+		_expand (_expand ($p, $targ->segments, $level+1),
+			 $segments2,
+			 $level);
 	    } else {
-		_expand ($p2, $segments2)
+		_expand ($p2, $segments2, $level)
 	    }
 	}
     }
@@ -84,7 +88,7 @@ sub PathExpand ( $ ; $ ) {
     # base is assumed to be "."
     my $p= Chj::Path->new_from_string($path)->clean;
     assert_no_dotdot $p; # well, what for *exactly?*
-    _expand($nullpath, $p->segments)->string
+    _expand($nullpath, $p->segments, 0)->string
 }
 
 
