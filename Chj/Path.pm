@@ -215,3 +215,16 @@ calc> :d Chj::Path->new_from_string("foo")->clean->dirname->string
 $VAR1 = '.';
 calc> :d Chj::Path->new_from_string("foo/bar")->clean->dirname->string
 $VAR1 = 'foo';
+calc> :d Chj::Path->new_from_string("")->dirname
+can't take dirname of empty path at /usr/local/lib/site_perl/Chj/Path.pm line 134.
+
+calc> :d Chj::Path->new_from_string(".")->clean->has_endslash
+$VAR1 = 1;
+calc> :d Chj::Path->new_from_string(".")->clean->string
+$VAR1 = './';
+#ok
+calc> :d Chj::Path->new_from_string("")->clean->has_endslash
+$VAR1 = 0;
+calc> :d Chj::Path->new_from_string("")->clean->string
+$VAR1 = '.';
+#h
