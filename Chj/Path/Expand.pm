@@ -39,11 +39,18 @@ package Chj::Path::Expand;
 
 use Chj::xperlfunc 'xreadlink','xlstat';
 use Chj::Path;
+use Chj::singlequote ':all';
 
 # 'syntax' to make passing the function as first argument to itself simpler
 sub call {
     #my ($fn,@args)=@_;
     #@_=($fn,@args);
+
+    # "Deep recursion on anonymous subroutine" can be disabled here
+    # (heh, at the place where a new frame is *not* allocated, how
+    # comes?):
+    use warnings;
+    no warnings;
     goto $_[0]
 }
 
@@ -51,7 +58,7 @@ sub _expand {
     my ($do_expand_absolute)=@_;
     my $_expand= sub {
 	my ($_expand, $p,$segments,$level)=@_;
-	die "too many levels of symlinks (cycle?)"
+	die "too many levels of symlinks (cycle?) at path: ".singlequote($p->string)." with remaining segments: ".singlequote_many(@$segments)
 	  if $level > 100;
 	if (not @$segments) {
 	    $p
