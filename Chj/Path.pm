@@ -142,6 +142,22 @@ sub dirname { # functional
 	  ], $cl;
 }
 
+sub to_relative {
+    my $s=shift;
+    die "is already relative" unless $s->is_absolute;
+    my $seg= $$s[Segments];
+    my $cl= ref $s;
+    bless [
+	   [
+	    # drop first entry
+	    @{$seg}[1..($#$seg)]
+	   ],
+	   scalar $s->has_endslash, # XX hm always? what about the dropping of first entry?
+	   0, # not absolute
+	   @$s[3..$#$s]
+	  ], $cl;
+}
+
 sub contains_dotdot {
     my $s=shift;
     for my $segment (@{$$s[Segments]}) {
@@ -228,3 +244,12 @@ $VAR1 = 0;
 calc> :d Chj::Path->new_from_string("")->clean->string
 $VAR1 = '.';
 #h
+
+calc> :d Chj::Path->new_from_string("/foo")->to_relative->string
+$VAR1 = 'foo';
+calc> :d Chj::Path->new_from_string("/")->to_relative->string
+$VAR1 = './';
+calc> :d Chj::Path->new_from_string("")->to_relative->string
+is already relative at /usr/local/lib/site_perl/Chj/Path.pm line 147.
+calc> :d Chj::Path->new_from_string("/foo/")->to_relative->string
+$VAR1 = 'foo/';
