@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Mon Sep 12 22:15:03 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path
+
+  Make gitk show a 'proper' follow 'behaviour' (cheated) the same way
+  git log --follow does.
+
+  (Just a lazy workaround for fixing gitk?)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+use Chj::Git::Follow;
+
+our @paths=
+  Chj::Git::Follow->new_path(@ARGV)->paths;
+
+use Chj::xperlfunc;
+
+xexec "gitkg", "--", @paths;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
