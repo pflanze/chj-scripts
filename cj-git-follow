@@ -9,11 +9,10 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path(s)
+    print "$myname path
 
-  Follow given path(s) in the current repo and following the history
-  from HEAD and show all paths that the file(s) has(have) had
-  previously.
+  Follow given path in the current repo and following the history from
+  HEAD and show all paths that the file has had previously.
 
   (Christian Jaeger <$email>)
 ";
@@ -27,12 +26,12 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV;
+usage unless @ARGV==1;
 
 use Chj::Git::Follow;
 
 print "$_\n" or die
-  for Chj::Git::Follow->new_paths(@ARGV)->paths;
+  for Chj::Git::Follow->new_path(@ARGV)->paths;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
