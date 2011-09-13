@@ -34,8 +34,8 @@ use Chj::IO::Command;
 
 sub new_path {
     my $cl=shift;
-    @_ or die "need path(s)";
-    my (@paths)=@_;
+    @_==1 or die "need path";
+    my ($path)=@_;
     my $s= $cl->SUPER::new;
     $$s[Fd]= Chj::IO::Command->new_sender
       ("git","log",
@@ -45,7 +45,7 @@ sub new_path {
        #"format: " ?? how to output paths?
        "--raw",
        "--",
-       @paths
+       $path
       );
     $s
 }
