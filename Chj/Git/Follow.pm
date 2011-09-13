@@ -88,6 +88,9 @@ sub paths {
 		# register the other items, too, just in case a
 		# directory was given? (If a file was given, then this
 		# should never give new paths and hence is pointless.)
+		# NOTE: there's actually no C case, git log doesn't
+		# print these with --follow (for some reason actually
+		# not clear to me).
 		my @paths= split /\t/, $pathpair;
 		@paths==1 or die "'$pathpair' gave ".@paths." paths";
 		$path{$_}++ for @paths;
