@@ -58,7 +58,7 @@ our @files= @ARGV;
 use Chj::xperlfunc;
 
 xmkdir $dir; #perms?
-xexec "cp", @standardoptions, @cpoptions, @files, $dir;
+xexec "cp", @standardoptions, @cpoptions, "--", @files, $dir;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
