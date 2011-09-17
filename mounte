@@ -476,6 +476,12 @@ sub mount_easily {
 	};
     }
 
+    # seems necessary?:, previously got:
+    # found passphrase for 'foo'  # on sshfs
+    # using loop device: '/dev/loop10'
+    # mount: special device /dev/mapper/foo does not exist
+    sleep 1;
+
     {
 	# fsck: (as a side effect, thus in a sub scope.)
 	my $fstype = $opt_type || do {
