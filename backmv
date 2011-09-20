@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -eq 2 ]; then
+    mv "$2" "$1";
+else
+    echo Exactly two arguments required;
+fi
+
