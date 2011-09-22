@@ -15,7 +15,7 @@ sub usage {
   (i.e. remove backup files added by shell patterns)
 
   e.g.
-    r e *foo*
+    r _e *foo*
 
   (Christian Jaeger <$email>)
 ";
