@@ -27,8 +27,10 @@ sub debug {
     print STDERR "@_\n" if $debug;
 }
 
-our $cmd= shift @ARGV;
 @ARGV or usage;
+our $cmd= shift @ARGV;
+usage if $cmd eq "-h" or $cmd eq "--help"; # disables usage of those as cmd.
+
 
 # which arguments ending in ~ are given without ~?
 
