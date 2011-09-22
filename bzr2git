@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 pathto/.bzr nonexistingtarget.git"
+    echo "  target will be created as bare repo (good for cloning, anyway)"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+from="$1"
+to="$2"
+
+git init --bare "$to"
+
+bzr fast-export --export-marks "$to"/marks "$from" | \
+  (cd "$to" && git fast-import --export-marks=marks )
+
+# XXX: I don't know what the marks file is for and whether that path
+# is good or correct!
+
+echo Success.
