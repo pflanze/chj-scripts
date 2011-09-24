@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+
+# Sat Sep 24 13:50:45 EDT 2011
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $_mactab= '~/macs/macs';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [mac(s)]
+
+  Look up mac address(es) in $_mactab and print the
+  associated name(s).
+  If no arguments given, read lines from stdin.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::xhome;
+
+sub subst ( $ $ $ ) {
+    my ($str,$re,$rpl)=@_;
+    $str=~ s/$re/&$rpl/e;# no /g ?
+    $str
+}
+
+our $mactab= subst $_mactab, qr/^~/, \&xhome;
+# it could be (=~ _mactab /^~/ xhome)
+# or even (=~ _mactab "^~" xhome)
+
+use Chj::xopen 'xopen_read';
+
+my $f= xopen_read $mactab;
+
+our %map;
+our $hexdigit= qr/[0-9a-fA-F]/;
+our $hex2= qr/(?:$hexdigit){2}/;
+our $macre= qr/(?:$hex2\:){5}$hex2/;
+
+while (<$f>) {
+    chomp;
+    next if /^\s*$/;
+    next if /^\s*\#/;
+    if (my ($mac,$name)= /^($macre)\s+(\S+)\s*$/) {
+	die "multiple mentions of '$mac'"
+	  if exists $map{lc $mac};
+	$map{lc $mac}=$name;
+    } else {
+	warn "ignoring nonmatching line '$_'";
+    }
+}
+$f->xclose;
+
+
+sub lookup {
+    my ($macstr)=@_;
+    if (my ($mac)= $macstr=~ /^\s*($macre)\s*$/) {
+	if (defined (my $name= $map{lc $mac})) {
+	    $name
+	} else {
+	    '(unknown)'
+	}
+    } else {
+	#wl
+	"(not a mac address: '$macstr')"
+    }
+}
+
+if (@ARGV) {
+    for (@ARGV) {
+	print lookup( $_),"\n"
+	  or die $!;
+    }
+} else {
+    while (<STDIN>) {
+	chomp;
+	print lookup( $_),"\n"
+	  or die $!;
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
