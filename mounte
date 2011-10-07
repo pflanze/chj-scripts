@@ -261,7 +261,7 @@ sub try_file {
     # could also be file. no problem.
     my $devrealpath= xrealpath $devpath; # to resolve symlinks
     my $in= Chj::IO::Command->new_sender
-      ("file","--brief","--special-files",$devrealpath);
+      ("file","--brief","--dereference","--special-files",$devrealpath);
     my $cnt= $in->xcontent;
     my $res= $in->xfinish;
     ($res==0,$cnt)
