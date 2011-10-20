@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 cmd arguments"
+    echo "  sets PATH so that gpg is overrided with gpg-debian"
+    exit 1
+}
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+PATH="/opt/chj/bin/_with-gpg-debian/a:$PATH" exec "$@"
+
