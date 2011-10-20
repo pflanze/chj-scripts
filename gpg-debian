@@ -36,18 +36,48 @@ if (@indexes) {
     print "taking keys:\n".Dumper(\@debian_keyrings);
 }
 
+
+use Chj::xperlfunc ':all';
+use Chj::xhome;
+
+sub path2copypath {
+    my ($path)=@_;
+    my $fn= basename $path;
+    xhome . "/.gnupg/".$fn
+}
+
+sub copy {
+    my ($from,$to,$exists)=@_;
+    if ($exists) {
+	xrename $to, $to."~";
+    }
+    xxsystem "cp","--",$from,$to
+}
+
 for (@debian_keyrings) {
     my ($pack,$path)=@$_;
     -r $path
       or die "can't read keyring '$path': $!; please apt-get install $pack";
+    my $cpath= path2copypath $path;
+    my $a= xstat $path;
+    if (my $b= Xlstat $cpath) {
+	$b->is_file or die "exists but is not a file: '$cpath'";
+	if ($a->mtime > $b->mtime
+	    or
+	    $a->ctime > $b->ctime) {
+	    copy ($path,$cpath,1)
+	}
+    } else {
+	copy ($path,$cpath,0)
+    }
 }
 
-exec(
+xexec(
      "gpg",
      (
       map {
 	  my ($pack,$path)=@$_;
-	  ("--keyring", $path)
+	  ("--keyring", path2copypath($path))
       } @debian_keyrings
      ),
      @ARGV
