@@ -37,7 +37,19 @@ our $etcbase= "/etc/vservers";
 #     xsystem   hm nein, weil will sie ev ja auch  mit io pipes usw aufrufen.
 #       hm. das was im child ausgeführt werden muss hier so.  mal irgendwannnachdenken
 # }
-our $installdir= "/opt/vserver";
+
+our $use_opt= do {
+    my $p= `which vserver`;
+    if ($p =~ m{^/usr/sbin/}) {
+	0
+    } elsif ($p=~ m{^/opt/vserver}) {
+	1
+    } else {
+	die "are vserver utils installed correctly?: which vserver gives: '$p'";
+    }
+};
+
+our $installdir= $use_opt ? "/opt/vserver" : "/usr";
 our $chroot_sh= "$installdir/lib/util-vserver/chroot-sh";
 
 # should these be here?:
