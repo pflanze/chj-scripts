@@ -9,28 +9,7 @@ use strict;
 #my $l= xopen_append $logpath;
 #$l->xprint("$$ ".localtime()."\n");
 
-sub without_trailing_slash {
-    my ($str)=@_;
-    $str=~ s|/\z||;
-    $str
-}
-
-sub removedir_from_envpath {
-    my ($dir)=@_;
-    $ENV{PATH}= join ":",
-      grep {
-	  not without_trailing_slash($_) eq $dir
-      }
-	split /:/,$ENV{PATH};
-}
-
-my $dir= do{
-    my $d=$0;
-    $d=~ s|/?[^/]+\z||s;
-    $d
-};
-
-removedir_from_envpath $dir;
+our $ls= "/bin/ls";
 
 sub parent_process {
     #my $f= xopen_read("/proc/self/status")->xcontent;
@@ -77,8 +56,8 @@ if ($ppname=~ /emacs/) {
 	  }
       }
 	@ARGV;
-    exec qw(ls -I *~), @args or exit 1;
+    exec $ls, qw(-I *~), @args or exit 1;
 }
 else {
-    exec "ls",@ARGV or exit 1;
+    exec $ls,@ARGV or exit 1;
 }
