@@ -75,6 +75,11 @@ sub startup_unlock {
 }
 #und fun warum backtrace von carp?. heut geht wieder mal nichts deterministisch.
 
+my $maxargs= 30;
+if (@ARGV > $maxargs) {
+    die "more than $maxargs arguments? Must be wrong, right?"
+}
+
 my $nw;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
