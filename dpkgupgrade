@@ -19,7 +19,7 @@ my $packs= do {
     # since backticks don't check the return code:
     my $h={};
     use Chj::IO::Command;
-    my $in= Chj::IO::Command->new_sender("dpkglist","-i");
+    my $in= Chj::IO::Command->new_sender("dpkglist","-ia");
     while (<$in>) {
 	chomp;
 	$$h{$_}=1
