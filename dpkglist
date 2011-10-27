@@ -16,12 +16,14 @@ if (@ARGV) {
 		$what= "a";
 	} elsif ($ARGV[0]=~ /^--?i(?:nstalled)?$/) {
 		$what= "i";
+	} elsif ($ARGV[0]=~ /^--?ia$/) {
+		$what= "ia";
 	}
 	if (@ARGV>1 or not $what) {
 		print "dpkglist [-a[ll] ¦ -i[nstalled]]
 
 List packages in /var/lib/dpkg/status. -a means all, -i only installed
-packages. Per default, -i is assumed. 
+packages. Per default, -i is assumed. -ia means include kinds of half-installed.
 cj 20.6.01
 ";
 		exit(0);
@@ -52,7 +54,11 @@ sub analyze {
 	my $name=$1;
 	substr($in,$p0,$p1-$p0)=~ /\nStatus:\s*([^\n]+)/s or die;
 	my $status=$1;
-	print $name."\n" if $what eq 'a' or $status=~ /\sinstalled/;
+	print $name."\n" if $what eq 'a' or $status=~ /\sinstalled/
+	  or ($what eq 'ia' and ($status=~ /unpacked/
+				 # which one is more important?
+				 or
+				 $status=~ /^install ok/));
 }
 
 munmap($in) or die $!;
