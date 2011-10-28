@@ -35,6 +35,7 @@ package Chj::Git::Functions;
 	      maybe_cat_tag
 	      parse_tag
 	      xgit_do
+	      make_xgit_do
 	      git_unquote_path
 
 	      git_branches_local
@@ -198,6 +199,22 @@ use Chj::xperlfunc 'xxsystem';
 
 sub xgit_do {
     xxsystem "git",@_
+}
+
+# an xgit_do that polls the lock file (workaround for apparent Git race bug)
+sub make_xgit_do {
+    my $base= xgit_dir();
+    my $lock= "$base/index.lock";
+    sub {
+	xxsystem "git",@_;
+	if (-e $lock) {
+	    warn "*** NOTE: index.lock detected, waiting for it to go away";
+	    while (-e $lock) {
+		sleep 1
+	    }
+	    warn "    ok continuing.\n";
+	}
+    }
 }
 
 sub xgit_stdout_ref {
