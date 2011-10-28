@@ -201,12 +201,33 @@ sub xgit_do {
     xxsystem "git",@_
 }
 
-# an xgit_do that polls the lock file (workaround for apparent Git race bug)
+# an xgit_do that polls the lock file (workaround for apparent Git
+# race bug); ah and since that doesn't actually help, run the command
+# again if it fails with the lock error
 sub make_xgit_do {
     my $base= xgit_dir();
     my $lock= "$base/index.lock";
     sub {
-	xxsystem "git",@_;
+	my $retries=2;
+      TRY:
+	{
+	    my $in= Chj::IO::Command->new_combinedsender("git",@_);
+	    my $cnt= $in->xcontent;
+	    my $res = $in->xfinish;
+	    if ($res!=0) {
+		if ($cnt=~ m{Unable to create .*/index.lock.: File exists}
+		    and $retries > 0) {
+		    warn "*** NOTE: git @_ failed because of index.lock race bug, retrying...";
+		    $retries++;
+		    redo TRY;
+		} else {
+		    print STDERR $cnt; #k?
+		    die "git @_ failed with exit code: $res";
+		}
+	    } else {
+		print STDERR $cnt; #k?
+	    }
+	}
 	if (-e $lock) {
 	    warn "*** NOTE: index.lock detected, waiting for it to go away";
 	    while (-e $lock) {
