@@ -35,7 +35,7 @@ package Chj::Git::Functions;
 	      maybe_cat_tag
 	      parse_tag
 	      xgit_do
-	      make_xgit_do
+	      make_xgit_do_hack
 	      git_unquote_path
 
 	      git_branches_local
@@ -204,7 +204,8 @@ sub xgit_do {
 # an xgit_do that polls the lock file (workaround for apparent Git
 # race bug); ah and since that doesn't actually help, run the command
 # again if it fails with the lock error
-sub make_xgit_do {
+sub make_xgit_do_hack ( $ ) {
+    my ($cleanup)=@_; # receives xgit_dir, should prepare the repo for a second call
     my $base= xgit_dir();
     my $lock= "$base/index.lock";
     sub {
@@ -219,6 +220,7 @@ sub make_xgit_do {
 		    and $retries > 0) {
 		    warn "*** NOTE: git @_ failed because of index.lock race bug, retrying...";
 		    $retries++;
+		    &$cleanup ($base);
 		    redo TRY;
 		} else {
 		    print STDERR $cnt; #k?
