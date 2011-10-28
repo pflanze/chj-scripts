@@ -36,6 +36,7 @@ package Chj::Git::Functions;
 	      parse_tag
 	      xgit_do
 	      make_xgit_do_hack
+	      git_wait_lock
 	      git_unquote_path
 
 	      git_branches_local
@@ -201,13 +202,24 @@ sub xgit_do {
     xxsystem "git",@_
 }
 
+sub git_wait_lock ( $ ) {
+    my ($base)=@_;
+    my $lock= "$base/index.lock";
+    if (-e $lock) {
+	warn "*** NOTE: index.lock detected, waiting for it to go away";
+	while (-e $lock) {
+	    sleep 1
+	}
+	warn "    ok continuing.\n";
+    }
+}
+
 # an xgit_do that polls the lock file (workaround for apparent Git
 # race bug); ah and since that doesn't actually help, run the command
 # again if it fails with the lock error
 sub make_xgit_do_hack ( $ ) {
     my ($cleanup)=@_; # receives xgit_dir, should prepare the repo for a second call
     my $base= xgit_dir();
-    my $lock= "$base/index.lock";
     sub {
 	my $retries=2;
       TRY:
@@ -230,13 +242,7 @@ sub make_xgit_do_hack ( $ ) {
 		print STDERR $cnt; #k?
 	    }
 	}
-	if (-e $lock) {
-	    warn "*** NOTE: index.lock detected, waiting for it to go away";
-	    while (-e $lock) {
-		sleep 1
-	    }
-	    warn "    ok continuing.\n";
-	}
+	git_wait_lock($base);
     }
 }
 
