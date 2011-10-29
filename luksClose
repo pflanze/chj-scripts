@@ -1,3 +1,5 @@
 #!/bin/bash
 
-cryptsetup luksClose "$@"
+for f in "$@"; do
+    cryptsetup luksClose "$f"
+done
