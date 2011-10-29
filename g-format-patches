@@ -17,6 +17,7 @@ sub nextnum {
     formatnum($n)
 }
 
+our $targetdir= ".";
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -25,6 +26,9 @@ sub usage {
     print "$myname commitids..
 
   Also re-numbers them starting with ".formatnum( $startnum)."
+
+  Options:
+    --targetdir dir  instead of '$targetdir'
 
   Example:
    glg paredit.el|grep ^commit|printfield 2|tac|» g-format-patches
@@ -39,6 +43,7 @@ our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "targetdir=s"=> \$targetdir,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -66,7 +71,8 @@ for my $id (@ARGV) {
 	my $name= basename $badpath;
 	$name=~ s/^(0001)-/$n-/ or die "error, '$badpath' is not matching";
 	# xlinkunlink? or behave like g-format-patch?
-	xrename $badpath, $name;
+	my $targetpath= $targetdir."/".$name;
+	xlinkunlink $badpath, $targetpath;
 	#$d-> remove  sigh I don't have that. (wanted to use it for error checking)
 	1
     } or warn "warning for id '$id': $@";#right way to handle now exn in perl right ?.
