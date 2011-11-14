@@ -49,10 +49,12 @@ BEGIN{
 use Chj::FP::Memoize;
 
 sub Matrix2xlsfile {
+    @_>=3 or die "need at least 3 arguments";
     my ($file,$maybe_titles,$data,
 	$maybe_dateformat_string)=@_;
 
     my $workbook = $WriteExcel->new($file);#exceptions?
+    #$workbook->compatibility_mode;
     my $worksheet= $workbook->add_worksheet;
     my $_titleformat= memoize_thunk sub {
 	my $format= $workbook->add_format;
@@ -107,6 +109,7 @@ sub Matrix2xlsfile {
 	$worksheet->set_column($key,$key,$column_width->{$key});
     }
 
+    #$worksheet->close; doesn't exist
     $workbook->close or ($BIG or die "error closing excel file '$file': $!"); # Spreadsheet::WriteExcel::Big seems buggy, it always returns false from close.
 }
 
