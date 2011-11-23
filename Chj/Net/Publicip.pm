@@ -16,7 +16,7 @@ Chj::Net::Publicip
  my $public = publicip; # returns the "best looking" public-looking ip, undef if no or only private-looking ips have been found.
  my $someip = publicip_force; # "force" flag; returns the "next best" non-publicly looking one if no clear public one has been found.
  # all of those can optionally take a list of interfaces to check,
- # otherwise @Chj::Net::Publicip::defaultifaces is used.
+ # *** XX: which is now being ignored? ***
 
 =head1 DESCRIPTION
 
@@ -26,132 +26,114 @@ Chj::Net::Publicip
 
 package Chj::Net::Publicip;
 @ISA="Exporter"; require Exporter;
+@EXPORT=qw();
 @EXPORT_OK=qw(publicip publicip_force looks_private);
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
+
 use strict;
 
-
-use Chj::xopen;
-use Chj::is_if_up;
-
-
+##XX UNUSED now. (but referred to by 'publicip' in chj-bin)
 our @defaultifaces= qw(eth0 eth1 ppp0);
 
+{
+    package Chj::Net::Publicip_IP;
+    use Class::Array -fields=> -publica=>
+      (
+       'iface',
+       'ip',
+      );
+    sub new { my $cl=shift; bless [@_],$cl}
 
-sub looks_private {
-    local ($_)=@_;
-    /^192\.168\./ and return 1;
-    /^10\.0\./ and return 1; ## true?
-    ## etc.
-    $_ eq '127.0.0.1' and return 2;
-    0
+    our $if_publ=
+      +{
+	lo=> 0,
+	eth=> 1,
+	ppp=> 2,
+       };
+
+    sub publicity_likelyness {
+	my $s=shift;
+
+	my $if= $s->iface;
+	$if=~ s|(\d+)$||; my $ifno=$1;
+	my $val1= $$if_publ{$if};
+	defined $val1 or $val1=0.5;
+
+	my $val2;
+	my $ip= $s->ip;
+	if ($ip=~ m|^127\.0\.0\.(\d+)|) {
+	    $val2= $1/1000;
+	} elsif ($ip=~ m|^10\.0\.(\d+)\.|) {
+	    $val2=0.5 + $1/1000;
+	} elsif ($ip=~ m|^192\.168\.(\d+)\.|) {
+	    $val2=0.8 + $1/1000;
+	} else {
+	    $val2= 1
+	}
+
+	$val1*10 + $val2
+    }
+    end Class::Array
 }
 
-my $last_exitcodes;
+## worthless now. what to do ?
 sub last_best_exitcode {
-    # welcher exitcode kam am häufigsten vor?
-    (sort { $b->[1] <=> $a->[1] } map { [ $_, $$last_exitcodes{$_} ] } keys %$last_exitcodes)[0]->[0] ||0
+    undef
 }
-
-#sub _ipv4hex2list {
-#    my @fl= unpack "hhhhhhhh", shift;
-#print "fl=",    join("-",@fl),"\n";
-#    $fl[6]*16+$fl[7],$fl[4]*16+$fl[5],$fl[2]*16+$fl[3],$fl[0]*16+$fl[1]
-#}
-#calc> join(",",unpack "hhhhhhhh","0105a8c0")
-#0,1,0,5,1,8,3,0
-#calc> join(",",unpack "HHHHHHHH","0105a8c0")
-#3,3,3,3,6,3,6,3
-#  es isch chrank
 
 # merlyn in #perl to the rescue:
 sub _ipv4hex2list {
     reverse unpack "C*", pack "H*", shift
 }
 
-sub _publicip {
-    my ($opt_f,@ifaces)=@_;
-    my (@foundpriv,@foundpub);
-    $last_exitcodes={};
-    my $flag_vserver;
-    for my $iface (@ifaces ? @ifaces : @defaultifaces) {
-	#warn "check $iface";
-	eval {
-	    my $ip= is_if_up($iface);
-	    if (defined $ip) {
-		if (length $ip) {
-		    my $priv= looks_private $ip;
-		    if (!$priv) {
-			if (wantarray) {
-			    push @foundpub,$ip;
-			} else {
-			    #return $ip;
-			    # ach shit, kann nicht aus eval direkt return machen sigh
-			    # last ginge noch  aber warning?
-			    # und:
-			    push @foundpub,$ip;
-			    no warnings;
-			    last;# FOR;
-			}
-		    } elsif ($priv==1) {
-			push @foundpriv,$ip;
-		    }# else ??? todo check
-		} else {
-		    $$last_exitcodes{2}++
-		}
-	    } else {
-		$$last_exitcodes{$? >> 8}++
-	    }
-	};
-	if ($@) {
-	    if ($@=~ /no match for 'inet addr'/) {
-		# looks like vserver case, can't read interface adresses.
-		# still check all interfaces through, maybe one has a visible address
-		$flag_vserver=1;
-	    } else {
-		die
-	    }
-	}
-    }
+use Chj::IO::Command;
 
-    if ($flag_vserver) {
-	# also check this:
-	my $c= (xopen "/proc/self/status")->xcontent;
-	# ipv4root: 0105000a/00ffffff 0105a8c0/00ffffff
-	if ($c=~ /^ipv4root: *(.*)/m){
-	    my $ifaces=$1;
-	    for my $hexface (reverse split /\s+/,$ifaces) { # reverse, since in my vserver setup, localhost addresses are listed first in the status, then the other private one. ##todo should probably make all this cleaner by using a scoring approach, instead of just yes-no in looks_private().
-		my ($ip,$mask)=split /\//, $hexface;
-		$ip= join ".",_ipv4hex2list $ip;
-		# und jetzt denselben zirkus wie oben
-		#copy
-		    my $priv= looks_private $ip;
-		    if (!$priv) {
-			if (wantarray) {
-			    push @foundpub,$ip;
-			} else {
-			    return $ip;
-			}
-		    } elsif ($priv==1) {
-			push @foundpriv,$ip;
-		    }# else ??? todo check
-		#/copy
+sub _ips {
+    my $ipout= Chj::IO::Command->new_sender("ip","addr");
+    my @ips;
+    while (<$ipout>) {
+	chomp;
+      cont:
+	if (my ($iface)= m/^\d+:\s*(\w+):/) {
+	    my $is_down= /state DOWN/;
+	    while (<$ipout>) {
+		chomp;
+		if (/^\s+/) {
+		    if (my ($ip)= m{^\s+inet\s+([^ /]+)}) {
+			push @ips, scalar new Chj::Net::Publicip_IP ($iface, $ip)
+			  unless $is_down;
+		    }
+		} else {
+		    #last
+		    #ehr, stupid, skip the read,
+		    goto cont;
+		}
 	    }
 	} else {
-	    warn "strange, vserver or not vserver?";
+	    die "no match for 'ip' output line: '$_'";
 	}
     }
+    $ipout->xxfinish;
+    \@ips
+}
+
+sub _publicip {
+    my ($opt_f,@_ifaces)=@_;
+
+    my $ips= _ips;
+
+    my @sortedips=
+      sort { $b->publicity_likelyness <=> $a->publicity_likelyness }
+	grep { $opt_f or $_->publicity_likelyness >= 1 } ## ok ?
+	  @$ips;
 
     if (wantarray) {
-	return @foundpub,@foundpriv
+	return map { $_->ip } @sortedips;
     } else {
-	if (@foundpub) {
-	    return $foundpub[0]
+	if (@sortedips) {
+	    $sortedips[0]->ip
 	} else {
-	    if ($opt_f) {
-		return $foundpriv[0];
-	    } else {
-		return undef;
-	    }
+	    return undef
 	}
     }
 }
