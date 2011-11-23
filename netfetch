@@ -25,7 +25,7 @@ PORT="$2"
 pwfile=`tempfile`
 cat > "$pwfile"
 
-netcat -q 1 "$SERVER" "$PORT" \
+netcat "$SERVER" "$PORT" \
     | gpg -q -d --batch --passphrase-file "$pwfile" \
     | tar x ${z}-f -
 
