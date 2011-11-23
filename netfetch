@@ -1,10 +1,11 @@
 #!/bin/bash 
 
+set -eu
+
 if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
-    echo "$0 [-z] server [ port ]"
-    echo "  connects to server/port (port is some default+uid by default)"
-    echo "  and fetches a tar, asks for confirmation and unpacks it."
-    echo "  If the -z option is given, the stream is assumed to be gzipped."
+    echo "$0 [-z] server port"
+    echo "  then needs the pw on stdin."
+    echo "  -> See netoffer instead."
     exit 1
 fi
 
@@ -16,32 +17,16 @@ elif [ "$1" = "--" ]; then
 fi
 
 SERVER="$1"
-if [ "$2" ]; then
-    PORT="$2"
-else
-    if [ ! "$PORT" ]; then
-	PORT=$((14123+$UID))
-    fi
-fi
+PORT="$2"
 
-tfile=`tempfile`
+# can't let gpg read it by itself because that messes up single
+# reading (probably too-greedy reading by the shell?), so:
 
+pwfile=`tempfile`
+cat > "$pwfile"
 
-netcat -q 1 "$SERVER" "$PORT" | multifeed '|' sh -c 'exec md5sum >&2' '&' cat  > "$tfile"
+netcat -q 1 "$SERVER" "$PORT" \
+    | gpg -q -d --batch --passphrase-file "$pwfile" \
+    | tar x ${z}-f -
 
-echo -n "Ok? "
-
-read ans
-
-#echo "HABE <$ans> GELESEN"
-#if [ "`echo "$ans" | cut -c1,1 | grep -i '[jy]'`" ]; then
-#if [ "`echo $ans | cut -c1,1 | grep -i '[jy]'`" ]; then
-#if [ "`echo "$ans" | egrep -i '^[\n ]*[jy]'`" ]; then
-#if perl -ne 'exit !! (shift =~ /^\s*[jy]/i)' "$ans"; then   nein, frisst argumente
-if ! echo "$ans" | perl -wne 'exit 1 if /^\s*[jy]/i'; then
-    tar x ${z}-f "$tfile"
-else
-    echo "Canceled."
-fi
-
-rm -f "$tfile"
+rm "$pwfile"

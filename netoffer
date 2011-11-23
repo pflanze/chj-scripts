@@ -1,8 +1,10 @@
 #!/bin/bash
 
+set -eu
+
 usage() {
     echo "$0 [-z] files_to_offer"
-    echo "  tars them up and offers them on some port"
+    echo "  offer files, encrypted"
     exit 1
 }
 
@@ -17,11 +19,20 @@ elif [ "$1" = "--" ]; then
     shift
 fi
 
-if [ ! "$PORT" ]; then
+if [ ! "${PORT-}" ]; then
     PORT=$((14123+$UID))
 fi
 
-echo "Offering on port $PORT.. please start  netfetch $z`publicip -f` $PORT"
+ip=`publicip -f`
+pwfile=`tempfile`
 
-tar c ${z}-f - "$@" | multifeed --delayed '|' md5sum '&' netcat -q 1 -l -p "$PORT" 
+passwdgen 20 >"$pwfile"
 
+echo "--Run:--"
+echo "echo `cat "$pwfile"` | netfetch $z$ip $PORT"
+
+tar c ${z}-f - "$@" \
+    | gpg -z0 -c --batch --force-mdc --passphrase-file "$pwfile" \
+    | netcat -q 1 -l -p "$PORT" 
+
+rm "$pwfile"
