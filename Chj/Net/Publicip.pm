@@ -78,7 +78,7 @@ our @defaultifaces= qw(eth0 eth1 ppp0);
 
 ## worthless now. what to do ?
 sub last_best_exitcode {
-    undef
+    0
 }
 
 # merlyn in #perl to the rescue:
