@@ -24,15 +24,14 @@ if [ ! "${PORT-}" ]; then
 fi
 
 ip=`publicip -f`
-pwfile=`tempfile`
 
-passwdgen 20 >"$pwfile"
-
+passwdgen | tee >(
+{
 echo "--Run:--"
-echo "echo `cat "$pwfile"` | netfetch $z$ip $PORT"
-
+echo "echo `cat` | netfetch $z$ip $PORT"
+} >&2
+) | {
 tar c ${z}-f - "$@" \
-    | gpg -z0 -c --batch --force-mdc --passphrase-file "$pwfile" \
+    | gpg -z0 -c --batch --force-mdc --passphrase-file /dev/fd/9 \
     | netcat -q 1 -l -p "$PORT" 
-
-rm "$pwfile"
+} 9<&0 </dev/null
