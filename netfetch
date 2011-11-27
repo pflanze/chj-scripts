@@ -22,11 +22,14 @@ PORT="$2"
 # pw needs to be on stdin, tty won't work because the parent shell
 # would over-read from it.
 
-pwfile=`tempfile`
-cat > "$pwfile"
 
+# http://wiki.bash-hackers.org/syntax/redirection
+# "Avoid referencing file descriptors above 9, since you may collide
+# with file descriptors Bash uses internally."
+
+{
 netcat "$SERVER" "$PORT" \
-    | gpg -q -d --batch --passphrase-file "$pwfile" \
+    | gpg -q -d --batch --passphrase-file /dev/fd/9 \
     | tar x ${z}-f -
+} 9<&0 < /dev/null 
 
-rm "$pwfile"
