@@ -9,4 +9,4 @@ if ! grep '^ -- ' debian/changelog | head -1 | grep -q "`perl -w -MChj::userfull
     fi
 fi
 
-exec dpkg-buildpackage -uc -us -b -r'fakeroot -u' "$@"
+exec nice dpkg-buildpackage -uc -us -b -r'fakeroot -u' "$@"
