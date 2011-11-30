@@ -118,7 +118,7 @@ sub execute {
             # parent
             local $/=undef;
             my $in=<IN>;
-            close IN or die $!;
+            close IN or warn "issue from running command: $@ $!";
             #wait;
 	    #$? == 0 or die "@_ returned exit code $?";  does not work anyway, -1 is returned, hm
             $in;
