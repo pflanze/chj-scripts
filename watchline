@@ -32,6 +32,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^-[ns]$/) {
 	$n= $ARGV[++$i];
+	defined $n or die "missing argument to option '$_'";
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
     } elsif (/^--?t(imestamps)?$/) {
