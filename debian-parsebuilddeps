@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+# Wed Nov 30 22:50:20 EST 2011
+
+# I already HAD this somewhere, grr.
+
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $sep= " ";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Turn 'Unmet build dependencies' into a plain list that can be fed to
+  aptinstall
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+our $in= do {
+    local $/;
+    <STDIN>
+};
+close STDIN or die $!;
+
+my $s=$in;
+$s=~ s/.*Unmet build dependencies://s;
+$s=~ s/\([^()]*\)//sg;
+$s=~ s/\s+/$sep/sg;
+print $s,"\n"
+  or die $!;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
