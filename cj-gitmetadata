@@ -297,22 +297,26 @@ sub Parallel_for_each {
     for (@child) { xxwaitpid $_,0 };
 }
 
+sub git_ls_files {
+    my $c= Chj::IO::Command->new_sender ("git","ls-files","-z",@_);
+    local $/="\0";
+    my @paths;
+    while (<$c>) {
+	chop;
+	push @paths, $_;
+    }
+    $c->xxfinish;
+    \@paths
+}
+
 our $commands=
   +{
     # n sub namensraumnaturlich. derdritte undnamensraum.
     save=> sub {
-	my $c= Chj::IO::Command->new_sender ("git","ls-files","-z");
-	local $/="\0";
-	my @paths;
-	while (<$c>) {
-	    chop;
-	    push @paths, $_;
-	}
-	$c->xxfinish;
 
 	my $outdir= xtmpdir $metadatadir;
 	Parallel_for_each
-	  (\@paths,
+	  (git_ls_files,
 	   sub {
 	       my ($path)=@_;
 
@@ -344,20 +348,30 @@ our $commands=
 	# add and commit it?
     },
     restore=> sub {
-	my $in= Chj::IO::DirDeep->new( $metadatadir);
-	while (my ($metadatapath,$stat)= $in->xnread_deep_files) {
-	    my $path= substr($metadatapath,length ($metadatadir) + 1);
-	    eval {
-		local our $metadata= CHJ::Metadata->new_from_path_string
-		  ($path, xContent($metadatapath));
-		my $path= $metadata->path;
-		local our $s= xlstat $path;
-		$metadata->restore($s);
-	    };
-	    if (ref $@ or $@) {
-		print STDERR "warn: '$path': $@";
-	    }
-	}
+	#my $metadatapaths=[];
+	#my $in= Chj::IO::DirDeep->new( $metadatadir);
+	#while (my ($metadatapath,$stat)= $in->xnread_deep_files) {
+	#    push @$metadatapaths, $metadatapath
+	#}
+	#or, probably faster,
+	my $metadatapaths= git_ls_files($metadatadir);
+
+	Parallel_for_each
+	  ($metadatapaths,
+	   sub {
+	       my ($metadatapath)=@_;
+	       my $path= substr($metadatapath,length ($metadatadir) + 1);
+	       eval {
+		   local our $metadata= CHJ::Metadata->new_from_path_string
+		     ($path, xContent($metadatapath));
+		   my $path= $metadata->path;
+		   local our $s= xlstat $path;
+		   $metadata->restore($s);
+	       };
+	       if (ref $@ or $@) {
+		   print STDERR "warn: '$path': $@";
+	       }
+	   });
     }
    };
 if (my $c= $$commands{$command}) {
