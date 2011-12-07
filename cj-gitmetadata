@@ -272,32 +272,64 @@ sub dir_or_fold {
     }
 }
 
+our $Parallel_n=2; # number of cpus to use  ## automatic?
+
+my @shifts= (0..($Parallel_n-1));
+
+use POSIX ();
+
+sub Parallel_for_each {
+    my ($vec,$proc)=@_;
+    my $len= @$vec;
+    my @child= map {
+	my $shift=$_;
+	if (my $pid= xfork) {
+	    $pid
+	} else {
+	    for (my $i= $shift; $i< $len; $i+= $Parallel_n) {
+		&$proc($$vec[$i])
+	    }
+	    POSIX::_exit(0);
+	}
+    } @shifts;
+    #my @stati= map { xwait $_ } @child;
+    #or, directly,
+    for (@child) { xxwaitpid $_,0 };
+}
+
 our $commands=
   +{
     # n sub namensraumnaturlich. derdritte undnamensraum.
     save=> sub {
 	my $c= Chj::IO::Command->new_sender ("git","ls-files","-z");
 	local $/="\0";
-	my $outdir= xtmpdir $metadatadir;
+	my @paths;
 	while (<$c>) {
 	    chop;
-	    my $path=$_;
-
-	    my $pred= sub {
-		my ($path)=@_;
-		$$ignore{$path}
-	    };
-	    my $do_ignore= dir_or_fold ($pred,
-					$path);
-	    if (not $do_ignore) {
-		if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
-		    xPutfile("$outdir/$path", $metadata->stringify."\n");
-		} else {
-		    warn "path '$path' doesn't exist (anymore)\n";
-		}
-	    }
+	    push @paths, $_;
 	}
 	$c->xxfinish;
+
+	my $outdir= xtmpdir $metadatadir;
+	Parallel_for_each
+	  (\@paths,
+	   sub {
+	       my ($path)=@_;
+
+	       my $pred= sub {
+		   my ($path)=@_;
+		   $$ignore{$path}
+	       };
+	       my $do_ignore= dir_or_fold ($pred,
+					   $path);
+	       if (not $do_ignore) {
+		   if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
+		       xPutfile("$outdir/$path", $metadata->stringify."\n");
+		   } else {
+		       warn "path '$path' doesn't exist (anymore)\n";
+		   }
+	       }
+	   });
 
 	# XX really should have a xputback method for tmpdirs as
 	# well!! Perms not kept, here. Ah at least it's got private perms.
