@@ -259,7 +259,6 @@ if (-f $metadataignorepath) {
 
 use Chj::xtmpdir;
 use Chj::IO::Command;
-use Chj::IO::DirDeep;
 
 sub dir_or_fold {
     my ($pred,$d)=@_;
@@ -350,12 +349,6 @@ our $commands=
 	# add and commit it?
     },
     restore=> sub {
-	#my $metadatapaths=[];
-	#my $in= Chj::IO::DirDeep->new( $metadatadir);
-	#while (my ($metadatapath,$stat)= $in->xnread_deep_files) {
-	#    push @$metadatapaths, $metadatapath
-	#}
-	#or, probably faster,
 	my $metadatapaths= git_ls_files($metadatadir);
 
 	Parallel_for_each
