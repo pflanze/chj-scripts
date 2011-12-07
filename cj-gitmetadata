@@ -272,7 +272,9 @@ sub dir_or_fold {
     }
 }
 
-our $Parallel_n=2; # number of cpus to use  ## automatic?
+use Chj::Linux::numcpus;
+
+our $Parallel_n= numcpus; # number of cpus to use
 
 my @shifts= (0..($Parallel_n-1));
 
