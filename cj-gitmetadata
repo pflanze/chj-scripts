@@ -271,32 +271,8 @@ sub dir_or_fold {
     }
 }
 
-use Chj::Linux::numcpus;
 
-our $Parallel_n= numcpus; # number of cpus to use
-
-my @shifts= (0..($Parallel_n-1));
-
-use POSIX ();
-
-sub Parallel_for_each {
-    my ($vec,$proc)=@_;
-    my $len= @$vec;
-    my @child= map {
-	my $shift=$_;
-	if (my $pid= xfork) {
-	    $pid
-	} else {
-	    for (my $i= $shift; $i< $len; $i+= $Parallel_n) {
-		&$proc($$vec[$i])
-	    }
-	    POSIX::_exit(0);
-	}
-    } @shifts;
-    #my @stati= map { xwait $_ } @child;
-    #or, directly,
-    for (@child) { xxwaitpid $_,0 };
-}
+use Chj::Parallel;
 
 sub git_ls_files {
     my $c= Chj::IO::Command->new_sender ("git","ls-files","-z",@_);
