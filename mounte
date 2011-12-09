@@ -259,6 +259,13 @@ sub try_file {
     # hm.   (vs multiple cont vs x..)
     my ($devpath)=@_;
     # could also be file. no problem.
+  WAIT: {
+	for (1..10) {
+	    last WAIT if -e $devpath;
+	    sleep 1;
+	}
+	die "timed out waiting for '$devpath' to appear";
+    }
     my $devrealpath= xrealpath $devpath; # to resolve symlinks
     my $in= Chj::IO::Command->new_sender
       ("file","--brief","--dereference","--special-files",$devrealpath);
