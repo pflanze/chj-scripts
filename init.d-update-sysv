@@ -9,3 +9,4 @@ echo "run: "
 
 echo "  update-rc.d servicename defaults"
 echo "while there are no symlinks done yet!"
+echo "  update-rc.d servicename disable"
