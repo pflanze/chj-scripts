@@ -31,6 +31,10 @@ sub usage {
 
   Also, only the files in the current HEAD are tracked ('of course').
 
+  Options:
+   --no-mtime / --no-times
+       don't restore mtime, only user/group/permissions
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -38,8 +42,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_no_time;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "no-times"=> \$opt_no_time,
+	   "no-mtime"=> \$opt_no_time,
 	   ) or exit 1;
 usage unless @ARGV==1;# optinally take list of files to save[well,update?] or restore?
 our ($command)= @ARGV;
@@ -180,7 +187,8 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	my $s=shift;
 	my ($stat)=@_;#since I already have it at hands..
 	if ($stat->type eq $s->type) {
-	    if ($stat->mtime != $s->mtime) {
+	    if ($stat->mtime != $s->mtime
+		and not $opt_no_time) {
 		if ($stat->is_link) {
 		    warn "note: don't know how to set mtime of symlink '".$s->path."'\n";
 		} else {
