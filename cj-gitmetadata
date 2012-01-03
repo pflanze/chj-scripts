@@ -69,9 +69,6 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	    my $e=$@;
 	    my $errno=$!+0;
 	    if ($errno == ENOENT) {
-		# have to create parent directories.
-		#hm. wieder mal wo linked list toll waer.gell?.rg.
-		#wl still auf "" name checken needed tho. 2 enden.
 		my $lp; $lp= sub {
 		    my ($d)= @_;
 		    if ($d eq "." or $d eq "/") {
@@ -108,13 +105,13 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     BEGIN {
 	@statfields=
 	  (
-	   #'atime', can't use it, because some filesystems are not mounted noatime. And maybe other problems. I don't want to have fussy data in the reposi.
+	   #'atime', no good, because some filesystems are not mounted noatime
 	   'mtime',
-	   # inode: nope, since not 'portable' (can't be 'ported' to another sys)
-	   'permissions', #inkl setuid and such, right?.
+	   # inode: nope, since not stable across filesystems
+	   'permissions', #incl setuid and such, right?.
 	   'type', #not settable of course. but checkable, ok?. like symlink vs file.
 	   'caching_username', #not uid, right?
-	   #'uid', #keep anyway? well but no would give bad diff
+	   #'uid', #keep anyway? no would give bad diff
 	   'caching_groupname',
 	  );
     }
@@ -131,7 +128,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	$$s[Path]=$path;
 	for my $field (@statfields) {
 	    my $setmethod="set_$field";
-	    $s->$setmethod($stat->$field); #dankseiundwl irg. #h wl wenn op symbols dann auch geh. [heh und jo hash lookup dann heheheh]
+	    $s->$setmethod($stat->$field);
 	}
 	$s
     }
@@ -148,7 +145,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     use Chj::schemestring 'schemestring_oneline','parse_schemestring';
     sub stringify {
 	my $s=shift;
-	join("\t", #to make parsing easy harharhar
+	join("\t", #to make parsing easy
 	     map {
 		 scalar schemestring_oneline(scalar $s->$_)
 	     }
@@ -182,11 +179,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     sub restore {
 	my $s=shift;
 	my ($stat)=@_;#since I already have it at hands..
-	# merke dass ich eben gar nid, einfach, @statfields lesen kan, fall für macros or. spec massige liste. code undso. "or?".[[howdoyoudothatfnctsl?.x]]
-	# und zwar nur weil keine methoden da sind  erneut. !.  setten von dingern  solltejustso. wsch haha  wl  .  kopy von fields. altes business  matching so  quasi  wie  closures fabrizieren von ausserem kontext  "???".
-	# aber es ist schlimmer, nicht nur missing methods sondern batching ebenfalls.
-	# also handarbeit.
-	if ($stat->type eq $s->type) { ##aber warum mach ich mtime check vorher zersch? und nid beideshierorso.?. wl nj.hier quasi assert dass es sich umsrichtigehandelt? . [weil link utime nid accessible]
+	if ($stat->type eq $s->type) {
 	    if ($stat->mtime != $s->mtime) {
 		if ($stat->is_link) {
 		    warn "note: don't know how to set mtime of symlink '".$s->path."'\n";
@@ -206,7 +199,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		xchmod $$s[Permissions], $$s[Path];
 	    }
 	} else {
-	    die "changed type: ".$stat->type." vs ".$s->type; ## why do I have to re write this. assign to a @v and then?.
+	    die "changed type: ".$stat->type." vs ".$s->type;
 	}
     }
     sub atime {
@@ -288,7 +281,6 @@ sub git_ls_files {
 
 our $commands=
   +{
-    # n sub namensraumnaturlich. derdritte undnamensraum.
     save=> sub {
 
 	my $outdir= xtmpdir $metadatadir;
@@ -312,17 +304,9 @@ our $commands=
 	       }
 	   });
 
-	# XX really should have a xputback method for tmpdirs as
-	# well!! Perms not kept, here. Ah at least it's got private perms.
-	# ((Also, could use an abstraction, with the implementation
-	# overwriting old files in place and removing files not used
-	# anymore; would be cheaper than both rm -rf and trash, I
-	# guess))
 	xxsystem ("rm","-rf","--",$metadatadir);
 	$outdir->autoclean(0);
 	xrename "$outdir", $metadatadir;
-
-	# add and commit it?
     },
     restore=> sub {
 	my $metadatapaths= git_ls_files($metadatadir);
