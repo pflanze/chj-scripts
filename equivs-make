@@ -1,0 +1,185 @@
+#!/usr/bin/perl -w
+
+# Wed Jan  4 04:12:23 CET 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname package-name [version]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2 or @ARGV==1;
+
+our ($packagename,$maybe_version)=@ARGV;
+
+sub Die {
+    die "$myname: @_\n"
+}
+
+use Chj::Mailfrom 'mailfrom';
+our $maintainer= mailfrom;
+
+use Chj::xperlfunc;
+
+our $file= $packagename;
+Die "file already exists: '$file'; run equivs-build yourself"
+  if -e $file;
+
+xxsystem "equivs-control", $file;
+
+# then mod it
+
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+
+our $in= xopen_read $file;
+our $out= xtmpfile $file;
+
+{
+    package CHJeqmk::_line;
+    use Class::Array -fields=> -publica=>
+      qw();
+    sub comment {
+	my $s=shift;
+	my $maybe_comment= $s->maybe_comment;
+	defined $maybe_comment ? $maybe_comment : ""
+    }
+    end Class::Array;
+}
+
+{
+    package CHJeqmk::keyline;
+    use Class::Array -class=> 'CHJeqmk::_line', -extend=> -publica=>
+      qw(maybe_comment key rest);
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
+    }
+    sub line {
+	my $s=shift;
+	$s->comment."$$s[Key]: $$s[Rest]"
+    }
+    end Class::Array;
+}
+{
+    package CHJeqmk::followupline;
+    use Class::Array -class=> 'CHJeqmk::_line', -extend=> -publica=>
+      qw(maybe_comment rest);
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
+    }
+    sub line {
+	my $s=shift;
+	$s->comment." $$s[Rest]"
+    }
+    end Class::Array;
+}
+{
+    package CHJeqmk::keylessgroupline;
+    use Class::Array -class=> 'CHJeqmk::_line', -extend=> -publica=>
+      qw(rest);
+    sub new {
+	my $cl=shift;
+	bless [@_],$cl
+    }
+    sub line {
+	my $s=shift;
+	$$s[Rest]
+    }
+    end Class::Array;
+}
+
+our $groups=[]; # list of [ $key, group ]
+{
+    my $maybe_key; # maybe string
+    my $maybe_group; # maybe array; primary criterium for if there's something left
+    while (<$in>) {
+	chomp;
+	if (/^(\# )?([\w-]+): (.*)/) {
+	    my $line= new CHJeqmk::keyline ($1,$2,$3);
+	    if (defined $maybe_group) {
+		push @$groups, [$maybe_key, $maybe_group];
+	    }
+	    $maybe_key= $line->key;
+	    $maybe_group= [$line];
+	} elsif (/^(\# )? (.+)/) {
+	    my $line= new CHJeqmk::followupline ($1,$2);
+	    if (defined $maybe_key) {
+		push @$maybe_group, $line;
+	    } else {
+		die "invalid file?, got followup line without a key line first";
+	    }
+	} elsif (/^$/ or /^\#\#/) {
+	    my $line= new CHJeqmk::keylessgroupline ($_);
+	    # exiting group
+	    if (defined $maybe_group) {
+		push @$groups, [$maybe_key, $maybe_group];
+	    }
+	    # new key-less group
+	    $maybe_key= undef;
+	    $maybe_group= [$line];
+	} else {
+	    die "non-matching line: '$_'";
+	}
+    }
+    # end group
+    if (defined $maybe_group) {
+	push @$groups, [$maybe_key, $maybe_group];
+    }
+}
+
+# convert values to lines
+sub KeyToLines {
+    my ($key, $val0, @restvals)=@_;
+    die 'not impl yet' if @restvals;
+    (lc $key, new CHJeqmk::keyline (undef, $key, $val0))
+}
+
+our $val=
+  +{
+    KeyToLines(Package=> $packagename),
+    KeyToLines(Maintainer=> $maintainer),
+    (defined $maybe_version ? KeyToLines(version=> $maybe_version) : ()),
+    KeyToLines(Description=> 'created with equivs-make'), # what should it say?
+   };
+
+for (@$groups) {
+    my ($key,$gs)=@$_;
+    my $print= sub {
+	my ($gs)=@_;
+        for (@$gs) {
+	    print $_->line,"\n"
+	}
+    };
+    my $printgs= sub {
+	&$print($gs);
+    };
+    if (defined $key) {
+	if (my $lines= $$val{lc $key}) {
+	    &$print($lines)
+	} else {
+	    &$printgs
+	}
+    } else {
+	&$printgs
+    }
+}
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
