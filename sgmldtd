@@ -61,7 +61,7 @@ unless ($cmd){
  BEGIN { $^W=$oldW }
 }
 use lib "/opt/chj/perllib";
-use fileutils 'fetchfile';
+use Chj::fileutils 'fetchfile';
 use Data::Dumper;
 
 

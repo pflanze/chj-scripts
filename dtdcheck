@@ -52,7 +52,7 @@ my $dtdfile= shift @files;
 
 use XML::LibXML;
 #use XML::LibXML::Dtd; nope
-#use fileutils 'fetchfile';###
+#use Chj::fileutils 'fetchfile';###
 #=pod
 sub fetchfile {
     my $file=shift;

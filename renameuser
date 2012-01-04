@@ -40,7 +40,7 @@ usage unless @files ==2;
 my ($old,$new)=@files;
 
 use lib "/opt/chj/perllib";
-use fileutils qw(fetchfile writebackfile);
+use Chj::fileutils qw(fetchfile writebackfile);
 
 my $PWFILE= "/etc/passwd";
 my $SHFILE= "/etc/shadow";
