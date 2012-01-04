@@ -42,8 +42,7 @@ use Fcntl;
 use Fcntl qw(LOCK_EX LOCK_NB);
 use POSIX qw(EINTR EEXIST EINVAL);
 
-use vars qw($tmpsuffix $bcksuffix $maxfilesize $symlinks $checkperms $strictperms $recreatesetid);
-$maxfilesize= 1024*1024;
+use vars qw($tmpsuffix $bcksuffix $symlinks $checkperms $strictperms $recreatesetid);
 $tmpsuffix= '.new~%';
 $bcksuffix= '.bck';
 $symlinks= 'deny';
@@ -110,7 +109,6 @@ sub releaselock($) {
 
 Returns a reference to the contents of the file at the time of 
 calling fetchfile. 
-Doesn't read files bigger than 1MB (can be changed through $Chj::fileutils::maxfilesize).
 Croaks on errors or if the file doesn't exist. 
 
 =item $fh= getfilehandle ( filepath )
@@ -190,32 +188,13 @@ special situations.)
 
 sub fetchfile($) {
     my ($file)=@_;
-    my $buffer;
-    sysopen IN,$file, O_RDONLY or croak "Could not open $file for reading: $!";
-    #open IN,"<$file"  or croak "Could not open $file for reading: $!";
-    ##local $!;
-    #local $/;
-    #$buffer= <IN>; defined $buffer or die "Fehler buffer undef";
-    #die $! if $!+0;
-    #warn "Got buffer '$buffer'";   does not help, will just be empty string in case of "broken" read pipe.
-    ##heh, do we have ANY way determining if infile pipe has been *prematurely* closed?
-    ##WRITING to a closed pipe is an error of course. But reading: eof versus error?
-    ##only way is return code from subprocess.
-    ## but thus this is impossible to make safe: (shell)
-    ## program1 | program2   where program1 returns an error code. program2 still continues without knowing that there has been an error.
-    if (defined (my $cnt= sysread IN,$buffer,$maxfilesize+1  #####! this temporary allocates exactly $maxfilesize+1 bytes of memory regardless of the size of the file !!!  So should use local $/; $buffer=<IN>  regardless of problem of error checking ?  Or should I use mmap and copy from it? or stat to get the file size. Or loop with small buffer.   mmap does not work with pipes. but using sysopen it wouldn't anyways.
-       )) {
-        ##croak "Error reading from $file: $!" if $!+0; ## I'm testing $! here because I thought it could be there is an error in the middle of reading (i.e. nfs mount), and thus $cnt be set to some value. Wrong assumption?
-        ##defined (sysread IN,$buffer,$maxfilesize+1) or die "JETZT fehler: $!"; nope still no error in case of "broken" inpipe.
-        if (close IN) {
-	    croak "File $file is too big" if $cnt > $maxfilesize;
-	    \$buffer
-        } else {
-	    croak "Error closing $file: $!";
-        }
-    } else {
-        croak "Error reading from $file: $!";
-    }
+    sysopen my $IN,$file, O_RDONLY
+      or croak "Could not open $file for reading: $!";
+    local $/;
+    my $cnt= <$IN>;
+    close $IN
+      or croak "Error closing $file: $!";
+    \$cnt
 }
 
 sub getfilehandle($) {
