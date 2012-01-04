@@ -147,8 +147,10 @@ our $groups=[]; # list of [ $key, group ]
 # convert values to lines
 sub KeyToLines {
     my ($key, $val0, @restvals)=@_;
-    die 'not impl yet' if @restvals;
-    (lc $key, new CHJeqmk::keyline (undef, $key, $val0))
+    (lc $key,
+     [new CHJeqmk::keyline (undef, $key, $val0),
+      map { new CHJeqmk::followupline(undef, $_)} @restvals
+     ])
 }
 
 our $val=
@@ -164,7 +166,7 @@ for (@$groups) {
     my $print= sub {
 	my ($gs)=@_;
         for (@$gs) {
-	    print $_->line,"\n"
+	    $out->xprint( $_->line,"\n");
 	}
     };
     my $printgs= sub {
@@ -181,5 +183,12 @@ for (@$groups) {
     }
 }
 
+$out->xclose;
+$out->xputback;
+
+xxsystem "equivs-build", $file;
+
+
+
 #use Chj::ruse;
-use Chj::Backtrace; use Chj::repl; repl;
+#use Chj::Backtrace; use Chj::repl; repl;
