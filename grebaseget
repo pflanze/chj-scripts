@@ -31,7 +31,9 @@ origbranch_raw="`git symbolic-ref HEAD`"
 # to avoid a pipe clobbering the exit code, we do it in two pieces.
 origbranch="`echo "$origbranch_raw"|sed 's/.*\///'`"
 
-git checkout "$id"
+# avoid using branch names, since they would be mutated
+realid=`git rev-parse "$id"`
+git checkout "$realid"
 git rebase "$origbranch"
 git push . HEAD:"$origbranch"
 git checkout "$origbranch"
