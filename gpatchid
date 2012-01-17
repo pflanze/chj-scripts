@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 [id(s)]"
+    echo "  print patchid for each id (reads from stdin if none given)"
+    exit 1
+}
+
+gpatchid() {
+    id="$1"
+    git diff "$id"^.."$id"|g-patch-id
+}
+
+if [ $# -eq 0 ]; then
+    while IFS='' read id; do
+	gpatchid "$id"
+    done
+else
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+	usage
+    else
+	for id in "$@"; do
+	    gpatchid "$id"
+	done
+    fi
+fi
+
