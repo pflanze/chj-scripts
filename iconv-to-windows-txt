@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 [fromcharset]"
+    echo "  convert from fromcharset to UTF-8 with BOM (e.g. for Windows Notepad)"
+    echo "  (default fromcharset is UTF-8 [without BOM])"
+    exit 1
+}
+
+from=UTF-8
+
+if [ $# -eq 1 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+	usage
+    else
+	from="$1"
+    fi
+elif [ $# -gt 1 ]; then
+    usage
+fi
+
+
+{
+    # Tip from:
+    # http://stackoverflow.com/questions/4364156/iconv-converting-from-windows-ansi-to-utf-8-with-bom
+    echo -ne '\xEF\xBB\xBF'
+    iconv --from "$from" --to UTF-8
+}
