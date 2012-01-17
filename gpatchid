@@ -3,14 +3,14 @@
 set -eu
 
 usage () {
-    echo "$0 [id(s)]"
-    echo "  print patchid for each id (reads from stdin if none given)"
+    echo "$0 [commitid(s)]"
+    echo "  print patchid for each commitid (reads from stdin if none given)"
     exit 1
 }
 
 gpatchid() {
     id="$1"
-    git diff "$id"^.."$id"|g-patch-id
+    git diff-tree -p -M50 -C60 "$id" | git patch-id
 }
 
 if [ $# -eq 0 ]; then
