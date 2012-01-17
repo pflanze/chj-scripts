@@ -5,6 +5,7 @@ set -eu
 usage () {
     echo "$0 [commitid(s)]"
     echo "  print patchid for each commitid (reads from stdin if none given)"
+    echo "  (Note: also see Chj/Git/Patchid.pm)"
     exit 1
 }
 
