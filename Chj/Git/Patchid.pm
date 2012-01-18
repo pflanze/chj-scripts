@@ -117,7 +117,7 @@ use Chj::xtmpfile;
 sub Patchid_line {
     my ($commitid)=@_;
     assert_commitid($commitid);
-    warn "recalculating Patchid for $commitid";#
+    #warn "recalculating Patchid for $commitid";#
     my $in= Chj::IO::Command->new_sender(qw(git diff-tree -p -M50 -C60),
 					 $commitid);
     my $end= xtmpfile;
