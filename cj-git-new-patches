@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+# Tue Jan 17 19:19:14 CET 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname other_branch_or_id
+
+  Show commitid and one-line summary of the patches that are on
+  otherbranch but not on HEAD.
+
+  Options:
+   --all   show all commits between merge base and other_branch_or_id,
+           but say whether we have it already
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_all;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "all"=> \$opt_all,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::Git::Functions ":all";
+use Chj::Git::Patchid;
+
+our $patchid= new Chj::Git::Patchid (); # or give git_dir, or also cache_base
+
+sub newpatches {
+    my ($other_branch_or_id)=@_;
+    my @mb= git_merge_base__all ("HEAD", $other_branch_or_id);
+    if (@mb==1) {
+	my ($mb)=@mb;
+	# index our branch
+	my $have={}; # patchids
+	my $l= git_log_oneline $mb.".."."HEAD";
+	my $v;
+	while (($v,$l)= $l->next) {
+	    my ($commitid,$title)= @$v;
+	    #warn "v='$v', commitid='$commitid', title='$title'";
+	    if (my $patchid= $patchid->of_commitid($commitid)) {
+		$$have{$patchid}= $commitid;
+	    }
+	}
+	# list other branch
+	$l= git_log_oneline $mb."..".$other_branch_or_id;
+	while (($v,$l)= $l->next) {
+	    my ($commitid,$title)= @$v;
+	    my $print=sub {
+		my ($prefix)=@_;
+		print "$prefix$commitid $title\n" or die $!;
+	    };
+	    if (my $patchid= $patchid->of_commitid($commitid)) {
+		if ($$have{$patchid}) {
+		    if ($opt_all) {
+			&$print("YES  ");
+		    }
+		} else {
+		    &$print($opt_all ? "NO   " : "");
+		}
+	    } else {
+		if ($opt_all) {
+		    &$print("NOID ");
+		}
+	    }
+	}
+    } else {
+	die "not sure what to do if there are not exactly 1 merge base: @mb";
+    }
+}
+
+newpatches $_ for @ARGV;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
