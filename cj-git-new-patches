@@ -18,6 +18,8 @@ sub usage {
    --all   show all commits between merge base and other_branch_or_id,
            but say whether we have it already
    --as    also show a second line with our commit with the same patchid
+   --have  show commit ids in our and the other branch which have the
+           same patchid
 
   (Christian Jaeger <$email>)
 ";
@@ -29,6 +31,7 @@ our $verbose=0;
 #our $opt_dry;
 our $opt_all;
 our $opt_as;
+our $opt_have;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "all"=> \$opt_all,
@@ -36,6 +39,7 @@ GetOptions("verbose"=> \$verbose,
 	       $opt_all=1;
 	       $opt_as=1;
 	   },
+	   "have"=> \$opt_have,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -71,14 +75,20 @@ sub newpatches {
 	    };
 	    if (my $patchid= $patchid->of_commitid($commitid)) {
 		if (my $c= $$have{$patchid}) {
-		    if ($opt_all) {
+		    if ($opt_have) {
+			print("$c $commitid\n") or die $!;
+		    } elsif ($opt_all) {
 			&$print("have ");
 			if ($opt_as) {
 			    print("  as $c\n") or die $!;
 			}
 		    }
 		} else {
-		    &$print($opt_all ? "NEED " : "");
+		    if ($opt_have) {
+			# nothing
+		    } else {
+			&$print($opt_all ? "NEED " : "");
+		    }
 		}
 	    } else {
 		if ($opt_all) {
