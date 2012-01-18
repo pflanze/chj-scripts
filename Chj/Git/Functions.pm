@@ -44,6 +44,8 @@ package Chj::Git::Functions;
 	      git_tags
 
 	      status_is_clean
+
+	      git_log_oneline
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -502,6 +504,71 @@ sub status_is_clean {
 	      $incnt=~ /\nnothing to commit .working directory clean/)),
      $incnt
     ]
+}
+
+
+# returning filehandles for streaming?
+# or no, want the reverse anyway, right? or not? maybe not.
+# ah but want to split it? har
+
+{
+    package Chj::Git::Functions::Stream;
+    # avoiding issues with lazy lists (ah well as long as not doing
+    # filter or similar, there would be none with them either?)
+    use Class::Array -fields=> -publica=>
+      (qw(fn fh val));
+    sub new {
+	my $cl=shift;
+	my $s= bless [@_], $cl;
+	#$$s[Val]= $$s[Fn]->(scalar $$s[Fh]->xreadline);
+	## ^ why does scalar <$$s[Fh]> not work?
+	my $line= $$s[Fh]->xreadline;
+	if (defined $line) {
+	    $$s[Val]= $$s[Fn]->($line);
+	} else {
+	    $s->xxfinish;
+	}
+	$s
+    }
+    sub rest {
+	my $s=shift;
+	ref($s)->new(@$s[Fn,Fh]);
+    }
+    sub next {
+	my $s=shift;
+	my $v= $s->val;
+	if (defined $v) {
+	    ($v,
+	     $s->rest)
+	} else {
+	    ()
+	}
+    }
+    sub xxfinish {
+	my $s=shift;
+	$$s[Fh]->xxfinish;
+    }
+    # also want an abort? (xclose) maybe
+    end Class::Array;
+    *first=*val;
+}
+
+sub git_log_oneline {
+    @_==1 or die;
+    my ($range)=@_;
+    my $in= Chj::IO::Command->new_sender('git', 'log',
+                                         '--pretty=oneline', $range);
+    new Chj::Git::Functions::Stream
+      (sub {
+	   my ($line)=@_;
+	   chomp $line;
+	   #[ $line=~ /^([a-f0-9]{20,}) (.*)/ or die "no match in line '$line'" ]
+	   # does not work.
+	   my @r= $line=~ /^([a-f0-9]{20,}) (.*)/
+	     or die "no match in line '$line'";
+	   \@r
+       },
+       $in);
 }
 
 
