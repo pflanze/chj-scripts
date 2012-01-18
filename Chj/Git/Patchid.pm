@@ -12,8 +12,8 @@ Chj::Git::Patchid
 
  use Chj::Git::Patchid;
  our $patchid= new Chj::Git::Patchid (); # or give git_dir, or also cache_base
- $patchid->of_commitid($commitid)
- $patchid->maybe_commitid_of_patchid($patchid)
+ $patchid->of_commitid($commitid) # patchid
+ $patchid->commitids_of_patchid($patchid) # hashmap commitid=>true
 
 =head1 DESCRIPTION
 
@@ -92,7 +92,7 @@ sub cache {
 		chomp;
 		my ($patchid,$commitid)= /^((?:$sha1)|) ($sha1)\z/s
 		  or die "invalid entry in '$file': '$_'";
-		$$p2c{$patchid}= $commitid;
+		$$p2c{$patchid}{$commitid}++;
 		$$c2p{$commitid}= $patchid;
 	    }
 	    $f->xclose;
@@ -156,14 +156,14 @@ sub of_commitid {
 	$f->xclose;
 	# and into mem, too.. (or just 'forget' ?)
 	$s->cache_commitid->{$commitid}= $patchid;
-	$s->cache_patchid->{$patchid}= $commitid;
+	$s->cache_patchid->{$patchid}{$commitid}++;
 	#$s->forget;
 	#$s->of($commitid)
 	$patchid
     }
 }
 
-sub maybe_commitid_of_patchid {
+sub commitids_of_patchid {
     my $s=shift;
     my ($patchid)=@_;
     assert_commitid($patchid);
