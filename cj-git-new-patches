@@ -17,6 +17,7 @@ sub usage {
   Options:
    --all   show all commits between merge base and other_branch_or_id,
            but say whether we have it already
+   --as    also show a second line with our commit with the same patchid
 
   (Christian Jaeger <$email>)
 ";
@@ -27,9 +28,14 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_all;
+our $opt_as;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "all"=> \$opt_all,
+	   "as"=> sub {
+	       $opt_all=1;
+	       $opt_as=1;
+	   },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -64,9 +70,12 @@ sub newpatches {
 		print "$prefix$commitid $title\n" or die $!;
 	    };
 	    if (my $patchid= $patchid->of_commitid($commitid)) {
-		if ($$have{$patchid}) {
+		if (my $c= $$have{$patchid}) {
 		    if ($opt_all) {
 			&$print("have ");
+			if ($opt_as) {
+			    print("  as $c\n") or die $!;
+			}
 		    }
 		} else {
 		    &$print($opt_all ? "NEED " : "");
