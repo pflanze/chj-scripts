@@ -66,14 +66,14 @@ sub newpatches {
 	    if (my $patchid= $patchid->of_commitid($commitid)) {
 		if ($$have{$patchid}) {
 		    if ($opt_all) {
-			&$print("YES  ");
+			&$print("have ");
 		    }
 		} else {
-		    &$print($opt_all ? "NO   " : "");
+		    &$print($opt_all ? "NEED " : "");
 		}
 	    } else {
 		if ($opt_all) {
-		    &$print("NOID ");
+		    &$print("noid ");
 		}
 	    }
 	}
