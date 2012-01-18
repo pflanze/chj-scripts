@@ -10,9 +10,10 @@ Chj::Git::Patchid
 
 =head1 SYNOPSIS
 
- use Chj::Git::Patchid
+ use Chj::Git::Patchid;
  our $patchid= new Chj::Git::Patchid (); # or give git_dir, or also cache_base
- $patchid->of($commitid)
+ $patchid->of_commitid($commitid)
+ $patchid->maybe_commitid_of_patchid($patchid)
 
 =head1 DESCRIPTION
 
