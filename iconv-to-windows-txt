@@ -26,5 +26,5 @@ fi
     # Tip from:
     # http://stackoverflow.com/questions/4364156/iconv-converting-from-windows-ansi-to-utf-8-with-bom
     echo -ne '\xEF\xBB\xBF'
-    iconv --from "$from" --to UTF-8
+    perl -wne 's/\n/\r\n/s; print or die' | iconv --from "$from" --to UTF-8
 }
