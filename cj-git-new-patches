@@ -20,7 +20,7 @@ sub usage {
    --as    also show a second line with our commit with the same patchid
    --have  show commit ids in our and the other branch which have the
            same patchid
-   --not-have
+   --need
            show commit ids in the other branch which have a patchid we
            don't have (same as no option, but no title is shown)
    --tab   use tab instead of space as separator
@@ -36,7 +36,7 @@ our $verbose=0;
 our $opt_all;
 our $opt_as;
 our $opt_have;
-our $opt_not_have;
+our $opt_need;
 our $opt_tab;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
@@ -46,7 +46,7 @@ GetOptions("verbose"=> \$verbose,
 	       $opt_as=1;
 	   },
 	   "have"=> \$opt_have,
-	   "not-have"=> \$opt_not_have,
+	   "need"=> \$opt_need,
 	   "tab"=> \$opt_tab,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
@@ -96,7 +96,7 @@ sub newpatches {
 		} else {
 		    if ($opt_have) {
 			# nothing
-		    } elsif ($opt_not_have) {
+		    } elsif ($opt_need) {
 			print("$commitid\n") or die $!;
 		    } else {
 			&$print($opt_all ? "NEED " : "");
