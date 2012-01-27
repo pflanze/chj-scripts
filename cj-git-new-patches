@@ -18,7 +18,7 @@ sub usage {
    --all   show all commits between merge base and other_branch_or_id,
            but say whether we have it already
    --as    also show a second line with our commit with the same patchid
-   --have  show commit ids in our and the other branch which have the
+   --have  show commit ids in the other and our branch which have the
            same patchid
    --need
            show commit ids in the other branch which have a patchid we
@@ -86,7 +86,7 @@ sub newpatches {
 	    if (my $patchid= $patchid->of_commitid($commitid)) {
 		if (my $c= $$have{$patchid}) {
 		    if ($opt_have) {
-			print("$c$SEP$commitid\n") or die $!;
+			print("$commitid$SEP$c\n") or die $!;
 		    } elsif ($opt_all) {
 			&$print("have ");
 			if ($opt_as) {
