@@ -38,6 +38,7 @@ our $opt_as;
 our $opt_have;
 our $opt_need;
 our $opt_tab;
+our $opt_diff;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "all"=> \$opt_all,
@@ -48,6 +49,7 @@ GetOptions("verbose"=> \$verbose,
 	   "have"=> \$opt_have,
 	   "need"=> \$opt_need,
 	   "tab"=> \$opt_tab,
+	   "diff"=> \$opt_diff,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -98,6 +100,12 @@ sub newpatches {
 			# nothing
 		    } elsif ($opt_need) {
 			print("$commitid\n") or die $!;
+		    } elsif ($opt_diff) {
+			# show diff between patch $commitid and those
+			# patches that we have with the same
+			# author-date and title, or same title if none
+			# with same author-date
+			#ç
 		    } else {
 			&$print($opt_all ? "NEED " : "");
 		    }
