@@ -114,17 +114,28 @@ sub cache_commitid {
 use Chj::IO::Command;
 use Chj::xtmpfile;
 
+sub Difftree_fh {
+    my ($commitid)=@_;
+    my $in= Chj::IO::Command->new_sender(qw(git diff-tree -p -M50 -C60),
+					 $commitid);
+    $in
+}
+
+sub Difftree_to {
+    my ($commitid,$outfh)=@_;
+    my $in= Difftree_fh($commitid);
+    $in->xsendfile_to($outfh);
+    $in->xxfinish;
+}
+
 sub Patchid_line {
     my ($commitid)=@_;
     assert_commitid($commitid);
     #warn "recalculating Patchid for $commitid";#
-    my $in= Chj::IO::Command->new_sender(qw(git diff-tree -p -M50 -C60),
-					 $commitid);
     my $end= xtmpfile;
     my $out= Chj::IO::Command->new_receiver_with_stdout_to_fh
       ($end, qw(git patch-id));
-    $in->xsendfile_to($out);
-    $in->xxfinish;
+    Difftree_to($commitid, $out);
     $out->xxfinish;
     $end->xrewind;
     my $res= Chomp(scalar $end->xcontent);
