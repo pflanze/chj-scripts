@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cat <<EOF
+<jelly> chrissbx: use kpartx instead
+<jelly> chrissbx: you'll need to destroy the kpartx-generated devices first if you decide to losetup -d
+EOF
