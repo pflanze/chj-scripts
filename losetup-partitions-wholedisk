@@ -1,10 +1,23 @@
 #!/bin/bash
 
-if [ $# -eq 1 ]; then
-    kpartx -a "$1"
-else
+set -eu
+
+usage() {
+    echo "$0 [wholedisk]"
+    echo
     cat <<EOF
 <jelly> chrissbx: use kpartx instead
 <jelly> chrissbx: you'll need to destroy the kpartx-generated devices first if you decide to losetup -d
 EOF
+    exit 1
+}
+
+if [ $# -eq 1 ]; then
+    if [ "$1" == "-h" -o "$1" == "--help" ]; then
+        usage
+    else
+	kpartx -a "$1"
+    fi
+else
+    usage
 fi
