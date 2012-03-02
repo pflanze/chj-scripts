@@ -1,6 +1,10 @@
 #!/bin/bash
 
-cat <<EOF
+if [ $# -eq 1 ]; then
+    kpartx -a "$1"
+else
+    cat <<EOF
 <jelly> chrissbx: use kpartx instead
 <jelly> chrissbx: you'll need to destroy the kpartx-generated devices first if you decide to losetup -d
 EOF
+fi
