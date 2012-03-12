@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 username [ path ]"
+    echo "  create directory at 'path', or 'username' if not given,"
+    echo "  private and owned by user 'username'"
+    exit 1
+}
+
+if [ $# -lt 1 -o $# -gt 2 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+username="$1"
+path="${2-$username}"
+
+private mkdir "$path"
+chown "$username"."$username" "$path"
