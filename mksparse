@@ -98,7 +98,8 @@ for (@files) {
 	my $blocksize=
 	  #1024*64;
 	  1024*4;
-	my $blocks= do{ use integer; $sizebytes / $blocksize};
+	my $blocks= int( $sizebytes / $blocksize);
+	warn "blocks=$blocks" if $DEBUG;
 	my $lastbytes= $sizebytes % $blocksize;
 	my $block= "\0"x$blocksize;
 	my $randomin= do {
