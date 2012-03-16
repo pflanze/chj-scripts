@@ -41,18 +41,20 @@ sub schemestring_oneline {
 }
 
 sub parse_schemestring {
-    # expects the string including the leading and terminating double quotes
+    # expects the string including the leading and terminating double
+    # quotes
     my ($s)=@_;
     local $_=$s;
     # strip leading and ending double quotes:
     s/^.*?"//;
     s/"[^"]*\z//;
 
-    # backslashes are 'difficult': one fresh backslash and a char is to be interpreted. ah, actually easy?:
+    # backslashes are 'difficult': one fresh backslash and a char is
+    # to be interpreted. ah, actually easy?:
     s{\\(.)?}{
         die "invalid schemestring ending with escaped end quote: '$s'"
            unless defined $1;
-        (($1 eq '\\') ? '\\' : #yes it's different from sh where '\' would be the right thing
+        (($1 eq '\\') ? '\\' :
          ($1 eq 'n') ? "\n" :
          ($1 eq 'r') ? "\r" :
          ($1 eq 't') ? "\t" :
