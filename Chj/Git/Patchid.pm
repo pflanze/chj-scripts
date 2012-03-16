@@ -152,6 +152,7 @@ sub of_commitid {
     if (defined $p_id) {
 	$p_id
     } else {
+	# get patchid:
 	my $line= Patchid_line($commitid);
 	my ($patchid,$_commitid)= split /\s+/, $line;
 	if (defined $_commitid) {
@@ -161,9 +162,12 @@ sub of_commitid {
 	    defined $patchid and die "bug, '$patchid'";
 	    $patchid=""
 	}
+	# and title and author-time:
+	
+	# save them:
 	my $file= $s->cache_file;
 	my $f= xopen_append $file;
-	$f->xprint("$patchid $commitid\n");
+	$f->xprint("$commitid $patchid $subjectid $authortimesubjectid\n");
 	$f->xclose;
 	# and into mem, too.. (or just 'forget' ?)
 	$s->cache_commitid->{$commitid}= $patchid;
