@@ -2,8 +2,10 @@
 
 set -eu
 
-test $# -eq 1 || { echo "usage: $0 command" ; exit 1; }
+lwh () {
+    w=$(which "$1") || { echo "command not found: $1"; exit 1; }
 
-w=$(which "$1") || { echo "command not found: $1"; exit 1; }
+    less "$w"
+}
 
-less "$w"
+for f in "$@"; do lwh "$f"; done
