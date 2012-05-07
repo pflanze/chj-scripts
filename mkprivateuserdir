@@ -5,7 +5,8 @@ set -eu
 usage () {
     echo "usage: $0 username [ path ]"
     echo "  create directory at 'path', or 'username' if not given,"
-    echo "  private and owned by user 'username'"
+    echo "  private and owned by user 'username'."
+    echo "  If 'path' exists and is a dir, create 'path'/'username' instead."
     exit 1
 }
 
@@ -19,6 +20,17 @@ fi
 
 username="$1"
 path="${2-$username}"
+
+if [ -z "${2-}" ]; then
+    path="$username"
+else
+    if [ -d "$2" ]; then
+	path="$2/$username"
+    else
+	path="$2"
+    fi
+fi
+
 
 private mkdir "$path"
 chown "$username"."$username" "$path"
