@@ -1,0 +1,38 @@
+#!/usr/bin/perl -w
+
+# Tue May 29 16:38:17 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..?]
+
+  g-branch, but removing the '* ' and '  ' before the branch names.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+if (@ARGV and $ARGV[0]=~ /^--?h(elp)?$/) {
+    usage
+}
+
+use Chj::IO::Command;
+
+my $in= Chj::IO::Command->new_sender("git","branch", @ARGV);
+
+while (<$in>) {
+    s/^[ *] //;
+    print or die $!;
+}
+
+$in->xxfinish;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
