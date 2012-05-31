@@ -73,68 +73,6 @@ sub readlsof {
 }
 
 
-sub cont_capture ( $ ) {
-    my ($pass)=@_;
-    my $token= [ "CONT" ];
-    my $do= sub {
-	&$pass ($token)
-    };
-    if (wantarray) {
-	my @res;
-	if (eval {
-	    @res= &$do;
-	    1
-	}) {
-	    @res
-	} else {
-	    my $e=$@;
-	    if (ref($e) eq "ARRAY"
-		and @$e
-		and $$e[0] == $token) {
-		shift @$e;
-		return @$e
-	    } else {
-		die $e
-	    }
-	}
-    } else {
-	my $res;
-	if (eval {
-	    $res= &$do;
-	    1
-	}) {
-	    $res
-	} else {
-	    my $e=$@;
-	    if (ref($e) eq "ARRAY"
-		and @$e
-		and $$e[0] == $token) {
-		return $$e[1] # XX: why the first of the vals and not the last?
-	    } else {
-		die $e
-	    }
-	}
-    }
-}
-
-sub cont_invoke {
-    my ($exit,@vals)=@_;
-    die [$exit, @vals];
-}
-
-sub callcc ( $ ) {
-    my ($proc)=@_;
-    cont_capture sub {
-	my ($exit)=@_;
-	&$proc (sub {
-		    my (@vals)=@_;
-		    cont_invoke $exit,@vals
-		});
-    };
-}
-
-
-
 sub xref ($ $ $ ) {
     my ($hsh,$key,$maybe_exit)=@_;
     my $val= $$hsh{$key};
@@ -156,7 +94,7 @@ sub xprintln {
 
 
 use Data::Dumper;
-
+use Chj::callcc2;
 
 our $files; # those we are interested in; path => size
 
