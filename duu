@@ -16,7 +16,7 @@ sub usage {
   --no-blocksize     determine blocksize from seen data (doesn't seem to be right)
   -x, --one-file-system   skip directories on different file systems, but run
                           through all subdirs
-  -xx                skip subdirs on different file systems than dir
+  -xx                skip subdirs on different file systems than dir (includes -x)
 ";
     exit 1;
 }
