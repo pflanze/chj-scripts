@@ -1,6 +1,7 @@
 #!/bin/bash
 
+# if your shell's PROMPT_COMMAND is set, then only works for scripts
+
 echo -ne "\033]2;"
 echo -n "$@"
 echo -ne "\007"
-unset PROMPT_COMMAND
