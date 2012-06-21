@@ -91,17 +91,6 @@ sub lsof_serialize {
     $log->xflush;
 }
 
-sub lsof_log {
-    my ($log,$data)=@_;
-    my $by_t= $$data{by_t};
-    for my $t (sort keys %$by_t) {
-	$log->xprintln($t);
-	for my $rec (@{$$by_t{$t}}) {
-	    $log->xprintln ($$rec{n});
-	}
-    }
-}
-
 sub xbackground {
     my ($thunk)=@_;
     if (my $pid= xfork) {
