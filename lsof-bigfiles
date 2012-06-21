@@ -27,6 +27,12 @@ GetOptions("verbose"=> \$verbose,
 usage if @ARGV;
 
 
+use Data::Dumper;
+use Chj::callcc2;
+use Chj::Parse::Lsof 'readlsof';
+use Chj::xperlfunc 'xprintln';
+
+
 sub xref ($ $ $ ) {
     my ($hsh,$key,$maybe_exit)=@_;
     my $val= $$hsh{$key};
@@ -40,15 +46,6 @@ sub xref ($ $ $ ) {
 	}
     }
 }
-
-sub xprintln {
-    print @_,"\n"
-      or die "xprintln: $!";
-}
-
-
-use Data::Dumper;
-use Chj::callcc2;
 
 our $files; # those we are interested in; path => size
 
@@ -80,8 +77,6 @@ our $treat_f_type=
    };
 
 our $treat_fd= $show_f;
-
-use Chj::Parse::Lsof 'readlsof';
 
 readlsof ["-n"], sub {
     my ($rec)= @_;
