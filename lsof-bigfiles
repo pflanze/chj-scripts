@@ -26,52 +26,6 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage if @ARGV;
 
-use Chj::IO::Command;
-
-sub readlsof {
-    my ($put_f)=@_; #, $put_p
-
-    my $lsof= Chj::IO::Command->new_sender("lsof","-F0", "-n");
-
-    local $/= "\0";
-    my $p_record;
-    my $f_record; # contains '_p' field with p_record
-    my $reading_record; # one of the above
-    my $end_record= sub {
-	# ending previous f record
-	if (defined $f_record) {
-	    &$put_f($f_record);
-	}
-	$f_record= {
-		    _p=> $p_record
-		   };
-	# and switch to reading it
-	$reading_record= $f_record;
-    };
-    while (<$lsof>) {
-	chomp;
-	#my $key= substr $_,0,1;
-	#my $val= substr $_,1;
-	#odd, it prepends a newline before the switching fields
-	my ($key,$val)= /^\n?(.)(.*)/s;
-	#warn "key='$key'";
-	if ($key eq 'p') {
-	    # new p record;
-	    $p_record={};
-	    # and switch to reading it
-	    $reading_record= $p_record;
-	    #&$put_p($p_record) if defined $record;
-	    # ^ whatever. above. or  when switching to f occors?
-	    undef $f_record;
-	} elsif ($key eq 'f') {
-	    &$end_record;
-	}
-	$$reading_record{$key}=$val;
-    }
-    &$end_record
-      #well includes initializing p_record for nothing. w'ever
-}
-
 
 sub xref ($ $ $ ) {
     my ($hsh,$key,$maybe_exit)=@_;
@@ -127,7 +81,9 @@ our $treat_f_type=
 
 our $treat_fd= $show_f;
 
-readlsof sub {
+use Chj::Parse::Lsof 'readlsof';
+
+readlsof ["-n"], sub {
     my ($rec)= @_;
     my $t= $$rec{t};
     my $f= $$rec{f};
