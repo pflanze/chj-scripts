@@ -51,7 +51,7 @@ sub xprint_to_sexpr_line {
 		$out->xprint(")");
 	    }
 	    elsif ($t eq "HASH") {
-		$out->xprint("(alist ");
+		$out->xprint("(table ");
 		my $need_space=0;
 		for my $k (keys %$v) {
 		    if ($need_space) {
@@ -59,7 +59,7 @@ sub xprint_to_sexpr_line {
 		    } else {
 			$need_space=1
 		    }
-		    $out->xprint("(", schemestring_oneline($k), " . ");
+		    $out->xprint("(item ", schemestring_oneline($k), " ");
 		    xprint_to_sexpr_line ($out, $$v{$k});
 		    $out->xprint(")");
 		}
