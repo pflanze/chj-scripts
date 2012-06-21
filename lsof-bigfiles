@@ -31,21 +31,7 @@ use Data::Dumper;
 use Chj::callcc2;
 use Chj::Parse::Lsof 'readlsof';
 use Chj::xperlfunc 'xprintln';
-
-
-sub xref ($ $ $ ) {
-    my ($hsh,$key,$maybe_exit)=@_;
-    my $val= $$hsh{$key};
-    if (defined $val) {
-	$val
-    } else {
-	if ($maybe_exit) {
-	    &$maybe_exit;
-	} else {
-	    die "key not present in hash: '$key', ".Dumper ($hsh);
-	}
-    }
-}
+use Chj::CallccLib 'xref';
 
 our $files; # those we are interested in; path => size
 
