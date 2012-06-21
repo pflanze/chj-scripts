@@ -88,6 +88,7 @@ sub lsof_serialize {
     my ($log,$data)=@_;
     xprint_to_sexpr_line($log,$data);
     $log->xprintln;
+    $log->xflush;
 }
 
 sub lsof_log {
