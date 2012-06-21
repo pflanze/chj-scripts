@@ -32,6 +32,7 @@ use Chj::callcc2;
 use Chj::Parse::Lsof 'readlsof';
 use Chj::xperlfunc 'xprintln';
 use Chj::CallccLib 'xref';
+use Chj::Util qw(Sort_table On $noop);
 
 our $files; # those we are interested in; path => size
 
@@ -44,9 +45,6 @@ our $show_f= sub {
 	my $entry= [ xref($rec,'s',$exit), xref($rec,'_p',$exit) ];
 	push @{$$files{ $$rec{n} }}, $entry;
     };
-};
-
-our $noop= sub {
 };
 
 our $treat_f_type=
@@ -99,27 +97,6 @@ readlsof ["-n"], sub {
 	die "unknown file type '$t' in: ".Dumper($rec);
     }
 };
-
-sub Sort_table ( $ $ ) {
-    # outputting an array of [key, val] entries.
-    my ($hsh, $cmp)=@_;
-    [
-     map {
-	 [ $_, $$hsh{$_} ]
-     }
-     sort {
-	 &$cmp ($$hsh{$a}, $$hsh{$b})
-     } keys %$hsh
-    ]
-}
-
-sub On {
-    my ($extract, $cmp)=@_;
-    sub {
-	my ($a_,$b_)=@_;
-	&$cmp(&$extract ($a_),&$extract ($b_))
-    }
-}
 
 
 # sort by size in last entry of each path:
