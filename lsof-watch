@@ -1,0 +1,161 @@
+#!/usr/bin/perl -w
+
+# Thu Jun 21 20:00:43 BST 2012
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+use warnings FATAL => 'uninitialized';
+
+our $alarm_rest_time= 29*60; # seconds
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid
+
+  Run lsof on pid and extract information that can be important to
+  figure out why a service would be running out of filehandles.
+
+  Options:
+    -i n
+         instead of quitting after one check, run a check every n
+         seconds in a loop
+    --alarm-on n
+         give alarm if the watched process has more than n open
+    --on-alarm program
+         instead of printing an alarm message to stdout, run program
+         (asynchronically) and print the message to the program's stdin.
+         The program is run only once every $alarm_rest_time seconds
+         (see --alarm-rest-time).
+    --alarm-rest-time n
+         don't give an alarm again before n seconds have passed
+         (defaults to $alarm_rest_time); ignored unless -i option given.
+    --sexpr-to path
+         append whole lsof data about filehandles to path as an
+         S-expression
+
+  BUGS:
+    probably doesn't handle processes with OS threads right
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_i;
+our $opt_alarm_on;
+our $opt_on_alarm;
+our $opt_sexpr_to;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "alarm-rest-time=i"=> \$alarm_rest_time,
+	   "i=i"=> \$opt_i,
+	   "alarm-on=i"=> \$opt_alarm_on,
+	   "on-alarm=s"=> \$opt_on_alarm,
+	   "sexpr-to=s"=> \$opt_sexpr_to,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($pid)=@ARGV;
+
+use Chj::Parse::Lsof 'readlsof';
+use Data::Dumper;
+use Chj::Serial::Sexpr 'xprint_to_sexpr_line';
+use Chj::xopen 'xopen_append';
+use Chj::xperlfunc ':all';
+use Chj::IO::Command;
+
+our $maybe_sexpr_log= $opt_sexpr_to && xopen_append ($opt_sexpr_to);
+
+sub lsof_get {
+    my $recs=[];
+    readlsof ["-n", "-p", $pid ], sub {
+	my ($rec)=@_;
+	# we are only interested in real filehandles, with fd numbers
+	if (my ($fd)= $$rec{f}=~ /^\d+\z/) {
+	    push @$recs, $rec
+	}
+    };
+    $recs
+}
+
+sub lsof_serialize {
+    my ($log,$data)=@_;
+    xprint_to_sexpr_line($log,$data);
+    $log->xprintln;
+}
+
+sub lsof_log {
+    my ($log,$data)=@_;
+    my $by_t= $$data{by_t};
+    for my $t (sort keys %$by_t) {
+	$log->xprintln($t);
+	for my $rec (@{$$by_t{$t}}) {
+	    $log->xprintln ($$rec{n});
+	}
+    }
+}
+
+sub xbackground {
+    my ($thunk)=@_;
+    if (my $pid= xfork) {
+	xwaitpid $pid, 0;
+    } else {
+	if (!xfork) {
+	    &$thunk;
+	    exit(0);
+	}
+	exit(0);
+    }
+}
+
+our $last_alarm;
+
+sub do_entry {
+    my $t= time;
+    my $recs= lsof_get;
+
+    if ($maybe_sexpr_log) {
+	lsof_serialize $maybe_sexpr_log, [$t, $recs];
+    }
+
+    if ($opt_alarm_on) {
+	if (@$recs >= $opt_alarm_on) {
+	    if (!$last_alarm or ($t - $last_alarm)> $alarm_rest_time) {
+		$last_alarm= $t;
+		my $msg= "ALARM\n"; ##
+		if ($opt_on_alarm) {
+		    xbackground sub {
+			my $out= Chj::IO::Command->new_receiver($opt_on_alarm);
+			$out->xprint($msg);
+			$out->xxfinish;
+		    };
+		}
+		else {
+		    xprint $msg;
+		}
+	    }
+	}
+    }
+}
+
+if ($opt_i) {
+    while (1) {
+	do_entry;
+	sleep $opt_i;
+    }
+
+} else {
+    # one-shot
+    do_entry;
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
