@@ -19,7 +19,7 @@ Chj::Serial::Sexpr
   # repeated references (or cycles):
   my $ones= [ 1, undef]; $$ones[1]=$ones;
   xprint_to_sexpr_line_with_sharing ((bless *STDOUT{IO},"Chj::IO::File"), $ones); print "\n";
-  # => (named GEN0 (list 1 GEN0))
+  # => (named 1 (list 1 (ref 1)))
 
 
 =head1 DESCRIPTION
@@ -128,9 +128,9 @@ sub xprint_to_sexpr_line_ {
     my ($out, $v, $maybe_share)=@_;
     my $named={};
     my $new_name= do {
-	my $i=0;
+	my $i=1;
 	sub {
-	    "GEN".($i++)
+	    ($i++)
 	}
     };
 
@@ -177,11 +177,11 @@ sub xprint_to_sexpr_line_ {
 
 	if (ref $v and $maybe_share and $$maybe_share{$v}) {
 	    if (my $name= $$named{$v}) {
-		$out->xprint ($name);
+		$out->xprint ("(ref ", $name, ")");
 	    } else {
 		my $name= &$new_name;
 		$$named{$v}= $name;
-		$out->xprint ("(named ",$name," ");
+		$out->xprint ("(named ", $name, " ");
 		&$printv;
 		$out->xprint (")");
 	    }
