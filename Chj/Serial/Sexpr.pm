@@ -139,27 +139,17 @@ sub xprint_to_sexpr_line_ {
 	my $printv= sub {
 	    dispatch $v, sub {
 		# ARRAY
-		$out->xprint("(list ");
-		my $need_space=0;
+		$out->xprint("(list");
 		for my $v (@$v) {
-		    if ($need_space) {
-			$out->xprint(" ");
-		    } else {
-			$need_space=1
-		    }
+		    $out->xprint(" ");
 		    &$rec ($rec, $v);
 		}
 		$out->xprint(")");
 	    }, sub {
 		# HASH
-		$out->xprint("(table ");
-		my $need_space=0;
+		$out->xprint("(table");
 		for my $k (keys %$v) {
-		    if ($need_space) {
-			$out->xprint(" ");
-		    } else {
-			$need_space=1
-		    }
+		    $out->xprint(" ");
 		    $out->xprint("(item ", schemestring_oneline($k), " ");
 		    &$rec ($rec, $$v{$k});
 		    $out->xprint(")");
