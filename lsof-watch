@@ -33,7 +33,8 @@ sub usage {
          (defaults to $alarm_rest_time); ignored unless -i option given.
     --sexpr-to path
          append whole lsof data about filehandles to path as an
-         S-expression
+         S-expression. If path ends in .gz, the output is fed through gzip
+         (every entry separately).
 
   BUGS:
     probably doesn't handle processes with OS threads right
@@ -111,7 +112,18 @@ sub do_entry {
     my $recs= lsof_get;
 
     if ($maybe_sexpr_log) {
-	lsof_serialize $maybe_sexpr_log, [$t, $recs];
+	my $do_log= sub {
+	    my ($log)=@_;
+	    lsof_serialize $log, [$t, $recs];
+	};
+	if ($opt_sexpr_to=~ /\.gz$/) {
+	    my $out= Chj::IO::Command->new_receiver_with_stdout_to_fh
+	      ($maybe_sexpr_log, "gzip");
+	    &$do_log ($out);
+	    $out->xxfinish;
+	} else {
+	    &$do_log ($maybe_sexpr_log);
+	}
     }
 
     if ($opt_alarm_on) {
