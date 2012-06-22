@@ -66,6 +66,7 @@ sub readlsof {
 	}
 	$$reading_record{$key}=$val;
     }
+    $lsof->xxfinish;
     &$end_record
       #well includes initializing p_record for nothing. w'ever
 }
