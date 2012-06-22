@@ -66,7 +66,7 @@ our ($pid)=@ARGV;
 
 use Chj::Parse::Lsof 'readlsof';
 use Data::Dumper;
-use Chj::Serial::Sexpr 'xprint_to_sexpr_line';
+use Chj::Serial::Sexpr 'xprint_to_sexpr_line_with_sharing';
 use Chj::xopen 'xopen_append';
 use Chj::xperlfunc ':all';
 use Chj::IO::Command;
@@ -87,7 +87,7 @@ sub lsof_get {
 
 sub lsof_serialize {
     my ($log,$data)=@_;
-    xprint_to_sexpr_line($log,$data);
+    xprint_to_sexpr_line_with_sharing($log,$data);
     $log->xprintln;
     $log->xflush;
 }
