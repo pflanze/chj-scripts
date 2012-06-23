@@ -37,9 +37,17 @@ package Chj::Serial::Sexpr;
 
 use strict;
 
+sub valid_keyword {
+    my ($str)=@_;
+    # accept what goes as keyword for Scheme
+    $str=~ /^[_a-zA-Z]\w*\z/
+}
+
+*valid_classname= *valid_keyword;
+
 sub dispatch {
     my ($v,
-	$do_array, $do_hash, $do_number, $do_string, $do_undef,
+	$do_array, $do_hash, $do_object, $do_number, $do_string, $do_undef,
 	$do_type_error)= @_;
     if (defined $v) {
 	if (my $t= ref $v) {
@@ -50,7 +58,16 @@ sub dispatch {
 		&$do_hash
 	    }
 	    else {
-		&$do_type_error($t)
+		if (UNIVERSAL::isa($v, "HASH")
+		    and
+		    my $m= UNIVERSAL::can($v, "_serialize_classname")) {
+		    my $classname= &$m($v);
+		    valid_classname($classname)
+		      or die "_serialize_classname gave non-conforming classname: '$classname'";
+		    &$do_object($classname);
+		} else {
+		    &$do_type_error($t)
+		}
 	    }
 	} else {
 	    if ($v=~ /^[+-]?\d+(\.\d*(e[+-]\d+)?)?\z/s) {
@@ -79,29 +96,34 @@ sub refcounts {
 	    $oldcount
 	      #wow that makes it work. WTH Perl.
 	};
-	dispatch $v, sub {
-	    # ARRAY
-	    if (not &$addv) {
-		for my $v (@$v) {
-		    &$add ($add, $v);
-		}
-	    }
-	}, sub {
-	    # HASH
+	my $HASH= sub {
 	    if (not &$addv) {
 		for my $k (keys %$v) {
 		    &$add ($add, $$v{$k});
 		}
 	    }
-	}, sub {
-	    # number
-	}, sub {
-	    # string or similar
-	}, sub {
-	    # undef
-	}, sub {
-	    # unknown
-	}
+	};
+	dispatch
+	  ($v,
+	   sub {
+	       # ARRAY
+	       if (not &$addv) {
+		   for my $v (@$v) {
+		       &$add ($add, $v);
+		   }
+	       }
+	   },
+	   $HASH, # HASH
+	   $HASH, # hash based objects with _serialize_classname method
+	   sub {
+	       # number
+	   }, sub {
+	       # string or similar
+	   }, sub {
+	       # undef
+	   }, sub {
+	       # unknown
+	   });
     };
     &$add ($add, $v);
     # strip those that have count 1?
@@ -148,11 +170,25 @@ sub xprint_to_sexpr_line_ {
 	    }, sub {
 		# HASH
 		$out->xprint("(table");
-		for my $k (keys %$v) {
+		for my $k (sort keys %$v) {
 		    $out->xprint(" ");
 		    $out->xprint("(item ", schemestring_oneline($k), " ");
 		    &$rec ($rec, $$v{$k});
 		    $out->xprint(")");
+		}
+		$out->xprint(")");
+	    }, sub {
+		# hash based objects with _serialize_classname method
+		my ($classname)=@_;
+		$out->xprint("(object $classname");
+		for my $k (sort keys %$v) {
+		    if (valid_keyword($k)) {
+			$out->xprint(" ");
+			$out->xprint($k,": ");
+			&$rec ($rec, $$v{$k});
+		    } else {
+			die "object $v contains field with non-conformant name '$k'";
+		    }
 		}
 		$out->xprint(")");
 	    }, sub {
