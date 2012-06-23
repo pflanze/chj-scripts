@@ -24,6 +24,20 @@ package Chj::Parse::Lsof;
 
 use strict;
 
+# for Chj::Serial::Sexpr:
+{
+    package Chj::Parse::Lsof_Filehandle;
+    sub _serialize_classname {
+	"filehandle"
+    }
+}
+{
+    package Chj::Parse::Lsof_Process;
+    sub _serialize_classname {
+	"process"
+    }
+}
+
 use Chj::IO::Command;
 
 sub readlsof {
@@ -40,9 +54,9 @@ sub readlsof {
 	if (defined $f_record) {
 	    &$put_f($f_record);
 	}
-	$f_record= {
+	$f_record= bless {
 		    _p=> $p_record
-		   };
+		   }, "Chj::Parse::Lsof_Filehandle";
 	# and switch to reading it
 	$reading_record= $f_record;
     };
@@ -55,7 +69,7 @@ sub readlsof {
 	#warn "key='$key'";
 	if ($key eq 'p') {
 	    # new p record;
-	    $p_record={};
+	    $p_record= bless {}, "Chj::Parse::Lsof_Process";
 	    # and switch to reading it
 	    $reading_record= $p_record;
 	    #&$put_p($p_record) if defined $record;
