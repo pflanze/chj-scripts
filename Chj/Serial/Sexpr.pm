@@ -37,13 +37,26 @@ package Chj::Serial::Sexpr;
 
 use strict;
 
-sub valid_keyword {
+sub valid_keyword_or_symbol {
     my ($str)=@_;
-    # accept what goes as keyword for Scheme
+    # what goes without escaping for Scheme
     $str=~ /^[_a-zA-Z]\w*\z/
 }
 
-*valid_classname= *valid_keyword;
+sub keyword_or_symbol_to_printstring {
+    my ($str)=@_;
+    if (valid_keyword_or_symbol $str) {
+	$str
+    } else {
+	$str=~ s/\\/\\\\/g;
+	$str=~ s/\|/\\|/g;
+	$str=~ s/\n/\\n/g;
+	$str=~ s/\r/\\r/g;
+	$str=~ s/\t/\\t/g;
+	# and more, hum. wll. XXXsafety?
+	'|'.$str.'|'
+    }
+}
 
 sub dispatch {
     my ($v,
@@ -62,8 +75,6 @@ sub dispatch {
 		    and
 		    my $m= UNIVERSAL::can($v, "_serialize_classname")) {
 		    my $classname= &$m($v);
-		    valid_classname($classname)
-		      or die "_serialize_classname gave non-conforming classname: '$classname'";
 		    &$do_object($classname);
 		} else {
 		    &$do_type_error($t)
@@ -182,13 +193,9 @@ sub xprint_to_sexpr_line_ {
 		my ($classname)=@_;
 		$out->xprint("(object $classname");
 		for my $k (sort keys %$v) {
-		    if (valid_keyword($k)) {
-			$out->xprint(" ");
-			$out->xprint($k,": ");
-			&$rec ($rec, $$v{$k});
-		    } else {
-			die "object $v contains field with non-conformant name '$k'";
-		    }
+		    $out->xprint(" ");
+		    $out->xprint(keyword_or_symbol_to_printstring($k),": ");
+		    &$rec ($rec, $$v{$k});
 		}
 		$out->xprint(")");
 	    }, sub {
