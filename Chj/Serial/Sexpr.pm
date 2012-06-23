@@ -191,7 +191,7 @@ sub xprint_to_sexpr_line_ {
 	    }, sub {
 		# hash based objects with _serialize_classname method
 		my ($classname)=@_;
-		$out->xprint("(object $classname");
+		$out->xprint("(object '$classname");
 		for my $k (sort keys %$v) {
 		    $out->xprint(" ");
 		    $out->xprint(keyword_or_symbol_to_printstring($k),": ");
