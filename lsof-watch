@@ -71,6 +71,17 @@ use Chj::xopen 'xopen_append';
 use Chj::xperlfunc ':all';
 use Chj::IO::Command;
 
+{
+    package Chj_lsofwatch_point;
+    sub new {
+	my ($cl, $time, $filehandles)=@_;
+	bless {time=>$time, filehandles=> $filehandles},$cl
+    }
+    sub _serialize_classname {"point"}
+}
+
+
+
 our $maybe_sexpr_log= $opt_sexpr_to && xopen_append ($opt_sexpr_to);
 
 sub lsof_get {
@@ -114,7 +125,7 @@ sub do_entry {
     if ($maybe_sexpr_log) {
 	my $do_log= sub {
 	    my ($log)=@_;
-	    lsof_serialize $log, [$t, $recs];
+	    lsof_serialize $log, new Chj_lsofwatch_point ($t, $recs);
 	};
 	if ($opt_sexpr_to=~ /\.gz$/) {
 	    my $out= Chj::IO::Command->new_receiver_with_stdout_to_fh
