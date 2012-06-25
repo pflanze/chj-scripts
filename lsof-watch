@@ -74,13 +74,35 @@ use Chj::IO::Command;
 {
     package Chj_lsofwatch_point;
     sub new {
-	my ($cl, $time, $filehandles)=@_;
-	bless {time=>$time, filehandles=> $filehandles},$cl
+	my ($cl, $time, $filehandles, $ip_addrs)=@_;
+	bless {time=>$time,
+	       filehandles=> $filehandles,
+	       'ip-addrs'=> $ip_addrs},$cl
     }
     sub _serialize_classname {"point"}
 }
 
 
+sub ip_addrs_get {
+    # same as |ip-addrs| in the Scheme program
+    my $in= Chj::IO::Command->new_sender("ip", "--oneline", "addr");
+    my $res=[];
+    while (<$in>) {
+	my @r;
+	while (/\binet6? ([^ ]+)/sgc) {
+	    push @r, $1
+	}
+	if (@r==1) {
+	    my ($r)= @r;
+	    $r=~ s|/.*||;
+	    push @$res, $r;
+	} elsif (@r==2) {
+	    die "parse error, ip --oneline addr gave more than 1 address on a line: '$_'"
+	}
+    }
+    $in->xxfinish;
+    $res
+}
 
 our $maybe_sexpr_log= $opt_sexpr_to && xopen_append ($opt_sexpr_to);
 
@@ -121,11 +143,12 @@ our $last_alarm;
 sub do_entry {
     my $t= time;
     my $recs= lsof_get;
+    my $ip_addrs= ip_addrs_get;
 
     if ($maybe_sexpr_log) {
 	my $do_log= sub {
 	    my ($log)=@_;
-	    lsof_serialize $log, new Chj_lsofwatch_point ($t, $recs);
+	    lsof_serialize $log, new Chj_lsofwatch_point ($t, $recs, $ip_addrs);
 	};
 	if ($opt_sexpr_to=~ /\.gz$/) {
 	    my $out= Chj::IO::Command->new_receiver_with_stdout_to_fh
