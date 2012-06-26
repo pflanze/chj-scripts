@@ -81,25 +81,43 @@ use Chj::IO::Command;
     }
     sub _serialize_classname {"point"}
 }
+{
+    package Chj_lsofwatch_ip_addrs;
+    sub new {
+	my ($cl, $ipv4, $ipv6)=@_;
+	bless {
+	       ipv4=> $ipv4,
+	       ipv6=> $ipv6,
+	      },$cl
+    }
+    sub _serialize_classname {"ip-addrs"}
+}
 
 
 sub ip_addrs_get {
     # same as |ip-addrs| in the Scheme program
     my $in= Chj::IO::Command->new_sender("ip", "--oneline", "addr");
-    my $res=[];
+    my $res4=[];
+    my $res6=[];
     while (<$in>) {
-	my @r;
+	my (@r4,@r6);
 	while (m{\binet(6?) ([^ /]+)}sgc) {
-	    push @r, ($1) ? '['.$2.']' : $2
+	    if ($1) {
+		push @r6, $2;
+	    } else {
+		push @r4, $2;
+	    }
 	}
-	if (@r==1) {
-	    push @$res, @r;
-	} elsif (@r==2) {
+	my $n= (@r4 + @r6);
+	if ($n==1) {
+	    push @$res4, @r4;
+	    push @$res6, @r6;
+	} elsif ($n==2) {
 	    die "parse error, ip --oneline addr gave more than 1 address on a line: '$_'"
 	}
     }
     $in->xxfinish;
-    $res
+    new Chj_lsofwatch_ip_addrs ($res4,$res6)
 }
 
 our $maybe_sexpr_log= $opt_sexpr_to && xopen_append ($opt_sexpr_to);
