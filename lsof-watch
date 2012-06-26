@@ -89,13 +89,11 @@ sub ip_addrs_get {
     my $res=[];
     while (<$in>) {
 	my @r;
-	while (/\binet6? ([^ ]+)/sgc) {
-	    push @r, $1
+	while (m{\binet(6?) ([^ /]+)}sgc) {
+	    push @r, ($1) ? '['.$2.']' : $2
 	}
 	if (@r==1) {
-	    my ($r)= @r;
-	    $r=~ s|/.*||;
-	    push @$res, $r;
+	    push @$res, @r;
 	} elsif (@r==2) {
 	    die "parse error, ip --oneline addr gave more than 1 address on a line: '$_'"
 	}
