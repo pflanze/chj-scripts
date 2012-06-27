@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# wow crazy complicated;
+# from http://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+
+TZ='EST+5EDT,M4.1.0/2,M10.5.0/2' exec "$@"
