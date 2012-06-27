@@ -35,6 +35,7 @@ sub usage {
          append whole lsof data about filehandles to path as an
          S-expression. If path ends in .gz, the output is fed through gzip
          (every entry separately).
+         See https://github.com/pflanze/lsof-watch-parse
 
   BUGS:
     probably doesn't handle processes with OS threads right
