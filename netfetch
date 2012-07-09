@@ -28,8 +28,8 @@ PORT="$2"
 # with file descriptors Bash uses internally."
 
 {
-netcat "$SERVER" "$PORT" \
+netcat -q999999999 "$SERVER" "$PORT" < /dev/null \
     | gpg -q -d --batch --passphrase-fd 9 \
     | tar x ${z}-f -
-} 9<&0 < /dev/null 
+} 9<&0
 
