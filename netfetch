@@ -29,7 +29,7 @@ PORT="$2"
 
 {
 netcat "$SERVER" "$PORT" \
-    | gpg -q -d --batch --passphrase-file /dev/fd/9 \
+    | gpg -q -d --batch --passphrase-fd 9 \
     | tar x ${z}-f -
 } 9<&0 < /dev/null 
 
