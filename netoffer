@@ -26,7 +26,20 @@ if [ ! "${PORT-}" ]; then
 fi
 
 # See comments about brokenness of netcat 'API' in netfetch.
-NETCAT_SERVE="nc.traditional -q 0"
+
+have () {
+    which "$1" > /dev/null
+}
+
+if have nc.traditional; then
+    NETCAT_SERVE_ON_PORT="nc.traditional -q 0 -l -p"
+elif have nc.openbsd; then
+    NETCAT_SERVE_ON_PORT="nc.openbsd -q 0 -l"
+else
+    echo "can't find either nc.traditional or nc.openbsd" >&2
+    exit 1
+fi
+
 
 ip=`publicip -f`
 
@@ -38,5 +51,5 @@ echo "echo `cat` | netfetch $z$ip $PORT"
 ) | {
 tar c ${z}-f - "$@" \
     | gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
-    | $NETCAT_SERVE -l -p "$PORT" 
+    | $NETCAT_SERVE_ON_PORT "$PORT" 
 } 9<&0 </dev/null
