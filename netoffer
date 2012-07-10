@@ -25,6 +25,9 @@ if [ ! "${PORT-}" ]; then
     PORT=$((14123+$UID))
 fi
 
+# See comments about brokenness of netcat 'API' in netfetch.
+NETCAT_SERVE="nc.traditional -q 0"
+
 ip=`publicip -f`
 
 passwdgen | tee >(
@@ -35,5 +38,5 @@ echo "echo `cat` | netfetch $z$ip $PORT"
 ) | {
 tar c ${z}-f - "$@" \
     | gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
-    | netcat -q 1 -l -p "$PORT" 
+    | $NETCAT_SERVE -l -p "$PORT" 
 } 9<&0 </dev/null
