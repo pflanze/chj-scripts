@@ -27,10 +27,6 @@ fi
 
 # See comments about brokenness of netcat 'API' in netfetch.
 
-have () {
-    which "$1" > /dev/null
-}
-
 if have nc.traditional; then
     NETCAT_SERVE_ON_PORT="nc.traditional -q 0 -l -p"
 elif have nc.openbsd; then

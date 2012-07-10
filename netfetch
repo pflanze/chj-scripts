@@ -25,10 +25,6 @@ PORT="$2"
 # that copies all data from the server regardless of its own stdin,
 # thus need to differentiate this way:
 
-have () {
-    which "$1" > /dev/null
-}
-
 if have nc.traditional; then
     NETCAT_CLIENT="nc.traditional"
 elif have nc.openbsd; then
