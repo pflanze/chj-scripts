@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Netcat is an utterly broken API: traditional netcat and nc.openbsd
+# don't share a common set of options to work correctly as a client
+# that copies all data from the server regardless of its own stdin,
+# thus need to differentiate this way:
+
+set -eu
+
+if [ $# -ne 2 -o "${1-}" = "-h" -o "${1-}" = "--help" ]; then
+    echo "usage: $0 server port"
+    exit 1
+fi
+
+if have nc.traditional; then
+    nc.traditional "$@"
+elif have nc.openbsd; then
+    # nc.openbsd neither works without -q option nor supports -q-1,
+    # nor does -q0 mean infinite, thus need to use a big enough number
+    # of seconds
+    nc.openbsd -q999999999 "$@"
+else
+    echo "cannot find nc.traditional nor nc.openbsd" >&2
+    exit 1
+fi
+
+

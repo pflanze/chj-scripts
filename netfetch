@@ -20,25 +20,6 @@ SERVER="$1"
 PORT="$2"
 
 
-# Netcat is an utterly broken API: traditional netcat and nc.openbsd
-# don't share a common set of options to work correctly as a client
-# that copies all data from the server regardless of its own stdin,
-# thus need to differentiate this way:
-
-if have nc.traditional; then
-    NETCAT_CLIENT="nc.traditional"
-elif have nc.openbsd; then
-    # nc.openbsd neither works without -q option nor supports -q-1,
-    # nor does -q0 mean infinite, thus need to use a big enough number
-    # of seconds
-    NETCAT_CLIENT="nc.openbsd -q999999999"
-else
-    echo "can't find either nc.traditional or nc.openbsd" >&2
-    exit 1
-fi
-
-
-
 # pw needs to be on stdin, tty won't work because the parent shell
 # would over-read from it.
 
@@ -48,7 +29,7 @@ fi
 # with file descriptors Bash uses internally."
 
 {
-$NETCAT_CLIENT "$SERVER" "$PORT" < /dev/null \
+netcat-get "$SERVER" "$PORT" < /dev/null \
     | gpg -q -d --batch --passphrase-fd 9 \
     | tar x ${z}-f -
 } 9<&0
