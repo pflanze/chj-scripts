@@ -27,19 +27,12 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
     	push @args, $_
     }
 }
-#usage unless @args;
 
 
 use URI;
@@ -51,8 +44,7 @@ sub url_decode {
     my $eol= $1;
     local our $u= URI->new($str);
     local our $str2= $u->uri_unescape;
-    # abr das isch nun noch in irgen nem encoding grr. "meist" utf8?
-    decode("utf-8", $str2, Encode::FB_CROAK).$eol  #well the eol hack probably won't be very good?
+    decode("utf-8", $str2, Encode::FB_CROAK).$eol
 }
 
 #our $foo= url_decode 'induktivit%C3%A4ten+s%C3%A4ttigung';
