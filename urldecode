@@ -42,31 +42,13 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 use URI;
 use Encode;
+use Chj::Web::url_encode;
 
 sub url_decode {
     my ($str)=@_;
     local our $u= URI->new($str);
     local our $str2= $u->uri_unescape;
     decode("utf-8", $str2, Encode::FB_CROAK)
-}
-
-sub url_encode {
-    my ($str)=@_;
-    #my $str= decode("utf-8", $_str, Encode::FB_CROAK);
-    #  -- nope, actually *want* it as utf-8 code points.
-    #local our $u= URI->new($str);
-    #hm no method for that.
-    $str=~ sé(.)é
-      my $c=$1;
-      my $n= ord $c;
-      if ($c=~ m{[A-Za-z0-9_/.=-]}) {
-	  $c
-      } else {
-	  '%'.sprintf('%02X',$n)
-      }
-    éseg;
-    $str
-    #use Chj::repl;repl;
 }
 
 our $code= $opt_e ? \&url_encode : \&url_decode;
