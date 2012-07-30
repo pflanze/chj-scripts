@@ -53,9 +53,31 @@ sub usage {
 exit @_;
 }
 
+##move to library?
+
+sub retry_after ( $ $ $ ) { # works on boolean return values, not exceptions
+    my ($normal, $fixup, $except)=@_;
+    &$normal or do {
+	# if fixup fails, don't retry normal! But run except if either
+	# fails (careful!).
+	&$fixup && $normal or &$except
+    }
+}
+
+sub simple_dirname { # always correct?
+    my ($path)=@_;
+    $path=~ s|[^/]+\z||;
+    $path
+}
+
+##/library
+
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 if (not -d $lockfilebase) {
-    mkdir $lockfilebase or die "$0: could not create lock dir '$lockfilebase': $!\n";
+    retry_after (sub { mkdir $lockfilebase },
+		 sub { my $d= simple_dirname $lockfilebase;
+		       $d and mkdir $d },
+		 sub {die "$0: could not create lock dir '$lockfilebase': $!\n" });
 }
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= do {
