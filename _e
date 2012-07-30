@@ -1,10 +1,7 @@
 #!/usr/bin/perl -w
 
-# pflanze at gmx ch
-
 use strict;
 use Chj::Cwd::realpath ;
-#use Chj::Lockfile;
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 use Chj::Unix::exitcode;
 use Chj::oerr;
@@ -24,7 +21,10 @@ my $gnuclient= "/usr/bin/gnuclient.$emacs";
 # terminal situations.)
 
 my $TIMEOUT=40;
-our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5); # seconds before we let any other 'e' call send anything to our beloved and hell of buggy xemacs 21.4 (patch 6)
+our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5);
+# seconds before we let any other 'e' call send anything to our
+# beloved and hell of buggy xemacs 21.4 (patch 6)
+
 our $verbose= $ENV{VERBOSE} ? 1 : 0;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -97,7 +97,6 @@ sub startup_unlock {
     carp "$$: releasing lock" if $verbose;
     flock $startuplockfh,LOCK_UN or die "??unlock: $!";
 }
-#und fun warum backtrace von carp?. heut geht wieder mal nichts deterministisch.
 
 my $maxargs= 30;
 if (@ARGV > $maxargs) {
@@ -175,11 +174,12 @@ sub rungnuclientwithargs {
 	    # now either we return soon enough to justify holding on to
 	    # the lock, or just unlock after that certain time:
 	    for (1..$TIME_TO_GIVE_XEMACS) {
-		last unless kill 0, $parentpid; # stop waiting if the process vanished, need polling now.
+		last unless kill 0, $parentpid;
 		sleep 1;
 	    }
 	    startup_unlock;
-	    exit 0; # nobody is waiting for us, right? uhm. hope so. mb need double fork?
+	    exit 0;
+	    # nobody is waiting for us, right? uhm. hope so. mb need double fork?
 	}
     }
 }
