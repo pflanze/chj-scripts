@@ -59,7 +59,7 @@ sub retry_after ( $ $ $ ) { # works on boolean return values, not exceptions
     my ($normal, $fixup, $except)=@_;
     # if fixup fails, don't retry normal! But run except if either
     # fails (careful!).
-    &$normal || (&$fixup && $normal) or &$except
+    &$normal || (&$fixup && &$normal) or &$except
 }
 
 sub simple_dirname { # always correct?
