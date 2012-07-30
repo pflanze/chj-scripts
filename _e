@@ -77,6 +77,7 @@ if (not -d $lockfilebase) {
 		       $d and do {
 			   mkdir $d;
 			   warn "created '$d'";
+			   1
 		       }},
 		 sub {die "$0: could not create lock dir '$lockfilebase': $!\n" });
 }
