@@ -74,11 +74,11 @@ my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 if (not -d $lockfilebase) {
     retry_after (sub { mkdir $lockfilebase },
 		 sub { my $d= simple_dirname $lockfilebase;
-		       $d and do {
-			   mkdir $d;
-			   warn "created '$d'";
-			   1
-		       }},
+		      length($d) and do {
+			  mkdir $d;
+			  warn "created '$d'";
+			  1
+		      }},
 		 sub {die "$0: could not create lock dir '$lockfilebase': $!\n" });
 }
 my $startuplock_path= $lockfilebase."/.startuplock";
