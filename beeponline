@@ -38,13 +38,8 @@ use Fcntl;
 sysopen my $tty,"/dev/tty0", O_WRONLY
   or die "could not open /dev/tty0: $!";
 
-{
-    #local *STDOUT{IO} = $tty;
-    #no, how did that work?
-    #$|++;
-    use IO::Handle;
-    $tty->autoflush(1);
-}
+use IO::Handle;
+$tty->autoflush(1);
 
 while (<STDIN>) {
     print
@@ -52,11 +47,5 @@ while (<STDIN>) {
 	if $opt_tee;
     print $tty "\007"
       or die "printing to tty: $!";
-    #flush $tty
-    #  or die "flusing tty: $!";
-    #wow that's not a builtin.
 }
 
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
