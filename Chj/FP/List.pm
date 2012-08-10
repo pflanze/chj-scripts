@@ -31,6 +31,7 @@ package Chj::FP::List;
 	      list
 	      list_map
 	      list_reverse
+	      list_for_each
 	 );
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
@@ -71,6 +72,14 @@ sub list_reverse ($ ) {
     $m
 }
 
+sub list_for_each ($ $ ) {
+    my ($proc,$l)=@_;
+    while (! nullp $l) {
+	&$proc ($l->car);
+	$l= $l->cdr;
+    }
+}
+
 1
 
 
@@ -90,4 +99,8 @@ c
 b
 a
 calc> :l list_reverse(list(qw()))->values
-calc> 
+calc> :l my @a; list_for_each (sub{push @a, "x".$_[0]}, list(qw(a b c))); @a
+xa
+xb
+xc
+
