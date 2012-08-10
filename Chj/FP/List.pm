@@ -30,6 +30,7 @@ package Chj::FP::List;
 	      cons
 	      list
 	      list_map
+	      list_reverse
 	 );
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
@@ -60,6 +61,15 @@ sub cons ($ $ ) {
     Chj::FP::Pair->cons(@_);
 }
 
+sub list_reverse ($ ) {
+    my ($l)=@_;
+    my $m= empty_list;
+    while (! nullp $l) {
+	$m= cons($l->car, $m);
+	$l= $l->cdr;
+    }
+    $m
+}
 
 1
 
@@ -75,4 +85,9 @@ calc> :l (list_map sub{$_[0]+1}, list(1,2,3))->values
 calc> :l (list_map sub{$_[0]+1}, list())->values
 calc> :l (list_map sub{$_[0]+1}, cons(4, list()))->values
 5
-
+calc> :l list_reverse(list(qw(a b c)))->values
+c
+b
+a
+calc> :l list_reverse(list(qw()))->values
+calc> 
