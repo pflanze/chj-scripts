@@ -26,6 +26,8 @@ package Chj::FP::List;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(
 	      empty_list
+	      nullp
+	      cons
 	      list
 	      list_map
 	 );
@@ -44,10 +46,18 @@ sub list {
     Chj::FP::Pair->list(@_);
 }
 
+sub nullp ($ ) {
+    $_[0] eq $Chj::FP::EmptyList
+}
+
 sub list_map ($ $ ) {
     my ($fn,$lis)=@_;
     # unlike the method, handle nil, too!
-    ($lis eq $Chj::FP::EmptyList) ? $lis : Chj::FP::Pair::map($lis,$fn)
+    nullp($lis) ? $lis : Chj::FP::Pair::map($lis,$fn)
+}
+
+sub cons ($ $ ) {
+    Chj::FP::Pair->cons(@_);
 }
 
 
@@ -63,4 +73,6 @@ calc> :l (list_map sub{$_[0]+1}, list(1,2,3))->values
 3
 4
 calc> :l (list_map sub{$_[0]+1}, list())->values
-calc> 
+calc> :l (list_map sub{$_[0]+1}, cons(4, list()))->values
+5
+
