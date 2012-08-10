@@ -90,6 +90,7 @@ package Chj::Collection;
 	      Collection
 	      Collection_from_hash
 	      Collection_add Collection_addnew Collection_merge_with Collection_merge
+	      Collection_add_items
 	      Collection_subtract
 	      Collection_intersect
 	      Collection_items
@@ -209,6 +210,21 @@ sub mkCollection_add {
 *Collection_add= mkCollection_add (1);
 
 *Collection_addnew= mkCollection_add (0);
+
+
+sub Collection_add_items {
+    return {} unless @_;
+    my $first= shift;
+    return $first unless @_;# no copy. unlike (append foo) which still creates a copy ?.
+    my $overwrite=1; #for now.
+    my $result= _copy ($first);
+    for (@_) {
+	# instead of: Hashcoll_add_d ($result, $_, $overwrite)
+	# now:
+	$$result{$_}= $_ if ($overwrite or not exists $$result{$_});
+    }
+    $result
+}
 
 
 # "merge" is a special form of "join" which allows to custom merge
