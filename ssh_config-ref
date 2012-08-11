@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Sat Aug 11 12:08:35 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname hostname directivename
+
+  Fetches the value of the given directive name for the given
+  host. Exits with code 1 if not found.
+
+  --quiet  don't print error message when not found
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_quiet;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "quiet"=> \$opt_quiet,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($hostname, $directivename)=@ARGV;
+
+use Chj::Parse::Ssh_config ':all';
+
+my $c= ssh_config_parse_path "/etc/ssh/ssh_config";
+
+print ssh_cfg_ref ($c, $hostname, $directivename,
+		   sub {
+		       print STDERR "host or directive not found\n"
+			 unless $opt_quiet;
+		       exit(1);
+		   }),
+  "\n" or die "print: $!";
+
