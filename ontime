@@ -171,6 +171,13 @@ sub is_on_event( $ ) {
     not($_[0] eq 'sleep' or $_[0] eq 'hibernate')
 }
 
+
+sub Die {
+    # either really die, or,
+    #["ERROR", @_]
+    $_[0]
+}
+
 our @spans;
 {
     my $on_since;
@@ -179,7 +186,8 @@ our @spans;
 	my ($t,$what)=@$_;
 	if (is_on_event $what) {
 	    if (defined $on_since) {
-		die "on event while already on: $t $what";
+		push @spans, ['ON?', $on_since, $t, # $off_since was undef in my case
+			      Die "on event while already on: $t $what"];
 	    }
 	    if (defined $off_since) {
 		push @spans, ['off', $off_since, $t, $what];
@@ -193,7 +201,8 @@ our @spans;
 	} else {
 	    # off event
 	    if (defined $off_since) {
-		die "off event while already off: $t $what";
+		push @spans, ['OFF?', $off_since, $t, #$on_since was undef in my case
+			      Die "off event while already off: $t $what"];
 	    }
 	    if (defined $on_since) {
 		push @spans, ['on', $on_since, $t, $what];
