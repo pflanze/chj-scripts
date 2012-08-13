@@ -91,9 +91,45 @@ our $mtime_before= do {
 
 our $year_before= (localtime($mtime_before))[5]+1900;
 
-use Chj::IO::Command;
+use Chj::xpipe;
+my ($read,$write)= xpipe;
+my $child;
+if ($child= xfork) {
+    $write->xclose;
+    # see below after end of if
+} else {
+    $read->xclose;
 
-our $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+    use Chj::IO::Command;
+
+    my $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+
+    my $pr=sub {
+	$write->xprint($_);
+	# (heh where $_ salvages performance loss that would come from
+	# 'allocating' (defining) the closure within the scope of
+	# while.)
+    };
+
+    {
+	while (<$f>) {
+	    my $txt=$_; #to keep the below modified *COPY* as close as
+                        #possible
+	    if ($txt=~ /PM: Preparing system for mem sleep/) {
+		&$pr
+	    } elsif ($txt=~ /PM: resume of devices complete/) {
+		&$pr
+	    } elsif ($txt=~ /PM: Marking nosave pages/) {
+		&$pr
+	    } elsif ($txt=~ /PM: restore of devices complete/) {
+		&$pr
+	    }
+	}
+    }
+    $write->xclose;
+    $f->xxfinish;
+    exit(0);
+}
 
 use IO::Handle ();
 
@@ -102,16 +138,17 @@ use Parse::Syslog;
 our @events;
 {
     # crazy hacking. (addbless? I don't have that in my chj repo, sigh)
-    my $oldclass= ref $f;
-    bless $f, "IO::Handle";
+    my $oldclass= ref $read;
+    bless $read, "IO::Handle";
 
-    our $syslog = Parse::Syslog->new($f, year => $year_before);
+    our $syslog = Parse::Syslog->new($read, year => $year_before);
 
     while (my $row= $syslog->next) {
 	my $t= $$row{timestamp};
 	if ($t >= $from and $t <= $to) {
 	    my $txt= $$row{text};
 	    #print "$t $txt\n"
+	    # XXX: keep *COPY* of search strings up to date with those above!
 	    if ($txt=~ /PM: Preparing system for mem sleep/) {
 		push @events, [$t,'sleep'];
 	    } elsif ($txt=~ /PM: resume of devices complete/) {
@@ -124,8 +161,9 @@ our @events;
 	}
     }
 
-    bless $f, $oldclass;
-    $f->xxfinish;
+    bless $read, $oldclass;
+    $read->xclose;
+    xxwaitpid $child;
 }
 
 sub is_on_event( $ ) {
