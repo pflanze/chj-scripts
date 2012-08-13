@@ -1,0 +1,221 @@
+#!/usr/bin/perl -w
+
+# Mon Aug 13 09:49:46 BST 2012
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from [to]
+
+  Tell how long this computer has been on (i.e. not sleeping [or off? todo])
+  in the given date/time range. 'To' is now if omitted.
+
+  --print-spans   print spans and their duration
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_print_spans;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "print-spans"=> \$opt_print_spans,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV and @ARGV<=2;
+
+use Date::Manip::Date;
+
+sub MyParseDate {
+    my ($str)=@_;
+    my $d= new Date::Manip::Date;
+    if ($d->parse($str)) {
+	# error, not success.
+	die "can't parse date '$str': ".$d->err
+    } else {
+	$d->printf('%s')
+    }
+}
+
+our ($from,$to)= map { MyParseDate $_ } (@ARGV==2 ? @ARGV : (@ARGV, "now"));
+
+$from < $to
+  or die "from-time must be before to-time";
+
+
+use Chj::xperlfunc ':all';
+
+# XX: relying on mtimes representing the time of the last message in a
+# file
+
+our @allfiles= sort {
+    $a->[1] <=> $b->[1]
+} map {
+    my $mtime= xstat($_)->mtime;
+    [$_, $mtime]
+} glob "/var/log/kern.log*";
+
+our @files= grep {
+    my ($path,$mtime)=@$_;
+    $from <= $mtime
+} @allfiles;
+
+our $mtime_before= do {
+    # the mtime of the file *before* the first file in @files;
+    # i.e. of the files that come *before* @files, take the last.
+    my @prefiles= grep {
+	my ($path,$mtime)=@$_;
+	not $from <= $mtime
+    } @allfiles;
+    if (@prefiles) {
+	$prefiles[-1][1]
+    } else {
+	die "unfinished: if there's no earlier file than the first we are reading, how are we going to find out the year of the timestamps in the first file??? read it to the end, revert times back from mtime. Duh.";
+    }
+};
+
+# The year needs to be in the same time zone as the timestamps. XX: of
+# course this is only going to be valid if the time zone never
+# changes, which is *stupid* but what else *could* we do. Honest.
+
+# BTW we're even writing a layer around Parse::Syslog. Kishf.
+
+our $year_before= (localtime($mtime_before))[5]+1900;
+
+use Chj::IO::Command;
+
+our $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+
+use IO::Handle ();
+
+use Parse::Syslog;
+
+our @events;
+{
+    # crazy hacking. (addbless? I don't have that in my chj repo, sigh)
+    my $oldclass= ref $f;
+    bless $f, "IO::Handle";
+
+    our $syslog = Parse::Syslog->new($f, year => $year_before);
+
+    while (my $row= $syslog->next) {
+	my $t= $$row{timestamp};
+	if ($t >= $from and $t <= $to) {
+	    my $txt= $$row{text};
+	    #print "$t $txt\n"
+	    if ($txt=~ /PM: Preparing system for mem sleep/) {
+		push @events, [$t,'sleep'];
+	    } elsif ($txt=~ /PM: resume of devices complete/) {
+		push @events, [$t,'wakeup from sleep'];
+	    } elsif ($txt=~ /PM: Marking nosave pages/) {
+		push @events, [$t,'hibernate'];
+	    } elsif ($txt=~ /PM: restore of devices complete/) {
+		push @events, [$t,'wakeup from hibernate'];
+	    }
+	}
+    }
+
+    bless $f, $oldclass;
+    $f->xxfinish;
+}
+
+sub is_on_event( $ ) {
+    not($_[0] eq 'sleep' or $_[0] eq 'hibernate')
+}
+
+our @spans;
+{
+    my $on_since;
+    my $off_since;
+    for (@events) {
+	my ($t,$what)=@$_;
+	if (is_on_event $what) {
+	    if (defined $on_since) {
+		die "on event while already on: $t $what";
+	    }
+	    if (defined $off_since) {
+		push @spans, ['off', $off_since, $t, $what];
+	    } else {
+		# first one
+		# so, looks like the system was off.
+		push @spans, ['off', $from, $t, $what];
+	    }
+	    $on_since=$t;
+	    undef $off_since;
+	} else {
+	    # off event
+	    if (defined $off_since) {
+		die "off event while already off: $t $what";
+	    }
+	    if (defined $on_since) {
+		push @spans, ['on', $on_since, $t, $what];
+	    } else {
+		# first one
+		# so, looks like the system was on.
+		push @spans, ['on', $from, $t, $what];
+	    }
+	    $off_since=$t;
+	    undef $on_since;
+	}
+    }
+    # last one:
+    if (defined $on_since) {
+	push @spans, ['on', $on_since, $to, undef];
+    } elsif (defined $off_since) {
+	push @spans, ['off', $off_since, $to, undef];
+    } else {
+	die "???" if (@events);
+    }
+}
+
+sub total_on {
+    my $total_on=0;
+    for (@spans) {
+	my ($kind,$from,$to,$maybe_what)=@$_;
+	if ($kind eq 'on') {
+	    $total_on+= $to - $from;
+	}
+    }
+    $total_on
+}
+
+sub print_spans {
+    for (@spans) {
+	my ($kind,$from,$to,$maybe_what)=@$_;
+	my $what= $maybe_what || "end of observation period";
+	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
+	printf("%s\t%s\t%s - %s, until %s\n",
+	       ($kind eq 'on' ? $to-$from : ""),
+	       $kind,
+	       scalar localtime($from),
+	       scalar localtime($to),
+	       $what)
+	  or die $!;
+    }
+}
+
+if ($opt_print_spans) {
+    print_spans;
+}
+
+sub round_2 {
+    my ($v)=@_;
+    my $n= int($v*100+0.5);
+    # in case $v is something like 0.0001, leave it alone, ok?
+    $n=~ s/(..)$/.$1/ ? $n : $v
+}
+
+my $tot= total_on;
+print $tot." sec = ".round_2($tot/60)." min or ".round_2($tot/60/60)." hours\n"
+  or die $!;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
