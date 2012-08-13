@@ -23,9 +23,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $DEBUG=0;
 our $opt_print_spans;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
+	   "debug"=> \$DEBUG,
 	   "print-spans"=> \$opt_print_spans,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
@@ -49,6 +51,11 @@ our ($from,$to)= map { MyParseDate $_ } (@ARGV==2 ? @ARGV : (@ARGV, "now"));
 
 $from < $to
   or die "from-time must be before to-time";
+
+sub t_is_in_range ( $ ) {
+    my ($t)=@_;
+    $t >= $from and $t <= $to
+}
 
 print "searching from ".localtime($from)." to ".localtime($to)."..\n"
   if $verbose;
@@ -136,12 +143,33 @@ if ($child= xfork) {
 
 use IO::Handle ();
 
+use Date::Parse;
+sub xstr2time ( $ ) {
+    my ($tstr)=@_;
+    my $t= str2time($tstr);
+    defined $t or die "invalid datetime format of: '$tstr'";
+    $t
+}
+
 use Parse::Syslog;
+
+# event and raw_event are: [ $t, $is_on_event, $what ]
+sub is_on_event( $ ) {
+    $_[0][1]
+}
+
 
 # Problem is that, at least from kern.log, events can't be told just
 # from single log lines, as the two only log lines that tell about a
 # hibernation event also appear on boot. Collect all raw events first
 # then filter them (see next part of the code).
+
+# Also, sometimes the 'PM: Preparing system for mem sleep' kernel
+# message doesn't make it to userland in time before sleep; the only
+# log entry I've found, and which is probably reliable, is in
+# /var/log/pm-suspend.log, so add those, too; need to sort by time
+# afterwards to get them together...
+
 our @raw_events;
 {
     # crazy hacking. (addbless? I don't have that in my chj repo, sigh)
@@ -152,7 +180,7 @@ our @raw_events;
 
     while (my $row= $syslog->next) {
 	my $t= $$row{timestamp};
-	if ($t >= $from and $t <= $to) {
+	if (t_is_in_range $t) {
 	    my $txt= $$row{text};
 	    #print "$t $txt\n"
 
@@ -160,19 +188,19 @@ our @raw_events;
 
 	    # sleep:
 	    if ($txt=~ /PM: Preparing system for mem sleep/) {
-		push @raw_events, [$t,'sleep'];
+		push @raw_events, [$t, 0, 'sleep'];
 	    } elsif ($txt=~ /PM: resume of devices complete/) {
-		push @raw_events, [$t,'wakeup from sleep'];
+		push @raw_events, [$t, 1, 'wakeup from sleep'];
 	    }
 	    # hibernation:
 	    elsif ($txt=~ /PM: Marking nosave pages/) {
-		push @raw_events, [$t,'hibernate'];
+		push @raw_events, [$t, 0, 'hibernate'];
 	    } elsif ($txt=~ /PM: restore of devices complete/) {
-		push @raw_events, [$t,'wakeup from hibernate'];
+		push @raw_events, [$t, 1, 'wakeup from hibernate'];
 	    }
 	    # normal boot:
 	    elsif ($txt=~ /imklog .* started\./) {
-		push @raw_events, [$t,'boot'];
+		push @raw_events, [$t, 1, 'boot'];
 	    }
 	    # XXX should treat shutdown (and reboot) events.
 	}
@@ -182,57 +210,139 @@ our @raw_events;
     $read->xclose;
     xxwaitpid $child;
 }
+# And get the events from pm-suspend.log, too (see note above for
+# why). Just push then, then sort (could do proper stream merging...).
+{
+    # XX this is ugly, much adapted COPY paste..
+    my @allfiles= sort {
+	$a->[1] <=> $b->[1]
+    } map {
+	my $mtime= xstat($_)->mtime;
+	[$_, $mtime]
+    } glob "/var/log/pm-suspend.log*";
+    my @files= grep {
+	my ($path,$mtime)=@$_;
+	$from <= $mtime
+    } @allfiles;
+
+    my $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+    # / COPY paste
+
+    while (<$f>) {
+	if (/(.*): performing suspend$/) {
+	    # luckily, this is including year, even time zone.  XXX:
+	    # well, now we've got a definitive place where time zone
+	    # breakage will occur since this isn't handled the same as
+	    # the kern.log entries anymore. This stuff was really
+	    # meant to be human readable only, right?... (sigh).
+	    my $t= xstr2time($1);
+	    if (t_is_in_range $t) {
+		push @raw_events, [ $t, 0, '(pm) performing suspend']
+	    }
+	}
+	# we're not interested in the other messages. should we, for
+	# timezone check reasons?
+	elsif (/(.*): Awake\.$/) {
+	    my $t= xstr2time($1);
+	    if (t_is_in_range $t) {
+		push @raw_events, [ $t, 1, '(pm) Awake'];
+	    }
+	}
+    }
+    $f->xxfinish;
+}
+@raw_events= sort { $$a[0] <=> $$b[0] } @raw_events;
+
 
 sub print_raw_events {
     for (@raw_events) {
-	my ($t,$what)=@$_;
-	print localtime($t)."  $what\n" or die $!;
+	my ($t,$on,$what)=@$_;
+	print localtime($t)."  $on $what\n" or die $!;
+    }
+}
+
+our @eventgroups;
+# grouped when within a couple seconds
+{
+    my @raw= @raw_events;
+    @raw or die "can't act without any events";
+    my $ev= shift @raw;
+    my $current_group= [$ev];
+    my $current_group_t= $$ev[0];
+    # seconds events in a group can be apart (not from each other but
+    # in the whole group):
+    my $MAXD= 6; # XX good?
+    for my $ev (@raw) {
+	my ($t,$on,$what)=@$ev;
+	my $d= $t-$current_group_t; $d >= 0 or die "??";
+	if ($d <= $MAXD) {
+	    push @$current_group, $ev;
+	} else {
+	    push @eventgroups, $current_group;
+	    $current_group=[$ev];
+	    $current_group_t= $$ev[0];
+	}
+    }
+    push @eventgroups, $current_group;
+}
+
+sub print_eventgroups {
+    for (@eventgroups) {
+	for (@$_) {
+	    my ($t,$on,$what)=@$_;
+	    print localtime($t)."  $on $what\n" or die $!;
+	}
+	print "---\n" or die $!;
     }
 }
 
 our @events;
 {
-    my @raw= @raw_events;
-    @raw or die "can't act without any events";
-    my $current_event= shift @raw;
-    for (@raw) {
-	my ($t,$what)=@$_;
-	my ($t0,$what0)= @$current_event;
-	my $d= $t-$t0; $d >= 0 or die "??";
-	if ($d <= 1) {
-	    # those are representations of the same event.
-	    if ($what0 eq 'boot' and $what eq 'hibernate') {
-		#push @events, $current_event; no, leave it current, till it shifts
-	    } else {
-		#push @events, $current_event, $_;
-		#$current_event= $_;
-		die "two raw_events that are too close together: $t0 $what0 and $t $what"
-	    }
+    for my $eventgroup (@eventgroups) {
+	if (@$eventgroup==1) {
+	    push @events, $$eventgroup[0];
 	} else {
-	    # they do not belong together
+	    my @evs= @$eventgroup;
+	    my $current_event= shift @evs;
+	    while (@evs) {
+		my $next= shift @evs;
+		my ($t0,$on0,$what0)= @$current_event;
+		my ($t,$on,$what)=@$next;
+		if ($what0 eq 'boot' and $what eq 'hibernate') {
+		    # the first counts, the second is invalid.
+		} elsif ($what0 eq 'sleep' and $what eq 'wakeup from sleep') {
+		    # the first is invalid (kernel message that
+		    # didn't make it to the log before actual
+		    # sleep); assume (don't check) that in the
+		    # group before this one there's a '(pm)
+		    # performing suspend' event. Drop the sleep
+		    # event.
+		    $current_event= $next;
+		} elsif ($on0 == $on) {
+		    # no problem, keep current_event
+		} else {
+		    die "two raw_events with differing outcome that are too close together: $t0 $what0 and $t $what"
+		}
+	    }
 	    push @events, $current_event;
-	    $current_event= $_;
 	}
     }
-    push @events, $current_event;
 }
 
 sub print_events {
     for (@events) {
-	my ($t,$what)=@$_;
-	print localtime($t)."  $what\n" or die $!;
+	my ($t,$on,$what)=@$_;
+	print localtime($t)."  $on $what\n" or die $!;
     }
-}
-
-sub is_on_event( $ ) {
-    not($_[0] eq 'sleep' or $_[0] eq 'hibernate')
 }
 
 
 sub Die {
-    # either really die, or,
-    #["ERROR", @_]
-    $_[0]
+    if ($DEBUG) {
+	$_[0]
+    } else {
+	die $_[0]
+    }
 }
 
 our @spans;
@@ -240,11 +350,11 @@ our @spans;
     my $on_since;
     my $off_since;
     for (@events) {
-	my ($t,$what)=@$_;
-	if (is_on_event $what) {
+	my ($t,$on,$what)=@$_;
+	if (is_on_event $_) {
 	    if (defined $on_since) {
 		push @spans, ['ON?', $on_since, $t, # $off_since was undef in my case
-			      Die "on event while already on: $t $what"];
+			      Die "on event while already on: $t $on $what"];
 	    }
 	    if (defined $off_since) {
 		push @spans, ['off', $off_since, $t, $what];
@@ -259,7 +369,7 @@ our @spans;
 	    # off event
 	    if (defined $off_since) {
 		push @spans, ['OFF?', $off_since, $t, #$on_since was undef in my case
-			      Die "off event while already off: $t $what"];
+			      Die "off event while already off: $t $on $what"];
 	    }
 	    if (defined $on_since) {
 		push @spans, ['on', $on_since, $t, $what];
