@@ -124,6 +124,8 @@ if ($child= xfork) {
 		&$pr
 	    } elsif ($txt=~ /PM: restore of devices complete/) {
 		&$pr
+	    } elsif ($txt=~ /imklog .* started\./) {
+		&$pr
 	    }
 	}
     }
@@ -136,7 +138,11 @@ use IO::Handle ();
 
 use Parse::Syslog;
 
-our @events;
+# Problem is that, at least from kern.log, events can't be told just
+# from single log lines, as the two only log lines that tell about a
+# hibernation event also appear on boot. Collect all raw events first
+# then filter them (see next part of the code).
+our @raw_events;
 {
     # crazy hacking. (addbless? I don't have that in my chj repo, sigh)
     my $oldclass= ref $read;
@@ -149,22 +155,73 @@ our @events;
 	if ($t >= $from and $t <= $to) {
 	    my $txt= $$row{text};
 	    #print "$t $txt\n"
+
 	    # XXX: keep *COPY* of search strings up to date with those above!
+
+	    # sleep:
 	    if ($txt=~ /PM: Preparing system for mem sleep/) {
-		push @events, [$t,'sleep'];
+		push @raw_events, [$t,'sleep'];
 	    } elsif ($txt=~ /PM: resume of devices complete/) {
-		push @events, [$t,'wakeup from sleep'];
-	    } elsif ($txt=~ /PM: Marking nosave pages/) {
-		push @events, [$t,'hibernate'];
-	    } elsif ($txt=~ /PM: restore of devices complete/) {
-		push @events, [$t,'wakeup from hibernate'];
+		push @raw_events, [$t,'wakeup from sleep'];
 	    }
+	    # hibernation:
+	    elsif ($txt=~ /PM: Marking nosave pages/) {
+		push @raw_events, [$t,'hibernate'];
+	    } elsif ($txt=~ /PM: restore of devices complete/) {
+		push @raw_events, [$t,'wakeup from hibernate'];
+	    }
+	    # normal boot:
+	    elsif ($txt=~ /imklog .* started\./) {
+		push @raw_events, [$t,'boot'];
+	    }
+	    # XXX should treat shutdown (and reboot) events.
 	}
     }
 
     bless $read, $oldclass;
     $read->xclose;
     xxwaitpid $child;
+}
+
+sub print_raw_events {
+    for (@raw_events) {
+	my ($t,$what)=@$_;
+	print localtime($t)."  $what\n" or die $!;
+    }
+}
+
+our @events;
+{
+    my @raw= @raw_events;
+    @raw or die "can't act without any events";
+    my $current_event= shift @raw;
+    for (@raw) {
+	my ($t,$what)=@$_;
+	my ($t0,$what0)= @$current_event;
+	my $d= $t-$t0; $d >= 0 or die "??";
+	if ($d <= 1) {
+	    # those are representations of the same event.
+	    if ($what0 eq 'boot' and $what eq 'hibernate') {
+		#push @events, $current_event; no, leave it current, till it shifts
+	    } else {
+		#push @events, $current_event, $_;
+		#$current_event= $_;
+		die "two raw_events that are too close together: $t0 $what0 and $t $what"
+	    }
+	} else {
+	    # they do not belong together
+	    push @events, $current_event;
+	    $current_event= $_;
+	}
+    }
+    push @events, $current_event;
+}
+
+sub print_events {
+    for (@events) {
+	my ($t,$what)=@$_;
+	print localtime($t)."  $what\n" or die $!;
+    }
 }
 
 sub is_on_event( $ ) {
