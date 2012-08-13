@@ -254,7 +254,8 @@ sub round_2 {
 }
 
 my $tot= total_on;
-print $tot." sec = ".round_2($tot/60)." min or ".round_2($tot/60/60)." hours\n"
+my $timerange=  localtime($from)." - ".localtime($to);
+print $tot." sec = ".round_2($tot/60)." min or ".round_2($tot/60/60)." hours \t($timerange)\n"
   or die $!;
 
 #use Chj::ruse;
