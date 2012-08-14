@@ -15,6 +15,7 @@ sub usage {
   in the given date/time range. 'To' is now if omitted.
 
   --print-spans   print spans and their duration
+  --pron          only print 'on' spans
 
   (Christian Jaeger <$email>)
 ";
@@ -25,10 +26,12 @@ use Getopt::Long;
 our $verbose=0;
 our $DEBUG=0;
 our $opt_print_spans;
+our $opt_pron;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "debug"=> \$DEBUG,
 	   "print-spans"=> \$opt_print_spans,
+	   "pron"=> \$opt_pron,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
@@ -411,21 +414,25 @@ sub round_2 {
 }
 
 sub print_spans {
+    my ($only_on)=@_;
     for (@spans) {
 	my ($kind,$from,$to,$maybe_what)=@$_;
 	my $what= $maybe_what || "end of observation period";
 	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
-	printf("%s\t%s\t%s - %s  until %s\n",
-	       ($kind eq 'on' ? 'on--»»' : $kind),
-	       round_2(($to-$from)/60),
-	       scalar localtime($from),
-	       scalar localtime($to),
-	       $what)
-	  or die $!;
+	if (not($opt_pron) or $kind eq 'on') {
+	    print((not($opt_pron) ? (($kind eq 'on' ? 'on--»»' : $kind), "\t") : ()),
+		  round_2(($to-$from)/60), "\t",
+		  scalar localtime($from), "-", scalar localtime($to), "  until ",
+		  $what,
+		  "\n")
+	      or die $!;
+	}
     }
 }
 
-if ($opt_print_spans) {
+if ($opt_pron) {
+    print_spans(1)
+} elsif ($opt_print_spans) {
     print_spans;
 }
 
