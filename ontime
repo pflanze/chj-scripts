@@ -415,7 +415,7 @@ sub print_spans {
 	my ($kind,$from,$to,$maybe_what)=@$_;
 	my $what= $maybe_what || "end of observation period";
 	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
-	printf("%s\t%s\t%s - %s, until %s\n",
+	printf("%s\t%s\t%s - %s  until %s\n",
 	       ($kind eq 'on' ? 'on--»»' : $kind),
 	       round_2(($to-$from)/60),
 	       scalar localtime($from),
