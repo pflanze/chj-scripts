@@ -403,14 +403,21 @@ sub total_on {
     $total_on
 }
 
+sub round_2 {
+    my ($v)=@_;
+    my $n= int($v*100+0.5);
+    # in case $v is something like 0.0001, leave it alone, ok?
+    $n=~ s/(..)$/.$1/ ? $n : $v
+}
+
 sub print_spans {
     for (@spans) {
 	my ($kind,$from,$to,$maybe_what)=@$_;
 	my $what= $maybe_what || "end of observation period";
 	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
 	printf("%s\t%s\t%s - %s, until %s\n",
-	       ($kind eq 'on' ? $to-$from : ""),
-	       $kind,
+	       ($kind eq 'on' ? 'on--»»' : $kind),
+	       round_2(($to-$from)/60),
 	       scalar localtime($from),
 	       scalar localtime($to),
 	       $what)
@@ -420,13 +427,6 @@ sub print_spans {
 
 if ($opt_print_spans) {
     print_spans;
-}
-
-sub round_2 {
-    my ($v)=@_;
-    my $n= int($v*100+0.5);
-    # in case $v is something like 0.0001, leave it alone, ok?
-    $n=~ s/(..)$/.$1/ ? $n : $v
 }
 
 my $tot= total_on;
