@@ -182,6 +182,11 @@ if (defined $usage) {
   - option to start a second/third.. invocation of the same job?
   - to be usable for special users: use another dir than ~/.daemonize-run/
 
+  Bugs?:
+  - does not make the current directory or other environmental
+    parameters part of the input of the function to find the process
+    group for --stop/--STOP/--CONT options. Should it?
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
