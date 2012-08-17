@@ -26,7 +26,7 @@ our $maxwait=3;#seconds
 our $logfile= "nohup.out";
 our $opt_quiet;
 our $opt_no_error_if_running;
-our $signal=15; # SIGTERM   instead of 1 SIGHUP that it was;  hmm is this change ok ?
+our $signal=15; # SIGTERM
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -175,19 +175,11 @@ if (-d $runbase) {
 }
 my $runfile= "$runbase/run";
 
-#use Carp;
-#$SIG{__DIE__}=sub { confess @_};
-
 if ($opt_stop) {
     my ($user,$hostname,$ip,$pid)=
       Chj::Unix::DaemonRunfile->new($runfile)->readfile;
-    #die "$killdirpath/.run does not contain a pid" unless $pid and $pid=~ /^\d+$/; ##uuugly  <- why did I this?
-    ##hm, check if hostname is ok? todo.
-    #xkill "HUP",$pid;#nope, we want to kill the process group #(he ps unix problem?: possibility that the process group leader died, childs still there, pids wrap around, new process group leader with same pid does setsid again,-> reuse of pgroup id)
-    #kill -1,$pid or kill 1,$pid;# the latter in case the cmd did setsid again itself? bulshit, he couldnt.
-    xkill -$signal,$pid;#ps luschtig dass offenbar dies selbst dann children von nohup nicht terminiert wenn nohup selber direkt ausgeführt wurde und es also doch kein setsid machen konnte. wie macht nohup denn dann dass die children nicht... aha, wohl nach fork before exec?.
+    xkill -$signal,$pid;
 
-    # "wait" until it was killed, -9 if not in some timeframe?
   CHECK:{
 	my $st=time;
 	do {
