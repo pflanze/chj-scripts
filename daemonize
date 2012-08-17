@@ -15,7 +15,12 @@ use Chj::xperlfunc;
 use Chj::Util::AskYN;
 use Time::HiRes 'sleep';
 use Chj::xtmpfile;
-*Class::Array::clone=sub {my $self=shift;my $new=[@$self]; bless $new,ref $self} unless *Class::Array::clone{CODE};
+*Class::Array::clone=sub {
+    my $self=shift;
+    my $new=[@$self];
+    bless $new,ref $self
+}
+  unless *Class::Array::clone{CODE};
 use Chj::xhome;
 
 my $usage;
@@ -104,7 +109,8 @@ ARG:{
     }
 }
 
-unless ($usage){ # no defined: only avoid if an *error* parsing the arguments has occurred.
+unless ($usage){ # no defined: only avoid if an *error* parsing the
+                 # arguments has occurred.
     if (@ARGV) {
 	my $hash= md5_hex join "\0",@ARGV;
 	$runbase= "$basedir/$hash";
@@ -165,7 +171,9 @@ exit @_ ? 1 : 0;
 
 (xmkdir $basedir, 0700) unless -d $basedir;
 if (-d $runbase) {
-    utime time,time,$runbase  # for future cleaner, to ignore too new directories (though runfile check should be done anyway too)
+    utime time,time,$runbase  # for future cleaner, to ignore too new
+                              # directories (though runfile check
+                              # should be done anyway too)
 } else {
     xmkdir $runbase,0700;
     my $f= xtmpfile($runbase."/cmdline");
@@ -184,7 +192,9 @@ if ($opt_stop) {
 	my $st=time;
 	do {
 	    sleep 0.1;
-	    # try both the pid itself and the processgroup, since killing the pgroup using -$pid is not portable. tested on linux only, though.
+	    # try both the pid itself and the processgroup, since
+	    # killing the pgroup using -$pid is not portable. tested
+	    # on linux only, though.
 	    if ((kill 0,$pid) # for portability only, if it helps even
 		or
 		(kill 0,-$pid)
@@ -195,7 +205,8 @@ if ($opt_stop) {
 	    }
 	    #warn "notyetfinished\n";
 	} while ((time-$st)<$maxwait);
-	kill -9,$pid and warn "not all processes exited, killed again with signal 9\n";
+	kill -9,$pid
+	  and warn "not all processes exited, killed again with signal 9\n";
     }
 }
 
@@ -227,7 +238,8 @@ else {
 					  unless $opt_quiet;
 					exit 0
 				    })) {
-	print STDERR "daemon running as pid $pid",($opt_bg ? () : " (you can hit ctl-c now)"),"\n"
+	print STDERR ("daemon running as pid $pid",
+		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
 	  unless $opt_quiet;
 	unless ($opt_bg) {
 	    wait;
