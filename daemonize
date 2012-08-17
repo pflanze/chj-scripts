@@ -32,6 +32,7 @@ our $logfile= "nohup.out";
 our $opt_quiet;
 our $opt_no_error_if_running;
 our $signal=15; # SIGTERM
+our ($opt_STOP, $opt_CONT);
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -41,6 +42,10 @@ ARG:{
 	    if (length $1) {
 		if ($1 eq 'stop' or $1 eq 'kill') {
 		    $opt_stop=1;
+		} elsif ($1 eq 'STOP') {
+		    $opt_STOP=1;
+		} elsif ($1 eq 'CONT' or $1 eq 'cont') {
+		    $opt_CONT=1;
 		} elsif ($1 eq 'bg') {
 		    $opt_bg=1;
 		} elsif ($1 eq 'quiet') {
@@ -119,6 +124,18 @@ unless ($usage){ # no defined: only avoid if an *error* parsing the
     }
 }
 
+{
+    use Chj::FP::ArrayLib 'array_fold';
+    my $add= sub {
+	my ($a,$b)=@_;
+	$a + $b
+    };
+    my $n= array_fold $add, 0,
+      [map { $_ ? 1 : 0 } ($opt_stop, $opt_STOP, $opt_CONT)];
+    if ($n > 1) {
+	$usage = "can only take one of --stop, --STOP, and --CONT at a time"
+    }
+}
 
 if (defined $usage) {
     print STDERR "$usage\n" if $usage;
@@ -142,6 +159,8 @@ if (defined $usage) {
               First kills with signal $signal, then if there are still
               processes after maxwait seconds, kills with SIGKILL.
   --signal N  use signal N instead of default $signal
+  --STOP      send SIGSTOP (and no SIGKILL afterwards)
+  --CONT|--cont  send SIGCONT
   --maxwait N  change default of $maxwait sec to wait before sending SIGKILL
   -N|--no-nice  do not lower priority
   --out file  use file instead of 'nohup.out' for output (is opened in
@@ -208,6 +227,13 @@ if ($opt_stop) {
 	kill -9,$pid
 	  and warn "not all processes exited, killed again with signal 9\n";
     }
+}
+
+elsif ($opt_STOP or $opt_CONT) {
+    my ($user,$hostname,$ip,$pid)=
+      Chj::Unix::DaemonRunfile->new($runfile)->readfile;
+    my $signal= $opt_STOP ? 19 : 18; # XXX Linux specific. Derive from names.
+    xkill -$signal,$pid;
 }
 
 else {
