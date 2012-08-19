@@ -13,9 +13,9 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname cvecode
+    print "$myname cvecode(s)
 
-  Show the page at $baseurl . cvecode, the latter being something
+  Show the page(s) at $baseurl . cvecode, the latter being something
   similiar to CVE-200X-XXXX
 
   (Christian Jaeger <$email>)
@@ -46,10 +46,16 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args==1;
+usage unless @args;
 
-my ($cvecode)=@args;
+use URI::Escape 'uri_escape';
 
-uc($cvecode)=~ /^CVE-(\d+)-\d+\z/ or usage "'$cvecode' doesn't seem to match the usual format of cve codes";
+my @urls= map {
+    my $cvecode= $_;
+    uc($cvecode)=~ /^CVE-(\d+)-\d+\z/
+      or usage "'$cvecode' doesn't seem to match the usual format of cve codes";
+    $baseurl . uri_escape($cvecode)
+} @args;
 
-xexec "_browser-url-args", $baseurl, $cvecode
+use Chj::Browser;
+Browser_exec @urls;
