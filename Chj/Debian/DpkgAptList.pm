@@ -77,11 +77,15 @@ sub collect_keys {
 		# continuation line
 		push @$lines, $1 if $lines;
 	    } elsif (/^$/) {
-		return $collection
+		goto finish;
 	    } else {
 		die "parse failure, no match for line '$_'";
 	    }
 	}
+      finish:
+	push @{$$collection{$key}}, $lines
+	  if $lines;
+	# ^ps, is a copy of above
 	$collection
     }
 }
