@@ -68,7 +68,6 @@ if (@packages) {
 
     my $save_autoflags= sub {
 	if (@autopackages) {
-	    sleep 30;
 	    prln "These packages had their auto-installed flag set:";
 	    prln "  $_" for @autopackages;
 	    prln "set their flags again..";
