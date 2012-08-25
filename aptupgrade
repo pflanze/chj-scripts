@@ -9,7 +9,7 @@ sub usage {
   Checks each package whether it is really installed, and if yes,
   apt-get install's it.
 ";
-    exit;
+    exit 1;
 }
 
 usage unless @ARGV;
