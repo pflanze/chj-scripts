@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w
 
+use strict;
 
+my $what;
 
 if (@ARGV) {
     if ($ARGV[0]=~ /^--?a(?:ll)?$/) {
@@ -11,7 +13,7 @@ if (@ARGV) {
         $what= "ia";
     }
     if (@ARGV>1 or not $what) {
-        print "dpkglist [-a[ll] ¦ -i[nstalled]]
+        print "dpkglist [-a[ll] | -i[nstalled]]
 
 List packages in /var/lib/dpkg/status. -a means all, -i only installed
 packages. Per default, -i is assumed. -ia means include kinds of half-installed.
