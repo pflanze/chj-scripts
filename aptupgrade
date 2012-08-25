@@ -15,19 +15,25 @@ sub usage {
 usage unless @ARGV;
 
 # get list of installed packages
-my %packs= map { chomp; $_=>1 } `dpkglist -i`; # dpkglist is from me too
+our %packs= map { chomp; $_=>1 } `dpkglist -i`;
+
 $|=1;
-for (@ARGV) {
+
+our @packs= grep {
     if (/^-/) {
         usage
     } else {
-        if ($packs{$_}) {
-            print "$me: calling apt-get for '$_'...\n";
-            system qw(apt-get install),$_;
-        } else {
-            print "$me: package '$_' is not installed.\n";
-        }
-        print "\n";
+	my $installed= $packs{$_};
+	if (!$installed) {
+	    print "$me: package '$_' is not installed.\n";
+	}	
+	$installed
     }
+} @ARGV;
+
+use Chj::xperlfunc;
+
+if (@packs) {
+    xxsystem "apt-get", "install", "--", @packs;
 }
 
