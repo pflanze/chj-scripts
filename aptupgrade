@@ -2,6 +2,8 @@
 
 use strict;
 
+our $opt_dry= $ENV{DRY};
+
 $0=~ /([^\/]+)$/s;
 my $me= $1;
 sub usage {
@@ -15,15 +17,15 @@ sub usage {
 usage unless @ARGV;
 
 # get list of installed packages
-our %packs= map { chomp; $_=>1 } `dpkglist -i`;
+our %installed= map { chomp; $_=>1 } `dpkglist -i`;
 
 $|=1;
 
-our @packs= grep {
+our @packages= grep {
     if (/^-/) {
         usage
     } else {
-	my $installed= $packs{$_};
+	my $installed= $installed{$_};
 	if (!$installed) {
 	    print "$me: package '$_' is not installed.\n";
 	}	
@@ -31,9 +33,35 @@ our @packs= grep {
     }
 } @ARGV;
 
+use Chj::Debian::DpkgAptList 'aptlist';
+use Chj::Chomp;
+
 use Chj::xperlfunc;
 
-if (@packs) {
-    xxsystem "apt-get", "install", "--", @packs;
+if (@packages) {
+    # before upgrading packages, save the auto-install flags
+    # XXX: what to do in case of errors? grr
+    my %autoinstalled;
+    aptlist( +{Package=>1,
+	       'Auto-Installed'=>1,
+	      },
+	     sub {
+		 my ($d)=@_;
+		 my $name= Chomp $$d{Package}[0][0];
+		 my $autoinstalled= Chomp $$d{'Auto-Installed'}[0][0];
+		 $autoinstalled{$name}= $autoinstalled;
+	     });
+
+    my @autopackages= grep {
+	$autoinstalled{$_}
+    } @packages;
+
+    xxsystem( ($opt_dry ? "echo" : ()), "apt-get", "install", "--", @packages);
+
+    xxsystem( ($opt_dry ? "echo" : ()), "aptitude", "install", "--",
+	      map {
+		  $_.'&M'
+	      } @autopackages)
+      if @autopackages;
 }
 
