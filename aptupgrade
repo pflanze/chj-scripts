@@ -38,9 +38,12 @@ use Chj::Chomp;
 
 use Chj::xperlfunc;
 
+sub prln {
+    print "$me: @_\n";
+}
+
 if (@packages) {
     # before upgrading packages, save the auto-install flags
-    # XXX: what to do in case of errors? grr
     my %autoinstalled;
     aptlist( +{Package=>1,
 	       'Auto-Installed'=>1,
@@ -56,12 +59,32 @@ if (@packages) {
 	$autoinstalled{$_}
     } @packages;
 
-    xxsystem( ($opt_dry ? "echo" : ()), "apt-get", "install", "--", @packages);
+    my $save_autoflags= sub {
+	if (@autopackages) {
+	    prln "These packages had their auto-installed flag set:";
+	    prln "  $_" for @autopackages;
+	    prln "set their flags again..";
+	    xxsystem( ($opt_dry ? "echo" : ()), "aptitude", "install", "--",
+		      map {
+			  $_.'&M'
+		      } @autopackages);
+	    prln "done";
+	}
+    };
 
-    xxsystem( ($opt_dry ? "echo" : ()), "aptitude", "install", "--",
-	      map {
-		  $_.'&M'
-	      } @autopackages)
-      if @autopackages;
+    eval {
+	xxsystem( ($opt_dry ? "echo" : ()), "apt-get", "install", "--", @packages);
+	1
+    } || do {
+	my $e= $@;
+	eval {
+	    prln "There was an error.";
+	    &$save_autoflags;
+	};
+	prln "Here's the previous error:";
+	die $e;
+    };
+    &$save_autoflags
+	
 }
 
