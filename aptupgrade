@@ -42,6 +42,13 @@ sub prln {
     print "$me: @_\n";
 }
 
+sub set_sighandler {
+    my ($signal)=@_;
+    $SIG{$signal}= sub {
+	die "got SIG$signal";
+    }
+};
+
 if (@packages) {
     # before upgrading packages, save the auto-install flags
     my %autoinstalled;
@@ -61,6 +68,7 @@ if (@packages) {
 
     my $save_autoflags= sub {
 	if (@autopackages) {
+	    sleep 30;
 	    prln "These packages had their auto-installed flag set:";
 	    prln "  $_" for @autopackages;
 	    prln "set their flags again..";
@@ -71,6 +79,9 @@ if (@packages) {
 	    prln "done";
 	}
     };
+
+    set_sighandler $_ for
+      qw(HUP INT QUIT USR1 USR2);
 
     eval {
 	xxsystem( ($opt_dry ? "echo" : ()), "apt-get", "install", "--", @packages);
