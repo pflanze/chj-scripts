@@ -104,10 +104,10 @@ sub dpkgaptlist_file {
 	my ($keys,$cb)=@_;
 	my $collect= collect_keys($keys);
 
-	open IN, "<", $path
+	open my $fh, "<", $path
 	  or die "open '$path': $!";
 	my $in;
-	mmap ($in,0, PROT_READ, MAP_SHARED, IN)
+	mmap ($in,0, PROT_READ, MAP_SHARED, $fh)
 	  or die "mmap: $!";
 
 	# turn mmap into line based file reading; kind of a joke
@@ -122,7 +122,7 @@ sub dpkgaptlist_file {
 
 	munmap($in)
 	  or die "munmap: $!";
-	close IN
+	close $fh
 	  or die "close: $!";
     }
 }
