@@ -37,8 +37,9 @@ entry).
 
 =head1 BUGS
 
-This doesn't obtain any lock, and on top of that uses mmap, if the
-files change while this is running weird things will happen.
+This doesn't obtain any lock, if the files change while this is
+running weird results will happen. Although if existing files are
+never changed by overwriting but only by replacement, this is safe.
 
 =cut
 
@@ -55,27 +56,15 @@ package Chj::Debian::DpkgAptList;
 
 use strict;
 
-BEGIN {
-    eval 'use Mmap';
-    if ($@) {
-	eval 'use Sys::Mmap';
-	if ($@) {
-	    die $@
-	}
-    }
-}
-
 sub collect_keys {
     my ($keys)=@_;
     sub {
+	my ($fh)=@_;
 	my $collection= undef; #{};
 	my $key=undef;
 	my $lines=undef;
-	my $pos;
-	while ($_[0]=~ /\G([^\n]+?\n)/sgc) {
-	    $pos= pos($_[0]);
-	    my $line= $1; #now we have the copy. ha
-	    if ($line=~ /^([\w-]+):[ \t]*(.*)/s) {
+	while (<$fh>) {
+	    if (/^([\w-]+):[ \t]*(.*)/s) {
 		push @{$$collection{$key}}, $lines
 		  if $lines;
 		$key= $1;
@@ -84,16 +73,16 @@ sub collect_keys {
 		} else {
 		    $lines=undef;
 		}
+	    } elsif (/^ (.*)/s) {
+		# continuation line
+		push @$lines, $1 if $lines;
+	    } elsif (/^$/) {
+		return $collection
 	    } else {
-		# continuation line?
-		if ($line=~ /^ (.*)/s) {
-		    push @$lines, $1 if $lines;
-		} else {
-		    die "parse failure, no match for line '$line'";
-		}
+		die "parse failure, no match for line '$_'";
 	    }
 	}
-	($collection,$pos)
+	$collection
     }
 }
 
@@ -106,22 +95,9 @@ sub dpkgaptlist_file {
 
 	open my $fh, "<", $path
 	  or die "open '$path': $!";
-	my $in;
-	mmap ($in,0, PROT_READ, MAP_SHARED, $fh)
-	  or die "mmap: $!";
-
-	# turn mmap into line based file reading; kind of a joke
-      DO: {
-	    my ($coll,$endpos)= &$collect ($in);
-	    if (defined $coll) {
-		&$cb($coll);
-		pos($in)=$endpos+1;
-		redo DO;
-	    }
+	while (defined (my $coll= &$collect ($fh))) {
+	    &$cb($coll);
 	}
-
-	munmap($in)
-	  or die "munmap: $!";
 	close $fh
 	  or die "close: $!";
     }
