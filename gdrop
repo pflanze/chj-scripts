@@ -15,6 +15,7 @@ sub usage {
   -f   force it even if the working directory is not clean
   -a   passed to git tag
   -s   passed to git tag
+  -b|--base   instead of using prefix drop_, use prefix base_
 
   (Christian Jaeger <$email>)
 ";
@@ -25,6 +26,7 @@ use Getopt::Long;
 our $verbose=0;
 our $opt_dry;
 our $opt_force;
+our $opt_base;
 our @gitopts;
 
 sub passgitopt ( $ ) {
@@ -53,6 +55,7 @@ sub passgitopt ( $ ) {
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$opt_dry,
+	   "base"=> \$opt_base,
 	   passgitopt "a",
 	   passgitopt "s",
 	   passgitopt  "m=s",
@@ -66,7 +69,7 @@ our $subname_= ((defined ($maybe_subname))# and length ($maybe_subname))
 		? $maybe_subname."_" : "");
 
 our $date_= `date_`; chomp $date_; #hum.
-our $tagname= "drop_".$subname_.$date_;
+our $tagname= ($opt_base ? "base_" : "drop_").$subname_.$date_;
 
 use Chj::xperlfunc;
 use Chj::Git::Functions 'status_is_clean';
