@@ -33,6 +33,7 @@ our $opt_quiet;
 our $opt_no_error_if_running;
 our $signal=15; # SIGTERM
 our ($opt_STOP, $opt_CONT);
+our $opt_hash_input;
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -77,6 +78,12 @@ ARG:{
 			$usage= "missing argument to --maxwait option";
 			last ARG;
 		    };
+		} elsif ($1 eq 'hash-input') {
+		    $opt_hash_input=$ARGV[0]; shift @ARGV;
+		    unless (defined $opt_hash_input) {
+			$usage= "missing argument to --hash-input option";
+			last ARG;
+		    };
 		} elsif ($1 eq 'help') {
 		    $usage="";
 		    #last ARG; nope
@@ -117,7 +124,8 @@ ARG:{
 unless ($usage){ # no defined: only avoid if an *error* parsing the
                  # arguments has occurred.
     if (@ARGV) {
-	my $hash= md5_hex join "\0",@ARGV;
+	my $hash= md5_hex( defined ($opt_hash_input) ? $opt_hash_input
+			   : join "\0",@ARGV );
 	$runbase= "$basedir/$hash";
     } else {
 	$usage="" # if not already set to "" anyway
@@ -169,6 +177,11 @@ if (defined $usage) {
   --no-error-if-running|--no-error  do not report an error if the
               daemon is already running
               (with --quiet, suitable to be run repeatedly from crontab)
+  --hash-input string
+              instead of creating a hash (for identification of jobs) from
+              the cmd and arguments, use string as hash input.
+              (This would allow to exclude some cmd arguments or add other
+              inputs like cwd.)
   --          terminate option processing
 
   Note: the pid file (and the output if nohup.out is not used)-- ehr?.
