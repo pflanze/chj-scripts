@@ -282,7 +282,7 @@ else {
 					  unless $opt_quiet;
 					exit 0
 				    })) {
-	print STDERR ("daemon running as pid $pid",
+	print STDERR ("daemon running as sid $pid",
 		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
 	  unless $opt_quiet;
 	unless ($opt_bg) {
