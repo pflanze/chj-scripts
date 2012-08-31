@@ -147,6 +147,24 @@ sub writefile {
     }
 }
 
+sub is_running {
+    my $s=shift;
+    if (sysopen my $fh, $$s[Path],O_RDWR) {
+	my $nonrunning= flock ($fh, LOCK_EX|LOCK_NB);
+	close $fh or die "close: $!";
+	!$nonrunning
+    } else {
+	my $ec= $! + 0;
+	my $estr= "$!";
+	use POSIX 'ENOENT';
+	if ($ec == ENOENT) {
+	    0
+	} else {
+	    croak "open '$$s[Path]': $estr";
+	}
+    }
+}
+
 sub readfile {
     my $s=shift;
     my $fh= xsysopen $$s[Path],O_RDWR;
