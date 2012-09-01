@@ -348,7 +348,14 @@ if ($opt_stop) {
 } elsif ($opt_STOP or $opt_CONT) {
     STOP_or_CONT;
 } elsif ($opt_status) {
-    print( (is_running ? "running" : "stopped"), "\n")
+    my $stat= do {
+	if (is_running) {
+	    "running"
+	} else {
+	    "stopped"
+	}
+    };
+    print "$stat\n"
       or die $!;
 } else {
     start;
