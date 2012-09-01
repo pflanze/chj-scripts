@@ -24,7 +24,7 @@ use Chj::xtmpfile;
 use Chj::xhome;
 
 my $usage;
-my ($opt_stop, $opt_bg,$opt_nonice, $opt_restart);
+my ($opt_stop, $opt_bg,$opt_nonice, $opt_restart, $opt_status);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
@@ -39,12 +39,14 @@ ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
 	my $opt=$1;
 	shift @ARGV;
-	if ($opt=~ /^-(.*)/s){
+	if ($opt=~ /^-(.*)/s) {
 	    if (length $1) {
 		if ($1 eq 'stop' or $1 eq 'kill') {
 		    $opt_stop=1;
 		} elsif ($1 eq 'restart') {
 		    $opt_restart=1;
+		} elsif ($1 eq 'status') {
+		    $opt_status=1;
 		} elsif ($1 eq 'STOP') {
 		    $opt_STOP=1;
 		} elsif ($1 eq 'CONT' or $1 eq 'cont') {
@@ -172,6 +174,8 @@ sub usage {
   --restart
               if a previously started daemon is running, --stop it first,
               then start it again
+  --status
+              prints 'running' if running, 'stopped' if not.
   --signal N  use signal N instead of default $signal
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
   --CONT|--cont  send SIGCONT
@@ -322,7 +326,7 @@ sub start {
 
 {
     my $cnt=0;
-    for ($opt_stop, $opt_bg, $opt_restart, $opt_STOP, $opt_CONT) {
+    for ($opt_stop, $opt_bg, $opt_restart, $opt_STOP, $opt_CONT, $opt_status) {
 	$cnt++ if $_;
     }
     if ($cnt > 1) {
@@ -330,7 +334,7 @@ sub start {
 	if ($cnt == 2 and $opt_restart && $opt_bg) {
 	    # ok
 	} else {
-	    usage 'only one of --stop|--bg|--restart|--STOP|--CONT can be given, except --bg is allowed with --restart'
+	    usage 'only one of --stop|--bg|--restart|--STOP|--CONT|--status can be given, except --bg is allowed with --restart'
 	}
     }
 }
@@ -343,6 +347,9 @@ if ($opt_stop) {
     start;
 } elsif ($opt_STOP or $opt_CONT) {
     STOP_or_CONT;
+} elsif ($opt_status) {
+    print( (is_running ? "running" : "stopped"), "\n")
+      or die $!;
 } else {
     start;
 }
