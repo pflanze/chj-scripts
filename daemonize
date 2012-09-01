@@ -175,7 +175,7 @@ sub usage {
               if a previously started daemon is running, --stop it first,
               then start it again
   --status
-              prints 'running' if running, 'stopped' if not.
+              prints 'running' if running, 'off' if not.
   --signal N  use signal N instead of default $signal
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
   --CONT|--cont  send SIGCONT
@@ -352,7 +352,7 @@ if ($opt_stop) {
 	if (is_running) {
 	    "running"
 	} else {
-	    "stopped"
+	    "off"
 	}
     };
     print "$stat\n"
