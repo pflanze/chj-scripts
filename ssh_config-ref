@@ -40,7 +40,7 @@ my $c= ssh_config_parse_path "/etc/ssh/ssh_config";
 
 print ssh_cfg_ref ($c, $hostname, $directivename,
 		   sub {
-		       print STDERR "host or directive not found\n"
+		       print STDERR "host or directive not found ('$hostname', '$directivename')\n"
 			 unless $opt_quiet;
 		       exit(1);
 		   }),
