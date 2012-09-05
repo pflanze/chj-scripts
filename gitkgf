@@ -26,10 +26,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -43,7 +43,7 @@ our @paths= map {
 
 use Chj::xperlfunc;
 
-xexec "gitkg", "--", @paths;
+xexec(($opt_dry ? "echo" : ()), "gitkg", "--", @paths);
 
 
 #use Chj::ruse;
