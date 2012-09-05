@@ -46,8 +46,12 @@ our $paths= array_uniq( [
 			],
 			\&string_eq );
 
+
+use Chj::Git::Functions 'xworking_dir';
 use Chj::xperlfunc;
 
+my $wdir= xworking_dir;
+xchdir $wdir;
 xexec(($opt_dry ? "echo" : ()), "gitkg", "--", @$paths);
 
 
