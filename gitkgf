@@ -7,12 +7,15 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+my $pass_to = $myname; $pass_to=~ s/f$// or die "wrongly named";
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname path(s)
 
-  Make gitk show a 'proper' follow 'behaviour' (cheated) the same way
-  git log --follow does.
+  Make gitk (or git log) show a 'proper' follow 'behaviour' (cheated)
+  the same way git log --follow does.
 
   (Just a lazy workaround for fixing gitk?)
 
@@ -52,7 +55,7 @@ use Chj::xperlfunc;
 
 my $wdir= xworking_dir;
 xchdir $wdir;
-xexec(($opt_dry ? "echo" : ()), "gitkg", "--", @$paths);
+xexec(($opt_dry ? "echo" : ()), $pass_to, "--", @$paths);
 
 
 #use Chj::ruse;
