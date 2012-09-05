@@ -9,12 +9,15 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path
+    print "$myname path(s)
 
   Make gitk show a 'proper' follow 'behaviour' (cheated) the same way
   git log --follow does.
 
   (Just a lazy workaround for fixing gitk?)
+
+  Actually, unlike git log --follow, allows to follow multiple files
+  at once.
 
   (Christian Jaeger <$email>)
 ";
@@ -28,12 +31,15 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV==1;
+usage unless @ARGV;
 
 use Chj::Git::Follow;
 
-our @paths=
-  Chj::Git::Follow->new_path(@ARGV)->paths;
+our @paths= map {
+    Chj::Git::Follow->new_path($_)->paths;
+} @ARGV;
+# XX: eliminate doubles?
+# (don't have a list-uniq)
 
 use Chj::xperlfunc;
 
