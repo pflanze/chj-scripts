@@ -27,6 +27,8 @@ package Chj::Git::Functions;
 	      is_ancestor_of
 	      maybe_git_dir
 	      xgit_dir
+	      maybe_working_dir
+	      xworking_dir
 	      git_merge_base__all
 	      xgit_describe
 	      xgit_describe_debianstyle
@@ -140,26 +142,34 @@ sub is_ancestor_of {
 }
 
 
-sub maybe_git_dir () {
-    my @cmd= qw(git rev-parse --git-dir);
-    my $in= Chj::IO::Command->new_combinedsender(@cmd);
-    my $cnt= $in->xcontent;
-    my $rv= $in->xfinish;
-    # again this dispatch, hm.
-    if ($rv == 0) {
-	chomp $cnt;
-	$cnt
-    } elsif ($rv == 128<<8) {
-	$cnt=~ /not a git rep/i or die "non-expected failure message '$cnt'";
-	undef
-    } else {
-	die "command @cmd failed with exit code $rv";
+sub make_maybe_revparse_ {
+    my @cmd= (qw(git rev-parse), @_);
+    sub {
+	my $in= Chj::IO::Command->new_combinedsender(@cmd);
+	my $cnt= $in->xcontent;
+	my $rv= $in->xfinish;
+	# again this dispatch, hm.
+	if ($rv == 0) {
+	    chomp $cnt;
+	    $cnt
+	} elsif ($rv == 128<<8) {
+	    $cnt=~ /not a git rep/i or die "non-expected failure message '$cnt'";
+	    undef
+	} else {
+	    die "command @cmd failed with exit code $rv";
+	}
     }
 }
+
+*maybe_git_dir= make_maybe_revparse_ ("--git-dir");
 
 *xgit_dir= _UndefThrowing (\&maybe_git_dir,
 			   "not a git repository");
 
+# What odd option name (searching the man page for 'work' leads
+# nowhere):
+*maybe_working_dir= make_maybe_revparse_ ("--show-toplevel"); 
+*xworking_dir= _UndefThrowing (\&maybe_working_dir, "not a git repository");
 
 sub git_merge_base__all ($ $ ) {
     my ($a,$b)=@_;
