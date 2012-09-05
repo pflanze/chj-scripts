@@ -35,15 +35,20 @@ usage unless @ARGV;
 
 use Chj::Git::Follow;
 
-our @paths= map {
-    Chj::Git::Follow->new_path($_)->paths;
-} @ARGV;
-# XX: eliminate doubles?
-# (don't have a list-uniq)
+use Chj::FP::ArrayLib 'array_uniq';
+use Chj::FP::Eq 'string_eq';
+
+our $paths= array_uniq( [
+			 sort
+			 map {
+			     Chj::Git::Follow->new_path($_)->paths;
+			 } @ARGV
+			],
+			\&string_eq );
 
 use Chj::xperlfunc;
 
-xexec(($opt_dry ? "echo" : ()), "gitkg", "--", @paths);
+xexec(($opt_dry ? "echo" : ()), "gitkg", "--", @$paths);
 
 
 #use Chj::ruse;
