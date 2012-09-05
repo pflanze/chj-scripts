@@ -61,19 +61,19 @@ use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr
 if (@args) {
     file_xml_to_sexpr $_ for @args;
 } else {
-    #port_xml_to_sexpr *STDIN{IO}
+    # SUCH a HACK. but how otherwise solve this?
     my $str= do {
 	local $/;
 	<STDIN>
     };
-    close STDIN or die "closing stdin: $!";
-    #$str=~ s/^\s*<\!DOCTYPE\b[^>]*>//s; ACH ist ja nicht mal am anfang.
+    close STDIN
+      or die "closing stdin: $!";
     $str=~ s{(<\!DOCTYPE\b[^>]*>)}
       {
-      my $str=$1;
-      my $n= $str=~ tr/\n/\n/;
-      "\n"x$n
-      }se;# SUCH a HACK. but how otherwise solve this Shick.
+	  my $str=$1;
+	  my $n= $str=~ tr/\n/\n/;
+	  "\n"x$n
+      }se;
     #warn "did read it in '$str'";
     #local $XML::LibXML::skipDTD = 1; doesn't help
     string_xml_to_sexpr $str
