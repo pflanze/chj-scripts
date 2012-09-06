@@ -40,18 +40,9 @@ our @lsfiles_opt=@ARGV;
 # no "-" options? well, possibly yes. after "--" to this script
 
 use Chj::IO::Command;
+use Chj::Git::Functions 'git_ls_files';
 
-our $ls= Chj::IO::Command->new_sender("git","ls-files","-z",@lsfiles_opt);
-our @ls= do {
-    local $/="\0";
-    map {
-	chop;
-	$_ #neverforgetit f
-    } <$ls>
-};
-$ls->xxfinish;
-#^ auch n code lib ding ?  ach wsmf 
-#abstratkions fehlen (nid leaken)
+our @ls= git_ls_files (undef, \@lsfiles_opt);
 
 sub blame_path ( $ ) {
     my ($path)=@_;

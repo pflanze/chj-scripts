@@ -275,17 +275,7 @@ sub dir_or_fold {
 
 use Chj::Parallel;
 
-sub git_ls_files {
-    my $c= Chj::IO::Command->new_sender ("git","ls-files","-z",@_);
-    local $/="\0";
-    my @paths;
-    while (<$c>) {
-	chop;
-	push @paths, $_;
-    }
-    $c->xxfinish;
-    \@paths
-}
+use Chj::Git::Functions 'git_ls_files';
 
 our $commands=
   +{
