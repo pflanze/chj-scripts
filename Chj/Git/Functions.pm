@@ -597,7 +597,11 @@ sub git_ls_files {
 	} <$ls>
     };
     $ls->xxfinish;
-    @ls
+    if (wantarray) {
+	@ls
+    } else {
+	\@ls
+    }
 }
 
 1
