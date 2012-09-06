@@ -48,6 +48,8 @@ package Chj::Git::Functions;
 	      status_is_clean
 
 	      git_log_oneline
+
+	      git_ls_files
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -581,5 +583,21 @@ sub git_log_oneline {
        $in);
 }
 
+
+sub git_ls_files {
+    my ($maybe_dir, $maybe_opts)=@_;
+    my $ls= Chj::IO::Command->new_sender
+      ("git","ls-files","-z",@$maybe_opts,
+       (defined($maybe_dir) ? ("--", $maybe_dir) : ()));
+    my @ls= do {
+	local $/="\0";
+	map {
+	    chop;
+	    $_ #neverforgetit f
+	} <$ls>
+    };
+    $ls->xxfinish;
+    @ls
+}
 
 1
