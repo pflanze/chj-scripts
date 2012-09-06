@@ -22,6 +22,10 @@ sub usage {
   Actually, unlike git log --follow, allows to follow multiple files
   at once.
 
+  If a path to a directory is being given, tracks all the files in
+  that directory (*plus* feeds that directory to git log, to get
+  deletions in that directory, too).
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -37,14 +41,21 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV;
 
 use Chj::Git::Follow;
-
+use Chj::Git::Functions 'git_ls_files';
 use Chj::FP::ArrayLib 'array_uniq';
 use Chj::FP::Eq 'string_eq';
 
 our $paths= array_uniq( [
 			 sort
 			 map {
-			     Chj::Git::Follow->new_path($_)->paths;
+			     my $m=sub {
+				 Chj::Git::Follow->new_path($_)->paths;
+			     };
+			     if (-d $_) {
+				 map { &$m } git_ls_files ($_)
+			     } else {
+				 &$m
+			     }
 			 } @ARGV
 			],
 			\&string_eq );
