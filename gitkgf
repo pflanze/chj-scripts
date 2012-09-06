@@ -12,7 +12,7 @@ my $pass_to = $myname; $pass_to=~ s/f$// or die "wrongly named";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path(s)
+    print "$myname [path(s)]
 
   Make gitk (or git log) show a 'proper' follow 'behaviour' (cheated)
   the same way git log --follow does.
@@ -26,6 +26,8 @@ sub usage {
   that directory (*plus* feeds that directory to git log, to get
   deletions in that directory, too).
 
+  If no paths are given, '.' is assumed.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -38,7 +40,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV;
+#usage unless @ARGV;
 
 use Chj::Git::Follow;
 use Chj::Git::Functions 'git_ls_files';
@@ -56,7 +58,7 @@ our $paths= array_uniq( [
 			     } else {
 				 &$m
 			     }
-			 } @ARGV
+			 } (@ARGV ? @ARGV : ".")
 			],
 			\&string_eq );
 
