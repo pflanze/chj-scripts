@@ -589,18 +589,18 @@ sub git_ls_files {
     my $ls= Chj::IO::Command->new_sender
       ("git","ls-files","-z",@$maybe_opts,
        (defined($maybe_dir) ? ("--", $maybe_dir) : ()));
-    my @ls= do {
-	local $/="\0";
-	map {
-	    chop;
-	    $_ #neverforgetit f
-	} <$ls>
-    };
+    my @files;
+    local $_;
+    local $/="\0";
+    while (<$ls>) {
+	chop;
+	push @files,$_
+    }
     $ls->xxfinish;
     if (wantarray) {
-	@ls
+	@files
     } else {
-	\@ls
+	\@files
     }
 }
 
