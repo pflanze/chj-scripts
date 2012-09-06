@@ -283,7 +283,7 @@ our $commands=
 
 	my $outdir= xtmpdir $metadatadir;
 	Parallel_for_each
-	  (git_ls_files,
+	  (scalar git_ls_files,
 	   sub {
 	       my ($path)=@_;
 
