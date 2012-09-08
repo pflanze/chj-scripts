@@ -3,7 +3,11 @@
 set -eu
 
 # path for Compaq nc2400:
-brightnessfile=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/brightness
+base=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/
+
+brightnessfile="$base"/brightness
+actual_brightnessfile="$base"/actual_brightness
+
 
 if ! [ -f "$brightnessfile" ]; then
     echo "$0: missing '$brightnessfile', need adaptions" >&2
@@ -18,7 +22,7 @@ case "${1-}" in
     echo 15625 > "$brightnessfile"
     ;;
     status)
-    cat "$brightnessfile"
+    cat "$actual_brightnessfile"
     ;;
     *)
     echo "$0 on|off|status"
