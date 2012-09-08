@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu
+
+# path for Compaq nc2400:
+brightnessfile=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/brightness
+
+if ! [ -f "$brightnessfile" ]; then
+    echo "$0: missing '$brightnessfile', need adaptions" >&2
+    false
+fi
+
+case "${1-}" in
+    off)
+    echo 0 > "$brightnessfile"
+    ;;
+    on)
+    echo 15625 > "$brightnessfile"
+    ;;
+    status)
+    cat "$brightnessfile"
+    ;;
+    *)
+    echo "$0 on|off|status"
+    exit 1
+    ;;
+esac
+
