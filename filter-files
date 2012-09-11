@@ -22,7 +22,8 @@ sub usage {
   the program does lstat, so symlinks to files are not considered files.
 
   options:
-  -v   reverse operation: suppress files and nothing else (except
+  -l   instead of filtering for files, filter for symlinks
+  -v   reverse operation: suppress files (or symlinks) and nothing else (except
        nonexisting ones as said above)
 
   (Christian Jaeger <$email>)
@@ -33,6 +34,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_v;
+our $opt_l;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -44,6 +46,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?v$/) {
 	$opt_v=1;
+    } elsif (/^--?l$/) {
+	$opt_l=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -60,10 +64,12 @@ usage if @args;
 
 use Chj::xperlfunc 'Xlstat';
 
+our $is= $opt_l ? "is_link" : "is_file";
+
 while(<STDIN>) {
     chomp;
     if (my $s= Xlstat $_) {
-	my $isfile= $s->is_file;
+	my $isfile= $s->$is;
 	print "$_\n" or die "$myname: printing to stdout: $!"
 	  if ($isfile and !$opt_v) or (!$isfile and $opt_v); #xor bou
     }
