@@ -60,7 +60,6 @@ usage if @args;
 
 use Chj::xperlfunc 'Xlstat';
 
-#while(<>) {#wellll good idea? without having spliced ARGV above?
 while(<STDIN>) {
     chomp;
     if (my $s= Xlstat $_) {
