@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# see also (to switch display off entirely): xset dpms force off
+
 set -eu
 
 # path for Compaq nc2400:
