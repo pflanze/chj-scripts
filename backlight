@@ -23,11 +23,28 @@ case "${1-}" in
     on)
     echo 15625 > "$brightnessfile"
     ;;
+    low)
+    echo 10625 > "$brightnessfile"
+    ;;
     status)
-    cat "$actual_brightnessfile"
+    s=`cat "$actual_brightnessfile"`
+    case "$s" in
+	15625)
+	echo on
+	;;
+	10625)
+	echo low
+	;;
+	0)
+	echo off
+	;;
+	*)
+	echo "?? $s"
+	;;
+    esac
     ;;
     *)
-    echo "$0 on|off|status"
+    echo "$0 on|off|low|status"
     exit 1
     ;;
 esac
