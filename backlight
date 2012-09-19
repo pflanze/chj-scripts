@@ -23,6 +23,9 @@ case "${1-}" in
     on)
     echo 15625 > "$brightnessfile"
     ;;
+    mid)
+    echo 12625 > "$brightnessfile"
+    ;;
     low)
     echo 10625 > "$brightnessfile"
     ;;
@@ -31,6 +34,9 @@ case "${1-}" in
     case "$s" in
 	15625)
 	echo on
+	;;
+	12625)
+	echo mid
 	;;
 	10625)
 	echo low
@@ -44,7 +50,7 @@ case "${1-}" in
     esac
     ;;
     *)
-    echo "$0 on|off|low|status"
+    echo "$0 on|off|low|mid|status"
     exit 1
     ;;
 esac
