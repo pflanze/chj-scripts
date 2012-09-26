@@ -30,6 +30,12 @@ use Class::Array -fields=>
   ;
 
 
+our $do_follow_copies=1;
+# 0 doesn't make sense?: git will follow copies anyway afterwards (hm
+# huh why?), but it will miss outputting the new paths of copies? 
+# totally bogus, I mean. hu. (CPU costs are basically the same, for a
+# bigger dir anyway.)
+
 use Chj::IO::Command;
 
 sub new_path {
@@ -78,12 +84,18 @@ sub paths {
 	@pathpairs or die "missing paths in commit: '$comstr'";
 	for (@pathpairs) {
 	    my ($action,$pathpair)=@$_;
-	    if ($action=~ /^R(\d+)/) {
-		# (look at $1 how much it matches? but pointless,
-		# should just change -M setting)
+	    my $add_pathpair = sub {
 		my @paths= split /\t/, $pathpair;
 		@paths==2 or die "'$pathpair' gave ".@paths." paths";
 		$path{$_}++ for @paths;
+	    };
+	    if ($action=~ /^R(\d+)/) {
+		# (look at $1 how much it matches? but pointless,
+		# should just change -M setting)
+		&$add_pathpair;
+	    } elsif ($action=~ /^C(\d+)/) {
+		&$add_pathpair
+		  if $do_follow_copies;
 	    } else {
 		# register the other items, too, just in case a
 		# directory was given? (If a file was given, then this
