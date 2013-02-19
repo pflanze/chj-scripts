@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# See comments in netcat-get
+
+set -eu
+
+if [ $# -ne 1 -o "${1-}" = "-h" -o "${1-}" = "--help" ]; then
+    echo "usage: $0 port"
+    exit 1
+fi
+
+if have nc.traditional; then
+    nc.traditional -q 0 -l -p "$@"
+elif have nc.openbsd; then
+    nc.openbsd -q 0 -l "$@"
+else
+    echo "cannot find nc.traditional nor nc.openbsd" >&2
+    exit 1
+fi
+

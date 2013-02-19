@@ -1,0 +1,51 @@
+#!/usr/bin/perl -w
+
+# Tue Aug  7 12:04:24 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Beep on every line that's received. For example:
+
+    ping foo | beeponline -t
+
+  -t|--tee   also print stdin
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_tee;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "t|tee"=> \$opt_tee,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Fcntl;
+
+sysopen my $tty,"/dev/tty0", O_WRONLY
+  or die "could not open /dev/tty0: $!";
+
+use IO::Handle;
+$tty->autoflush(1);
+
+while (<STDIN>) {
+    print
+      or die "printing to stdout: $!"
+	if $opt_tee;
+    print $tty "\007"
+      or die "printing to tty: $!";
+}
+

@@ -1,0 +1,445 @@
+#!/usr/bin/perl -w
+
+# Mon Aug 13 09:49:46 BST 2012
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname from [to]
+
+  Tell how long this computer has been on (i.e. not sleeping [or off? todo])
+  in the given date/time range. 'To' is now if omitted.
+
+  --print-spans   print spans and their duration
+  --pron          only print 'on' spans
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $DEBUG=0;
+our $opt_print_spans;
+our $opt_pron;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "debug"=> \$DEBUG,
+	   "print-spans"=> \$opt_print_spans,
+	   "pron"=> \$opt_pron,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV and @ARGV<=2;
+
+use Date::Manip::Date;
+
+sub MyParseDate {
+    my ($str)=@_;
+    my $d= new Date::Manip::Date;
+    if ($d->parse($str)) {
+	# error, not success.
+	die "can't parse date '$str': ".$d->err
+    } else {
+	$d->printf('%s')
+    }
+}
+
+our ($from,$to)= map { MyParseDate $_ } (@ARGV==2 ? @ARGV : (@ARGV, "now"));
+
+$from < $to
+  or die "from-time must be before to-time";
+
+sub t_is_in_range ( $ ) {
+    my ($t)=@_;
+    $t >= $from and $t <= $to
+}
+
+print "searching from ".localtime($from)." to ".localtime($to)."..\n"
+  if $verbose;
+
+use Chj::xperlfunc ':all';
+
+# XX: relying on mtimes representing the time of the last message in a
+# file
+
+our @allfiles= sort {
+    $a->[1] <=> $b->[1]
+} map {
+    my $mtime= xstat($_)->mtime;
+    [$_, $mtime]
+} glob "/var/log/kern.log*";
+
+our @files= grep {
+    my ($path,$mtime)=@$_;
+    $from <= $mtime
+} @allfiles;
+
+our $mtime_before= do {
+    # the mtime of the file *before* the first file in @files;
+    # i.e. of the files that come *before* @files, take the last.
+    my @prefiles= grep {
+	my ($path,$mtime)=@$_;
+	not $from <= $mtime
+    } @allfiles;
+    if (@prefiles) {
+	$prefiles[-1][1]
+    } else {
+	die "unfinished: if there's no earlier file than the first we are reading, how are we going to find out the year of the timestamps in the first file??? read it to the end, revert times back from mtime. Duh.";
+    }
+};
+
+# The year needs to be in the same time zone as the timestamps. XX: of
+# course this is only going to be valid if the time zone never
+# changes, which is *stupid* but what else *could* we do. Honest.
+
+# BTW we're even writing a layer around Parse::Syslog. Kishf.
+
+our $year_before= (localtime($mtime_before))[5]+1900;
+
+use Chj::xpipe;
+my ($read,$write)= xpipe;
+my $child;
+if ($child= xfork) {
+    $write->xclose;
+    # see below after end of if
+} else {
+    $read->xclose;
+
+    use Chj::IO::Command;
+
+    my $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+
+    my $pr=sub {
+	$write->xprint($_);
+	# (heh where $_ salvages performance loss that would come from
+	# 'allocating' (defining) the closure within the scope of
+	# while.)
+    };
+
+    {
+	while (<$f>) {
+	    my $txt=$_; #to keep the below modified *COPY* as close as
+                        #possible
+	    if ($txt=~ /PM: Preparing system for mem sleep/) {
+		&$pr
+	    } elsif ($txt=~ /PM: resume of devices complete/) {
+		&$pr
+	    } elsif ($txt=~ /PM: Marking nosave pages/) {
+		&$pr
+	    } elsif ($txt=~ /PM: restore of devices complete/) {
+		&$pr
+	    } elsif ($txt=~ /imklog .* started\./) {
+		&$pr
+	    }
+	}
+    }
+    $write->xclose;
+    $f->xxfinish;
+    exit(0);
+}
+
+use IO::Handle ();
+
+use Date::Parse;
+sub xstr2time ( $ ) {
+    my ($tstr)=@_;
+    my $t= str2time($tstr);
+    defined $t or die "invalid datetime format of: '$tstr'";
+    $t
+}
+
+use Parse::Syslog;
+
+# event and raw_event are: [ $t, $is_on_event, $what ]
+sub is_on_event( $ ) {
+    $_[0][1]
+}
+
+
+# Problem is that, at least from kern.log, events can't be told just
+# from single log lines, as the two only log lines that tell about a
+# hibernation event also appear on boot. Collect all raw events first
+# then filter them (see next part of the code).
+
+# Also, sometimes the 'PM: Preparing system for mem sleep' kernel
+# message doesn't make it to userland in time before sleep; the only
+# log entry I've found, and which is probably reliable, is in
+# /var/log/pm-suspend.log, so add those, too; need to sort by time
+# afterwards to get them together...
+
+our @raw_events;
+{
+    # crazy hacking. (addbless? I don't have that in my chj repo, sigh)
+    my $oldclass= ref $read;
+    bless $read, "IO::Handle";
+
+    our $syslog = Parse::Syslog->new($read, year => $year_before);
+
+    while (my $row= $syslog->next) {
+	my $t= $$row{timestamp};
+	if (t_is_in_range $t) {
+	    my $txt= $$row{text};
+	    #print "$t $txt\n"
+
+	    # XXX: keep *COPY* of search strings up to date with those above!
+
+	    # sleep:
+	    if ($txt=~ /PM: Preparing system for mem sleep/) {
+		push @raw_events, [$t, 0, 'sleep'];
+	    } elsif ($txt=~ /PM: resume of devices complete/) {
+		push @raw_events, [$t, 1, 'wakeup from sleep'];
+	    }
+	    # hibernation:
+	    elsif ($txt=~ /PM: Marking nosave pages/) {
+		push @raw_events, [$t, 0, 'hibernate'];
+	    } elsif ($txt=~ /PM: restore of devices complete/) {
+		push @raw_events, [$t, 1, 'wakeup from hibernate'];
+	    }
+	    # normal boot:
+	    elsif ($txt=~ /imklog .* started\./) {
+		push @raw_events, [$t, 1, 'boot'];
+	    }
+	    # XXX should treat shutdown (and reboot) events.
+	}
+    }
+
+    bless $read, $oldclass;
+    $read->xclose;
+    xxwaitpid $child;
+}
+# And get the events from pm-suspend.log, too (see note above for
+# why). Just push then, then sort (could do proper stream merging...).
+{
+    # XX this is ugly, much adapted COPY paste..
+    my @allfiles= sort {
+	$a->[1] <=> $b->[1]
+    } map {
+	my $mtime= xstat($_)->mtime;
+	[$_, $mtime]
+    } glob "/var/log/pm-suspend.log*";
+    my @files= grep {
+	my ($path,$mtime)=@$_;
+	$from <= $mtime
+    } @allfiles;
+
+    my $f= Chj::IO::Command->new_sender("myzcat","-s","--", map {$$_[0]} @files);
+    # / COPY paste
+
+    while (<$f>) {
+	if (/(.*): performing suspend$/) {
+	    # luckily, this is including year, even time zone.  XXX:
+	    # well, now we've got a definitive place where time zone
+	    # breakage will occur since this isn't handled the same as
+	    # the kern.log entries anymore. This stuff was really
+	    # meant to be human readable only, right?... (sigh).
+	    my $t= xstr2time($1);
+	    if (t_is_in_range $t) {
+		push @raw_events, [ $t, 0, '(pm) performing suspend']
+	    }
+	}
+	# we're not interested in the other messages. should we, for
+	# timezone check reasons?
+	elsif (/(.*): Awake\.$/) {
+	    my $t= xstr2time($1);
+	    if (t_is_in_range $t) {
+		push @raw_events, [ $t, 1, '(pm) Awake'];
+	    }
+	}
+    }
+    $f->xxfinish;
+}
+@raw_events= sort { $$a[0] <=> $$b[0] } @raw_events;
+
+
+sub print_raw_events {
+    for (@raw_events) {
+	my ($t,$on,$what)=@$_;
+	print localtime($t)."  $on $what\n" or die $!;
+    }
+}
+
+our @eventgroups;
+# grouped when within a couple seconds
+{
+    my @raw= @raw_events;
+    @raw or die "can't act without any events";
+    my $ev= shift @raw;
+    my $current_group= [$ev];
+    my $current_group_t= $$ev[0];
+    # seconds events in a group can be apart (not from each other but
+    # in the whole group):
+    my $MAXD= 6; # XX good?
+    for my $ev (@raw) {
+	my ($t,$on,$what)=@$ev;
+	my $d= $t-$current_group_t; $d >= 0 or die "??";
+	if ($d <= $MAXD) {
+	    push @$current_group, $ev;
+	} else {
+	    push @eventgroups, $current_group;
+	    $current_group=[$ev];
+	    $current_group_t= $$ev[0];
+	}
+    }
+    push @eventgroups, $current_group;
+}
+
+sub print_eventgroups {
+    for (@eventgroups) {
+	for (@$_) {
+	    my ($t,$on,$what)=@$_;
+	    print localtime($t)."  $on $what\n" or die $!;
+	}
+	print "---\n" or die $!;
+    }
+}
+
+our @events;
+{
+    for my $eventgroup (@eventgroups) {
+	if (@$eventgroup==1) {
+	    push @events, $$eventgroup[0];
+	} else {
+	    my @evs= @$eventgroup;
+	    my $current_event= shift @evs;
+	    while (@evs) {
+		my $next= shift @evs;
+		my ($t0,$on0,$what0)= @$current_event;
+		my ($t,$on,$what)=@$next;
+		if ($what0 eq 'boot' and $what eq 'hibernate') {
+		    # the first counts, the second is invalid.
+		} elsif ($what0 eq 'sleep' and $what eq 'wakeup from sleep') {
+		    # the first is invalid (kernel message that
+		    # didn't make it to the log before actual
+		    # sleep); assume (don't check) that in the
+		    # group before this one there's a '(pm)
+		    # performing suspend' event. Drop the sleep
+		    # event.
+		    $current_event= $next;
+		} elsif ($on0 == $on) {
+		    # no problem, keep current_event
+		} else {
+		    die "two raw_events with differing outcome that are too close together: $t0 $what0 and $t $what"
+		}
+	    }
+	    push @events, $current_event;
+	}
+    }
+}
+
+sub print_events {
+    for (@events) {
+	my ($t,$on,$what)=@$_;
+	print localtime($t)."  $on $what\n" or die $!;
+    }
+}
+
+
+sub Die {
+    if ($DEBUG) {
+	$_[0]
+    } else {
+	die $_[0]
+    }
+}
+
+our @spans;
+{
+    my $on_since;
+    my $off_since;
+    for (@events) {
+	my ($t,$on,$what)=@$_;
+	if (is_on_event $_) {
+	    if (defined $on_since) {
+		push @spans, ['ON?', $on_since, $t, # $off_since was undef in my case
+			      Die "on event while already on: $t $on $what"];
+	    }
+	    if (defined $off_since) {
+		push @spans, ['off', $off_since, $t, $what];
+	    } else {
+		# first one
+		# so, looks like the system was off.
+		push @spans, ['off', $from, $t, $what];
+	    }
+	    $on_since=$t;
+	    undef $off_since;
+	} else {
+	    # off event
+	    if (defined $off_since) {
+		push @spans, ['OFF?', $off_since, $t, #$on_since was undef in my case
+			      Die "off event while already off: $t $on $what"];
+	    }
+	    if (defined $on_since) {
+		push @spans, ['on', $on_since, $t, $what];
+	    } else {
+		# first one
+		# so, looks like the system was on.
+		push @spans, ['on', $from, $t, $what];
+	    }
+	    $off_since=$t;
+	    undef $on_since;
+	}
+    }
+    # last one:
+    if (defined $on_since) {
+	push @spans, ['on', $on_since, $to, undef];
+    } elsif (defined $off_since) {
+	push @spans, ['off', $off_since, $to, undef];
+    } else {
+	die "???" if (@events);
+    }
+}
+
+sub total_on {
+    my $total_on=0;
+    for (@spans) {
+	my ($kind,$from,$to,$maybe_what)=@$_;
+	if ($kind eq 'on') {
+	    $total_on+= $to - $from;
+	}
+    }
+    $total_on
+}
+
+sub round_2 {
+    my ($v)=@_;
+    my $n= int($v*100+0.5);
+    # in case $v is something like 0.0001, leave it alone, ok?
+    $n=~ s/(..)$/.$1/ ? $n : $v
+}
+
+sub print_spans {
+    my ($only_on)=@_;
+    for (@spans) {
+	my ($kind,$from,$to,$maybe_what)=@$_;
+	my $what= $maybe_what || "end of observation period";
+	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
+	if (not($opt_pron) or $kind eq 'on') {
+	    print((not($opt_pron) ? (($kind eq 'on' ? 'on--»»' : $kind), "\t") : ()),
+		  round_2(($to-$from)/60), "\t",
+		  scalar localtime($from), "-", scalar localtime($to), "  until ",
+		  $what,
+		  "\n")
+	      or die $!;
+	}
+    }
+}
+
+if ($opt_pron) {
+    print_spans(1)
+} elsif ($opt_print_spans) {
+    print_spans;
+}
+
+my $tot= total_on;
+my $timerange=  localtime($from)." - ".localtime($to);
+print $tot." sec = ".round_2($tot/60)." min or ".round_2($tot/60/60)." hours \t($timerange)\n"
+  or die $!;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

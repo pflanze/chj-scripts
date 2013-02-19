@@ -1,10 +1,7 @@
 #!/usr/bin/perl -w
 
-# pflanze at gmx ch
-
 use strict;
 use Chj::Cwd::realpath ;
-#use Chj::Lockfile;
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 use Chj::Unix::exitcode;
 use Chj::oerr;
@@ -24,7 +21,10 @@ my $gnuclient= "/usr/bin/gnuclient.$emacs";
 # terminal situations.)
 
 my $TIMEOUT=40;
-our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5); # seconds before we let any other 'e' call send anything to our beloved and hell of buggy xemacs 21.4 (patch 6)
+our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5);
+# seconds before we let any other 'e' call send anything to our
+# beloved and hell of buggy xemacs 21.4 (patch 6)
+
 our $verbose= $ENV{VERBOSE} ? 1 : 0;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -53,9 +53,33 @@ sub usage {
 exit @_;
 }
 
+##move to library?
+
+sub retry_after ( $ $ $ ) { # works on boolean return values, not exceptions
+    my ($normal, $fixup, $except)=@_;
+    # if fixup fails, don't retry normal! But run except if either
+    # fails (careful!).
+    &$normal || (&$fixup && &$normal) or &$except
+}
+
+sub simple_dirname { # always correct?
+    my ($path)=@_;
+    $path=~ s|[^/]+\z||;
+    $path
+}
+
+##/library
+
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 if (not -d $lockfilebase) {
-    mkdir $lockfilebase or die "$0: could not create lock dir '$lockfilebase': $!\n";
+    retry_after (sub { mkdir $lockfilebase },
+		 sub { my $d= simple_dirname $lockfilebase;
+		      length($d) and do {
+			  mkdir $d;
+			  warn "created '$d'";
+			  1
+		      }},
+		 sub {die "$0: could not create lock dir '$lockfilebase': $!\n" });
 }
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= do {
@@ -73,7 +97,6 @@ sub startup_unlock {
     carp "$$: releasing lock" if $verbose;
     flock $startuplockfh,LOCK_UN or die "??unlock: $!";
 }
-#und fun warum backtrace von carp?. heut geht wieder mal nichts deterministisch.
 
 my $maxargs= 30;
 if (@ARGV > $maxargs) {
@@ -151,11 +174,12 @@ sub rungnuclientwithargs {
 	    # now either we return soon enough to justify holding on to
 	    # the lock, or just unlock after that certain time:
 	    for (1..$TIME_TO_GIVE_XEMACS) {
-		last unless kill 0, $parentpid; # stop waiting if the process vanished, need polling now.
+		last unless kill 0, $parentpid;
 		sleep 1;
 	    }
 	    startup_unlock;
-	    exit 0; # nobody is waiting for us, right? uhm. hope so. mb need double fork?
+	    exit 0;
+	    # nobody is waiting for us, right? uhm. hope so. mb need double fork?
 	}
     }
 }

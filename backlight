@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# see also (to switch display off entirely): xset dpms force off
+
+set -eu
+
+# path for Compaq nc2400:
+base=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/
+
+brightnessfile="$base"/brightness
+actual_brightnessfile="$base"/actual_brightness
+
+
+if ! [ -f "$brightnessfile" ]; then
+    echo "$0: missing '$brightnessfile', need adaptions" >&2
+    false
+fi
+
+case "${1-}" in
+    off)
+    echo 0 > "$brightnessfile"
+    ;;
+    on)
+    echo 15625 > "$brightnessfile"
+    ;;
+    mid)
+    echo 12625 > "$brightnessfile"
+    ;;
+    low)
+    echo 10625 > "$brightnessfile"
+    ;;
+    verylow)
+    echo 8625 > "$brightnessfile"
+    ;;
+    status)
+    s=`cat "$actual_brightnessfile"`
+    case "$s" in
+	15625)
+	echo on
+	;;
+	12625)
+	echo mid
+	;;
+	10625)
+	echo low
+	;;
+	8625)
+	echo verylow
+	;;
+	0)
+	echo off
+	;;
+	*)
+	echo "?? $s"
+	;;
+    esac
+    ;;
+    *)
+    echo "$0 on|off|low|verylow|mid|status"
+    exit 1
+    ;;
+esac
+

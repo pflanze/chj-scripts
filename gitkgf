@@ -7,14 +7,26 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+my $pass_to = $myname; $pass_to=~ s/f$// or die "wrongly named";
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path
+    print "$myname [path(s)]
 
-  Make gitk show a 'proper' follow 'behaviour' (cheated) the same way
-  git log --follow does.
+  Make gitk (or git log) show a 'proper' follow 'behaviour' (cheated)
+  the same way git log --follow does.
 
   (Just a lazy workaround for fixing gitk?)
+
+  Actually, unlike git log --follow, allows to follow multiple files
+  at once.
+
+  If a path to a directory is being given, tracks all the files in
+  that directory (*plus* feeds that directory to git log, to get
+  deletions in that directory, too).
+
+  If no paths are given, '.' is assumed.
 
   (Christian Jaeger <$email>)
 ";
@@ -23,21 +35,40 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV==1;
+#usage unless @ARGV;
 
 use Chj::Git::Follow;
+use Chj::Git::Functions 'git_ls_files';
+use Chj::FP::ArrayLib 'array_uniq';
+use Chj::FP::Eq 'string_eq';
 
-our @paths=
-  Chj::Git::Follow->new_path(@ARGV)->paths;
+our $paths= array_uniq( [
+			 sort
+			 map {
+			     my $m=sub {
+				 Chj::Git::Follow->new_path($_)->paths;
+			     };
+			     if (-d $_) {
+				 map { &$m } git_ls_files ($_)
+			     } else {
+				 &$m
+			     }
+			 } (@ARGV ? @ARGV : ".")
+			],
+			\&string_eq );
 
+
+use Chj::Git::Functions 'xworking_dir';
 use Chj::xperlfunc;
 
-xexec "gitkg", "--", @paths;
+my $wdir= xworking_dir;
+xchdir $wdir;
+xexec(($opt_dry ? "echo" : ()), $pass_to, "--", @$paths);
 
 
 #use Chj::ruse;

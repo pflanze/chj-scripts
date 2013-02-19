@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+# Sat Jul 21 14:28:27 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname url(s)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+# http://stackoverflow.com/questions/4560400/how-can-i-get-google-cache-age-of-any-url-or-web-page
+
+# Not sure about that, actually? Possibly google would parse it
+# anyway, but then?
+use Chj::Web::url_encode;
+
+sub cacheurl {
+    my ($url)=@_;
+    $url=~ s|^http://||;
+    'http://webcache.googleusercontent.com/search?q=cache:'.url_encode($url)
+}
+
+exec "browser", map { cacheurl $_ } @ARGV
+  or die $!;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

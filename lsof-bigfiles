@@ -1,22 +1,126 @@
-#!/bin/sh
+#!/usr/bin/perl -w
 
-# Nach Grösse sortiertes offenes File suchen:
-# 
-# COMMAND     PID        USER   FD   TYPE     DEVICE     SIZE      NODE NAME
-# init          1        root  cwd    DIR        8,2      560         2 /
-# init          1        root  rtd    DIR        8,2      560         2 /
-# init          1        root  txt    REG        8,2    28008      5840 /sbin/init
-# init          1        root  mem    REG        8,2    90210    107879 /lib/ld-2.2.5.so
-# syslogd     157        root    7w   REG        8,2     9555     77377 /var/log/mail.log
-# syslogd     157        root    8w   REG        8,2        0    125825 /var/log/user.log
-# 
-# 
+# Wed May 30 11:22:58 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-lsof -n |grep ' REG '|awk '{print $1,$7,$9}'|csort -k 2 -n -r|uniq|less
+use strict;
+use warnings FATAL => 'uninitialized';
 
-# smbd 30362373 /tmp/avfspl.0.log
-# smbd 30362373 /tmp/avfspl.0.log
-# proftpd 30362373 /tmp/avfspl.0.log
-# httpd 15469902 /var/log/apache/access.log.1
-# 
-# apache-pe 9697743 /var/log/apache-perl/error.log
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+
+use Data::Dumper;
+use Chj::callcc2;
+use Chj::Parse::Lsof 'readlsof';
+use Chj::xperlfunc 'xprintln';
+use Chj::CallccLib 'xref';
+use Chj::Util qw(Sort_table On $noop);
+
+our $files; # those we are interested in; path => size
+
+our $show_f= sub {
+    my ($rec)=@_;
+    #print Dumper($rec);
+    #push @{$$files{ $$rec{n} }}, $rec;
+    callcc sub {
+	my ($exit)=@_;
+	my $entry= [ xref($rec,'s',$exit), xref($rec,'_p',$exit) ];
+	push @{$$files{ $$rec{n} }}, $entry;
+    };
+};
+
+our $treat_f_type=
+  +{
+    # dir handles
+    #cwd=> $noop,
+    #rtd=> $noop,
+    #not reached anyway.
+
+    # file handles
+    mem=> $show_f,
+    DEL=> $show_f,
+    txt=> $noop, # too small, or constant anyway, not interesting
+   };
+
+our $treat_fd= $show_f;
+
+readlsof ["-n"], sub {
+    my ($rec)= @_;
+    my $t= $$rec{t};
+    my $f= $$rec{f};
+    if ($t eq 'CHR'
+	or $t eq 'DIR'
+	or $t eq 'unix'
+	or $t eq 'sock'
+	or $t eq '0000' # 'n' => 'anon_inode',  in process 'udevd'
+	or $t eq 'FIFO'
+	or $t eq 'IPv4'
+	or $t eq 'IPv6'
+	or $t eq 'pack' # 'n' => 'type=SOCK_PACKET', in process 'dhclient'
+       ) {
+	# ignore
+    } elsif ($t eq 'REG') {
+	# fd numbers used if not special kind.
+	# (well. makes sense.)
+	if ($f=~ /^\d+\z/s) {
+	    &$treat_fd($rec);
+	} else {
+	    my $treat= $$treat_f_type{$f}
+	      or die "unknown value '$f' for field 'f'";
+	    &$treat($rec);
+	}
+    } elsif ($t eq 'unknown') {
+	if ($f eq 'txt' and $$rec{n} =~ m|^/proc/|) {
+	    # ignore
+	} else {
+	    die "unknown: ".Dumper($rec);
+	}
+    } else {
+	die "unknown file type '$t' in: ".Dumper($rec);
+    }
+};
+
+
+# sort by size in last entry of each path:
+our $cmp_size_lastentry=
+  On(sub {
+	 my ($ab)=@_;
+	 # last entry, first field
+	 $$ab[-1][0]
+     },
+     sub {
+	 my ($a_,$b_)=@_;
+	 $a_ <=> $b_
+     });
+
+for (@{Sort_table $files, $cmp_size_lastentry}) {
+    #warn "got ".Dumper($_);
+    my ($path, $size_and_process__records)=@$_;
+    my $size= $$size_and_process__records[-1][0];
+    xprintln $size," ",$path;
+    for (@$size_and_process__records) {
+	my ($size,$process)=@$_;
+	xprintln "  ",join(" ",@$process{'p','L','c'});
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

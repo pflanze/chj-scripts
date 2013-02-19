@@ -25,6 +25,7 @@ if [ ! "${PORT-}" ]; then
     PORT=$((14123+$UID))
 fi
 
+
 ip=`publicip -f`
 
 passwdgen | tee >(
@@ -34,6 +35,6 @@ echo "echo `cat` | netfetch $z$ip $PORT"
 } >&2
 ) | {
 tar c ${z}-f - "$@" \
-    | gpg -z0 -c --batch --force-mdc --passphrase-file /dev/fd/9 \
-    | netcat -q 1 -l -p "$PORT" 
+    | gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
+    | netcat-serve-on-port "$PORT" 
 } 9<&0 </dev/null

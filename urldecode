@@ -9,7 +9,9 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname [-e] (..)
+
+  decode, or, with -e, encode urls
 
   (Christian Jaeger <$email>)
 ";
@@ -18,6 +20,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+our $opt_e;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -27,38 +30,40 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
+    } elsif (/^--?e(ncode)?$/) {
+	$opt_e=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
     	push @args, $_
     }
 }
-#usage unless @args;
-
+@ARGV=@args;
 
 use URI;
 use Encode;
+use Chj::Web::url_encode;
 
 sub url_decode {
     my ($str)=@_;
-    $str=~ s/([\r\n]*)\z//s;
-    my $eol= $1;
     local our $u= URI->new($str);
     local our $str2= $u->uri_unescape;
-    # abr das isch nun noch in irgen nem encoding grr. "meist" utf8?
-    decode("utf-8", $str2, Encode::FB_CROAK).$eol  #well the eol hack probably won't be very good?
+    decode("utf-8", $str2, Encode::FB_CROAK)
+}
+
+our $code= $opt_e ? \&url_encode : \&url_decode;
+
+sub code {
+    my ($str)=@_;
+    $str=~ s/([\r\n]*)\z//s;
+    my $eol= $1;
+    &$code($str).$eol
 }
 
 #our $foo= url_decode 'induktivit%C3%A4ten+s%C3%A4ttigung';
 #use Chj::repl;repl;
 
 while (<>) {
-    print (url_decode $_) or die "printing to stdout: $!"
+    print (code ($_)) or die "printing to stdout: $!"
 }
 

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# scratch commit
+# for t3 but should also work on novo thanks to the ignores there.
+
+set -eu
+
+usage () {
+    echo "$0 [ -m message ]"
+    echo " add all, metadata save, commit and push to origin"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    message=.
+elif [ $# -eq 2 ]; then
+    if [ "$1" = "-m" ]; then
+	message="$2"
+    else
+	usage
+    fi
+else
+    usage
+fi
+
+set -x
+
+git add .
+
+cj-gitmetadata save
+
+# make sure eventual new metadata is added, too:
+# need -f because on novo I have * in .gitignore
+git add -f .METADATA-v2
+
+git commit -a -m "$message" # || true
+
+git push origin master
+

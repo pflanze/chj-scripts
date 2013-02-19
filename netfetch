@@ -19,6 +19,7 @@ fi
 SERVER="$1"
 PORT="$2"
 
+
 # pw needs to be on stdin, tty won't work because the parent shell
 # would over-read from it.
 
@@ -28,8 +29,8 @@ PORT="$2"
 # with file descriptors Bash uses internally."
 
 {
-netcat "$SERVER" "$PORT" \
-    | gpg -q -d --batch --passphrase-file /dev/fd/9 \
+netcat-get "$SERVER" "$PORT" < /dev/null \
+    | gpg -q -d --batch --passphrase-fd 9 \
     | tar x ${z}-f -
-} 9<&0 < /dev/null 
+} 9<&0
 

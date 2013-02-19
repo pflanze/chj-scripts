@@ -2,68 +2,99 @@
 
 use strict;
 
+our $opt_dry= $ENV{DRY};
+
 $0=~ /([^\/]+)$/s;
 my $me= $1;
 sub usage {
-	die "$me  list of packages to upgrade
+    die "$me  list of packages to upgrade
   Checks each package whether it is really installed, and if yes,
   apt-get install's it.
 ";
-	exit;
+    exit 1;
 }
 
 usage unless @ARGV;
 
 # get list of installed packages
-my %packs= map { chomp; $_=>1 } `dpkglist -i`; # dpkglist is from me too
+our %installed= map { chomp; $_=>1 } `dpkglist -i`;
+
 $|=1;
-for (@ARGV) {
-	if (/^-/) {
-		usage
-	} else {
-		if ($packs{$_}) {
-			print "$me: calling apt-get for '$_'...\n";
-			system qw(apt-get install),$_;
-		} else {
-			print "$me: package '$_' is not installed.\n";
-		}
-		print "\n";
-	}
+
+our @packages= grep {
+    if (/^-/) {
+        usage
+    } else {
+	my $installed= $installed{$_};
+	if (!$installed) {
+	    print "$me: package '$_' is not installed.\n";
+	}	
+	$installed
+    }
+} @ARGV;
+
+use Chj::Debian::DpkgAptList 'aptlist';
+use Chj::Chomp;
+
+use Chj::xperlfunc;
+
+sub prln {
+    print "$me: @_\n";
 }
 
+sub set_sighandler {
+    my ($signal)=@_;
+    $SIG{$signal}= sub {
+	die "got SIG$signal";
+    }
+};
 
-__END__
+if (@packages) {
+    # before upgrading packages, save the auto-install flags
+    my %autoinstalled;
+    aptlist( +{Package=>1,
+	       'Auto-Installed'=>1,
+	      },
+	     sub {
+		 my ($d)=@_;
+		 my $name= Chomp $$d{Package}[0][0];
+		 my $autoinstalled= Chomp $$d{'Auto-Installed'}[0][0];
+		 $autoinstalled{$name}= $autoinstalled;
+	     });
 
-root@lombi root# dpkg -l|egrep '^.?i'|wc -l
-    724
+    my @autopackages= grep {
+	$autoinstalled{$_}
+    } @packages;
 
-root@lombi root# dpkglist -i|wc -l
-    723
+    my $save_autoflags= sub {
+	if (@autopackages) {
+	    prln "These packages had their auto-installed flag set:";
+	    prln "  $_" for @autopackages;
+	    prln "set their flags again..";
+	    xxsystem( ($opt_dry ? "echo" : ()), "aptitude", "install", "--",
+		      map {
+			  $_.'&M'
+		      } @autopackages);
+	    prln "done";
+	}
+    };
 
-root@lombi root# dpkg -l|egrep '^.?i'|psed 's/....([\w.+-]+).*/$1/'| sort>egrep_out
-(Mit breitem Fenster damit nicht namen abgeschnitten!!)
+    set_sighandler $_ for
+      qw(HUP INT QUIT USR1 USR2);
 
-root@lombi root# dpkglist -i|sort > dpkglist_i_out
-
-chris@lombi root > diff -u egrep_out dpkglist_i_out  
---- egrep_out	Mon Feb  4 23:11:52 2002
-+++ dpkglist_i_out	Mon Feb  4 22:55:54 2002
-@@ -673,7 +673,6 @@
- xaw3dg
- xaw3dg-dev
- xbase-clients
--xchat
- xchat-common
- xchat-gnome
- xemacs21
-
-chris@lombi root > dpkg -l xchat
-Gewünscht=Unbekannt/Installieren/R=Entfernen/P=Säubern/Halten
-| Status=Nicht/Installiert/Config/U=Entpackt/Fehlgeschl. Konf./Halb install.
-|/ Fehler?=(keiner)/Halten/R=Neuinst. notw/X=beides (Status, Fehler: GROß=schlecht)
-||/ Name                Version             Beschreibung
-+++-===================-===================-======================================================
-ic  xchat               1.8.3-1             IRC client for X similar to AmIRC
-
-dpkglist zeigt also die "die WIRKLICH" installiert sind. nun gut so.
+    eval {
+	xxsystem( ($opt_dry ? "echo" : ()), "apt-get", "install", "--", @packages);
+	&$save_autoflags;
+	1
+    } || do {
+	my $e= $@;
+	eval {
+	    prln "There was an error.";
+	    &$save_autoflags;
+	};
+	prln "Here's the previous error:";
+	die $e;
+    };
+	
+}
 

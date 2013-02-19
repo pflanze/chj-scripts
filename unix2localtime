@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Wed Oct 10 14:15:08 BST 2012
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [t ..]
+
+  convert unix time to localtime
+
+  read from stdin if no arguments are given
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+
+sub unix2local {
+    my ($line)=@_;
+    if ($line=~ s/^(\d{10})(\.\d*)?//) {
+	my ($unix,$fract)=($1,$2);
+	localtime($unix)." ".$fract.$line
+    } else {
+	$line
+    }
+}
+
+sub xprint {
+    print @_
+      or die "printing to stdout: $!";
+}
+
+if (@ARGV) {
+    xprint unix2local $_
+      for @ARGV;
+} else {
+    while (<STDIN>) {
+	xprint unix2local $_
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

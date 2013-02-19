@@ -1,0 +1,214 @@
+#!/usr/bin/perl -w
+
+# Thu Jun 21 20:00:43 BST 2012
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+use warnings FATAL => 'uninitialized';
+
+our $alarm_rest_time= 29*60; # seconds
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid
+
+  Run lsof on pid and extract information that can be important to
+  figure out why a service would be running out of filehandles.
+
+  Options:
+    -i n
+         instead of quitting after one check, run a check every n
+         seconds in a loop
+    --alarm-on n
+         give alarm if the watched process has more than n open
+    --on-alarm program
+         instead of printing an alarm message to stdout, run program
+         (asynchronically) and print the message to the program's stdin.
+         The program is run only once every $alarm_rest_time seconds
+         (see --alarm-rest-time).
+    --alarm-rest-time n
+         don't give an alarm again before n seconds have passed
+         (defaults to $alarm_rest_time); ignored unless -i option given.
+    --sexpr-to path
+         append whole lsof data about filehandles to path as an
+         S-expression. If path ends in .gz, the output is fed through gzip
+         (every entry separately).
+         See https://github.com/pflanze/lsof-watch-parse
+
+  BUGS:
+    probably doesn't handle processes with OS threads right
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_i;
+our $opt_alarm_on;
+our $opt_on_alarm;
+our $opt_sexpr_to;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "alarm-rest-time=i"=> \$alarm_rest_time,
+	   "i=i"=> \$opt_i,
+	   "alarm-on=i"=> \$opt_alarm_on,
+	   "on-alarm=s"=> \$opt_on_alarm,
+	   "sexpr-to=s"=> \$opt_sexpr_to,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($pid)=@ARGV;
+
+use Chj::Parse::Lsof 'readlsof';
+use Data::Dumper;
+use Chj::Serial::Sexpr 'xprint_to_sexpr_line_with_sharing';
+use Chj::xopen 'xopen_append';
+use Chj::xperlfunc ':all';
+use Chj::IO::Command;
+
+{
+    package Chj_lsofwatch_point;
+    sub new {
+	my ($cl, $time, $filehandles, $ip_addrs)=@_;
+	bless {time=>$time,
+	       filehandles=> $filehandles,
+	       'ip-addrs'=> $ip_addrs},$cl
+    }
+    sub _serialize_classname {"point"}
+}
+{
+    package Chj_lsofwatch_ip_addrs;
+    sub new {
+	my ($cl, $ipv4, $ipv6)=@_;
+	bless {
+	       ipv4=> $ipv4,
+	       ipv6=> $ipv6,
+	      },$cl
+    }
+    sub _serialize_classname {"ip-addrs"}
+}
+
+
+sub ip_addrs_get {
+    # same as |ip-addrs| in the Scheme program
+    my $in= Chj::IO::Command->new_sender("ip", "--oneline", "addr");
+    my $res4=[];
+    my $res6=[];
+    while (<$in>) {
+	my (@r4,@r6);
+	while (m{\binet(6?) ([^ /]+)}sgc) {
+	    if ($1) {
+		push @r6, $2;
+	    } else {
+		push @r4, $2;
+	    }
+	}
+	my $n= (@r4 + @r6);
+	if ($n==1) {
+	    push @$res4, @r4;
+	    push @$res6, @r6;
+	} elsif ($n==2) {
+	    die "parse error, ip --oneline addr gave more than 1 address on a line: '$_'"
+	}
+    }
+    $in->xxfinish;
+    new Chj_lsofwatch_ip_addrs ($res4,$res6)
+}
+
+our $maybe_sexpr_log= $opt_sexpr_to && xopen_append ($opt_sexpr_to);
+
+sub lsof_get {
+    my $recs=[];
+    readlsof ["-n", "-p", $pid ], sub {
+	my ($rec)=@_;
+	# we are only interested in real filehandles, with fd numbers
+	if (my ($fd)= $$rec{f}=~ /^\d+\z/) {
+	    push @$recs, $rec
+	}
+    };
+    $recs
+}
+
+sub lsof_serialize {
+    my ($log,$data)=@_;
+    xprint_to_sexpr_line_with_sharing($log,$data);
+    $log->xprintln;
+    $log->xflush;
+}
+
+sub xbackground {
+    my ($thunk)=@_;
+    if (my $pid= xfork) {
+	xwaitpid $pid, 0;
+    } else {
+	if (!xfork) {
+	    &$thunk;
+	    exit(0);
+	}
+	exit(0);
+    }
+}
+
+our $last_alarm;
+
+sub do_entry {
+    my $t= time;
+    my $recs= lsof_get;
+    my $ip_addrs= ip_addrs_get;
+
+    if ($maybe_sexpr_log) {
+	my $do_log= sub {
+	    my ($log)=@_;
+	    lsof_serialize $log, new Chj_lsofwatch_point ($t, $recs, $ip_addrs);
+	};
+	if ($opt_sexpr_to=~ /\.gz$/) {
+	    my $out= Chj::IO::Command->new_receiver_with_stdout_to_fh
+	      ($maybe_sexpr_log, "gzip");
+	    &$do_log ($out);
+	    $out->xxfinish;
+	} else {
+	    &$do_log ($maybe_sexpr_log);
+	}
+    }
+
+    if ($opt_alarm_on) {
+	if (@$recs >= $opt_alarm_on) {
+	    if (!$last_alarm or ($t - $last_alarm)> $alarm_rest_time) {
+		$last_alarm= $t;
+		my $msg= "ALARM\n"; ##
+		if ($opt_on_alarm) {
+		    xbackground sub {
+			my $out= Chj::IO::Command->new_receiver($opt_on_alarm);
+			$out->xprint($msg);
+			$out->xxfinish;
+		    };
+		}
+		else {
+		    xprint $msg;
+		}
+	    }
+	}
+    }
+}
+
+if ($opt_i) {
+    while (1) {
+	do_entry;
+	sleep $opt_i;
+    }
+
+} else {
+    # one-shot
+    do_entry;
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
