@@ -17,5 +17,14 @@ else
 	mkdir -p "$DIR"
     fi
 
-    e -- "$DIR/`date|tr ' ' '_'|sed 's/://g'`" &
+    start () {
+	e -- "$DIR/`date|tr ' ' '_'|sed 's/://g'`"
+    }
+    
+    if tty >/dev/null; then
+	# stay on foreground
+	start
+    else
+	start &
+    fi
 fi
