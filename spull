@@ -12,7 +12,7 @@ if git status |grep '^nothing to commit' -q; then
 else
 
     cat <<EOF
-There are changes in the local directory; might be from   [well; won't try to save metadata as it may be broken mtimes  from   non-restore from former pull that was interrupted hell is this complicated.]   pleas  fix  manualy  x.
+There are changes in the local directory. Aborting.
 EOF
 
 fi
