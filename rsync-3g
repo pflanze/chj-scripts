@@ -9,4 +9,4 @@ BWLIMIT=--bwlimit=50
 
 set -x
 
-rsync -v $BWLIMIT --progress --partial --fuzzy "$@"
+rsync $BWLIMIT --progress --partial --fuzzy "$@"
