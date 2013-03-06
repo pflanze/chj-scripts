@@ -11,6 +11,7 @@ sub usage {
 
   Options:
   -s|--statistics  print sum, n, mean, stdev
+  -e|--eval        accept *perl* expressions and evaluate them; WARNING: insecure!
 ";
 exit @_ ? 1 : 0;
 }
@@ -18,6 +19,7 @@ exit @_ ? 1 : 0;
 my @files;
 my $DEBUG=0;
 our $opt_s;
+our $opt_eval;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -29,6 +31,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?s(tatistics?)?$/) {
 	$opt_s=1;
+    } elsif (/^--?e(val?)?$/) {
+	$opt_eval=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -43,18 +47,27 @@ my $n=0;
 my $totsquares=0;
 while (defined(local $_=<STDIN>)){
     chomp;
-    /^\s*[+-]?\s*\d+(\.\d*)?\s*$/
-      # could also accept:
-      # 1_324   1_134.245_123
-      # 1,324 -> europ. oder amerik.?
-      or do{
-	  print STDERR "$myname: ignoring invalid input line '$_'\n";
-	  next;
-      };
-    s/\s+//sg;
-    $tot+=$_;
+    my $n;
+    if ($opt_eval) {
+	$n= eval $_;
+	if ($@) {
+	    print STDERR "$myname: eval of input line '$_': $@";
+	    $n=0;
+	}
+    } else {
+	/^\s*([+-]?\s*\d+(\.\d*)?)\s*$/
+	  # could also accept:
+	  # 1_324   1_134.245_123
+	  # 1,324 -> europ. oder amerik.?
+	  or do{
+	      print STDERR "$myname: ignoring invalid input line '$_'\n";
+	      next;
+	  };
+	$n=$1;
+    }
+    $tot+=$n;
     if ($opt_s) {
-	$totsquares+= $_ * $_;
+	$totsquares+= $n * $n;
 	$n++;
     }
 }
