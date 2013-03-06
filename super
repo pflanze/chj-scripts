@@ -1,4 +1,29 @@
-#!/bin/sh
+#!/bin/bash
 
-exec sux - root bash -c "export SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AUTH_SOCK=$SSH_AUTH_SOCK; exec bash"
+set -eu
+
+if [ $# -ge 1 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+	echo "usage: $0 [user [cmd [args]]]"
+	exit 1
+    fi
+    user="$1"
+    shift
+else
+    user=root
+fi
+
+if [ $# -ge 1 ]; then
+    cmd=""
+    while [ $# -ge 1 ]; do
+        cmd="$cmd `printf '%q' "$1"`"
+	shift
+    done
+else
+    cmd=bash
+fi
+
+#set -x
+
+exec sux - "$user" bash -c "export SSH_AGENT_PID=$SSH_AGENT_PID; export SSH_AUTH_SOCK=$SSH_AUTH_SOCK; exec $cmd"
 
