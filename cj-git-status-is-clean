@@ -14,6 +14,9 @@ sub usage {
   If git status is clean, exit 0. Otherwise output a message to stdout
   unless --silent was given, and exit 2.
 
+  Environment vars:
+   GDROP_FORCE=1  make $myname quit with success immediately
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -29,6 +32,9 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage if @ARGV;
+
+exit 0
+  if $ENV{GDROP_FORCE};
 
 use Chj::Git::Functions 'status_is_clean';
 
