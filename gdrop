@@ -17,6 +17,9 @@ sub usage {
   -s   passed to git tag
   -b|--base   instead of using prefix drop_, use prefix base_
 
+  Environment vars:
+   GDROP_FORCE=1  same effect as -f
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -62,6 +65,8 @@ GetOptions("verbose"=> \$verbose,
 	   "force"=> \$opt_force,
 	   ) or exit 1;
 usage unless (@ARGV>=1 and @ARGV<=2);
+
+$opt_force ||= $ENV{GDROP_FORCE};
 
 our ($maybe_subname, $maybe_reset_to_commit)=@ARGV;
 
