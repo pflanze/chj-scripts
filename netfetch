@@ -9,7 +9,7 @@ if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
     exit 1
 fi
 
-z=""
+z="--lzop"
 if [ "$1" = "-z" ]; then
     z="-z "; shift
 elif [ "$1" = "--" ]; then
