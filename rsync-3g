@@ -4,9 +4,15 @@ set -eu
 
 # flags I always use especially on 3G networking. Esp. the --fuzzy.
 
-# needed to prevent triggering my ISP's upload trickling.
-BWLIMIT=--bwlimit=50
+# needed to prevent triggering my ISP's upload trickling. in kB/sec
+bwlimit=${BWLIMIT-50}
+
+if [ -n "$bwlimit" ]; then
+    opts="--bwlimit=$bwlimit"
+else
+    opts=""
+fi
 
 set -x
 
-rsync -avv $BWLIMIT --progress --fuzzy "$@"
+rsync $opts --progress --partial --fuzzy "$@"

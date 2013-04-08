@@ -3,15 +3,17 @@
 set -eu
 
 if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
-    echo "$0 [-z] server port"
+    echo "$0 [-z|-Z] server port"
     echo "  then needs the pw on stdin."
     echo "  -> See netoffer."
     exit 1
 fi
 
-z=""
+z="--lzop"
 if [ "$1" = "-z" ]; then
     z="-z "; shift
+elif [ "$1" = "-Z" ]; then
+    z=""; shift
 elif [ "$1" = "--" ]; then
     shift
 fi
@@ -31,6 +33,6 @@ PORT="$2"
 {
 netcat-get "$SERVER" "$PORT" < /dev/null \
     | gpg -q -d --batch --passphrase-fd 9 \
-    | tar x ${z}-f -
+    | tar x ${z} --sparse -f -
 } 9<&0
 

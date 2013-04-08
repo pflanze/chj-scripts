@@ -3,8 +3,10 @@
 set -eu
 
 usage() {
-    echo "$0 [-z] files_to_offer"
+    echo "$0 [-z|-Z] files_to_offer"
     echo "  offer files, encrypted"
+    echo "  -z  use gzip compression instead of lzop"
+    echo "  -Z  don't use compression"
     exit 1
 }
 
@@ -14,9 +16,11 @@ elif [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
-z=""
+z="--lzop"
 if [ "$1" = "-z" ]; then
     z="-z "; shift
+elif [ "$1" = "-Z" ]; then
+    z=""; shift
 elif [ "$1" = "--" ]; then
     shift
 fi
@@ -34,7 +38,7 @@ echo "--Run:--"
 echo "echo `cat` | netfetch $z$ip $PORT"
 } >&2
 ) | {
-tar c ${z}-f - "$@" \
+tar c ${z} --sparse -f - "$@" \
     | gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
     | netcat-serve-on-port "$PORT" 
 } 9<&0 </dev/null
