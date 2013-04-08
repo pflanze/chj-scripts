@@ -16,11 +16,16 @@ elif [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
-z="--lzop"
+zz="" # for netfetch
+z="--lzop" # for tar
 if [ "$1" = "-z" ]; then
-    z="-z "; shift
+    zz="$1 "
+    z="-z "
+    shift
 elif [ "$1" = "-Z" ]; then
-    z=""; shift
+    zz="$1 "
+    z=""
+    shift
 elif [ "$1" = "--" ]; then
     shift
 fi
@@ -35,7 +40,7 @@ ip=`publicip -f`
 passwdgen | tee >(
 {
 echo "--Run:--"
-echo "echo `cat` | netfetch $z$ip $PORT"
+echo "echo `cat` | netfetch $zz$ip $PORT"
 } >&2
 ) | {
 tar c ${z} --sparse -f - "$@" \
