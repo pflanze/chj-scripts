@@ -34,7 +34,7 @@ echo "--Run:--"
 echo "echo `cat` | netfetch $z$ip $PORT"
 } >&2
 ) | {
-tar c ${z}-f - "$@" \
+tar c ${z} --sparse -f - "$@" \
     | gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
     | netcat-serve-on-port "$PORT" 
 } 9<&0 </dev/null
