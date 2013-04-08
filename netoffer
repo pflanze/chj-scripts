@@ -3,8 +3,10 @@
 set -eu
 
 usage() {
-    echo "$0 [-z] files_to_offer"
+    echo "$0 [-z|-Z] files_to_offer"
     echo "  offer files, encrypted"
+    echo "  -z  use gzip compression instead of lzop"
+    echo "  -Z  don't use compression"
     exit 1
 }
 
@@ -17,6 +19,8 @@ fi
 z="--lzop"
 if [ "$1" = "-z" ]; then
     z="-z "; shift
+elif [ "$1" = "-Z" ]; then
+    z=""; shift
 elif [ "$1" = "--" ]; then
     shift
 fi
