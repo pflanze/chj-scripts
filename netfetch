@@ -33,6 +33,6 @@ PORT="$2"
 {
 netcat-get "$SERVER" "$PORT" < /dev/null \
     | gpg -q -d --batch --passphrase-fd 9 \
-    | tar x ${z} --sparse -f -
+    | tar -x ${z} --sparse -f -
 } 9<&0
 
