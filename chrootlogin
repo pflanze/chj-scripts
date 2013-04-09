@@ -114,6 +114,15 @@ mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
   "tmpfs","$chrootbase/lib/init/rw";
 
 
+# force libraries for getpwnam to be loaded from the host context
+{
+    my
+      ($name,$passwd,$uid,$gid,
+       $quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam $user;
+    #or warn "note: could not look up user on host: '$user'";
+}
+
+
 if ($X) {
     if (xfork) {
 	xxwait;
