@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Tue Apr  2 21:13:42 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  Strip out the url from urls that google (from google results, not
+  sure about gmail) outgoing links are represented as. If no argument
+  given, read stdin.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+
+use Chj::IO::Command;
+
+sub degoogle {
+    my ($str)=@_;
+    if (my ($encurl)= $str=~ m/url\?q=(.*?)(?:\&|$)/) {
+	my $c= Chj::IO::Command->new_receiver ("urldecode");
+	$c->print($encurl);
+	$c->xxfinish;
+	print "\n";
+    } else {
+	warn "no match for url '$str'\n";
+    }
+}
+
+if (@ARGV) {
+    degoogle $_ for @ARGV;
+} else {
+    while (<STDIN>) {
+	degoogle $_
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
