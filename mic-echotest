@@ -81,20 +81,25 @@ our $playcmd=
        "aplay -t raw -f dat ".($maybe_rate ? "-r $maybe_rate" : "")." -c 1 -"
    });
 
+
+our $bfr = -e "/usr/bin/bfr" ?
+  sub { "bfr @_" } :
+  sub { warn "bfr not found, using cat instead"; "cat" };
+
 if ($opt_resample) {
     our $semilen= int($len/2);
     our $prelen= int ($datrate*1.5/2);
     _xxsystem
       (&$recordcmd (undef).
-       "bfr -m $prelen | ".
+       &$bfr("-m $prelen")." | ".
        "sox -t $pipesoundtype -r $datrate -s -2 -c 1 -  -t $pipesoundtype -r $rate -".
        #recoding:
        "   resample -ql |".
-       "bfr -m $semilen | ".
+       &$bfr("-m $semilen")." | ".
        &$playcmd($rate));
 } else {
     _xxsystem
       (&$recordcmd ($rate).
-       "bfr -m $len | ".
+       &$bfr("-m $len")." | ".
        &$playcmd($rate));
 }
