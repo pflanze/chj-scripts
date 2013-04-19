@@ -2,6 +2,4 @@
 
 # well simply try to.
 
-set -eux
-
 losetup -a|sed 's/:.*//'|»» losetup -d
