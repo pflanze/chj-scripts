@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# how to control which is output first? need a lock, hu. ah or write to files.
+
+set -eu
+
+lenfile=`tempfile`
+md5file=`tempfile`
+rmfiles () {
+    rm "$lenfile"
+    rm "$md5file"
+}
+trap rmfiles EXIT
+
+tee >(wc -c > "$lenfile") | md5sum > "$md5file"
+
+cat "$lenfile"
+cat "$md5file"
+
