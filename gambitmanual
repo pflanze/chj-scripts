@@ -11,5 +11,5 @@ for path in $paths; do
     fi
 done
 
-echo "finde gambit manual nicht, sollte irgendwo sein wie bei $path1"
+echo "finde gambit manual nicht, sollte irgendwo sein wie bei $paths"
 exit 1
