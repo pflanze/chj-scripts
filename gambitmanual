@@ -1,9 +1,10 @@
 #!/bin/sh
 
-paths='
+paths="
  /usr/local/Gambit-C/current/doc/gambit-c.html
+ $HOME/install/gambc/doc/gambit-c.html
  /home/rchris/install/gambc/doc/gambit-c.html
-'
+"
 
 for path in $paths; do
     if [ -e "$path" ]; then
