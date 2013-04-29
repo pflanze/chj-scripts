@@ -113,6 +113,9 @@ if (not $devfs_is_initialized) {
 mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
   "tmpfs","$chrootbase/lib/init/rw";
 
+mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+  "tmpfs","$chrootbase/dev/shm";
+
 
 # force libraries for getpwnam to be loaded from the host context
 {
