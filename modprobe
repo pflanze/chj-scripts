@@ -2,6 +2,7 @@
 
 set -eu
 
+# adapted from https://bbs.archlinux.org/viewtopic.php?id=134393
 fkm () {
     find /lib/modules/"$(uname -r)"/ -iname "*$1*.ko*" | cut -d/ -f5-
 }
