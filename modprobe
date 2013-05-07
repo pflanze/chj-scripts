@@ -10,8 +10,6 @@ old () {
     exec /sbin/modprobe "$@"
 }
 
-#if [ $# -eq 1 && $# -le 2 ]; then
-
 if [ $# -ge 1 ]; then
     if [ $# -le 2 ]; then
 	if [ "$1" = -l ]; then
