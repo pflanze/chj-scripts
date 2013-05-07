@@ -278,7 +278,8 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
     my ($devpath)=@_;
     my ($ok,$cnt)= try_file $devpath;
     if ($ok) {
-	if ($cnt=~ /^LUKS encrypted/) {
+	if ($cnt=~ /^(sticky )?LUKS encrypted/) {
+	    #XXX what does the sticky mean?
 	    $cnt
 	} else {
 	    undef
