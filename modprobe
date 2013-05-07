@@ -4,9 +4,6 @@ set -eu
 
 fkm () {
     find /lib/modules/"$(uname -r)"/ -iname "*$1*.ko*" | cut -d/ -f5-
-    if [[ "$(uname -r)" != "$(/bin/ls -1 /lib/modules/ | head -1)" ]]; then
-	echo "Did you reboot after updating your kernel?"
-    fi
 }
 
 old () {
