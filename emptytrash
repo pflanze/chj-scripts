@@ -166,7 +166,7 @@ if (@ARGV and ($ARGV[0]=~ /^--?h(elp)?$/ or not $ARGV[0]=~ /^-([cCmM])((?:\d+\.)
   be deleted).
 "} else {
 	my $mode;
-	($mode,$DAYS)=(lc($1),$2);
+	($mode,$DAYS)=(lc($1||""),$2);
 	$mode='c' unless $mode;
 	$DAYS= ($mode eq'c'?15:30) unless defined($DAYS) and length($DAYS)>0;
 print"DAYS=$DAYS\n" if DEBUG;
