@@ -6,7 +6,7 @@
 
 =head1 NAME
 
-Chj::Path::Expand
+Chj::Path::Expand - resolving paths safely for chroots
 
 =head1 SYNOPSIS
 
@@ -22,7 +22,7 @@ Chj::Path::Expand
 
  The above assumes the base is ".". With different base:
 
- PathExpand("foo/bar/baz","foo")
+ PathExpand_all("foo/bar/baz","foo")
    same thing but already dies if bar points to ".."
 
 =head1 DESCRIPTION
