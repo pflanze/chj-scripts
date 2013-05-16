@@ -60,6 +60,7 @@ sub _expand {
 	my ($_expand, $p,$segments,$level)=@_;
 	die "too many levels of symlinks (cycle?) at path: ".singlequote($p->string)." with remaining segments: ".singlequote_many(@$segments)
 	  if $level > 100;
+	#use Data::Dumper; print Dumper ($p, $segments,$level);
 	if (not @$segments) {
 	    $p
 	} else {
@@ -126,8 +127,13 @@ our $nullpath= Chj::Path->new_from_string(".")->clean;
 
 sub _PathExpand {
     my ($do_expand_absolute,$path,$maybe_base)=@_;
-    die "base not yet implemented" if defined $maybe_base;
-    # base is assumed to be "."
+    local $nullpath= do {
+	if (defined $maybe_base) {
+	    Chj::Path->new_from_string($maybe_base)->clean;
+	} else {
+	    $nullpath
+	}
+    };
     my $p= Chj::Path->new_from_string($path)->clean;
     assert_no_dotdot $p; # well, what for *exactly?*
     _expand($do_expand_absolute)->($nullpath, $p->segments, 0)->string
