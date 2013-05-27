@@ -15,8 +15,7 @@ Chj::Net::Publicip
  my @ips = publicip; # returns all found ip's, sorted so that the most likely one comes first.
  my $public = publicip; # returns the "best looking" public-looking ip, undef if no or only private-looking ips have been found.
  my $someip = publicip_force; # "force" flag; returns the "next best" non-publicly looking one if no clear public one has been found.
- # all of those can optionally take a list of interfaces to check,
- # *** XX: which is now being ignored? ***
+ # all of those can optionally take a list of interfaces to check
 
 =head1 DESCRIPTION
 
@@ -89,6 +88,7 @@ sub _ipv4hex2list {
 use Chj::IO::Command;
 
 sub _ips {
+    my ($maybe_only_ifaces)=@_;
     my $ipout= Chj::IO::Command->new_sender("ip","addr");
     my @ips;
     while (<$ipout>) {
@@ -101,7 +101,9 @@ sub _ips {
 		if (/^\s+/) {
 		    if (my ($ip)= m{^\s+inet\s+([^ /]+)}) {
 			push @ips, scalar new Chj::Net::Publicip_IP ($iface, $ip)
-			  unless $is_down;
+			  unless ($is_down
+				  or ($maybe_only_ifaces
+				      and not $$maybe_only_ifaces{$iface}));
 		    }
 		} else {
 		    #last
@@ -118,9 +120,9 @@ sub _ips {
 }
 
 sub _publicip {
-    my ($opt_f,@_ifaces)=@_;
+    my ($opt_f,@ifaces)=@_;
 
-    my $ips= _ips;
+    my $ips= _ips (@ifaces ? +{ map {$_=>1} @ifaces} : undef);
 
     my @sortedips=
       sort { $b->publicity_likelyness <=> $a->publicity_likelyness }
