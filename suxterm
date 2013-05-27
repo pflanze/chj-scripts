@@ -1,16 +1,26 @@
 #!/bin/bash
 
 usage () {
-    echo "usage: $0 user"
+    echo "usage: $0 [-] user"
     echo " Same(?) as suxterm from the sux package but starts 'term'."
+    echo " The optional '-' argument is ignored (this is just to make "
+    echo " changing a command line from 'sux - user' easier)."
     exit 1
 }
 
-if [ $# -eq 1 ]; then
+if [ $# -eq 1 -o $# -eq 2 ]; then
     if [ "$1" = "-h" -o "$1" = "--help" ]; then
 	usage
     else
-	sux - "$1" term
+	if [ $# -eq 2 ]; then
+	    if [ "$1" = "-" ]; then
+		sux - "$2" term
+	    else
+		usage
+	    fi
+	else
+	    sux - "$1" term
+	fi
     fi
 else
     usage
