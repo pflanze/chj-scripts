@@ -11,7 +11,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname uid(s)
 
-  print user name of given user(s)
+  print user(/group) name of given user(/group)(s)
+
+  Options:
+   --group   search for group names instead of user
 
   (Christian Jaeger <$email>)
 ";
@@ -21,26 +24,29 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_group;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "group"=> \$opt_group,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
-sub user {
-    my ($uidstr)=@_;
-    $uidstr=~ /^(\d+)$/s
-      or die "not a uid: '$uidstr'";
-    my $uid=$1;
-    if (my $user= getpwuid $uid) {
-	$user
+sub name {
+    my ($idstr)=@_;
+    $idstr=~ /^(\d+)$/s
+      or die "not an id: '$idstr'";
+    my $id=$1;
+    if (my $name= $opt_group ? (getgrgid $id) : (getpwuid $id)) {
+	$name
     } else {
-	"<unknown uid $uid>"
+	my $what= $opt_group ? "gid" : "uid";
+	"<unknown $what $id>"
     }
 }
 
 for (@ARGV) {
-    print user($_),"\n";
+    print name($_),"\n";
 }
 
 
