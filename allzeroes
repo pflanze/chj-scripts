@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+
+# Wed May 29 00:10:20 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  returns true (exit code 0) if path(s) consist(s) only of zero bytes.
+
+  Options:
+   -p   print the file path in true case, too
+   -s   only if the file is of non-zero size
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_p;
+our $opt_s;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "print"=> \$opt_p,
+	   "sized"=> \$opt_s,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+
+#$opt_p ||= $verbose; ##k?
+
+use Chj::xopen 'xopen_read';
+
+my $bufsz = 8192;
+
+sub allzero {
+    my ($bufrf,$n)=@_;
+    for my $i (0..$n-1) {
+	#warn "check $i";
+	if (not (substr($$bufrf,$i,1) eq "\0")) {
+	    return 0;
+	}
+    }
+    1
+}
+
+sub allzeroes {
+    my ($path)=@_;
+    #warn "path '$path'";
+    my $buf= "\0" x $bufsz;
+    my $f = xopen_read $path;
+    my $res=1;
+    my $totsize=0;
+    while (my $n= $f->xsysread ($buf,$bufsz)) {
+	$totsize+=$n;
+	#warn "totsize= '$totsize'";
+	if (!allzero(\$buf,$n)) {
+	    $res=0;
+	    last;
+	}
+    }
+    $f->xclose;
+    if ($opt_s) {
+	$totsize > 0 and $res
+    } else {
+	$res
+    }
+}
+
+my $cnt_not_allzeroes=0;
+
+sub _allzeroes {
+    my ($path)=@_;
+    if (allzeroes ($path)) {
+	if ($opt_p) {
+	    print $path,"\n"
+	      or die $!;
+	}
+    } else {
+	$cnt_not_allzeroes++;
+    }
+}
+
+_allzeroes $_ for @ARGV;
+
+exit ($cnt_not_allzeroes ? 1 : 0);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
