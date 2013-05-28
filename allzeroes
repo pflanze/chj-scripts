@@ -26,7 +26,7 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_p;
-our $opt_s;
+our $opt_s=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
@@ -39,7 +39,10 @@ GetOptions("verbose"=> \$verbose,
 #$opt_p ||= $verbose; ##k?
 
 use Chj::xopen 'xopen_read';
-use Inline ("C" => 'DATA', DIRECTORY => "$ENV{HOME}/.Inline");
+BEGIN {
+    mkdir "$ENV{HOME}/.PerlInline",0700;
+}
+use Inline ("C" => 'DATA', DIRECTORY => "$ENV{HOME}/.PerlInline");
 
 my $bufsz = 8192;
 
@@ -126,7 +129,7 @@ int allzeroes (char *path, int opt_s) {
     char *buf= malloc (CJBUFSIZ);
     int res=1;
     size_t totsize=0;
-    
+
     assert(buf);
     //printf("path '%s'\n", path);//
     f = open (path, O_RDONLY);
