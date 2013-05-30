@@ -1,28 +1,39 @@
 #!/bin/bash
 
+set -eu
+
+usage () {
+    echo "$0 rfcnumber"
+    echo "  Give an rfc number (number only)."
+    exit 1
+}
+
 if [ $# -eq 1 ]; then
     if [ "$1" = "-h" -o "$1" = "--help" ]; then
-	echo "$0 rfcnumber"
-	echo "  Give an rfc number (number only)."
+	usage
     else
-	files=(/usr/share/doc/RFC/links/rfc$1[-.]*)
-	if [ ${#files[*]} -eq 1 ]; then
-	    if [ -f "$files" ]; then
-		case "$files" in 
-		    *.gz)
-			gunzip < "$files" | perl -e '<STDIN>;<STDIN>;while(<STDIN>){print}'|less;;
-		    *)
-			perl -e '<STDIN>;<STDIN>;while(<STDIN>){print}' < "$files" |less;;
-		esac
-	    else
-		echo "No such RFC doc."
+	if ! echo "$1"|egrep -q -i '^[0-9]+$'; then
+	    usage
+	else
+	    files=(/usr/share/doc/RFC/links/rfc$1[-.]*)
+	    if [ ${#files[*]} -eq 1 ]; then
+		if [ -f "$files" ]; then
+		    case "$files" in 
+			*.gz)
+			    gunzip < "$files" | perl -e '<STDIN>;<STDIN>;while(<STDIN>){print}'|less;;
+			*)
+			    perl -e '<STDIN>;<STDIN>;while(<STDIN>){print}' < "$files" |less;;
+		    esac
+		else
+		    browser "http://datatracker.ietf.org/doc/rfc$1/"
+		fi
+	    else 
+		echo "More than one match:"
+		for F in  "${files[@]}" ; do
+		    echo "  $F"
+		done
 	    fi
-	else 
-	    echo "More than one match:"
-	    for F in  "${files[@]}" ; do
-		echo "  $F"
-	    done
-	fi
+        fi
     fi
 else
    echo "Please give 1 argument, an rfc number."
