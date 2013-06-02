@@ -522,7 +522,10 @@ sub mount_easily {
 	    }
 	} elsif ($device_fileinfo=~ /^Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
 	    #ok
-	} elsif ($device_fileinfo=~ /^x86 boot sector/
+	} elsif (($device_fileinfo=~ /^x86 boot sector/
+		  or
+		  # starting with Debian Wheezy: (for an Android phone)
+		  $device_fileinfo=~ m{boot sector.*, *FAT \(32 bit\)})
 		 and not $device_fileinfo=~ /ext|e2fs/i  # would it turn up as something such?
 		) {
 	    # *usually* FAT or NTFS? We have no filesystem checker for that anyway, so ok?
