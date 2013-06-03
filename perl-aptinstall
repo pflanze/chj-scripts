@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Mon Jun  3 05:56:09 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname Foo::Bar
+
+  change that into libfoo-bar-perl and run apt-get install on it.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc ':all';
+
+sub aptinstall {
+    my ($module)=@_;
+    my $nam= lc $module; $nam=~ s|::|-|g;
+    $nam= "lib".$nam."-perl";
+    print "== try to install $nam ... ===========\n";
+    xsystem "apt-get","install", $nam
+}
+
+aptinstall $_ for @ARGV;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
