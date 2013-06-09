@@ -11,9 +11,20 @@ package Chj::Sendmail;
 
 Chj::Sendmail
 
+=head1 SYNOPSIS
+
+ use Chj::Sendmail 'sendmail';
+ my @args= From=> "me@foo", To=> "you@too", Subject=> "yummy", Data=> "Hi";
+ sendmail @args;
+ # or:
+ my $mail= preparemail @args;
+ # $mail->as_string can be piped to the sendmail -t command, or better:
+ send_mailasstring ($mail->as_string);
+
+
 =head1 DESCRIPTION
 
-abkunft von EL::Util::Sendmail
+Send email simply while (hopefully) taking care of encoding issues.
 
 =cut
 
