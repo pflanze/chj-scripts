@@ -96,7 +96,7 @@ sub process_entry {
 	or
 	$path eq '/drm mm object'
 	or
-	$path=~ m{^/(?:tmp|dev|var|proc)/}
+	$path=~ m{^/(?:tmp|dev|var|proc|run/shm)/}
 	or
 	$path=~ m|/\.galeon/mozilla/|) {
 	# suppress
