@@ -11,7 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname Foo::Bar
 
-  change that into libfoo-bar-perl and run apt-get install on it.
+  Also accepts Foo/Bar.pm
+
+  changes that into libfoo-bar-perl and run apt-get install on it.
 
   (Christian Jaeger <$email>)
 ";
@@ -28,9 +30,19 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV;
 
 use Chj::xperlfunc ':all';
+use Chj::Xbacktick;
+use Chj::Chomp;
+
+sub path2namespace {
+    Chomp(Xbacktick "perl-path2namespace", "--no-use", @_)
+}
 
 sub aptinstall {
-    my ($module)=@_;
+    my ($module_or_path)=@_;
+    my $module=
+      ($module_or_path=~ m|/|
+       ? path2namespace ($module_or_path)
+       : $module_or_path);
     my $nam= lc $module; $nam=~ s|::|-|g;
     $nam= "lib".$nam."-perl";
     print "== try to install $nam ... ===========\n";
