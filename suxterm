@@ -17,12 +17,14 @@ if [ $# -eq 1 -o $# -eq 2 ]; then
     else
 	if [ $# -eq 2 ]; then
 	    if [ "$1" = "-" ]; then
-		sux - "$(user-or-home2user "$2")" term
+		user=$(user-or-home2user "$2")
+		sux - "$user" term
 	    else
 		usage
 	    fi
 	else
-	    sux - "$(user-or-home2user "$1")" term
+	    user=$(user-or-home2user "$1")
+	    sux - "$user" term
 	fi
     fi
 else
