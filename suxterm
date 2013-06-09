@@ -1,8 +1,11 @@
 #!/bin/bash
 
+set -eu
+
 usage () {
-    echo "usage: $0 [-] user"
+    echo "usage: $0 [-] user-or-homedir"
     echo " Same(?) as suxterm from the sux package but starts 'term'."
+    echo " Also, user-or-homedir is mapped to the user using user-or-home2user."
     echo " The optional '-' argument is ignored (this is just to make "
     echo " changing a command line from 'sux - user' easier)."
     exit 1
@@ -14,12 +17,12 @@ if [ $# -eq 1 -o $# -eq 2 ]; then
     else
 	if [ $# -eq 2 ]; then
 	    if [ "$1" = "-" ]; then
-		sux - "$2" term
+		sux - "$(user-or-home2user "$2")" term
 	    else
 		usage
 	    fi
 	else
-	    sux - "$1" term
+	    sux - "$(user-or-home2user "$1")" term
 	fi
     fi
 else
