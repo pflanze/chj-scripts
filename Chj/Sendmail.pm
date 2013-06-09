@@ -21,6 +21,7 @@ abkunft von EL::Util::Sendmail
 @ISA='Exporter'; require Exporter;
 @EXPORT='sendmail';
 @EXPORT_OK=qw(preparemail prepare_mailasstring send_mailasstring);
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
 
