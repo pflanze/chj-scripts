@@ -271,6 +271,7 @@ sub try_file {
       ("file","--brief","--dereference","--special-files",$devrealpath);
     my $cnt= $in->xcontent;
     my $res= $in->xfinish;
+    $cnt=~ s/^sticky *//; # http://lists.debian.org/debian-user/2012/02/msg01273.html
     ($res==0,$cnt)
 }
 
@@ -278,8 +279,7 @@ sub maybe_luks { # not just is_luks. ok?. I mean: give luks details if luks.
     my ($devpath)=@_;
     my ($ok,$cnt)= try_file $devpath;
     if ($ok) {
-	if ($cnt=~ /^(sticky )?LUKS encrypted/) {
-	    #XXX what does the sticky mean?
+	if ($cnt=~ /^LUKS encrypted/) {
 	    $cnt
 	} else {
 	    undef
@@ -520,7 +520,7 @@ sub mount_easily {
 		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n"
 		  if ($verbose or $verbosevolume);
 	    }
-	} elsif ($device_fileinfo=~ /^(?:sticky )?Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
+	} elsif ($device_fileinfo=~ /^Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
 	    #ok
 	} elsif (($device_fileinfo=~ /^x86 boot sector/
 		  or
