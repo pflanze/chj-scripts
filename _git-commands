@@ -1,6 +1,10 @@
 _cj-git-gconfdiff
 _cj-git-tkdiff
 a
+ame
+amea
+apply-patches
+bzr2git
 cj-git-add-manyfiles
 cj-git-add-patchy
 cj-git-authorship
@@ -27,6 +31,7 @@ cj-git-l
 cj-git-list-interfering-files
 cj-git-merge-subtree
 cj-git-new-patches
+cj-git-patchtool
 cj-git-pick-picky
 cj-git-references
 cj-git-send-email
@@ -40,6 +45,7 @@ cj-git-tree-of-commit
 cj-git-working-directory-clean-p
 cj-gitdeb-newversion
 cj-gitmetadata
+cj-rediff
 com
 com-l
 coma
@@ -47,6 +53,7 @@ coma-l
 comafluff
 d
 dir-mtime-pull
+dupa
 g-add
 g-add--interactive
 g-am
