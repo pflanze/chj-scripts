@@ -212,7 +212,10 @@ gitkgf
 gl
 glastcommittime
 gless
+glg
 glga
+glgap
+glgp
 gls
 gls0
 gp
@@ -220,6 +223,9 @@ gpatchid
 gport
 grebaseget
 lg
+lga
+lgap
+lgf
 mygit-patch-newfiles
 p
 pf
