@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Sat Jun 15 17:01:12 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd sourcefile(s) targetfile
+
+  Runs cmd sourcefile(s) targetfile unless targetfile exists and is
+  newer than the sourcefile(s).
+
+  Kind of a 'mini-make', but doesn't need config files.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV>=2;
+
+our $cmd=shift;
+our $target= pop @ARGV;
+our @sources= @ARGV;
+
+use Chj::xperlfunc qw(Xstat xstat xexec);
+
+sub build {
+    xexec $cmd, @sources, $target
+}
+
+if (my $t= Xstat $target) {
+    for my $source (@sources) {
+	my $s= xstat $source;
+	if ($t->mtime <= $s->mtime) {
+	    build;
+	}
+    }
+} else {
+    build;
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
