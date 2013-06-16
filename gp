@@ -4,4 +4,4 @@ set -eu
 
 cb=$(cj-git-current-branch)
 
-git push --tags "${GP_REMOTE-t3}" "$cb"
+git push --tags "$GP_REMOTE" "$cb"
