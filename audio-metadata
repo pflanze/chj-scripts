@@ -89,7 +89,7 @@ my $ignorekeys= +{map{$_=>1}
 
 sub printmetadata {
     my ($path,$method,$only)=@_;
-    xprintln "== $path ==";
+    xprintln "== $path:";
     my $s= Audio::Scan->$method ($path)
       or die "could not scan metadata for '$path'";
     my $h= $only? $$s{$only} : $s;
