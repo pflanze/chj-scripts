@@ -1,3 +1,4 @@
 #!/bin/bash
 
-find "$@" -iname "*.mp3" -o -iname "*.wma" -o -iname "*.wav" -o -iname "*.flac"
+my.find \( -iname "*.mp3" -o -iname "*.wma" -o -iname "*.wav" -o -iname "*.flac" \) "$@"
+
