@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Sun Jun  9 13:22:53 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname user-or-homedir
+
+  If user-or-homedir contains a slash, it is mapped to the user using
+  /etc/passwd, otherwise it is checked to exist, otherwise exits with
+  code 1.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our ($v)=@ARGV;
+
+sub xprintln { print @_,"\n" or die $! }
+
+my $F= qw/[^:]*/;
+open my $p, "/etc/passwd" or die;
+my %users;
+my %home2user;
+while (<$p>) {
+    /^($F):$F:$F:$F:$F:($F)/ or die "no match in line: '$_'";
+    $users{$1}=1;
+    $home2user{$2}=$1;
+}
+
+if ($v=~ m|/|) {
+    $v=~ m|^(.*?)/*\z|s or die;
+    my $path= $1;
+    if (my $u = $home2user{$path}) {
+	xprintln $u;
+    } else {
+	die "$myname: could not find user having as home directory: '$path'\n";
+    }
+} else {
+    if ($users{$v}) {
+	xprintln $v;
+    } else {
+	die "$myname: unknown user (at least in /etc/passwd): '$v'\n";
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

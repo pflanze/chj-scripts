@@ -48,22 +48,20 @@ use Chj::Lockfile;
 use Chj::xsysopen;
 
 my $lock= Chj::Lockfile->get($lockfile);
-##i 'know' [that] I remember that I at some point did some with_lock ? instead of that. hmm ?
-##(hm would it even be  bettr smntclly?.)
 
 sub doit {
     my ($oldstate_exists)=@_;
-    my $statefh= xsysopen ($statefile, O_CREAT|O_RDWR); #this combination not available in Chj::xopen::* it seems (nor in perls open function, thus?)
-    my $oldstate= $oldstate_exists ? $statefh->xreadline : 0;
+    my $statefh= xsysopen ($statefile, O_CREAT|O_RDWR);
+    my $oldstate=
+      $oldstate_exists ? $statefh->xreadline : 0;
     chomp $oldstate;
-    $oldstate=~ /^0|1\z/ or die "what kind of state is this?: '$oldstate'";#assertments easier ones pls....... like thea
+    $oldstate=~ /^0|1\z/
+      or die "what kind of state is this?: '$oldstate'";
     $statefh->xrewind;
-    $statefh-> #PS GRRRRR da gabs frick  haha  schon malsowas. achje.
-      xtruncate;
+    $statefh->xtruncate;
     $statefh->xprint (($oldstate ? 0 : 1)."\n");
     $statefh->xclose;
     # do not xexec, wait till it finishes before releasing the lock.
-    ##btw auto recognize von tail ding h ? "!" ~.
     xxsystem (($opt_dry ? do { sleep 3; "echo"} : "disper"),
 	      "-r", "auto",
 	      $oldstate ? "-s" : "-S");

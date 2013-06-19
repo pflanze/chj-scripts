@@ -55,7 +55,8 @@ while (defined(local $_=<STDIN>)){
 	    $n=0;
 	}
     } else {
-	/^\s*([+-]?\s*\d+(\.\d*)?)\s*$/
+	/^\s*([+-]?\s*(\d*)(?:\.(\d*))?)\s*$/
+	  and (length($2) or length($3))
 	  # could also accept:
 	  # 1_324   1_134.245_123
 	  # 1,324 -> europ. oder amerik.?

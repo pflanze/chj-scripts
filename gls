@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# ls-files without -z encodes filenames with special characters into a
+# quoted form; avoid this (even if it means newlines are going to be
+# unsafe; for a safe listing, use gls0)
+
+git ls-files -z "$@"| tr '\0' '\n'

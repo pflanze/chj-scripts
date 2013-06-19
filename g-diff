@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Sat Aug  9 13:43:20 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -15,14 +15,14 @@ use strict;
 # due anyway, and once I do that, why not just call "git" and rely on
 # PATH again? heh.
 
-# We also name these g* so that's easier for me to type (maybe that
+# We also name these g-* so that's easier for me to type (maybe that
 # makes those shell completions look lame in comparison?)
+
+# Using g-* and not just g* to avoid some conflicts.
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
-#my $start= "g"; # not even require a dash smile. ok?
-#hm no not a good idea I think. Would sometimes complete to non-git commands.
 my $start= "g-";
 
 $myname=~ /^$start(.*)/

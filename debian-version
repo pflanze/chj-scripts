@@ -83,7 +83,7 @@ our $releases=
   [
    map { new CHJ::Release @$_ }
    # name, number, release_date, num_packages_binary, num_packages_source,
-   #    num_developers,
+   #    num_developers, securitysupport_termination_date
    ["hamm", "2.0", "1998-07-XX", "1500+", undef, "400+", undef ],
    #   ^ is the 1500+ number for binary packages really?
    ["slink", "2.1", "1999-03-09", "~2250", undef, undef, undef ],
@@ -105,7 +105,8 @@ our $releases=
    #  The availability and updates of OpenJDK, GNU Java compiler, GNU Java bytecode interpreter, Classpath and other free versions of Sun's Java technology, into Debian GNU/Linux 5.0 allow us to ship Java-based applications in Debian's "main" repository.
    #  Further improvements in system security include the installation of available security updates before the first reboot by the Debian Installer, the reduction of setuid root binaries and open ports in the standard installation, and the use of GCC hardening features in the builds of several security-critical packages. Various applications have specific improvements, too. PHP for example is now built with the Suhosin hardening patch.
    #  In addition to the regular installation media, Debian GNU/Linux can now also be directly used without prior installation. The special images used, known as live images, are available for CDs, USB sticks, and netboot setups. Initially, these are provided for the amd64 and i386 architectures only.
-   ["squeeze", "6.0", "2011-02-06", ">29000", "<15000", undef, undef], #was ist das letzte undef?
+   ["squeeze", "6.0", "2011-02-06", ">29000", "<15000", undef, undef],
+   ["wheezy", "7.0", "2013-05-04", ">36000", "<17500", undef, undef],
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
    ["?", undef, undef, undef, undef, undef, undef ]

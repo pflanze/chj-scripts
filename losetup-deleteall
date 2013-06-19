@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# well simply try to.
+
+losetup -a|sed 's/:.*//'|»» losetup -d

@@ -97,6 +97,7 @@ my $Xauth= do {
 };
 
 use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
+use Chj::Path::Expand ':all';
 
 mount_if_not_already qw(-t proc proc), "$chrootbase/proc";
 mount_if_not_already qw(-t usbfs usbfs), "$chrootbase/proc/bus/usb";
@@ -113,6 +114,15 @@ if (not $devfs_is_initialized) {
 mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
   "tmpfs","$chrootbase/lib/init/rw";
 
+if (-l "$chrootbase/dev/shm") {
+    my $target= PathExpand_all("/dev/shm", $chrootbase);
+    #warn "target='$target'";
+    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+      "tmpfs",$target;
+} else {
+    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+      "tmpfs","$chrootbase/dev/shm";
+}
 
 # force libraries for getpwnam to be loaded from the host context
 {

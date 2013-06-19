@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 prog file(s)"
+    echo "  feed each file to prog on stdin, write stdout back in its place,"
+    echo "  through a temp file rename, while keeping permissions."
+    echo "  See also 'lambda'."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+if [ "$1" = -h -o "$1" = --help ]; then
+    usage
+fi
+
+
+cmd="$1"
+shift
+
+for f in "$@"; do
+    dir=`dirname "$f"`
+    tmp=`tempfile -d "$dir"`
+    "$cmd" < "$f" >> "$tmp"
+    cp-perms "$f" "$tmp"
+    mv "$tmp" "$f"
+done

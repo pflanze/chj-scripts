@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eu
+
+# adapted from https://bbs.archlinux.org/viewtopic.php?id=134393
+fkm () {
+    find /lib/modules/"$(uname -r)"/ -iname "*$1*.ko*" | cut -d/ -f5-
+}
+
+old () {
+    exec /sbin/modprobe "$@"
+}
+
+if [ $# -ge 1 ]; then
+    if [ $# -le 2 ]; then
+	if [ "$1" = -l ]; then
+	    fkm "${2-}"
+	else
+	    old "$@"
+	fi
+    else
+        old "$@"
+    fi
+else
+    old "$@"
+fi
+

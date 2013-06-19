@@ -1,0 +1,168 @@
+#!/usr/bin/perl -w
+
+# Wed May 29 00:10:20 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  returns true (exit code 0) if path(s) consist(s) only of zero bytes.
+
+  Options:
+   -p   print the file path in true case, too
+   -s   only if the file is of non-zero size
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_p;
+our $opt_s=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "print"=> \$opt_p,
+	   "sized"=> \$opt_s,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+
+#$opt_p ||= $verbose; ##k?
+
+use Chj::xopen 'xopen_read';
+BEGIN {
+    mkdir "$ENV{HOME}/.PerlInline",0700;
+}
+use Inline ("C" => 'DATA', DIRECTORY => "$ENV{HOME}/.PerlInline");
+
+my $bufsz = 8192;
+
+=pod
+sub allzero {
+    my ($bufrf,$n)=@_;
+    for my $i (0..$n-1) {
+	#warn "check $i";
+	if (not (substr($$bufrf,$i,1) eq "\0")) {
+	    return 0;
+	}
+    }
+    1
+}
+
+sub allzeroes {
+    my ($path)=@_;
+    #warn "path '$path'";
+    my $buf= "\0" x $bufsz;
+    my $f = xopen_read $path;
+    my $res=1;
+    my $totsize=0;
+    while (my $n= $f->xsysread ($buf,$bufsz)) {
+	$totsize+=$n;
+	#warn "totsize= '$totsize'";
+	if (!allzero(\$buf,$n)) {
+	    $res=0;
+	    last;
+	}
+    }
+    $f->xclose;
+    if ($opt_s) {
+	$totsize > 0 and $res
+    } else {
+	$res
+    }
+}
+=cut
+
+my $cnt_not_allzeroes=0;
+
+sub _allzeroes {
+    my ($path)=@_;
+    if (allzeroes ($path,$opt_s)) {
+	if ($opt_p) {
+	    print $path,"\n"
+	      or die $!;
+	}
+    } else {
+	$cnt_not_allzeroes++;
+    }
+}
+
+_allzeroes $_ for @ARGV;
+
+exit ($cnt_not_allzeroes ? 1 : 0);
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
+__C__
+
+#include <stdio.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <assert.h>
+
+static int allzero (char*buf, size_t len) {
+    int i;
+    for (i=0; i<len; i++) {
+        if (buf[i] != '\0')
+	    return 0;
+    }
+    return 1;
+}
+
+#define CJBUFSIZ 8192
+
+int allzeroes (char *path, int opt_s) {
+    int f;
+    char *buf= malloc (CJBUFSIZ);
+    int res=1;
+    size_t totsize=0;
+
+    assert(buf);
+    //printf("path '%s'\n", path);//
+    f = open (path, O_RDONLY);
+    if (f < 0) {
+        perror("open"); goto ERR;
+    }
+
+    while (1) {
+        ssize_t n= read(f,buf,CJBUFSIZ);
+	if (n<0) {
+	    perror("read"); goto ERR;
+	}
+	if (n==0)
+  	    break;
+	totsize+=n;
+	//printf("totsize '%d'\n", totsize);//
+
+	if (!allzero (buf,n)) {
+	    res=0;
+	    break;
+	}
+    }
+    if (close(f)) {
+        perror("close"); goto ERR;
+    }
+    if (opt_s) {
+        return ((totsize > 0) && res);
+    } else {
+	return res;
+    }
+
+    ERR:
+    // XXX exception?
+    free(buf);
+    return 0;
+}

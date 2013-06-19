@@ -1,0 +1,113 @@
+#!/usr/bin/perl -w
+
+# Sun Jun 16 08:20:27 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Print MP3/WMV/etc. metadata.
+
+  Options:
+   -a   return both info and tags
+   -t   (default) return (only) tags
+   -i   return (only) info
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our ($opt_t,$opt_i);
+GetOptions("verbose"=> \$verbose,
+	   "i"=> \$opt_i,
+	   "t"=> \$opt_t,
+	   "a"=> sub {
+	       $opt_i=1; $opt_t=1;
+	   },
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+if (not $opt_i and not $opt_t) {
+    $opt_t=1;
+}
+
+
+use Audio::Scan;
+
+sub xprint { print @_ or die $! }
+sub xprintln { print @_,"\n" or die $! }
+
+sub copydeep_ignoring {
+    my ($v,$ignoring)=@_;
+    if (my $r=ref $v) {
+	if ($r eq "ARRAY") {
+	    [map { copydeep_ignoring ($_, $ignoring) }
+	     @$v]
+	} elsif ($r eq "HASH") {
+	    +{
+	      map {
+		  my $k=$_;
+		  if ($$ignoring{$k}) {
+		      ()
+		  } else {
+		      my $v=$$v{$k};
+		      ($k=> copydeep_ignoring( $v, $ignoring))
+		  }
+	      } keys %$v
+	     }
+	} else {
+	    die "dunno what to do with this: '$v'";
+	}
+    } else {
+	$v
+    }
+}
+
+use Data::Dumper;
+sub printhash_ignoring {
+    my ($h,$ignoring)=@_;
+    my $h2= copydeep_ignoring $h,$ignoring;
+    xprint Dumper $h2;
+}
+
+my $ignorekeys= +{map{$_=>1}
+		  qw(
+			GEOB
+			MCDI
+		   )};
+
+sub printmetadata {
+    my ($path,$method,$only)=@_;
+    xprintln "== $path:";
+    my $s= Audio::Scan->$method ($path)
+      or die "could not scan metadata for '$path'";
+    my $h= $only? $$s{$only} : $s;
+    printhash_ignoring $h, $ignorekeys;
+}
+
+local $ENV{AUDIO_SCAN_NO_ARTWORK} = 1;
+
+my $only=
+  (($opt_t and $opt_i) ? undef :
+   $opt_t ? "tags" :
+   $opt_i ? "info" :
+   die "bug");
+
+my $method= $only ? "scan_$only" : "scan";
+
+printmetadata $_,$method,$only
+  for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

@@ -3,6 +3,8 @@
 ulimit -S -v 1400000
 if [ -e /usr/bin/openoffice.org ]; then
     /usr/bin/openoffice.org "$@"
+elif [ -e /usr/bin/libreoffice ]; then
+    /usr/bin/libreoffice "$@"
 else
     /usr/bin/openoffice "$@"
 fi
