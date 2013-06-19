@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+# Wed Jun 19 14:37:02 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [parentdir]
+
+  create a new random directory in parentdir and return path to it.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV<=1;
+
+our ($maybe_parentdir)=@ARGV;
+
+our $parentdir= defined $maybe_parentdir ? $maybe_parentdir : "/tmp";
+
+use Chj::xtmpdir;
+our $d= xtmpdir $parentdir."/";
+$d->autoclean(0);
+
+print $d->path, "\n"
+  or die "stdout: $!";
+close STDOUT
+  or die "stdout: $!";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
