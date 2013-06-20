@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -eu
+
+flags=auxww
+
+usage () {
+    echo "$0 username"
+    echo "  runs ps $flags | egrep '^(<uid>|<username>)\b'"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+user="$1"
+
+uid=`id -u "$user"`
+
+ps $flags | egrep '^('"$uid"'|'"$user"')\b'
