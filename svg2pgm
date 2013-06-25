@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Tue Jun 25 22:50:04 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our ($w,$h)=(3000,5000);
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file.svg
+
+  Options:
+   -d <w>x<h>  dimensions of output file instead of ${w}x$h
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Image::LibRSVG;
+use Chj::xperlfunc;
+use Chj::IO::Command;
+use Chj::xtmpfile;
+
+our $outformat= "png"; # "pnm" nor pbm nor pgm not supported sigh.
+our $outformat2= "pgm";
+
+sub c {
+    my ($in)=@_;
+    my $out=$in;
+    $out=~ s/\.svg$/.$outformat/s or do {
+	warn "path not ending in .svg, appending suffix: '$in'";
+	$out.= ".$outformat";
+    };
+    rename $out, $out."~";
+    my $c= new Image::LibRSVG;
+    $c->isFormatSupported($outformat) or die "'$outformat' not supported";
+    $c->convertAtMaxSize ($in,$out, $w, $h);
+    my $out2= $out;
+    $out2=~ s/\.$outformat$/.$outformat2/s or die "??";
+    #xxsystem "convert", $out, $out2;
+    # nope, convert can't do it, even with
+    # -transparent-color '#ffffff'  the output is all black.
+    #xxsystem "pngtopnm", "-background", "#ffffff", $out; #, $out2;
+    #oh WOW that has the same problem.
+    my $i= Chj::IO::Command->new_sender("pngtopnm","-alpha", $out);
+    my $o= xtmpfile $out2;
+    $i->xsendfile_to($o);
+    $o->xclose;
+    $i->xxfinish;
+    $o->xputback(0666);
+    # only problem is that this one will be inverted. SIGH.
+}
+
+c $_ for @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
