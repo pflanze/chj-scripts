@@ -5,7 +5,7 @@
 
 use strict;
 
-our ($w,$h)=(3000,5000);
+our ($w,$h)=(4000,4000);
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -24,11 +24,23 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_d;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "dimensions=s"=> \$opt_d,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
+
+if ($opt_d) {
+    my @r= split /x/, $opt_d
+      or usage "invalid value for -d: '$opt_d'";
+    @r==2 or usage "invalid value for -d: '$opt_d'";
+    for (@r) {
+	/^\d+$/ or usage "invalid value in -d: '$_'";
+    }
+    ($w,$h)= @r;
+}
 
 use Image::LibRSVG;
 use Chj::xperlfunc;
