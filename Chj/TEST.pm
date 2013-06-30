@@ -25,6 +25,9 @@ Chj::TEST
 
 =head1 DESCRIPTION
 
+=head1 SEE ALSO
+
+ Chj::noTEST
 
 =cut
 
