@@ -15,6 +15,7 @@ sub usage {
 
   Options:
    -d <w>x<h>  dimensions of output file instead of ${w}x$h
+   --pgm       convert further to PGM format (still keeps the PNG file)
 
   (Christian Jaeger <$email>)
 ";
@@ -25,9 +26,12 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_d;
+our $opt_pgm;
+
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dimensions=s"=> \$opt_d,
+	   "pgm"=> \$opt_pgm,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -61,20 +65,23 @@ sub c {
     my $c= new Image::LibRSVG;
     $c->isFormatSupported($outformat) or die "'$outformat' not supported";
     $c->convertAtMaxSize ($in,$out, $w, $h);
-    my $out2= $out;
-    $out2=~ s/\.$outformat$/.$outformat2/s or die "??";
-    #xxsystem "convert", $out, $out2;
-    # nope, convert can't do it, even with
-    # -transparent-color '#ffffff'  the output is all black.
-    #xxsystem "pngtopnm", "-background", "#ffffff", $out; #, $out2;
-    #oh WOW that has the same problem.
-    my $i= Chj::IO::Command->new_sender("pngtopnm","-alpha", $out);
-    my $o= xtmpfile $out2;
-    $i->xsendfile_to($o);
-    $o->xclose;
-    $i->xxfinish;
-    $o->xputback(0666);
-    # only problem is that this one will be inverted. SIGH.
+    if ($opt_pgm) {
+	my $out2= $out;
+	$out2=~ s/\.$outformat$/.$outformat2/s or die "??";
+	#xxsystem "convert", $out, $out2;
+	# nope, convert can't do it, even with
+	# -transparent-color '#ffffff'  the output is all black.
+	#xxsystem "pngtopnm", "-background", "#ffffff", $out; #, $out2;
+	#oh WOW that has the same problem.
+	my $i= Chj::IO::Command->new_sender("pngtopnm","-alpha", $out);
+	my $o= xtmpfile $out2;
+	$i->xsendfile_to($o);
+	$o->xclose;
+	$i->xxfinish;
+	$o->xputback(0666);
+	# only problem is that this one will be inverted. SIGH.
+	# hm, Q: multiple pictures in it? todo check.
+    }
 }
 
 c $_ for @ARGV;
