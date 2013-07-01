@@ -47,9 +47,11 @@ if ($opt_d) {
 }
 
 use Image::LibRSVG;
-use Chj::xperlfunc;
-use Chj::IO::Command;
-use Chj::xtmpfile;
+if ($opt_pgm) {
+    require Chj::xperlfunc;
+    require Chj::IO::Command;
+    require Chj::xtmpfile;
+}
 
 our $outformat= "png"; # "pnm" nor pbm nor pgm not supported sigh.
 our $outformat2= "pgm";
@@ -74,7 +76,7 @@ sub c {
 	#xxsystem "pngtopnm", "-background", "#ffffff", $out; #, $out2;
 	#oh WOW that has the same problem.
 	my $i= Chj::IO::Command->new_sender("pngtopnm","-alpha", $out);
-	my $o= xtmpfile $out2;
+	my $o= Chj::xtmpfile::xtmpfile $out2;
 	$i->xsendfile_to($o);
 	$o->xclose;
 	$i->xxfinish;
