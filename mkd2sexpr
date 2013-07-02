@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+
+# Tue Jul  2 21:47:18 BST 2013
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [source.mkd]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV>1;
+
+use Text::Markdown 'markdown';
+
+my $fh;
+our $mkd= do {
+    if (@ARGV) {
+	open $fh, "<", $ARGV[0]
+	  or die "open $ARGV[0]: $!";
+    } else {
+	$fh= *STDIN{IO}
+    }
+    local $/; <$fh>
+};
+close $fh or die $!;
+
+our $html= markdown $mkd;
+
+use HTML::TreeBuilder;
+
+our $tree = HTML::TreeBuilder->new;
+$tree->parse_content($html);
+$tree->elementify; #sick, replaces $tree itself (well, reblesses?)
+
+use Chj::schemestring;
+
+sub xprint {
+    print @_ or die $!;
+}
+sub xprintln {
+    print @_,"\n" or die $!;
+}
+
+sub print_sexpr {
+    my ($t)=@_;
+    defined $t or return; #hu. content can be undef wll 'makes sense' well.
+    if (ref($t) eq "ARRAY") {
+	print_sexpr ($_) for @$t;
+    } elsif (ref $t) {
+	xprint "(", $t->tag;## check tag
+	my @keys= $t->all_external_attr_names;
+	if (@keys) {
+	    xprint "(@ ";
+	    for my $key (@keys) {
+		my $val= $t->attr($key);
+		xprint "($key "; ##check $key
+		xprint schemestring ($val);
+		xprint ")";
+	    }
+	    xprint ") ";
+	}
+	print_sexpr ($t->content);
+	xprint ")";
+    } else {
+	xprint schemestring($t)
+    }
+}
+
+sub doit {
+    binmode STDOUT, ":utf8" or die ;
+    print_sexpr $tree;
+    xprintln;
+    close STDOUT or die $!;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+doit;
