@@ -16,9 +16,9 @@ fi
 if [ $# -ne 2 ]; then
     echo "$0 [option] file1 file2"
     echo "  does tkdiff if DISPLAY is set, or diff -u otherwise, on the"
-    echo "  contents piped through sort and filter_stripcomments"
+    echo "  contents piped through sort and filter-stripcomments"
     echo "  If 3 arguments are given, the *first* is considered to be an"
-    echo "  option to filter_stripcomments."
+    echo "  option to filter-stripcomments."
     exit 1
 fi
 
@@ -31,7 +31,7 @@ tmp2="$(tempfile --suffix "$(echo "$file2"|perl -wne 's/\s'\''//sg; s|/|--|sg; p
 trap "rm -f '$tmp1' '$tmp2'" 0  # programexit
 
 trans() {
-    filter_stripcomments $STRIPOPT < "$1" | csort > "$2"
+    filter-stripcomments $STRIPOPT < "$1" | csort > "$2"
 }
 
 trans "$file1" "$tmp1"

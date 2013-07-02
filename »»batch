@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+
+# Mon Jun 17 21:52:53 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $nbytes= 4096;
+our $n= 1;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd [args]
+
+  Wait for $n seconds, then read a block of up to $nbytes bytes from
+  stdin, if it contains at least one newline character, pick out
+  everything up to and including the last newline, run 'cmd [args]
+  lines' (all lines in one argument). Redo after cmd returns, while
+  arranging to prepend the remainder after the last newline to the
+  next block.
+
+  NOTE: terminals (ttys) can be configured to do their own kind of
+  ('non'-)buffering. And I just learned that those settings don't just
+  mean that e.g. a line buffered terminal *can* pass on every line as
+  soon as it is typed, but also, that it will pass it on individually
+  even if multiple lines have been entered before the process reads
+  them. Putting 'cat |' in front of $myname will solve this: cat will
+  still read and send every item individually, but the kernel will
+  then batch them up in the pipe instead of still delivering them
+  individually to $myname. (This is all how Linux behaves, anyway.)
+
+  Options:
+   -n n        how many seconds to wait before reading stdin
+   --nbytes n  how many bytes to read
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "n=n"=> \$n,
+	   "nbytes=n"=> \$nbytes,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+
+sub runcmd {
+    my ($arg)=@_;
+    my $rv= system @ARGV,$arg;
+    exit 127 if $rv==-1; # exit 127 or 255/-1 ?
+    # Continue after command errors? -> XX offer an option.
+}
+
+my $rest="";
+my $buf;
+
+while (1) {
+    sleep $n;
+    my $cnt= sysread STDIN, $buf, $nbytes; # read doesn't work, only sysread
+    defined $cnt or die "read from stdin: $!";
+    warn "read $cnt bytes" if $verbose;
+    if ($cnt==0) {
+	runcmd($rest) if length $rest;
+	last;
+    } else {
+	if ($buf=~ s/\n([^\n]*)\z/\n/s) {
+	    my $newrest= $1;
+	    runcmd ($rest.$buf);
+	    $rest=$newrest;
+	} else {
+	    $rest.= $buf;
+	}
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

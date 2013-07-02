@@ -1,0 +1,3 @@
+#!/bin/bash
+
+svg2png --pgm "$@"
