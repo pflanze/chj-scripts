@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 Foo::Bar"
+    echo "  run less on the path of the given perl module"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ "$1" = -h -o "$1" = --help ]; then
+    usage
+fi
+
+path=`pmversion -p "$1"`
+
+exec less "$path"
