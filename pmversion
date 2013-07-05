@@ -7,8 +7,14 @@ my $myname=$1;
 sub usage {
     print "$myname [-I path] Module::Name
   Tries to load the given module and prints it's ::VERSION variable.
-  -I prepends path to \@INC
-  -Mmodule[=function,function]  same as perl option of the same name
+
+  Options:
+    -I path
+         prepend path to \@INC
+    -Mmodule[=function,function]
+         same as perl option of the same name
+    -p
+         print path only
 ";
 exit;
 }
@@ -16,10 +22,15 @@ exit;
 
 my @modules;
 
+our $opt_p;
+
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_= $ARGV[$i];
     if (/^-I$/) {
         unshift @INC, $ARGV[++$i];
+    }
+    elsif (/^-p$/) {
+        $opt_p=1;
     }
     elsif (/^-M(.*)/s) {
 	my ($val)=$1;
@@ -49,16 +60,24 @@ for my $module (@modules) {
     $pathy=~ s/::/\//sg;
     $pathy .=".pm";  # unless /\.p[ml]$/s;  no we are *pm*version hey
     if (eval { require $pathy; 1 }) {
-        print "$module: ";
-        print exists $INC{$pathy} ?
-                "'$INC{$pathy}', "
-            :   "unknown file?, ";
-        no strict 'refs';
-        if (defined (my $v= ${$module."::VERSION"})) {
-            print "VERSION $v\n";
-        } else {
-            print "no version information available\n";
-        }
+	if ($opt_p) {
+	    if (my $path= $INC{$pathy}) {
+		print $path, "\n" or die $!;
+	    } else {
+		die "unkown file for '$pathy'";
+	    }
+	} else {
+	    print "$module: ";
+	    print exists $INC{$pathy} ?
+		    "'$INC{$pathy}', "
+		:   "unknown file?, ";
+	    no strict 'refs';
+	    if (defined (my $v= ${$module."::VERSION"})) {
+		print "VERSION $v\n";
+	    } else {
+		print "no version information available\n";
+	    }
+	}
     } else {
         print "$module: $@\n";
     }
