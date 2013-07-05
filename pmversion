@@ -1,8 +1,5 @@
 #!/usr/bin/perl -w
 
-# <2004-03-20 13:02
-# cj Mon, 12 Jun 2006 01:26:40 +0200: adding -M option.
-
 use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
@@ -47,31 +44,27 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 usage unless @modules;
 
-for (@modules) {
-    #eval 'use '.$_;
-    #eval 'require '.$_;
-    #eval { require $_ }; ##hmm, doesn't work, have to give AxKit.pm instead of AxKit.
-    my $class= $_;
-    s/::/\//sg;
-    $_.=".pm";# unless /\.p[ml]$/s;  no we are *pm*version hey
-    eval { local $_=$_;require $_ }; #grr, local $_=$_ needed since some modules, like Psh, clobber $_
-    if (ref $@ or $@) {
-        print "$class: $@\n";
-    } else {
-        print "$class: ";
-        s/::/\//sg;
-        print exists $INC{$_} ?
-                "'$INC{$_}', "
+for my $module (@modules) {
+    my $pathy = $module;
+    $pathy=~ s/::/\//sg;
+    $pathy .=".pm";  # unless /\.p[ml]$/s;  no we are *pm*version hey
+    if (eval { require $pathy; 1 }) {
+        print "$module: ";
+        print exists $INC{$pathy} ?
+                "'$INC{$pathy}', "
             :   "unknown file?, ";
         no strict 'refs';
-        if (defined (my $v= ${$class."::VERSION"})) {
+        if (defined (my $v= ${$module."::VERSION"})) {
             print "VERSION $v\n";
         } else {
             print "no version information available\n";
         }
+    } else {
+        print "$module: $@\n";
     }
 }
-__END__
-  Ah:
-    perl -MModule::Name -le 'print Module::Name->VERSION';
-http://www.panix.com/~comdog/brian's_guide.pod
+
+# could run VERSION as a method?:
+#    perl -MModule::Name -le 'print Module::Name->VERSION';
+#http://www.panix.com/~comdog/brian's_guide.pod
+
