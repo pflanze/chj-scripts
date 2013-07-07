@@ -1,3 +1,0 @@
-#!/bin/bash
-
-svg2png --ppm "$@"

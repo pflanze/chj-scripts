@@ -15,9 +15,9 @@ sub usage {
 
   Options:
    -d <w>x<h>  dimensions of output file instead of ${w}x$h
-   --pgm       convert further to PGM format (still keeps the PNG file)
-   --pgmalpha  convert further to PGM format holding alpha channel (still keeps the PNG file)
-   --ppm       convert further to PPM format (still keeps the PNG file)
+   --pgmalpha  convert further to PGM format holding alpha channel
+   --pnm       convert further to PGM or PPM format, depending on input, using .pnm suffix
+   (These still keep the PNG file around)
 
   (Christian Jaeger <$email>)
 ";
@@ -34,14 +34,11 @@ our $maybe_pnm_options;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dimensions=s"=> \$opt_d,
-	   "pgm"=> sub {
-	       $maybe_pnm_options= ["pgm", ["pngtopnm"]]
-	   },
 	   "pgmalpha"=> sub {
 	       $maybe_pnm_options= ["pgm", ["pngtopnm","-alpha"]]
 	   },
-	   "ppm"=> sub {
-	       $maybe_pnm_options= ["ppm", ["pngtopnm"]]
+	   "pnm"=> sub {
+	       $maybe_pnm_options= ["pnm", ["pngtopnm"]]
 	   },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
