@@ -16,6 +16,8 @@ sub usage {
   Options:
    -d <w>x<h>  dimensions of output file instead of ${w}x$h
    --pgm       convert further to PGM format (still keeps the PNG file)
+   --pgmalpha  convert further to PGM format holding alpha channel (still keeps the PNG file)
+   --ppm       convert further to PPM format (still keeps the PNG file)
 
   (Christian Jaeger <$email>)
 ";
@@ -26,12 +28,21 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_d;
-our $opt_pgm;
+
+our $maybe_pnm_options;
 
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dimensions=s"=> \$opt_d,
-	   "pgm"=> \$opt_pgm,
+	   "pgm"=> sub {
+	       $maybe_pnm_options= ["pgm", ["pngtopnm"]]
+	   },
+	   "pgmalpha"=> sub {
+	       $maybe_pnm_options= ["pgm", ["pngtopnm","-alpha"]]
+	   },
+	   "ppm"=> sub {
+	       $maybe_pnm_options= ["ppm", ["pngtopnm"]]
+	   },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -47,14 +58,13 @@ if ($opt_d) {
 }
 
 use Image::LibRSVG;
-if ($opt_pgm) {
+if ($maybe_pnm_options) {
     require Chj::xperlfunc;
     require Chj::IO::Command;
     require Chj::xtmpfile;
 }
 
 our $outformat= "png"; # "pnm" nor pbm nor pgm not supported sigh.
-our $outformat2= "pgm";
 
 sub c {
     my ($in)=@_;
@@ -67,7 +77,8 @@ sub c {
     my $c= new Image::LibRSVG;
     $c->isFormatSupported($outformat) or die "'$outformat' not supported";
     $c->convertAtMaxSize ($in,$out, $w, $h);
-    if ($opt_pgm) {
+    if ($maybe_pnm_options) {
+	my ($outformat2, $cmd)= @$maybe_pnm_options;
 	my $out2= $out;
 	$out2=~ s/\.$outformat$/.$outformat2/s or die "??";
 	#xxsystem "convert", $out, $out2;
@@ -75,7 +86,7 @@ sub c {
 	# -transparent-color '#ffffff'  the output is all black.
 	#xxsystem "pngtopnm", "-background", "#ffffff", $out; #, $out2;
 	#oh WOW that has the same problem.
-	my $i= Chj::IO::Command->new_sender("pngtopnm","-alpha", $out);
+	my $i= Chj::IO::Command->new_sender(@$cmd, $out);
 	my $o= Chj::xtmpfile::xtmpfile $out2;
 	$i->xsendfile_to($o);
 	$o->xclose;
