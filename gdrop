@@ -16,6 +16,7 @@ sub usage {
   -a   passed to git tag
   -s   passed to git tag
   -b|--base   instead of using prefix drop_, use prefix base_
+  -n|--no-prefix   don't use a prefix at all
 
   Environment vars:
    GDROP_FORCE=1  same effect as -f
@@ -30,6 +31,7 @@ our $verbose=0;
 our $opt_dry;
 our $opt_force;
 our $opt_base;
+our $opt_no_prefix;
 our @gitopts;
 
 sub passgitopt ( $ ) {
@@ -59,6 +61,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "dry-run"=> \$opt_dry,
 	   "base"=> \$opt_base,
+	   "no-prefix"=> \$opt_no_prefix,
 	   passgitopt "a",
 	   passgitopt "s",
 	   passgitopt  "m=s",
@@ -74,7 +77,9 @@ our $subname_= ((defined ($maybe_subname))# and length ($maybe_subname))
 		? $maybe_subname."_" : "");
 
 our $date_= `date_`; chomp $date_; #hum.
-our $tagname= ($opt_base ? "base_" : "drop_").$subname_.$date_;
+our $tagname=
+  ($opt_base ? "base_" : ($opt_no_prefix ? "" : "drop_"))
+  .$subname_.$date_;
 
 use Chj::xperlfunc;
 use Chj::Git::Functions 'status_is_clean';
