@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 hgworkingdir futuregitworkingdir"
+    echo "  --ah, see also: git-hg"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+source="$(chase "$1")"
+target="$2"
+
+set -x
+git init "$target"
+cd "$target"
+hg-fast-export --force -r "$source"
+#git reset --hard
