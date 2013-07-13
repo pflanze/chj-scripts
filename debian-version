@@ -39,8 +39,11 @@ exit (@_ ? 1 : 0);
 	);
     sub new {
 	my $class=shift;
-	@_==7 or die;
-	bless [@_],$class
+	if (@_==7) {
+	    bless [@_],$class
+	} elsif (@_==2) {
+	    bless [@_], "CHJ::Release::Alias"
+	}
     }
     sub as_string {
 	my $s=shift;
@@ -68,6 +71,15 @@ exit (@_ ? 1 : 0);
 	      )
 	."]")
     }
+    end Class::Array;
+}
+
+{
+    package CHJ::Release::Alias;
+    use Class::Array -fields=> -publica=>
+      qw(name
+	 number);
+    #$release_by_name -> needs to be later. h
     end Class::Array;
 }
 
@@ -107,6 +119,13 @@ our $releases=
    #  In addition to the regular installation media, Debian GNU/Linux can now also be directly used without prior installation. The special images used, known as live images, are available for CDs, USB sticks, and netboot setups. Initially, these are provided for the amd64 and i386 architectures only.
    ["squeeze", "6.0", "2011-02-06", ">29000", "<15000", undef, undef],
    ["wheezy", "7.0", "2013-05-04", ">36000", "<17500", undef, undef],
+   # sigh, now Debian starts to publish point releases as 7.X versions
+   #["wheezy", "7.1", "2013-06-15", ">36000", "<17500", undef, undef],
+   # don't go that route.
+   # "Debian 7.1 was released June 15th, 2013. Debian 7.0 was initially released on May 4th, 2013. The release included many major changes, described in our press release" hu  then linking to the press release for 7.0. WTH. hm that's on the 7.0 release page ah. well.
+   #short entries for aliases, ok?
+   ["wheezy", "7.1"],
+
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
    ["?", undef, undef, undef, undef, undef, undef ]
@@ -116,14 +135,13 @@ sub index_of_by {
     my ($list)=@_;
     sub {
 	my ($method)= @_;
-	+{
-	  map {
-	      my $k= $_->$method;
-	      (defined $k) ?
-		($k => $_)
-		  : ()
-	  } @$list
-	 }
+	my %idx;
+	for (@$list) {
+	    my $k= $_->$method;
+	    next if not $k or $idx{$k};
+	    $idx{$k}= $_;
+	}
+	\%idx
     }
 }
 *index_by= index_of_by($releases);
@@ -132,6 +150,15 @@ our $release_by_name= index_by ("name");
 our $release_by_number= index_by ("number");
 $$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
 #^hm. http://www.debian.org/releases/ says that *testing* is called squeeze, unstable is sid. I'm somewhat confusing those here hm.
+
+{
+    package CHJ::Release::Alias;
+    # class definition see above
+    sub fullinfo {
+	my $s=shift;
+	$$release_by_name{$$s[Name]}->fullinfo
+    }
+}
 
 use Chj::Fileutil 'xCatfile';
 
@@ -205,6 +232,7 @@ sub parseversion {
 
 sub list_releases {
     for my $r (@$releases) {
+	next if $r->isa("CHJ::Release::Alias") or $r->name eq "?";
 	print $r->fullinfo,"\n"
 	  or die $!;
     }
