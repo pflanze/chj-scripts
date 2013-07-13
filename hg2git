@@ -4,6 +4,7 @@ set -eu
 
 usage () {
     echo "$0 hgworkingdir futuregitworkingdir"
+    echo "  --ah, see also: git-hg"
     exit 1
 }
 
@@ -17,5 +18,5 @@ target="$2"
 set -x
 git init "$target"
 cd "$target"
-hg-fast-export -r "$source"
+hg-fast-export --force -r "$source"
 #git reset --hard
