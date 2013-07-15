@@ -5,6 +5,7 @@
 
 use strict;
 
+our $striptrash= qw{^lowquality};
 our $stripsuffix= qr{(\.\w+)$};
 our $numberprefix= qr{^(\d+ *- *)};
 
@@ -20,6 +21,8 @@ sub usage {
   will rename files (stripping '$numberprefix') that match the basic
   name to have a prefix of the number of the position in which they
   occurred on stdin.
+
+  As a special HACK it also strips $striptrash.
 
   Options:
     --list path   read list from path instead from stdin
@@ -69,11 +72,12 @@ for our $file (@ARGV) {
     #local our ($suffix)= $trunk=~ s/$stripsuffix//;
     #Perl. doesn't work. Always forget. m does, right?, s doesn't.
     local our $suffix=  $trunk=~ s/$stripsuffix// ? $1 : "";
+    my $trash= $trunk=~ s/$striptrash// ? $1 : "";
     $trunk=~ s/$numberprefix//;
     if (defined (local our $i = $trunk2id{$trunk})) {
 	local our $prefix= sprintf '%02d - ', $i;
 	#use Chj::Backtrace; use Chj::repl; repl;
-	local our $to= "$prepath$prefix$trunk$suffix";
+	local our $to= "$prepath$trash$prefix$trunk$suffix";
 	xlinkunlink $file, $to
 	  unless $file eq $to;
     } else {
