@@ -5,7 +5,7 @@
 
 use strict;
 
-our $striptrash= qw{^lowquality};
+our $striptrash= qw{^(lowquality)};
 our $stripsuffix= qr{(\.\w+)$};
 our $numberprefix= qr{^(\d+ *- *)};
 
