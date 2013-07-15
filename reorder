@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+
+# Mon Jul 15 21:50:08 BST 2013
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $stripsuffix= qr{(\.\w+)$};
+our $numberprefix= qr{^(\d+ *- *)};
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname files..
+
+  Song file reorderer (renamer).
+
+  Feed it a list of names on stdin ('$stripsuffix' is stripped); it
+  will rename files (stripping '$numberprefix') that match the basic
+  name to have a prefix of the number of the position in which they
+  occurred on stdin.
+
+  Options:
+    --list path   read list from path instead from stdin
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $list= "-";
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "list=s"=> \$list,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::xopen 'xopen_read';
+
+our @list;
+
+our $in= xopen_read $list;
+while (<$in>) {
+    chomp;
+    s/$stripsuffix//;
+    push @list,$_
+}
+$in->xclose;
+
+our %trunk2id;
+{
+    my $i=1;
+    for (@list) {
+	$trunk2id{$_}=$i++
+    }
+}
+
+use Chj::xperlfunc ':all';
+
+for our $file (@ARGV) {
+    #lol perl 'for local our $file' wouldn't work. syntactically.
+    local our $trunk= $file;
+    local our $prepath= $trunk=~ s|^(.*/)|| ? $1 : "";
+    #local our ($suffix)= $trunk=~ s/$stripsuffix//;
+    #Perl. doesn't work. Always forget. m does, right?, s doesn't.
+    local our $suffix=  $trunk=~ s/$stripsuffix// ? $1 : "";
+    $trunk=~ s/$numberprefix//;
+    if (defined (local our $i = $trunk2id{$trunk})) {
+	local our $prefix= sprintf '%02d - ', $i;
+	#use Chj::Backtrace; use Chj::repl; repl;
+	local our $to= "$prepath$prefix$trunk$suffix";
+	xlinkunlink $file, $to
+	  unless $file eq $to;
+    } else {
+	warn "no match for file '$file'";
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
