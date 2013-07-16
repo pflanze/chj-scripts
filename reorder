@@ -45,24 +45,19 @@ GetOptions("verbose"=> \$verbose,
 
 use Chj::xopen 'xopen_read';
 
-our @list;
-
-our $in= xopen_read $list;
-while (<$in>) {
-    chomp;
-    s/$stripsuffix//;
-    push @list,$_
-}
-$in->xclose;
 
 our %trunk2id;
 {
+    our $in= xopen_read $list;
     my $i=1;
-    for (@list) {
+    while (<$in>) {
+	chomp;
+	s/$stripsuffix//;
 	die "multiple times in list: '$_'"
 	  if exists $trunk2id{$_};
 	$trunk2id{$_}=$i++;
     }
+    $in->xclose;
 }
 
 use Chj::xperlfunc ':all';
