@@ -59,7 +59,9 @@ our %trunk2id;
 {
     my $i=1;
     for (@list) {
-	$trunk2id{$_}=$i++
+	die "multiple times in list: '$_'"
+	  if exists $trunk2id{$_};
+	$trunk2id{$_}=$i++;
     }
 }
 
