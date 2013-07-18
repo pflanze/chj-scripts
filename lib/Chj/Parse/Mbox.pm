@@ -29,6 +29,13 @@ Mbox parser that
 
 It delivers the result as a stream (lazy list).
 
+It does not turn occurrences of '>From ' into 'From ' as some other
+mbox parsers do, because that's not a safe operation to do (it is not
+a form of escaping, it is mangling (non-reversible)). A plain text
+body parser receiving the output of Chj::Parse::Mbox can be better
+prepared to decide whether a particular '>' needs to be removed or
+not, depending on context.
+
 =cut
 
 
