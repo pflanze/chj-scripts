@@ -45,6 +45,19 @@ use Chj::FP2::Lazy;
 use Chj::Chomp;
 use Date::Parse 'str2time';
 
+
+sub msgchomp {
+    # remove the last newline since it is really part of the
+    # separator; destructive op
+    my ($lines)=@_;
+    if ($$lines[-1] =~ /^\r?\n\z/s) {
+	pop @$lines;
+    } else {
+	$$lines[-1]=~ s/\r?\n\z//s
+    }
+    $lines
+}
+
 sub mbox_stream_read {
     my ($f,$maybe_lastline)=@_;
     Delay {
@@ -63,11 +76,13 @@ sub mbox_stream_read {
 	    my @lines;
 	    while (<$f>) {
 		if (/^From /) {
-		    return cons [$t,\@lines], mbox_stream_read ($f,$_);
+		    return cons [$t,msgchomp(\@lines)], mbox_stream_read ($f,$_);
 		}
 		push @lines, $_;
 	    }
-	    cons [$t,\@lines], mbox_stream_read ($f);
+	    # XX really call msgchomp here, too? Yes, if the way
+	    # Mail::Box::Mbox does it is correct.
+	    cons [$t,msgchomp(\@lines)], mbox_stream_read ($f);
 	} else {
 	    $f->xclose;
 	    undef
