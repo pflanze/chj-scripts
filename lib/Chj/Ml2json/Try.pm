@@ -84,9 +84,25 @@ sub noop {
 
 sub Try (&$) {
     my ($thunk,$ctx)=@_;
-    IfTryScalar $thunk,$ctx, \&noop,\&noop
+    my $wantarray= wantarray;
+    if (defined $wantarray) {
+	IfTryScalar sub {
+	    $wantarray ? [&$thunk] : scalar &$thunk
+	}, $ctx, sub {
+	    my ($a)=@_;
+	    $wantarray ? @$a : $a
+	},\&noop
+    } else {
+	IfTryScalar $thunk,$ctx, \&noop,\&noop
+    }
 }
 
+# main> :d @foo=(1,3,4); Try { @foo } "foo"
+# $VAR1 = 1;
+# $VAR2 = 3;
+# $VAR3 = 4;
+# main> :d @foo=(1,3,4); scalar Try { @foo } "foo"
+# $VAR1 = 3;
 
 
 1
