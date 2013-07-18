@@ -133,8 +133,13 @@ sub Chj::Format::JSON::Continuous::print {
 sub Chj::Format::JSON::Continuous::end {
     my $s=shift;
     return if $$s{_ended};
+
     my $fh= $$s{fh};
-    prln $fh;
+    if ($$s{_not_first}) {
+	prln $fh;
+    } else {
+	prln $fh, "[";
+    }
     prln $fh, "]";
     $$s{_ended}=1;
 }
