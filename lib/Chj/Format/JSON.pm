@@ -108,6 +108,7 @@ sub print2json {
     _print2json ($fh,$v,0);
 }
 
+# ------------------------------------------------------------------
 {
     package Chj::Format::JSON::Continuous;
     use Chj::Struct ["fh"];
@@ -115,30 +116,30 @@ sub print2json {
     _END_;
 }
 
-    sub Chj::Format::JSON::Continuous::print {
-	my $s=shift;
-	@_==1 or die;
-	my ($v)=@_;
-	my $fh= $$s{fh};
-	if ($$s{_not_first}) {
-	    prln $fh, ",";
-	} else {
-	    prln $fh, "[";
-	    $$s{_not_first}=1;
-	}
-	pri $fh, 1;
-	_print2json($$s{fh}, $v, 1);
+sub Chj::Format::JSON::Continuous::print {
+    my $s=shift;
+    @_==1 or die;
+    my ($v)=@_;
+    my $fh= $$s{fh};
+    if ($$s{_not_first}) {
+	prln $fh, ",";
+    } else {
+	prln $fh, "[";
+	$$s{_not_first}=1;
     }
-    sub Chj::Format::JSON::Continuous::end {
-	my $s=shift;
-	return if $$s{_ended};
-	my $fh= $$s{fh};
-	prln $fh;
-	prln $fh, "]";
-	$$s{_ended}=1;
-    }
-    *Chj::Format::JSON::Continuous::DESTROY=
-      *Chj::Format::JSON::Continuous::end; # should call end instead, though
+    pri $fh, 1;
+    _print2json($$s{fh}, $v, 1);
+}
+sub Chj::Format::JSON::Continuous::end {
+    my $s=shift;
+    return if $$s{_ended};
+    my $fh= $$s{fh};
+    prln $fh;
+    prln $fh, "]";
+    $$s{_ended}=1;
+}
+*Chj::Format::JSON::Continuous::DESTROY=
+  *Chj::Format::JSON::Continuous::end; # should call end explicitely, though
 
 
 1
