@@ -36,6 +36,13 @@ body parser receiving the output of Chj::Parse::Mbox can be better
 prepared to decide whether a particular '>' needs to be removed or
 not, depending on context.
 
+It uses /\nFrom .*\n/ as the separator format, unlike /\n\nFrom .*\n/
+as jwz recommends; some of the archives do *not* have an empty line
+before the next separator thus the former has to be done (also
+interestingly, this seems to be what Mail::Box::Mbox does, at least
+both lead to the same amount of trailing newlines in the parsed
+messages).
+
 =cut
 
 
