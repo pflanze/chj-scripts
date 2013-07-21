@@ -113,7 +113,6 @@ sub print2json {
     package Chj::Format::JSON::Continuous;
     use Chj::Struct ["fh"];
     # and private "_not_first", and "_ended"
-    _END_;
 }
 
 sub Chj::Format::JSON::Continuous::print {
@@ -143,8 +142,9 @@ sub Chj::Format::JSON::Continuous::end {
     prln $fh, "]";
     $$s{_ended}=1;
 }
-*Chj::Format::JSON::Continuous::DESTROY=
-  *Chj::Format::JSON::Continuous::end; # should call end explicitely, though
 
-
-1
+{
+    package Chj::Format::JSON::Continuous;
+    *DESTROY=*end; # should call end explicitely, though
+    _END_;
+}
