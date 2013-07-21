@@ -41,7 +41,14 @@ use Data::Dumper;
 use Carp;
 
 sub global::warn {
-    carp @_;
+    my $first= $_[0];
+    if (defined $first and ref ($first) eq "KIND") {
+	my $kind= $$first;
+	shift;
+	carp "${kind}: ", @_;
+    } else {
+	carp @_;
+    }
 }
 
 sub ctx2str {
@@ -64,7 +71,12 @@ sub IfTryScalar {
 	no warnings 'redefine';
 	local *global::warn= sub {
 	    $ctxstr||= ctx2str ($ctx);
-	    carp "WARN[$ctxstr]: @_";
+	    my $first= $_[0];
+	    my ($kind,@rest)=
+	      ((defined $first and ref ($first) eq "KIND")
+	       ? ($$first, @_[1..$#_])
+	       : ("WARN", @_));
+	    carp "${kind}[$ctxstr]: ",@rest;
 	};
 	$res= &$thunk;
 	1
