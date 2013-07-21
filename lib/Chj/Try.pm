@@ -6,11 +6,11 @@
 
 =head1 NAME
 
-Chj::Ml2json::Try
+Chj::Try
 
 =head1 SYNOPSIS
 
- use Chj::Ml2json::Try;
+ use Chj::Try;
  Try {
     global::warn("hello");
     die "bar";
@@ -29,7 +29,7 @@ Chj::Ml2json::Try
 =cut
 
 
-package Chj::Ml2json::Try;
+package Chj::Try;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(Try);
 @EXPORT_OK=qw(IfTryScalar);
