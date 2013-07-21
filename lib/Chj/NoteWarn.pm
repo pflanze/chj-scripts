@@ -11,7 +11,7 @@ Chj::NoteWarn
 =head1 SYNOPSIS
 
  use Chj::NoteWarn ();
- local $Chj::NoteWarn::attenuation_level= 1;
+ local $Chj::NoteWarn::attenuation_level= 1; # or NoteWarn_attenuation_level(1);
  # silence NOTE (level 1) down, only WARN (level 2) and above make it out
 
  use Chj::NoteWarn ();
@@ -29,7 +29,9 @@ package Chj::NoteWarn;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(NOTE
 	   WARN
-	   EMERGENCY);
+	   EMERGENCY
+	   NoteWarn_attenuation_level
+	 );
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -43,6 +45,16 @@ sub KIND ($) {
 }
 
 our $attenuation_level=0;
+
+sub NoteWarn_attenuation_level {
+    if (@_==1) {
+	($attenuation_level)=@_;
+    } elsif (@_==0) {
+	$attenuation_level
+    } else {
+	die "expecting 0 or 1 arguments"
+    }
+}
 
 our $levels=
   +{
