@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+# Mon Jul 22 21:20:05 BST 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Sorts the commits given on stdin according to their ancestor
+  history: oldest are sorted to the bottom, newest to the top.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+use Memoize;
+use Chj::Git::Functions 'is_ancestor_of';
+
+memoize('is_ancestor_of');
+
+our @ids;
+while (<STDIN>) {
+    chomp $_;
+    push @ids, $_
+}
+close STDIN or die $!;
+
+our @s= sort {
+    my $f = is_ancestor_of($a,$b);
+    my $r = is_ancestor_of($b,$a);
+    ($f and $r) ? 0 : $f ? 1 : $r ? -1 : die "no ancestorship between '$a' and '$b'";
+} @ids;
+# XX 'ancestorship'?
+
+for (@s) {
+    print $_,"\n" or die $!;
+}
+close STDOUT or die $!;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
