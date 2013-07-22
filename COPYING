@@ -1,3 +1,9 @@
+ml2json is copyright by Christian Jaeger and offered under the MIT
+License, with the exception of the file "mhtxtenrich.pl" and the files
+below "perllib/" and "ftemplate/" which are included for convenience
+only and have their own copyright and licensing statements.
+
+
 The MIT License (MIT)
 
 Copyright (c) 2013 Christian Jaeger
