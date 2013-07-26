@@ -13,8 +13,9 @@ Chj::Parse::Mbox
  use Chj::Parse::Mbox 'mbox_stream_open';
  use Chj::FP2::Stream ":all";
  stream_for_each sub {
-    my ($t,$lines)= @{$_[0]};
+    my ($t,$lines,$cursor)= @{$_[0]};
     ... @$lines ...
+    # $cursor is a Chj::Parse::Mbox::Cursor object
  }, mbox_stream_open "some/path.txt"
 
 =head1 DESCRIPTION
@@ -58,6 +59,7 @@ use Chj::FP2::List ':all';
 use Chj::FP2::Lazy;
 use Chj::Chomp;
 use Date::Parse 'str2time';
+use Chj::Parse::Mbox::Section;
 
 
 sub msgchomp {
@@ -73,7 +75,7 @@ sub msgchomp {
 }
 
 sub mbox_stream_read {
-    my ($f,$maybe_lastline)=@_;
+    my ($f, $maybe_lastline, $startpos)=@_;
     Delay {
 	my $sep= $maybe_lastline || <$f>;
 	if (defined $sep) {
@@ -88,15 +90,25 @@ sub mbox_stream_read {
 		undef
 	    })->();
 	    my @lines;
+	    my $pos= $startpos + length($sep);
+	    local $_;
+	    my $endofmessage= sub {
+		my ($lastline)=@_;
+		my $section= Chj::Parse::Mbox::Section->new_
+		  (mboxpath=> $f->path,
+		   from=> $startpos,
+		   to=> $pos);
+		return cons( [$t, msgchomp(\@lines), $section],
+			     mbox_stream_read ($f, $lastline, $pos));
+	    };
 	    while (<$f>) {
 		if (/^From /) {
-		    return cons [$t,msgchomp(\@lines)], mbox_stream_read ($f,$_);
+		    @_=($_); goto $endofmessage;
 		}
 		push @lines, $_;
+		$pos+= length($_);
 	    }
-	    # XX really call msgchomp here, too? Yes, if the way
-	    # Mail::Box::Mbox does it is correct.
-	    cons [$t,msgchomp(\@lines)], mbox_stream_read ($f);
+	    @_=(undef); goto $endofmessage
 	} else {
 	    $f->xclose;
 	    undef
