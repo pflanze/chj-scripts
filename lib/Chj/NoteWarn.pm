@@ -29,7 +29,7 @@ package Chj::NoteWarn;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(NOTE
 	   WARN
-	   EMERGENCY
+	   PROBLEM
 	   NoteWarn_attenuation_level
 	 );
 @EXPORT_OK=qw();
@@ -60,7 +60,7 @@ our $levels=
   +{
     NOTE=> 1,
     WARN=> 2,
-    EMERGENCY=> 10,
+    PROBLEM=> 5,
    };
 
 sub mk {
@@ -77,7 +77,7 @@ sub mk {
 
 *NOTE= mk "NOTE";
 *WARN= mk "WARN";
-*EMERGENCY= mk "EMERGENCY";
+*PROBLEM= mk "PROBLEM";
 
 
 1
