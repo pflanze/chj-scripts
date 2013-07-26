@@ -42,9 +42,28 @@ use Carp;
 
 use Data::Dumper;
 
-# since can't get a reference to the Perl built-in warn (or rather,
-# its implementation (the handler that is not in $SIG{__WARN__}), not
-# the 'shill'), reimplement it:
+# Try.pm localizes $SIG{__WARN__} to change the effect of 'warn'
+# statements.
+
+# The default implementation of what 'warn' does, i.e. if
+# $SIG{__WARN__} is not set, needs to still be available to whatever
+# is being put into $SIG{__WARN__} if one just wishes to extend the
+# default implementation (and not reimplement from scratch). The clean
+# way for Perl to offer that default implementation might have been to
+# actually put it in $SIG{__WARN__} on startup, then it could have
+# been taken from there before local'izing. Since that's not the case,
+# and the author of this module doesn't know of any way to access this
+# default implementation [*], it is (hopefully completely)
+# reimplemented here:
+
+# [*] note that calling 'warn' from within the $SIG{__WARN__} handler
+# might lead to endless recursion, also, there's no way to get a
+# reference to warn (\&warn won't work because it's not a subroutine)
+# so that it could be tail called to avoid wrong location reporting,
+# and Carp::carp does add needless second location string to its
+# output (perhaps only in this case because it's exactly recursing
+# (dunno why just once)).
+
 sub standard_warn {
     my ($package, $filename, $line) = caller;
     if (@_) {
@@ -89,6 +108,8 @@ sub IfTryScalar {
     my $res;
     if (eval {
 	no warnings 'redefine';
+	# XX use that one instead of \&standard_warn if defined *and
+	# not one of our closures*:
 	#my $prev_warn= $SIG{__WARN__};
 	local $SIG{__WARN__}= sub {
 	    $ctxstr||= ctx2str ($ctx);
