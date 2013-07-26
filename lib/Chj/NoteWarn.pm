@@ -15,8 +15,7 @@ Chj::NoteWarn
  # silence NOTE (level 1) down, only WARN (level 2) and above make it out
 
  use Chj::NoteWarn ();
- WARN "foo"; # uses global::warn from Chj::Try
-             #  to give possibly-contextual output
+ WARN "foo";
  NOTE "Bar"; # silenced
 
 =head1 DESCRIPTION
@@ -37,7 +36,9 @@ package Chj::NoteWarn;
 
 use strict;
 
-use Chj::Try;
+# XX just because there's no way to get the standard warn handler if
+# $SIG{__WARN__} is undefined:
+use Chj::Try 'standard_warn';
 
 sub KIND ($) {
     my ($str)=@_;
@@ -70,7 +71,7 @@ sub mk {
     sub {
 	if ($attenuation_level < $level) {
 	    unshift @_, $kind;
-	    goto \&global::warn;
+	    goto ($SIG{__WARN__}||\&standard_warn)
 	}
     }
 };

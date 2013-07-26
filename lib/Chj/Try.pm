@@ -12,11 +12,11 @@ Chj::Try
 
  use Chj::Try;
  Try {
-    global::warn("hello");
+    warn("hello");
     die "bar";
-    global::warn("baz");
+    warn("baz");
  } "foo"; # "foo" could be an object with an 'identify' method
- global::warn "done";
+ warn "done";
 
  #=>
  # WARN['foo']: hello
@@ -32,24 +32,44 @@ Chj::Try
 package Chj::Try;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(Try);
-@EXPORT_OK=qw(IfTryScalar);
+@EXPORT_OK=qw(IfTryScalar
+	      standard_warn);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
 
-use Data::Dumper;
 use Carp;
 
-sub global::warn {
+use Data::Dumper;
+
+# since can't get a reference to the Perl built-in warn (or rather,
+# its implementation (the handler that is not in $SIG{__WARN__}), not
+# the 'shill'), reimplement it:
+sub standard_warn {
+    my ($package, $filename, $line) = caller;
+    if (@_) {
+	if ($_[-1]=~ /\n\z/) {
+	    print STDERR @_;
+	} else {
+	    print STDERR @_," at $filename line $line\n";
+	}
+    } else {
+	print STDERR "Warning: something's wrong at $filename line $line\n";
+    }
+}
+
+sub default_warn {
     my $first= $_[0];
     if (defined $first and ref ($first) eq "KIND") {
 	my $kind= $$first;
 	shift;
-	carp "${kind}: ", @_;
+	@_=("${kind}: ", @_); goto \&standard_warn;
     } else {
-	carp @_;
+	goto \&standard_warn;
     }
 }
+
+$SIG{__WARN__}= \&default_warn;
 
 sub ctx2str {
     my ($ctx)=@_;
@@ -69,14 +89,16 @@ sub IfTryScalar {
     my $res;
     if (eval {
 	no warnings 'redefine';
-	local *global::warn= sub {
+	#my $prev_warn= $SIG{__WARN__};
+	local $SIG{__WARN__}= sub {
 	    $ctxstr||= ctx2str ($ctx);
 	    my $first= $_[0];
 	    my ($kind,@rest)=
 	      ((defined $first and ref ($first) eq "KIND")
 	       ? ($$first, @_[1..$#_])
 	       : ("WARN", @_));
-	    carp "${kind}[$ctxstr]: ",@rest;
+	    @_=( "${kind}[$ctxstr]: ",@rest );
+	    goto \&standard_warn;
 	};
 	$res= &$thunk;
 	1
