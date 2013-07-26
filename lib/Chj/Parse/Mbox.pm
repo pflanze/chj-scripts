@@ -76,6 +76,7 @@ sub msgchomp {
 
 sub mbox_stream_read {
     my ($f, $maybe_lastline, $startpos)=@_;
+    defined $startpos or die "need 3rd argument";
     Delay {
 	my $sep= $maybe_lastline || <$f>;
 	if (defined $sep) {
@@ -118,7 +119,7 @@ sub mbox_stream_read {
 
 sub mbox_stream_open {
     my ($path)=@_;
-    mbox_stream_read( xopen_read $path);
+    mbox_stream_read( xopen_read($path), undef, 0 );
 }
 
 
