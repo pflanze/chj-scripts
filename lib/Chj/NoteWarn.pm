@@ -61,7 +61,8 @@ our $levels=
   +{
     NOTE=> 1,
     WARN=> 2,
-    PROBLEM=> 5,
+    __WARN__=>5, # to be used as default level, i.e. by 'warn'
+    PROBLEM=> 10,
    };
 
 sub mk {
@@ -78,6 +79,7 @@ sub mk {
 
 *NOTE= mk "NOTE";
 *WARN= mk "WARN";
+#*__WARN__= mk "__WARN__"; to be used indirectly by 'warn' only
 *PROBLEM= mk "PROBLEM";
 
 

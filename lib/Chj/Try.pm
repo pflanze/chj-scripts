@@ -126,7 +126,7 @@ sub IfTryScalar {
 	    my ($kind,@rest)=
 	      ((defined $first and ref ($first) eq "KIND")
 	       ? ($$first, @_[1..$#_])
-	       : ("WARN", @_));
+	       : ("__WARN__", @_));
 	    @_=( "${kind}[$ctxstr]: ",@rest );
 	    goto $prev_warn;
 	}, "Chj::Try_handler";
