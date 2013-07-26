@@ -88,7 +88,7 @@ sub default_warn {
     }
 }
 
-$SIG{__WARN__}= \&default_warn;
+$SIG{__WARN__} ||= \&default_warn;
 
 sub ctx2str {
     my ($ctx)=@_;
@@ -108,10 +108,19 @@ sub IfTryScalar {
     my $res;
     if (eval {
 	no warnings 'redefine';
-	# XX use that one instead of \&standard_warn if defined *and
-	# not one of our closures*:
-	#my $prev_warn= $SIG{__WARN__};
-	local $SIG{__WARN__}= sub {
+	my $prev_warn= do {
+	    if (my $w= $SIG{__WARN__}) {
+		if (UNIVERSAL::isa($w,"Chj::Try_handler")) {
+		    # don't stack those on top of each other, instead:
+		    \&standard_warn
+		} else {
+		    $w
+		}
+	    } else {
+		\&standard_warn
+	    }
+	};
+	local $SIG{__WARN__}= bless sub {
 	    $ctxstr||= ctx2str ($ctx);
 	    my $first= $_[0];
 	    my ($kind,@rest)=
@@ -119,8 +128,8 @@ sub IfTryScalar {
 	       ? ($$first, @_[1..$#_])
 	       : ("WARN", @_));
 	    @_=( "${kind}[$ctxstr]: ",@rest );
-	    goto \&standard_warn;
-	};
+	    goto $prev_warn;
+	}, "Chj::Try_handler";
 	$res= &$thunk;
 	1
     }) {
