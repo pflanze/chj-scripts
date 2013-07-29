@@ -12,13 +12,12 @@ Chj::TEST
 
  use Chj::TEST;
 
- TEST { 1+1 } "2"; # ok, as it should be
- TEST { 1+1 } 2; # always expect a string, but this will
-                 # work thanks to canonicalization
- TEST { 1+1 } 2.; # also succeeds; you really need to give strings to be precise
- TEST { 1+1 } "2."; # fails as expected
- TEST { 1+1 } '"2"'; # fails as expected
- TEST { (1+1)."" } '"2"';  # succeeds as expected
+ TEST { 1+1 } 2; # success
+ TEST { 1+1 } "2"; # fails,
+     # because equality is compared on the result of Data::Dumper
+
+ # compute also result lazily:
+ TEST { 1+1 } GIVES {3-1}; # success
 
  use Chj::TEST ':all';
  run_tests;
@@ -34,7 +33,7 @@ Chj::TEST
 
 package Chj::TEST;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(TEST);
+@EXPORT=qw(TEST GIVES);
 @EXPORT_OK=qw(run_tests);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -51,33 +50,33 @@ sub TEST (&$) {
       [$proc,$res, $$num_by_package{$package}, ($package, $filename, $line)]
 }
 
+sub GIVES (&) {
+    my ($thunk)=@_;
+    bless $thunk, "Chj::TEST::GIVES";
+}
+
 use Data::Dumper;
 
 sub eval_test ($$) {
     my ($t,$stat)=@_;
     my ($proc,$res, $num, $package, $filename, $line)=@$t;
     print "running test $num..";
-    my $gotval= &$proc;
-    my $gotstr= Dumper $gotval;
-    my $ok= sub {
+    my $got= &$proc;
+    if (ref ($res) eq 'Chj::TEST::GIVES') {
+	$res= &$res;
+    }
+    my $gotstr= Dumper $got;
+    my $resstr= Dumper $res;
+
+    if ($gotstr eq $resstr) {
 	print "ok\n";
 	$$stat{success}++
-    };
-    if ($gotstr eq $res) {
-	&$ok;
     } else {
-	# may need to re-stringify result value (canonicalize)
-	my $resval= eval $res;
-	my $resstr= Dumper $resval;
-	if ($gotstr eq $resstr) {
-	    &$ok
-	} else {
-	    #fail
-	    print "FAIL at $filename line $line:\n  expected: $resstr       got: $gotstr";
-	    $$stat{fail}++
-	}
+	print "FAIL at $filename line $line:\n";
+	print "       got: $gotstr";
+	print "  expected: $resstr";
+	$$stat{fail}++
     }
-	
 }
 
 sub run_tests_for_package {
