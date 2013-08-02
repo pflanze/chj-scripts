@@ -27,6 +27,14 @@ use Chj::Parallel::Worker;
 use Chj::xperlfunc;
 use Chj::xpipe;
 use Chj::IO::File;
+use Chj::xtmpfile;
+
+##XX move
+sub xlockfile {
+    my $f= xtmpfile;
+    ##$f-> no warning for unlink
+    $f
+}
 
 use Chj::Struct ["nparallel"];
 
@@ -39,6 +47,10 @@ sub instantiate {
 	my ($doneproxy_r,$doneproxy_w)= xpipe;
 	my ($donemaster_r,$donemaster_w)= xpipe;
 	my ($jobqueue_r,$jobqueue_w)= xpipe;
+	my $donemaster_w_lockfd= xlockfile;
+	my $doneproxy_w_lockfd= xlockfile;
+	my $jobrecv_lockfd= xlockfile;
+
 	if (my $proxypid= xfork) {
 	    my $workerpids=
 	      [
@@ -50,11 +62,15 @@ sub instantiate {
 		       $doneproxy_r->xclose;
 		       $donemaster_r->xclose;
 		       $jobqueue_w->xclose;
-		       Chj::Parallel::Worker->new_(jobrecvfd=> $jobqueue_r,
-						   jobdonemasterfd=> $donemaster_w,
-						   jobdoneproxyfd=> $doneproxy_w,
-						   proxydir=> $dir )
-			   ->loop;
+		       Chj::Parallel::Worker->new_
+			   (jobrecvfd=> $jobqueue_r,
+			    jobrecv_lockfd=> $jobrecv_lockfd,
+			    jobdonemasterfd=> $donemaster_w,
+			    jobdonemaster_w_lockfd=> $donemaster_w_lockfd,
+			    jobdoneproxyfd=> $doneproxy_w,
+			    jobdoneproxy_w_lockfd=> $doneproxy_w_lockfd,
+			    proxydir=> $dir )
+			     ->loop;
 		       exit 0;
 		   }
 	       } (0..$$s{nparallel}-1)
@@ -63,12 +79,14 @@ sub instantiate {
 	    $doneproxy_r->xclose;
 	    $donemaster_w->xclose;
 	    $jobqueue_r->xclose;
-	    Chj::Parallel::Instance->new_(proxypid=> $proxypid,
-					  workerpids=> $workerpids,
-					  job_enqueue_fd=> $jobqueue_w,
-					  donemaster_r_fd=> $donemaster_r,
-					  doneproxy_w=> $doneproxy_w,
-					 );
+	    Chj::Parallel::Instance->new_
+		(proxypid=> $proxypid,
+		 workerpids=> $workerpids,
+		 job_enqueue_fd=> $jobqueue_w,
+		 donemaster_r_fd=> $donemaster_r,
+		 doneproxy_w=> $doneproxy_w,
+		 doneproxy_w_lock=> $doneproxy_w_lockfd,
+		);
 	} else {
 	    $0 .= " [proxy]";
 	    $_->xclose for ($doneproxy_w, $donemaster_r,
@@ -78,6 +96,7 @@ sub instantiate {
 		 basedir=> $dir,
 		 signallingfh=> $doneproxy_r,
 		 donemaster_w=> $donemaster_w,
+		 donemaster_w_lock=> $donemaster_w_lockfd,
 		 outerr=> bless(*STDERR{IO}, "Chj::IO::File"),
 		 # ^ REALLY want them separate? later.
 		)->loop;

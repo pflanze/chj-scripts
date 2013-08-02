@@ -12,13 +12,13 @@ Chj::Transmittable
 
  use Chj::Transmittable;
 
- xtransmit ($fd,$val);
+ xtransmit ($val,$fd);
  # or if multiple writers onto fd
- xlocktransmit ($fd,$val);
+ xlocktransmit ($val,$fd,$lockfd);
 
  xreceive ($fd);
  # or if multiple readers from fd
- xlockreceive ($fd);
+ xlockreceive ($fd,$lockfd);
 
 =head1 DESCRIPTION
 
@@ -47,14 +47,14 @@ our $MAGIC= "TrN7";
 sub _xlocktransmit {
     my ($dolock)=@_;
     sub {
-	my ($val,$fd)=@_;
+	my ($val,$fd,$lockfd)=@_;
 	my ($e,$goterr);
 	eval {
 	    my $str= nfreeze($val);
 	    my $len= length $str;
 	    $len < 4294967296 or die "too long";
-	    (flock $fd, LOCK_EX
-	     or die "could not flock($fd,LOCK_EX): $!")
+	    (flock $lockfd, LOCK_EX
+	     or die "could not flock($lockfd,LOCK_EX): $!")
 	      if $dolock;
 	    my $buf= $MAGIC . pack ('N', $len) . $str;
 	    $fd->xsyswritecompletely($buf);
@@ -64,8 +64,8 @@ sub _xlocktransmit {
 	    $e= $@;
 	    $goterr=1;
 	};
-	(flock $fd, LOCK_UN
-	 or $e ||= "could not flock($fd,LOCK_UN): $!")
+	(flock $lockfd, LOCK_UN
+	 or $e ||= "could not flock($lockfd,LOCK_UN): $!")
 	  if $dolock;
 	die $e if $goterr;
     }
@@ -100,13 +100,13 @@ sub xxd {
 sub _xlockreceive {
     my ($dolock)=@_;
     sub {
-	my ($fd)=@_;
+	my ($fd,$lockfd)=@_;
 	my $buf;
 	my ($e,$goterr);
 	my $res;
 	eval {
-	    (flock $fd, LOCK_EX
-	     or die "could not flock($fd,LOCK_EX): $!")
+	    (flock $lockfd, LOCK_EX
+	     or die "could not flock($lockfd,LOCK_EX): $!")
 	      if $dolock;
 	    if ($fd->xsysreadcompletely($buf,8)) {
 		substr ($buf, 0, 4) eq $MAGIC
@@ -120,8 +120,8 @@ sub _xlockreceive {
 	    $e= $@;
 	    $goterr=1;
 	};
-	(flock $fd, LOCK_UN
-	 or $e ||= "could not flock($fd,LOCK_UN): $!")
+	(flock $lockfd, LOCK_UN
+	 or $e ||= "could not flock($lockfd,LOCK_UN): $!")
 	  if $dolock;
 	die $e if $goterr;
 	$res

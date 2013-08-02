@@ -27,6 +27,7 @@ use Chj::xopen 'xopen_read';
 use Chj::Struct ["basedir",
 		 "signallingfh",
 		 "donemaster_w", # for the Alldone feature
+		 "donemaster_w_lock",
 		 "outerr",
 		];
 
@@ -57,7 +58,8 @@ sub loop {
 		delete $done{$jobid};
 		if ($requestalldone{$jobid}) {
 		    xlocktransmit (Chj::Parallel::Alldone->new($jobid),
-				   $$s{donemaster_w});
+				   $$s{donemaster_w},
+				   $$s{donemaster_w_lock});
 		    delete $requestalldone{$jobid};
 		}
 		if ($done{$nextjobid}) {

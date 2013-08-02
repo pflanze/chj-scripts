@@ -55,6 +55,7 @@ use Chj::Struct [
 		 "job_enqueue_fd",
 		 "donemaster_r_fd",
 		 "doneproxy_w", # for the Alldone feature
+		 "doneproxy_w_lock", # dito
 		 "suppress_exceptions", # 1 = show them to stderr, 2 = ignore completely
 		 # ^ XX: bad feature as if used with batchsize>1, it
 		 # will lead to some work not being done.
@@ -125,7 +126,9 @@ sub stream_for_each {
 
 	# request notification once last job is done
 	xlocktransmit (Chj::Parallel::RequestAlldone->new($self->jobid - 1),
-		       $$self{doneproxy_w});
+		       $$self{doneproxy_w},
+		       $$self{doneproxy_w_lock}
+		      );
     }
 
     # wait for end of last job
