@@ -57,8 +57,7 @@ sub _xlocktransmit {
 	     or die "could not flock($fd,LOCK_EX): $!")
 	      if $dolock;
 	    my $buf= $MAGIC . pack ('N', $len) . $str;
-	    $fd->xsyswrite($buf) == length($buf)
-	      or die "could not write everything (EINTR or so?)";
+	    $fd->xsyswritecompletely($buf);
 	    $fd->xflush;
 	    1
 	} || do {
@@ -109,14 +108,11 @@ sub _xlockreceive {
 	    (flock $fd, LOCK_EX
 	     or die "could not flock($fd,LOCK_EX): $!")
 	      if $dolock;
-	    my $didread= $fd->xsysread($buf,8);
-	    if ($didread) {
-		$didread == 8 or die "got partial head, $didread bytes only";
+	    if ($fd->xsysreadcompletely($buf,8)) {
 		substr ($buf, 0, 4) eq $MAGIC
 		  or die "invalid magic in header (".xxd($buf).")";
 		my $len= unpack ('N', substr $buf,4,4);
-		$fd->xsysread($buf,$len) == $len
-		  or die "could not read complete message";
+		$fd->xsysreadcompletely($buf,$len);
 		$res= thaw $buf;
 	    }
 	    1
