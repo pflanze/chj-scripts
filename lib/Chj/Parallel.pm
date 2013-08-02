@@ -34,8 +34,8 @@ use Chj::Struct ["nparallel"];
 sub instantiate {
     my $s=shift;
     if ($$s{nparallel} > 1) {
-	@_==1 or die;
-	my ($dir)=@_;
+	@_==2 or die;
+	my ($dir,$more_filehandles)=@_;
 	# fork off proxy and workers
 	my ($doneproxy_r,$doneproxy_w)= xpipe;
 	my ($donemaster_r,$donemaster_w)= xpipe;
@@ -43,6 +43,13 @@ sub instantiate {
 	my $donemaster_w_lockfd= new_mylock;
 	my $doneproxy_w_lockfd= new_mylock;
 	my $jobrecv_lockfd= new_mylock;
+
+	my $filehandles=
+	  [
+	   bless(*STDOUT{IO}, "Chj::IO::File"),
+	   bless(*STDERR{IO}, "Chj::IO::File"),
+	   @$more_filehandles
+	  ];
 
 	if (my $proxypid= xfork) {
 	    my $workerpids=
@@ -62,6 +69,7 @@ sub instantiate {
 			    jobdonemaster_w_lockfd=> $donemaster_w_lockfd,
 			    jobdoneproxyfd=> $doneproxy_w,
 			    jobdoneproxy_w_lockfd=> $doneproxy_w_lockfd,
+			    filehandles=> $filehandles,
 			    proxydir=> $dir )
 			     ->loop;
 		       exit 0;
@@ -90,8 +98,7 @@ sub instantiate {
 		 signallingfh=> $doneproxy_r,
 		 donemaster_w=> $donemaster_w,
 		 donemaster_w_lock=> $donemaster_w_lockfd,
-		 outerr=> bless(*STDERR{IO}, "Chj::IO::File"),
-		 # ^ REALLY want them separate? later.
+		 filehandles=> $filehandles,
 		)->loop;
 	    exit 0;
 	}

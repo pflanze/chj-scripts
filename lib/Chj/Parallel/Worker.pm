@@ -31,6 +31,7 @@ use Chj::Struct ["jobrecvfd",
 		 "proxydir",
 		 "jobdonemaster_w_lockfd",
 		 "jobdoneproxy_w_lockfd",
+		 "filehandles", # array of fhs
 		];
 
 sub loop {
@@ -40,11 +41,15 @@ sub loop {
 				  $$s{jobrecv_lockfd})) {
 	# job needs a 'run' and an 'id' method.
 	my $id= $job->id;
-	open STDERR, ">>", "$$s{proxydir}/$id"
-	  or die "'$$s{proxydir}/$id': $!";
-	#bless *STDERR{IO}, "Chj::IO::File";
-	open STDOUT, ">&2"
-	  or die "redir stdout: $!";
+
+	my $pathbase= "$$s{proxydir}/$id:";
+	my $fhs= $$s{filehandles};
+	for (my $i=0; $i< @$fhs; $i++) {
+	    my $p= $pathbase.$i;
+	    open $$fhs[$i], ">>", $p
+	      or die "open >> '$p': $!";
+	}
+
 	my $doneresult= do {
 	    my $res;
 	    if (eval {
@@ -68,11 +73,15 @@ sub loop {
 			   $$s{jobdonemasterfd},
 			   $$s{jobdonemaster_w_lockfd});
 	}
+
 	# 2 reasons to only flush, not close:
 	# 1) errors when sending are recorded, too
 	# 2) only way to be safe(?) for reopening STDERR/STDOUT on same fd?
 	# XX Bad though: holding on to file until getting new message.
-	*STDERR{IO}->flush or die "flush stderr: $!"; # (well msg going nowhere)
+	for my $fh (@$fhs) {
+	    $fh->flush or die "flush $fh: $!";
+	}
+
 	xlocktransmit ($done,
 		       $$s{jobdoneproxyfd},
 		       $$s{jobdoneproxy_w_lockfd});

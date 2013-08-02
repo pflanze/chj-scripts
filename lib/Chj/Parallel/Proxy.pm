@@ -28,18 +28,22 @@ use Chj::Struct ["basedir",
 		 "signallingfh",
 		 "donemaster_w", # for the Alldone feature
 		 "donemaster_w_lock",
-		 "outerr",
+		 "filehandles", # array of fhs
 		];
 
 sub copyover {
     my $s=shift;
     my ($jobid)=@_;
-    my $path= "$$s{basedir}/$jobid";
-    my $to= $$s{outerr};
-    my $in= xopen_read $path;
-    $in->xsendfile_to ($to);
-    $in->xclose;
-    xunlink $path;
+    my $pathbase= "$$s{basedir}/$jobid:";
+    my $fhs= $$s{filehandles};
+    for (my $i=0; $i< @$fhs; $i++) {
+	my $path= $pathbase.$i;
+	my $to= $$fhs[$i];
+	my $in= xopen_read $path;
+	$in->xsendfile_to ($to);
+	$in->xclose;
+	xunlink $path;
+    }
 }
 
 sub loop {
