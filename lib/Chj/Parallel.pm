@@ -27,14 +27,7 @@ use Chj::Parallel::Worker;
 use Chj::xperlfunc;
 use Chj::xpipe;
 use Chj::IO::File;
-use Chj::xtmpfile;
-
-##XX move
-sub xlockfile {
-    my $f= xtmpfile;
-    ##$f-> no warning for unlink
-    $f
-}
+use Chj::Mylock;
 
 use Chj::Struct ["nparallel"];
 
@@ -47,9 +40,9 @@ sub instantiate {
 	my ($doneproxy_r,$doneproxy_w)= xpipe;
 	my ($donemaster_r,$donemaster_w)= xpipe;
 	my ($jobqueue_r,$jobqueue_w)= xpipe;
-	my $donemaster_w_lockfd= xlockfile;
-	my $doneproxy_w_lockfd= xlockfile;
-	my $jobrecv_lockfd= xlockfile;
+	my $donemaster_w_lockfd= new_mylock;
+	my $doneproxy_w_lockfd= new_mylock;
+	my $jobrecv_lockfd= new_mylock;
 
 	if (my $proxypid= xfork) {
 	    my $workerpids=

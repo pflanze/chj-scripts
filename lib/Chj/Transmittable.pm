@@ -41,6 +41,7 @@ use strict;
 
 use Fcntl 'LOCK_EX','LOCK_UN';
 use Storable qw(thaw nfreeze);
+use Chj::Mylock;
 
 our $MAGIC= "TrN7";
 
@@ -53,8 +54,7 @@ sub _xlocktransmit {
 	    my $str= nfreeze($val);
 	    my $len= length $str;
 	    $len < 4294967296 or die "too long";
-	    (flock $lockfd, LOCK_EX
-	     or die "could not flock($lockfd,LOCK_EX): $!")
+	    xmylock $lockfd
 	      if $dolock;
 	    my $buf= $MAGIC . pack ('N', $len) . $str;
 	    $fd->xsyswritecompletely($buf);
@@ -64,8 +64,7 @@ sub _xlocktransmit {
 	    $e= $@;
 	    $goterr=1;
 	};
-	(flock $lockfd, LOCK_UN
-	 or $e ||= "could not flock($lockfd,LOCK_UN): $!")
+	xmyunlock $lockfd
 	  if $dolock;
 	die $e if $goterr;
     }
@@ -105,8 +104,7 @@ sub _xlockreceive {
 	my ($e,$goterr);
 	my $res;
 	eval {
-	    (flock $lockfd, LOCK_EX
-	     or die "could not flock($lockfd,LOCK_EX): $!")
+	    xmylock $lockfd
 	      if $dolock;
 	    if ($fd->xsysreadcompletely($buf,8)) {
 		substr ($buf, 0, 4) eq $MAGIC
@@ -120,8 +118,7 @@ sub _xlockreceive {
 	    $e= $@;
 	    $goterr=1;
 	};
-	(flock $lockfd, LOCK_UN
-	 or $e ||= "could not flock($lockfd,LOCK_UN): $!")
+	xmyunlock $lockfd
 	  if $dolock;
 	die $e if $goterr;
 	$res
