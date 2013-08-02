@@ -49,6 +49,12 @@ sub copyover {
 sub loop {
     my $s=shift;
 
+    # turn of encoding (or other IO layer settings?), since input
+    # won't be decoded either; setting these is no problem as we're in
+    # a child that won't use those filehandles directly anymore
+    binmode $_, ":raw" or die "binmode on '$_': $!"
+      for @{$$s{filehandles}};
+
     my $nextjobid=0; # next job's output to be copied
     my %done;
     my %requestalldone;
