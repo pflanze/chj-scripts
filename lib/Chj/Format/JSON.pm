@@ -123,7 +123,8 @@ sub Chj::Format::JSON::Continuous::print {
     if ($$s{_not_first}) {
 	prln $fh, ",";
     } else {
-	prln $fh, "[";
+	prln $fh, "["
+	  unless defined $$s{_not_first};
 	$$s{_not_first}=1;
     }
     pri $fh, 1;
@@ -134,17 +135,34 @@ sub Chj::Format::JSON::Continuous::end {
     return if $$s{_ended};
 
     my $fh= $$s{fh};
-    if ($$s{_not_first}) {
+    if (defined $$s{_not_first}) {
 	prln $fh;
     } else {
-	prln $fh, "[";
+	prln $fh, "["
     }
     prln $fh, "]";
     $$s{_ended}=1;
 }
 
+# Functionality to print opening and ending separately:
+
+sub Chj::Format::JSON::Continuous::print_opening {
+    my $s=shift;
+    my $fh= $$s{fh};
+    prln $fh, "[";
+    $$s{_not_first}=0; # not true but neither undef
+}
+
+
 {
     package Chj::Format::JSON::Continuous;
-    *DESTROY=*end; # should call end explicitely, though
+
+    sub set_not_first {
+	my $s=shift;
+	@_==1 or die;
+	($$s{_not_first})=@_;
+    }
+
+    #*DESTROY=*end; # should call end explicitely, though
     _END_;
 }

@@ -30,8 +30,8 @@ use Chj::Parallel::Alldone;
 
 
 sub Chj::Parallel::Instance_::batch_for_each {
-    my ($pclosure,$batch)=@_;
-    $pclosure->call($_) for @$batch;
+    my ($pclosure,$pos,$batch)=@_;
+    $pclosure->call($_,$pos++) for @$batch;
 }
 
 # XX move to some lib
@@ -77,14 +77,16 @@ sub stream_for_each {
     weaken $_[1];
     my $batchsize= $maybe_batchsize||1;
 
+    my $pos=0;
   LP: {
 	my $i=1;
 	my @batch;
+	my $batchstartpos= $pos;
       LP2: {
 	    $s= Force $s;
 	    if (defined $s) {
 		push @batch, car $s;
-		$s= cdr $s;
+		$s= cdr $s; $pos++;
 		if ($i < $batchsize) {
 		    $i++;
 		    redo LP2;
@@ -96,7 +98,7 @@ sub stream_for_each {
 	       (id=> $self->next_jobid,
 		pclosure=> PClosure(*Chj::Parallel::Instance_::batch_for_each,
 				    $pclosure),
-		val=> \@batch),
+		vals=> [$batchstartpos,\@batch]),
 	       $$self{job_enqueue_fd});
 
 	    # check for eventual exceptions
@@ -152,6 +154,9 @@ sub stream_for_each {
 	    redo WAITEND;
 	}
     }
+
+    # return length of stream
+    $pos
 }
 
 _END_

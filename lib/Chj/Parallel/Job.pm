@@ -20,11 +20,11 @@ package Chj::Parallel::Job;
 
 use strict;
 
-use Chj::Struct ["id","pclosure","val"];
+use Chj::Struct ["id","pclosure","vals"];
 
 sub run {
     my $s=shift;
-    $s->pclosure->call($s->val)
+    $s->pclosure->call(@{$s->vals})
 }
 
 sub noreturn {0}
