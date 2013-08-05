@@ -13,12 +13,6 @@ Chj::xtmpdir
 
 =head1 DESCRIPTION
 
-NA, könnte auch objekt geben? (Das in den Pfad stringified)
-so dass autoclean möglich. ein aund ausschaltgen.
-Aber  wann autocleanen   muss sihcerstellen dass zuerst die tmpfiles aufgeräumt werden
-
-d.h. müsste allle pending tmpfiles verzeichnen    und reaper zugang geben.
-
 
 =cut
 
