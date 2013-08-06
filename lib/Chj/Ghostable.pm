@@ -19,6 +19,12 @@ Chj::Ghostable
  my $ghost= new Some::Class (1,2)->ghost;
  print $ghost->resurrect->sum,"\n";
 
+ # to subclass the ghost class (for example to implement a
+ # deserialization cache):
+ sub Some::Class::Ghostable_ghost_class { "Some:Class_ghost" }
+ # then in Some::Class_ghost, subclass Chj::Ghostable::Ghost
+ # and override 'resurrect'
+
 =head1 DESCRIPTION
 
 Uses Storable.pm to move an object out of RAM. The 'ghost' and
@@ -62,9 +68,16 @@ use strict;
 	my $s=shift;
 	my ($maybe_path)=@_;
 	my $path= $maybe_path || $s->ghostpath;
+	my $ghostclass= do {
+	    if (my $m= $s->can("Ghostable_ghost_class")) {
+		&$m($s)
+	    } else {
+		"Chj::Ghostable::Ghost"
+	    }
+	};
 	Storable::nstore $s, $path
 	    or die "nstore '$path': $!";
-	new Chj::Ghostable::Ghost $path
+	$ghostclass->new($path)
     }
     sub load {
 	my $_class=shift;
