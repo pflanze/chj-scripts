@@ -28,6 +28,7 @@ use Chj::xperlfunc;
 use Chj::xpipe;
 use Chj::IO::File;
 use Chj::Mylock;
+use POSIX '_exit';
 
 use Chj::Struct ["nparallel"];
 
@@ -72,7 +73,7 @@ sub instantiate {
 			    filehandles=> $filehandles,
 			    proxydir=> $dir )
 			     ->loop;
-		       exit 0;
+		       _exit 0;
 		   }
 	       } (0..$$s{nparallel}-1)
 	      ];
@@ -100,7 +101,7 @@ sub instantiate {
 		 donemaster_w_lock=> $donemaster_w_lockfd,
 		 filehandles=> $filehandles,
 		)->loop;
-	    exit 0;
+	    _exit 0;
 	}
     } else {
 	Chj::Parallel::NullInstance->new;
