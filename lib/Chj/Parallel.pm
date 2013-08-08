@@ -101,6 +101,10 @@ sub instantiate {
 		 donemaster_w_lock=> $donemaster_w_lockfd,
 		 filehandles=> $filehandles,
 		)->loop;
+	    mylock_free ($donemaster_w_lockfd);
+	    mylock_free ($jobrecv_lockfd);
+	    # ^ hmm. should that only happen when all workers have
+	    # gone? Move to worker?
 	    _exit 0;
 	}
     } else {

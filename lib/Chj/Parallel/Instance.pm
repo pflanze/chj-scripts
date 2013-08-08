@@ -27,7 +27,7 @@ use Chj::Transmittable;
 use Chj::Parallel::Job; # ::JobNoreturn;
 use Chj::PClosure;
 use Chj::Parallel::Alldone;
-
+use Chj::Mylock;
 
 sub Chj::Parallel::Instance_::batch_for_each {
     my ($pclosure,$pos,$batch)=@_;
@@ -157,6 +157,17 @@ sub stream_for_each {
 
     # return length of stream
     $pos
+}
+
+sub close {
+    my $s=shift;
+    $$s{job_enqueue_fd}->xclose;
+    $$s{doneproxy_w}->xclose;
+    $$s{donemaster_r_fd}->xclose;
+    for my $pid (@{$$s{workerpids}}, $$s{proxypid}) {
+	waitpid $pid, 0;
+    }
+    mylock_free($$s{doneproxy_w_lock});
 }
 
 _END_

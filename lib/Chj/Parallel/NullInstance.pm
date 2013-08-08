@@ -42,5 +42,8 @@ sub stream_for_each {
     goto (\&Chj::FP2::Stream::stream_for_each)
 }
 
+sub close {
+    # noop
+}
 
 _END_
