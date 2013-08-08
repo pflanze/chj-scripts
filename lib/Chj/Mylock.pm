@@ -18,7 +18,7 @@ Chj::Mylock
 
 package Chj::Mylock;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(new_mylock xmylock xmyunlock);
+@EXPORT=qw(new_mylock xmylock xmyunlock mylock_free);
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -52,6 +52,11 @@ use Chj::xperlfunc;
 sub xmyunlock {
     my ($p)=@_;
     xunlink "$p.locked";
+}
+
+sub mylock_free  {
+    my ($p)=@_;
+    unlink $p
 }
 
 1
