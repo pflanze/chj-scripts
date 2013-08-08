@@ -39,9 +39,11 @@ use Time::HiRes 'sleep';
 
 sub xmylock {
     my ($p)=@_;
+    my $sleeptime= 200/2e9;
     while (1) {
-	return if link $p, "$p.locked"; ## XESECURITY
-	#sleep 0.0001;
+	return if link $p, "$p.locked";
+	$sleeptime*= 1.05;
+	sleep $sleeptime;
     }
 }
 
