@@ -47,6 +47,6 @@ sub _Browser {
 *Browser_spawn= _Browser (\&xspawn);
 *Browser_launch= _Browser (\&xlaunch);
 *Browser_run= _Browser (\&xsystem);
-
+*Browser_dryrun= _Browser(sub {$_[0]});
 
 1
