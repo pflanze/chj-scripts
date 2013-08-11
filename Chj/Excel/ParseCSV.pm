@@ -25,8 +25,10 @@ Chj::Excel::ParseCSV
 
 Parse CSV files as written by MS Excel.
 
-By default uses ; as column separator since the MS Excel program I'm using
-is actually using those, not the comma, when being told to write CSV files.
+By default uses ; as column separator since the MS Excel program I'm
+using is actually using those, not the comma, when being told to write
+CSV files. You can change that by setting
+$Chj::Excel::ParseCSV::separator .
 
 getrow returns an array ref, or undef on eof.
 
@@ -74,6 +76,8 @@ sub _dequote {
     $str
 }
 
+our $separator= ";";
+
 sub getrow {
     my $s=shift;
     if ($$s[Eof]) {
@@ -84,7 +88,7 @@ sub getrow {
 	    if ($ch eq "\n") {
 		return \@row;
 	    }
-	    elsif ($ch eq ";") {
+	    elsif ($ch eq $separator) {
 		push @row, "";
 	    }
 	    elsif ($ch eq "\"") {
@@ -101,7 +105,7 @@ sub getrow {
 				push @row, _dequote $str;#
 				return \@row;
 			    }
-			    elsif ($nextch eq ";") {
+			    elsif ($nextch eq $separator) {
 				push @row, _dequote $str;#
 				next FIELD;
 			    }
@@ -131,7 +135,7 @@ sub getrow {
 		# non-quoted mode.
 		my $str=$ch; #heps scho kool diese impliziten resp einfach trivialen konversionen  , char gibtsnich ist string..
 		while(defined(my$ch=$s->getchar)){
-		    if ($ch eq ";") {
+		    if ($ch eq $separator) {
 			push @row, _dequote $str;#
 			next FIELD;
 		    }
