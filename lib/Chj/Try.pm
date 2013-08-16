@@ -23,6 +23,12 @@ Chj::Try
  # ERROR['foo']: bar
  # done
 
+ Try {
+    die bless [], "MyExn"
+ } "foo",
+   { "MyExn"=> sub {"ok"} };
+ #=> "ok"
+
 =head1 DESCRIPTION
 
 
@@ -40,6 +46,7 @@ use strict;
 
 use Carp;
 
+use Chj::TEST;
 use Data::Dumper;
 
 # Try.pm localizes $SIG{__WARN__} to change the effect of 'warn'
@@ -103,7 +110,7 @@ sub ctx2str {
 }
 
 sub IfTryScalar {
-    my ($thunk,$ctx,$success,$fail)=@_;
+    my ($thunk,$ctx,$success,$fail,$maybe_catch_map)=@_;
     my $ctxstr;
     my $res;
     if (eval {
@@ -136,6 +143,16 @@ sub IfTryScalar {
 	@_=($res); goto $success
     } else {
 	my $e=$@;
+	if ($maybe_catch_map and my $ref= ref $e) {
+	    if (my $handler= $$maybe_catch_map{$ref}) {
+		@_=($e); goto $handler;
+	    }
+	    for my $class (sort keys %$maybe_catch_map) {
+		if (UNIVERSAL::isa($e,$class)) {
+		    @_=($e); goto $$maybe_catch_map{$class};
+		}
+	    }
+	}
 	$ctxstr||= ctx2str ($ctx);
 	carp "ERROR[$ctxstr]: $e";
 	@_=(); goto $fail
@@ -146,27 +163,68 @@ sub noop {
     ()
 }
 
-sub Try (&$) {
-    my ($thunk,$ctx)=@_;
+sub Try (&$;$) {
+    my ($thunk,$ctx,$maybe_catch_map)=@_;
     my $wantarray= wantarray;
     if (defined $wantarray) {
-	IfTryScalar sub {
-	    $wantarray ? [&$thunk] : scalar &$thunk
-	}, $ctx, sub {
-	    my ($a)=@_;
-	    $wantarray ? @$a : $a
-	},\&noop
+	IfTryScalar
+	  (sub {
+	       $wantarray ? [&$thunk] : scalar &$thunk
+	   },
+	   $ctx,
+	   sub {
+	       my ($a)=@_;
+	       $wantarray ? @$a : $a
+	   },
+	   \&noop,
+	   $maybe_catch_map)
     } else {
-	IfTryScalar $thunk,$ctx, \&noop,\&noop
+	IfTryScalar
+	  ($thunk,
+	   $ctx,
+	   \&noop,
+	   \&noop,
+	   $maybe_catch_map)
     }
 }
 
-# main> :d @foo=(1,3,4); Try { @foo } "foo"
-# $VAR1 = 1;
-# $VAR2 = 3;
-# $VAR3 = 4;
-# main> :d @foo=(1,3,4); scalar Try { @foo } "foo"
-# $VAR1 = 3;
+TEST {
+    my @foo=(1,3,4);
+    [Try { @foo } "foo"]
+}
+  [1,3,4];
+
+TEST {
+    my @foo=(1,3,4);
+    Try { @foo } "foo"
+}
+  3;
+
+TEST {
+    Try {
+	die bless [], "Chj::Try::MyExn"
+    } "foo",
+      { "Chj::Try::MyExn"=> sub {"ok"} };
+}
+  "ok";
+
+TEST {
+    local @Chj::Try::MySubExn::ISA= ("Chj::Try::MyExn");
+    Try {
+	die bless [], "Chj::Try::MySubExn"
+    } "foo",
+      { "Chj::Try::MyExn"=> sub {"ok"} };
+}
+  "ok";
+
+TEST {
+    local @Chj::Try::MySubExn::ISA= ("Chj::Try::OtherExn");
+    Try {
+	die bless [], "Chj::Try::MySubExn"
+    } "foo",
+      { "Chj::Try::MyExn"=> sub {"ok"} };
+}
+  undef;
 
 
 1
