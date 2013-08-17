@@ -207,6 +207,7 @@ TEST {
   "ok";
 
 TEST {
+    local @Chj::Try::MyExn::ISA= ();
     local @Chj::Try::MySubExn::ISA= ("Chj::Try::MyExn");
     Try {
 	die bless [], "Chj::Try::MySubExn"
@@ -216,6 +217,7 @@ TEST {
   "ok";
 
 TEST {
+    local @Chj::Try::OtherExn::ISA= ();
     local @Chj::Try::MySubExn::ISA= ("Chj::Try::OtherExn");
     Try {
 	die bless [], "Chj::Try::MySubExn"
@@ -223,6 +225,20 @@ TEST {
       [["Chj::Try::MyExn"=> sub {"ok"}]];
 }
   undef;
+
+TEST {
+    local @Chj::Try::MyExn::ISA= ();
+    local @Chj::Try::OtherExn::ISA= ();
+    local @Chj::Try::Sub1Exn::ISA= ("Chj::Try::OtherExn");
+    local @Chj::Try::Sub2Exn::ISA= ("Chj::Try::MyExn");
+    Try {
+	die bless [], "Chj::Try::Sub1Exn"
+    } "foo",
+      [["Chj::Try::MyExn"=> sub {"My"}],
+       ["Chj::Try::OtherExn"=> sub {"Other"}],
+       ["Chj::Try::Sub1Exn"=> sub {"precise"}]];
+}
+  "Other";
 
 
 1
