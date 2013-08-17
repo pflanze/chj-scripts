@@ -26,7 +26,7 @@ Chj::Try
  Try {
     die bless [], "MyExn"
  } "foo",
-   { "MyExn"=> sub {"ok"} };
+   [["MyExn"=> sub {"ok"}]];
  #=> "ok"
 
 =head1 DESCRIPTION
@@ -143,13 +143,11 @@ sub IfTryScalar {
 	@_=($res); goto $success
     } else {
 	my $e=$@;
-	if ($maybe_catch_map and my $ref= ref $e) {
-	    if (my $handler= $$maybe_catch_map{$ref}) {
-		@_=($e); goto $handler;
-	    }
-	    for my $class (sort keys %$maybe_catch_map) {
+	if ($maybe_catch_map and ref $e) {
+	    for (@$maybe_catch_map) {
+		my ($class,$handler)=@$_;
 		if (UNIVERSAL::isa($e,$class)) {
-		    @_=($e); goto $$maybe_catch_map{$class};
+		    @_=($e); goto $handler
 		}
 	    }
 	}
@@ -204,7 +202,7 @@ TEST {
     Try {
 	die bless [], "Chj::Try::MyExn"
     } "foo",
-      { "Chj::Try::MyExn"=> sub {"ok"} };
+      [["Chj::Try::MyExn"=> sub {"ok"}]];
 }
   "ok";
 
@@ -213,7 +211,7 @@ TEST {
     Try {
 	die bless [], "Chj::Try::MySubExn"
     } "foo",
-      { "Chj::Try::MyExn"=> sub {"ok"} };
+      [["Chj::Try::MyExn"=> sub {"ok"}]];
 }
   "ok";
 
@@ -222,7 +220,7 @@ TEST {
     Try {
 	die bless [], "Chj::Try::MySubExn"
     } "foo",
-      { "Chj::Try::MyExn"=> sub {"ok"} };
+      [["Chj::Try::MyExn"=> sub {"ok"}]];
 }
   undef;
 
