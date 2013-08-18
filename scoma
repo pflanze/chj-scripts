@@ -35,5 +35,7 @@ git add -f .METADATA-v2
 
 git commit -a -m "$message" # || true
 
-git push origin master
+if [ ! -f .git/scoma-no-push ]; then
+    git push origin master
+fi
 
