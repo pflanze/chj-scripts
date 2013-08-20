@@ -53,7 +53,7 @@ package Chj::Parse::Mbox;
 @EXPORT_OK=qw(mbox_stream_read mbox_stream_open);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use Chj::xopen 'xopen_read';
+use Chj::xopengzip ':all';
 use Chj::FP2::List ':all';
 #use Chj::FP2::Stream ':all';
 use Chj::FP2::Lazy;
@@ -119,7 +119,7 @@ sub mbox_stream_read {
 
 sub mbox_stream_open {
     my ($path)=@_;
-    mbox_stream_read( xopen_read($path), undef, 0 );
+    mbox_stream_read( xopengzip_read($path,do_fallback=>1), undef, 0 );
 }
 
 

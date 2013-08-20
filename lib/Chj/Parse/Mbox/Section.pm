@@ -23,7 +23,7 @@ package Chj::Parse::Mbox::Section;
 
 use strict;
 
-use Chj::xopen 'xopen_read';
+use Chj::xopengzip ':all';
 
 use Chj::Struct ["mboxpath",
 		 "from", # incl
@@ -34,7 +34,7 @@ use Chj::Struct ["mboxpath",
 sub xsendfile_to {
     my $s=shift;
     my ($fd)=@_;
-    my $in= xopen_read ($s->mboxpath);
+    my $in=  xopengzip_read ($s->mboxpath,do_fallback=>1);
     #$in->xsendfile_to($fd, $s->from, ($s->to - $s->from));
     #XX BUG in xsendfile_to; try instead:
     $in->xseek($s->from);
