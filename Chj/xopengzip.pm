@@ -16,7 +16,10 @@ Chj::xopengzip
                         do_fallback=> 1);
  # do_fallback means to use file directly if suffix is unknown.
  # suffix overrides using the actual suffix.
- $in->xcontent # or whatever Chj::IO::File methods you like
+ $in->xcontent; # or whatever Chj::IO::File methods you like
+ $in->xseek(1000); # careful: this will decompress the whole file into
+                   # a cache;
+ $in->xread($buf,500);
  $in->xclose  # will die on decoding errors, but not on premature
               # close (sigpipe).
 
@@ -45,7 +48,7 @@ use strict;
     our %meta; # "fh" -> [pid,path,opt,cmd,(xseekpath)]
     our $seekcachebase;
     our %seekcache; # xseekpath => time last access
-    our $seekcache_maxsize= 3; # XX make official, and fix handling
+    our $seekcache_maxsize= 4; # XX make official, and fix handling
                                # when decreasing during run time?
     sub _Cache_created {
 	my ($xseekpath)=@_;
