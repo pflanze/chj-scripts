@@ -11,9 +11,11 @@ Chj::xopengzip
 =head1 SYNOPSIS
 
  use Chj::xopengzip 'xopengzip_read';
- my $in= xopengzip_read($path,undef,1);
- # ^ 1 for fall back to normal file if suffix is unknown;
- #   suffix instead of undef to force a known suffix.
+ my $in= xopengzip_read("foo.gz", # or bz2; case insensitive.
+                        #suffix=> "gz",
+                        do_fallback=> 1);
+ # do_fallback means to use file directly if suffix is unknown.
+ # suffix overrides using the actual suffix.
  $in->xcontent # or whatever Chj::IO::File methods you like
  $in->xclose  # will die on decoding errors, but not on premature
               # close (sigpipe).
@@ -67,13 +69,15 @@ our $cmds=
   };
 
 
-sub xopengzip_read ($;$) {
-    my ($path,$maybe_suffix,$do_fallback)=@_;
+sub xopengzip_read {
+    @_>= 1 or die;
+    my $path=shift;
+    my %opt= @_;
     my $in= xopen_read $path;
     my $lcsuffix= lc $path;
     $lcsuffix=~ s/.*\.//s or do {
-	if ($maybe_suffix) {
-	    $lcsuffix= lc $maybe_suffix;
+	if (defined $opt{suffix}) {
+	    $lcsuffix= lc $opt{suffix};
 	} else {
 	    die "no optional suffix argument given and path has not suffix: '$path'";
 	}
@@ -92,7 +96,7 @@ sub xopengzip_read ($;$) {
 	    xexec @$cmd;
 	}
     } else {
-	if ($do_fallback) {
+	if ($opt{do_fallback}) {
 	    $in
 	} else {
 	    die "unknown suffix '$lcsuffix' (path '$path')";
