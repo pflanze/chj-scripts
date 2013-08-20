@@ -45,7 +45,8 @@ use strict;
     our %meta; # "fh" -> [pid,path,opt,cmd,(xseekpath)]
     our $seekcachebase;
     our %seekcache; # xseekpath => time last access
-    our $seekcache_maxsize= 10;
+    our $seekcache_maxsize= 3; # XX make official, and fix handling
+                               # when decreasing during run time?
     sub _Cache_created {
 	my ($xseekpath)=@_;
 	# drop oldest
