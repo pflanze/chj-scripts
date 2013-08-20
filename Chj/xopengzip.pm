@@ -39,18 +39,23 @@ use strict;
     our @ISA= ('Chj::IO::Pipe');
     use Chj::IO::Pipe;
     use POSIX ();
-    our %pids; # "fh" -> [pid,path,cmd]
+    our %meta; # "fh" -> [pid,path,cmd]
     sub rebless {
 	my $class= shift;
 	my ($s0,$pid_path_cmd)=@_;
 	my $s= bless $s0, $class;
-	$pids{$s}= $pid_path_cmd;
+	$meta{$s}= $pid_path_cmd;
 	$s
+    }
+    sub path {
+	my $s=shift;
+	my ($pid,$path,$cmd)= @{$meta{$s}} or die;
+	$path
     }
     sub xclose {
 	my $s=shift;
 	$s->SUPER::xclose;
-	my ($pid,$path,$cmd)= @{$pids{$s}} or die;
+	my ($pid,$path,$cmd)= @{$meta{$s}} or die;
 	Chj::xperlfunc::xwaitpid($pid,0);
 	($? == 0 or $? == POSIX::SIGPIPE)
 	  or die "reading '$path', @$cmd exited with status $?";
