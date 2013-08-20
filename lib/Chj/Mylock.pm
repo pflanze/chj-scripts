@@ -27,6 +27,10 @@ use Chj::xopen 'xopen_write';
 use Chj::xtmpdir;
 
 our $dir=xtmpdir;
+$dir->autoclean(2);
+# don't warn; since used in children, too.  XXX But is it ok to remove
+# there?
+
 our $cnt=0;
 
 sub new_mylock {
