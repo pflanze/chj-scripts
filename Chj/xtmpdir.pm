@@ -11,8 +11,16 @@ Chj::xtmpdir
 
 =head1 SYNOPSIS
 
+ xtmpdir($opt_basepath,$opt_mask)
+
 =head1 DESCRIPTION
 
+By default, dirs are created below /tmp/, which can be changed by
+setting the CHJ_TEMPDIR (path to a directory) or CHJ_TEMPDIR_BASEPATH
+(a basepath) env vars, or passing a value for $opt_basepath. A
+"basepath" is simply prefixed to the random path, i.e. if it does not
+end in a slash, the last part after the slash will be the prefix to
+the name of the created temp directory.
 
 =cut
 
