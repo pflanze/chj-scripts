@@ -10,7 +10,16 @@ Chj::opencachefile
 
 =head1 SYNOPSIS
 
+ use Chj::opencachefile;
  my $fh= opencachefile $path, $createproc
+
+ # opportunistic use of a cachefile without creation:
+ use Chj::opencachefile qw(opencachefile if_open_else);
+ if_open_else
+   ($path,
+    sub { my ($fh)=@_; ..},
+    sub { # don't have it
+    });
 
 =head1 DESCRIPTION
 
@@ -30,7 +39,7 @@ $path only ever once.
 package Chj::opencachefile;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(opencachefile);
-@EXPORT_OK=qw();
+@EXPORT_OK=qw(if_open_else);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -39,26 +48,28 @@ use POSIX qw(O_CREAT O_EXCL O_RDONLY O_WRONLY ENOENT EEXIST);
 use Chj::xperlfunc;
 use Time::HiRes 'sleep';
 
+sub if_open_else ($$$) {
+    my ($path, $use, $create)=@_;
+    if (sysopen my $in, $path, O_RDONLY) {
+	@_=($in); goto $use;
+    } else {
+	if ($! == ENOENT) {
+	    @_=(); goto $create;
+	} else {
+	    die "open '$path' for reading: $!";
+	}
+    }
+}
+
 sub opencachefile ($$) {
     my ($path,$createproc)=@_;
-    my $open_or_create= sub {
-	my ($use, $create)=@_;
-	if (sysopen my $in, $path, O_RDONLY) {
-	    @_=($in); goto $use;
-	} else {
-	    if ($! == ENOENT) {
-		@_=(); goto $create;
-	    } else {
-		die "open '$path' for reading: $!";
-	    }
-	}
-    };
     my $identity= sub {
 	my ($fh)=@_;
 	$fh
     };
-    &$open_or_create
-      ($identity,
+    if_open_else
+      ($path,
+       $identity,
        sub {
 	   my $tmppath= $path.".tmp";
 	   if (sysopen my $tmp, $tmppath, O_CREAT|O_EXCL|O_WRONLY) {
@@ -68,8 +79,9 @@ sub opencachefile ($$) {
 	       };
 	       # check for $path again to catch race condition of a
 	       # creating process renaming inbetween the open calls.
-	       &$open_or_create
-		 (sub {
+	       if_open_else
+		 ($path,
+		  sub {
 		      my ($fh)=@_;
 		      &$cleanup;
 		      $fh
@@ -94,7 +106,8 @@ sub opencachefile ($$) {
 		   my $checkwait; $checkwait= sub {
 		       my ($sleeptime)=@_;
 		       sleep $sleeptime;
-		       @_= (sub {
+		       @_= ($path,
+			    sub {
 				undef $checkwait;
 				goto $identity
 			    },
@@ -110,7 +123,7 @@ sub opencachefile ($$) {
 				    opencachefile($path,$createproc);
 				}
 			    });
-		       goto $open_or_create;
+		       goto \&if_open_else;
 		   };
 		   @_= (2000/2e9);
 		   goto $checkwait;
