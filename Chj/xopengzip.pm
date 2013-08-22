@@ -168,13 +168,15 @@ sub xopengzip_read {
     } else {
 	my $in= xopen_read $path;
 	my $lcsuffix= lc $path;
-	$lcsuffix=~ s/.*\.//s or do {
-	    if (defined $opt{suffix}) {
-		$lcsuffix= lc $opt{suffix};
-	    } else {
-		die "no optional suffix argument given and path has not suffix: '$path'";
-	    }
-	};
+	($lcsuffix=~ s/.*\.//s and length $lcsuffix and not $lcsuffix=~ m|/|)
+	  or do {
+	      if (defined $opt{suffix}) {
+		  $lcsuffix= lc $opt{suffix};
+	      } else {
+		  die "no optional suffix argument given "
+		    ."and path has no suffix: '$path'";
+	      }
+	  };
 	if (my $cmd= $$cmds{$lcsuffix}) {
 	    my ($r,$w)=xpipe;
 	    if (my $pid= xfork) {
