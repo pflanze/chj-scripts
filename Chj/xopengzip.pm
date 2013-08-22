@@ -28,6 +28,16 @@ Chj::xopengzip
 
 NOTE: don't call chdir when using relative $path s.
 
+=head1 BUGS
+
+This is using md5 hashing on $path to identify files. Since md5 is not
+safe, don't use this on paths under control of an adversary!
+
+I think binmode is lost on reopen.
+
+Don't localize $cmds, it's not kept in %meta. Thus xopengzip_read may
+fail from xseek.
+
 =cut
 
 
@@ -218,9 +228,5 @@ sub xopengzip_read {
 	}
     }
 }
-
-# BUGS or possible ones:
-# - $cmds might be localized. But it's not kept in %meta. Thus xopengzip_read may fail from xseek.
-# - is binmode lost on reopen, right? Yes, I had to use POSIX dup2 before.
 
 1
