@@ -11,6 +11,7 @@ Chj::xopengzip
 =head1 SYNOPSIS
 
  use Chj::xopengzip 'xopengzip_read';
+ $Chj::IO::ReadGzip::seekcache_maxsize= 10; # num files, default: 4
  my $in= xopengzip_read("foo.gz", # or bz2; case insensitive.
                         #suffix=> "gz",
                         do_fallback=> 1);
@@ -25,6 +26,7 @@ Chj::xopengzip
 
 =head1 DESCRIPTION
 
+NOTE: don't call chdir when using relative $path s.
 
 =cut
 
@@ -37,6 +39,8 @@ package Chj::xopengzip;
 
 use strict;
 
+use Chj::opencachefile qw(opencachefile if_open_else);
+
 {
     package Chj::IO::ReadGzip;
     our @ISA= ('Chj::IO::Pipe');
@@ -45,42 +49,54 @@ use strict;
     use Chj::xtmpdir ();
     use Digest::MD5 ();
     use Fcntl 'SEEK_SET';
-    our %meta; # "fh" -> [pid,path,opt,cmd,(xseekpath)]
-    our $seekcachebase;
     our %seekcache; # xseekpath => time last access
-    our $seekcache_maxsize= 4; # XX make official, and fix handling
-                               # when decreasing during run time?
-    sub _Cache_created {
+    our $seekcachebase = do {
+	my $t= Chj::xtmpdir::xtmpdir();
+	$t->push_on_destruction
+	  (sub {
+	       my ($seekcachebase)=@_;
+	       unlink $_ for keys %seekcache;
+	   });
+	# removing dir itself won't work with forked processes; sigh.
+	# XX should we really use a symlink again, so as to have one
+	# dir per program, not per program run?
+	$t->autoclean(0);
+	$t
+    };
+    our $seekcache_maxsize= 4;
+    sub _Cache_access {
 	my ($xseekpath)=@_;
 	# drop oldest
-	our @entries= sort {
-	    $$a[1] <=> $$b[1]
-	} map{[$_,$seekcache{$_}]} keys %seekcache;
-	if (@entries >= $seekcache_maxsize) {
-	    my ($path,$t)= @{$entries[-1]};
-	    unlink $path or warn "BUG? could not unlink '$path': $!";
+	our @entries=
+	  (
+	   sort {
+	       $$a[1] <=> $$b[1]
+	   }
+	   map {
+	       if (-f $_) {
+		   [$_,$seekcache{$_}]
+	       } else {
+		   # a concurrent process removed it
+		   delete $seekcache{$_};
+		   ()
+	       }
+	   }
+	   keys %seekcache
+	  );
+	while (@entries >= $seekcache_maxsize) {
+	    my ($path,$t)= @{pop @entries};
+	    unlink $path; # can fail with concurrency
 	    delete $seekcache{$path}
 	}
 	$seekcache{$xseekpath}= time;
     }
-    sub _Cache_accessible { # check if exists, if so, update too.
-	my ($xseekpath)=@_;
-	$seekcache{$xseekpath} and $seekcache{$xseekpath}=time;
-    }
-    sub _Perhaps_xseekpath {
+    sub _Xseekpath {
 	my ($path)=@_;
-	$seekcachebase and
-	  $seekcachebase."/".Digest::MD5::md5_hex($path);
+	$seekcachebase."/".Digest::MD5::md5_hex($path);
     }
-    sub _Perhaps_cache_accessible {
-	my ($path)=@_;
-	if (my $xseekpath= _Perhaps_xseekpath ($path)) {
-	    _Cache_accessible ($xseekpath)
-	      and $xseekpath;
-	} else {
-	    undef
-	}
-    }
+
+    our %meta; # "fh" -> [pid,path,opt,cmd,(xseekpath)]
+
     sub rebless {
 	my $class= shift;
 	my ($s0,$pid_path_cmd)=@_;
@@ -99,37 +115,33 @@ use strict;
 	my ($pos)=@_;
 	my ($pid,$path,$opt,$cmd,$xseekpath)= @{$meta{$s}} or die;
 	if (defined $xseekpath) {
-	    # we are the opened xseekpath already
+	    # we are opened from the cache already
 	} else {
-	    $seekcachebase||= do {
-		my $t= Chj::xtmpdir::xtmpdir();
-		$t->push_on_destruction
-		  (sub {
-		       my ($seekcachebase)=@_;
-		       unlink $_ for glob "$seekcachebase/*"
-		   });
-		$t
-	    };
-	    $xseekpath= _Perhaps_xseekpath($path);
-	    if (not _Cache_accessible($xseekpath)) {
-		my $out= Chj::xopen::xopen_write($xseekpath);
-		my $in= do {
-		    #if (position is at the start) {
-		    #    $s
-		    #} else {
-		    $s->xclose;
-		    Chj::xopengzip::xopengzip_read($path,%$opt)
-			#}
-		  };
-		$in->xsendfile_to($out);
-		$in->xclose;
-		$out->xclose;
-		_Cache_created($xseekpath);
-	    }
+	    $xseekpath= _Xseekpath($path);
+	    my $newfh= Chj::opencachefile::opencachefile
+	      ($xseekpath,
+	       sub {
+		   my ($out)=@_;
+		   my $in= do {
+		       #if (position is at the start) {
+		       #    $s
+		       #} else {
+		       $s->xclose;
+		       Chj::xopengzip::xopengzip_read($path,%$opt);
+		       # ^ XX: there's some chance that this is now
+		       # actually a cache filehandle...
+		       #}
+		   };
+		   bless $out, "Chj::IO::File"; # for xsendfile_to to work
+		   $in->xsendfile_to($out);
+		   $in->xclose;
+	       });
+	    _Cache_access($xseekpath);
 	    $meta{$s}[4]= $xseekpath;
-	    open $s, "<", $xseekpath
-	      or die "could not open '$xseekpath': $!";
+	    open $s, "<&".fileno($newfh)
+	      or die "could not dup: $!";
 	    # XXX lost binmode settings I guess?
+	    close $newfh or die "close ($newfh): $!";
 	}
 	seek $s, $pos, SEEK_SET
 	  or die "seek($s,$pos,SEEK_SET): $!";
@@ -162,40 +174,47 @@ sub xopengzip_read {
     @_>= 1 or die;
     my $path=shift;
     my %opt= @_;
-    if (my $xseekpath= Chj::IO::ReadGzip::_Perhaps_cache_accessible $path) {
-	#warn "accessing xseekcache";
-	xopen_read $xseekpath
+
+    my $in= xopen_read $path;
+    # XX $in is not used in case the cache file is found; stupid? Or safety?
+    my $lcsuffix= lc $path;
+    ($lcsuffix=~ s/.*\.//s and length $lcsuffix and not $lcsuffix=~ m|/|)
+      or do {
+	  if (defined $opt{suffix}) {
+	      $lcsuffix= lc $opt{suffix};
+	  } else {
+	      die "no optional suffix argument given "
+		."and path has no suffix: '$path'";
+	  }
+      };
+    if (my $cmd= $$cmds{$lcsuffix}) {
+	my $xseekpath= Chj::IO::ReadGzip::_Xseekpath ($path);
+	if_open_else
+	  ($xseekpath,
+	   sub {
+	       my ($fh)=@_;
+	       #warn "accessing xseekcache";
+	       Chj::IO::ReadGzip->rebless ($fh,[undef,$path,\%opt,$cmd, $xseekpath])
+	   },
+	   sub {
+	       my ($r,$w)=xpipe;
+	       if (my $pid= xfork) {
+		   $in->xclose;
+		   $w->xclose;
+		   Chj::IO::ReadGzip->rebless ($r,[$pid,$path,\%opt,$cmd]);
+	       } else {
+		   $in->xdup2(0);
+		   $in->xclose;
+		   $w->xdup2(1);
+		   $w->xclose;
+		   xexec @$cmd;
+	       }
+	   });
     } else {
-	my $in= xopen_read $path;
-	my $lcsuffix= lc $path;
-	($lcsuffix=~ s/.*\.//s and length $lcsuffix and not $lcsuffix=~ m|/|)
-	  or do {
-	      if (defined $opt{suffix}) {
-		  $lcsuffix= lc $opt{suffix};
-	      } else {
-		  die "no optional suffix argument given "
-		    ."and path has no suffix: '$path'";
-	      }
-	  };
-	if (my $cmd= $$cmds{$lcsuffix}) {
-	    my ($r,$w)=xpipe;
-	    if (my $pid= xfork) {
-		$in->xclose;
-		$w->xclose;
-		Chj::IO::ReadGzip->rebless ($r,[$pid,$path,\%opt,$cmd])
-	    } else {
-		$in->xdup2(0);
-		$in->xclose;
-		$w->xdup2(1);
-		$w->xclose;
-		xexec @$cmd;
-	    }
+	if ($opt{do_fallback}) {
+	    $in
 	} else {
-	    if ($opt{do_fallback}) {
-		$in
-	    } else {
-		die "unknown suffix '$lcsuffix' (path '$path')";
-	    }
+	    die "unknown suffix '$lcsuffix' (path '$path')";
 	}
     }
 }
