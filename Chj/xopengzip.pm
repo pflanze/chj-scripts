@@ -77,7 +77,7 @@ use Chj::opencachefile qw(opencachefile if_open_else);
     sub _Cache_access {
 	my ($xseekpath)=@_;
 	# drop oldest
-	our @entries=
+	my @entries=
 	  (
 	   sort {
 	       $$a[1] <=> $$b[1]
@@ -94,7 +94,7 @@ use Chj::opencachefile qw(opencachefile if_open_else);
 	   keys %seekcache
 	  );
 	while (@entries >= $seekcache_maxsize) {
-	    my ($path,$t)= @{pop @entries};
+	    my ($path,$t)= @{shift @entries};
 	    unlink $path; # can fail with concurrency
 	    delete $seekcache{$path}
 	}
