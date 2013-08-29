@@ -1,7 +1,7 @@
 ml2json is copyright by Christian Jaeger and offered under the MIT
 License, with the exception of the file
-"lib/Chj/Ml2json/m2h_text_enriched.pm" and the files below "perllib/"
-and "ftemplate/" which are included for convenience only and have
+`lib/Chj/Ml2json/m2h_text_enriched.pm` and the files below `perllib/`
+and `ftemplate/` which are included for convenience only and have
 their own copyright and licensing statements.
 
 
