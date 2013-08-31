@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Sat Aug 31 09:46:22 CEST 2013
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Merge by sorting after  ehr whatever,  
+
+  Options:
+    --replace-time   replace time field with localtime of parsed value
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_replacetime;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "replace-time"=> \$opt_replacetime,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::Parse::Apache::Accesslog -importprefix=>"AL_";
+use Chj::xopen "xopen_read";
+
+our $parser=new Chj::Parse::Apache::Accesslog;
+
+##hack  bad all in mem lol.
+our @lines;
+our $filecount= "a";
+sub readfile {
+    my ($path)=@_;
+    my $filecount= $filecount++;
+    my $in= xopen_read $path; #gzip thing?wl har.
+    while (<$in>) {
+	chomp;
+	if ($parser->parseline_time($_)) {
+	    my $t= $parser->[AL_Unixtime];
+	    if ($opt_replacetime) {
+		s/\[(.*)\]/'['.localtime($t).']'/e;
+	    }
+	    push @lines, [$t,$_,$filecount];
+	} else {
+	    warn "parse error on line: $_"; # $parser->errmsg
+	}
+    }
+    $in->xclose;
+}
+readfile $_ for @ARGV;
+
+sub printsort {
+    for (sort { $$a[0] <=> $$b[0] } @lines) {
+	print $$_[1], " $$_[2]\n";
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl; exit
+printsort
