@@ -1,9 +1,8 @@
-# Wed Aug 31 14:30:04 2005  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
+# Wed Aug 31 14:30:04 2005  Christian Jaeger, ch .. christianjaeger . ch
 # 
-# Copyright 2004 by Christian Jaeger
+# Copyright 2004-2013 by Christian Jaeger
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -32,7 +31,9 @@ $Chj::Excel::ParseCSV::separator .
 
 getrow returns an array ref, or undef on eof.
 
-(Why doesn't the emptylist trick work? because of empty lines, and it would be waste to copy the output list to a new array in the while loop just to be able to check against the number of items first.)
+(Why does the emptylist trick not work? Because of empty lines, and it
+would be waste to copy the output list to a new array in the while
+loop just to be able to check against the number of items first.)
 
 =cut
 
@@ -59,7 +60,8 @@ sub new {
 sub getchar {
     my $s=shift;
     if ($$s[Eof]) {
-	die "getchar: eof reached";#shouldn't happen since getchar shouldn't be called then.
+	die "getchar: eof reached";
+	# shouldn't happen since getchar shouldn't be called then.
     } else {
 	my $ch;
 	if ($$s[Port]->xread($ch,1)) {
@@ -101,7 +103,7 @@ sub getrow {
 				$str.=$ch;
 			    }
 			    elsif ($nextch eq "\n") {
-				# auch gleich abschluss der row
+				# termination of row at the same time
 				push @row, _dequote $str;#
 				return \@row;
 			    }
@@ -110,17 +112,13 @@ sub getrow {
 				next FIELD;
 			    }
 			    else {
-				die "fehlerhafterinput";
+				die "invalid input";
 			    }
 			} else {
-			    # #goto ENDEFIELD;
-			    # #last;#last CHAR_OF_FIELD;
-			    # #goto ENDEROW nein sogar ende file hum. alles klar hier loopts fangswieder von vorne an.
 			    push @row, _dequote $str;#
 			    $$s[Eof]=1;
 			    carp __PACKAGE__."::getrow: warning: last line doesn't end in newline";
 			    return \@row;
-			    # # hei teufel warum immer noch loop?
 			}
 		    }
 		    else  {
@@ -133,7 +131,7 @@ sub getrow {
 	    }
 	    else {
 		# non-quoted mode.
-		my $str=$ch; #heps scho kool diese impliziten resp einfach trivialen konversionen  , char gibtsnich ist string..
+		my $str=$ch;
 		while(defined(my$ch=$s->getchar)){
 		    if ($ch eq $separator) {
 			push @row, _dequote $str;#
@@ -154,10 +152,12 @@ sub getrow {
 	    }
 	}
 	$$s[Eof]=1;
-	# only output a row in this missing-nl-on-last-line case if a field has actually been read
+	# only output a row in this missing-nl-on-last-line case if a
+	# field has actually been read
 	if (@row) {
 	    carp __PACKAGE__."::getrow: warning: last line doesn't end in newline";
-	    #HMMM we only get here if it ends in the midst of a field. After a ; it leaves somewhere above.  of course.
+	    # Hm we only get here if it ends in the midst of a
+	    # field. After a ; it leaves somewhere above.  of course.
 	    return \@row;
 	} else {
 	    return
