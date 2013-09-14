@@ -13,9 +13,10 @@ Chj::Excel::ParseCSV
  use Chj::Excel::ParseCSV;
  use Chj::xopen 'xopen_read';
  use Chj::schemestring;
- my $s= new Chj::Excel::ParseCSV xopen_read("input.csv");
- #   or, to use a different separator than the one in
- #   $Chj::Excel::ParseCSV::separator :
+ my $s= new Chj::Excel::ParseCSV xopen_read
+    ("input.csv", undef, 1);
+ # the second argument can be the separator to use, if a different one
+ # than the one in $Chj::Excel::ParseCSV::separator
  # my $s= new Chj::Excel::ParseCSV xopen_read("input.csv"),",";
  print "(\n";
  while(my $row= $s->getrow) {
@@ -51,6 +52,7 @@ use Class::Array -fields=>
   -publica=>
   'port',
   'separator',
+  'Ignore_CR',
   'eof' #bool
   ;
 
@@ -62,7 +64,7 @@ our $separator= ";";
 sub new {
     my $class=shift;
     my $s= $class->SUPER::new;
-    (@$s[Port,Separator])=@_;
+    (@$s[Port,Separator,Ignore_CR])=@_;
     $$s[Separator] = $separator
       unless defined $$s[Separator];
     $s
@@ -116,6 +118,13 @@ sub getrow {
 				# termination of row at the same time
 				push @row, _dequote $str;#
 				return \@row;
+			    }
+			    elsif ($nextch eq "\r") {
+				if ($$s[Ignore_CR]) {
+				    # XXX blindly rely on the next char being "\n"
+				} else {
+				    die "got CR outside a field but was not configured to ignore it";
+				}
 			    }
 			    elsif ($nextch eq $separator) {
 				push @row, _dequote $str;#
