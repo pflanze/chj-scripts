@@ -26,6 +26,9 @@ Chj::Excel::ParseCSV
 
 =head1 DESCRIPTION
 
+This only works correctly for LF terminated files, not CRLF. ** use
+Text::CSV instead **, its XS version is faster anyway.
+
 Parse CSV files as written by MS Excel.
 
 By default uses ; as column separator since the MS Excel program I'm
