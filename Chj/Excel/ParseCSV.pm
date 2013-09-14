@@ -13,7 +13,10 @@ Chj::Excel::ParseCSV
  use Chj::Excel::ParseCSV;
  use Chj::xopen 'xopen_read';
  use Chj::schemestring;
- my $s= new Chj::Excel::ParseCSV xopen_read("WdWPosts7korrigiertcj.csv");
+ my $s= new Chj::Excel::ParseCSV xopen_read("input.csv");
+ #   or, to use a different separator than the one in
+ #   $Chj::Excel::ParseCSV::separator :
+ # my $s= new Chj::Excel::ParseCSV xopen_read("input.csv"),",";
  print "(\n";
  while(my $row= $s->getrow) {
      print "(", join(" ",map{schemestring $_} @$row),")\n";
@@ -27,7 +30,9 @@ Parse CSV files as written by MS Excel.
 By default uses ; as column separator since the MS Excel program I'm
 using is actually using those, not the comma, when being told to write
 CSV files. You can change that by setting
-$Chj::Excel::ParseCSV::separator .
+$Chj::Excel::ParseCSV::separator (value picked up when creating the
+Chj::Excel::ParseCSV object) or pass it as second argument to the
+constructor call.
 
 getrow returns an array ref, or undef on eof.
 
@@ -45,15 +50,20 @@ use strict;
 use Class::Array -fields=>
   -publica=>
   'port',
+  'separator',
   'eof' #bool
   ;
 
 use Carp;
 
+our $separator= ";";
+
 sub new {
     my $class=shift;
     my $s= $class->SUPER::new;
-    ($$s[Port])=@_;
+    (@$s[Port,Separator])=@_;
+    $$s[Separator] = $separator
+      unless defined $$s[Separator];
     $s
 }
 
@@ -78,10 +88,9 @@ sub _dequote {
     $str
 }
 
-our $separator= ";";
-
 sub getrow {
     my $s=shift;
+    my $separator= $$s[Separator];
     if ($$s[Eof]) {
 	return;
     } else {
@@ -112,7 +121,7 @@ sub getrow {
 				next FIELD;
 			    }
 			    else {
-				die "invalid input";
+				die "invalid input: '$nextch'";
 			    }
 			} else {
 			    push @row, _dequote $str;#
