@@ -146,7 +146,6 @@ sub getrow {
 			$str.=$ch;
 		    }
 		}
-	      ENDEFIELD:
 		push @row, _dequote $str;#
 		return \@row;
 	    }
@@ -161,6 +160,9 @@ sub getrow {
 		    elsif ($ch eq "\n") {
 			push @row, _dequote $str;#
 			return \@row;
+		    }
+		    elsif ($ch eq "\r" and $$s[Ignore_CR]) {
+			#warn "ignored CR"
 		    }
 		    else {
 			$str.=$ch;
