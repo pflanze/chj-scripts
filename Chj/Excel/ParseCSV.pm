@@ -55,6 +55,7 @@ use Class::Array -fields=>
   ;
 
 use Carp;
+use Chj::singlequote 'singlequote';
 
 our $separator= ";";
 
@@ -121,7 +122,9 @@ sub getrow {
 				next FIELD;
 			    }
 			    else {
-				die "invalid input: '$nextch'";
+				die ("invalid input: "
+				     .singlequote($nextch)
+				     ." (ord ".ord($nextch).")");
 			    }
 			} else {
 			    push @row, _dequote $str;#
