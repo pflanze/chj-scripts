@@ -119,7 +119,7 @@ sub ren {
 		    my $newpath= "$folder$newname";
 		    #print "newpath='$newpath'\n";
 		    if (lstat $newpath) {
-			die "target exists - unfinished, ask user here";###unfini
+			die "target exists"; # ask user for forcing instead?
 			if(!1){
 			    return
 			}
