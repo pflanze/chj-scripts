@@ -138,7 +138,7 @@ sub ren {
 				} or do {
 				    my $e=$@;
 				    if ($e=~
-					m/can't link to target: Function not implemented/
+					m/can't link to target: (?:Function not implemented|Operation not permitted)/
 				       ) {
 					# sshfs.
 					die "target already exists (maybe as symlink): '$newpath'"
