@@ -7,6 +7,9 @@ use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+our $filebase= "/tmp/$myname";
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname code [env [bindings]]
@@ -27,6 +30,9 @@ sub usage {
 
   Options:
 #  -p|--perl    code is given in perl --to be done
+   --filebase pathbase
+                use pathbase instead of /tmp/$myname (a random number
+                is appended directly, without adding a slash between)
 
   (Christian Jaeger <$email>)
 ";
@@ -45,8 +51,10 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_perl;
+
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "filebase=s"=> \$filebase,
 	   #"perl"=> \$opt_perl,
 	   ) or exit 1;
 usage unless @ARGV>=1 and @ARGV<=3;
@@ -70,12 +78,7 @@ sub Split {
 my @env= Split $maybe_env;
 my @bindings= Split $maybe_bindings;
 
-
-#my $codefile=xtmpfile;
-#my $wrapperfile=xtmpfile;
-#or put both parts into one?.
-
-my $prog= xtmpfile;
+my $prog= xtmpfile $filebase;
 
 # assume shell coding:
 
