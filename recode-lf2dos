@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# hack since the perl recode-lf script is broken (mmap lib)
+
+#inplace $(lambda "sed 's/\n/\r\n/g'") "$@"
+#not working actually. does sed magic input?
+
+inplace $(lambda "perl -wne 's/\n/\r\n/g;print'") "$@"
