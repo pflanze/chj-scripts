@@ -70,14 +70,48 @@ sub mountinfos {
 
 # /library
 
-sub mountpoints {
-    map { $_->mountpoint } mountinfos
+
+our $suppress_type=
+  { sysfs=> 1,
+    proc=> 1,
+    devpts=> 1,
+    usbfs=> 1,
+    fusectl=> 1,
+    tmpfs=> 0 };
+
+sub mountpoints ($) {
+    my ($all)=@_;
+    map {
+	#do{use Chj::repl; repl;};
+	if ($all) {
+	    $_->mountpoint
+	} else {
+	    my $t= $_->type2;
+	    if ($$suppress_type{$t}) {
+		()
+	    } else {
+		$_->mountpoint
+	    }
+	}
+    } mountinfos
+}
+
+sub my_df {
+    exec "df", "--", @_;
+}
+
+sub df {
+    exec "df", @_
 }
 
 if (@ARGV) {
-    exec "df", @ARGV;
+    if (@ARGV==1 and ($ARGV[0] eq "-a" or $ARGV[0] eq "--all")) {
+	my_df mountpoints(1)
+    } else {
+	df @ARGV
+    }
 } else {
-    exec "df", "--", mountpoints;
+    my_df mountpoints(0)
 }
 
 #use Chj::ruse;
