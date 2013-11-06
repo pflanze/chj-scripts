@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Wed Nov  6 20:31:01 GMT 2013
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -11,13 +11,24 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname
 
-  Call trash ('tra') on untracked files in the current working dir.
+  Call trash ('tra') on untracked files in the current git working
+  directory (by default, only files under CWD and below).
+
+  Options:
+    -a   also trash files outside the CWD.
 
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
+use Getopt::Long;
+our $verbose=0;
+our $opt_all;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "all"=> \$opt_all,
+	   ) or exit 1;
 usage if @ARGV;
 
 use Chj::IO::Command;
@@ -32,26 +43,41 @@ sub git_prefix {
     $res
 }
 
+sub git_cdup {
+    my $c= Chj::IO::Command->new_sender(qw"git rev-parse --show-cdup");
+    my $res= $c->xcontent;
+    $c->xxfinish;
+    # sigh, git tools really are not consistent. There's no -z flag
+    # for rev-parse.
+    chomp $res;
+    $res
+}
+
 sub ls {
     my $ls= Chj::IO::Command->new_sender
       ("git","status",
-       # only want those from the current location within the working
-       # dir, ok?:
-       #"--short", sigh, does not work together with -z
        "-z",
-       # at least restrict paths to below CWD:
-       "."
+       ($opt_all ? () : ".")
       );
     my $prefix= git_prefix;
     local $/ = "\0";
     my @f;
     while (<$ls>) {
 	chomp;
+	#warn "seeing '$_'";
 	if (/^\?\? (.*)/s) {
 	    my $path=$1; # full path at this point
-	    if ($path=~ s/^\E$prefix//s) {
+	    if ($opt_all) {
+		# sigh, now I also have to diff the path? Or, require
+		# the caller to chdir there. Ugly
 		push @f, $path
+	    } else {
+		if ($path=~ s/^\E$prefix//s) {
+		    push @f, $path
+		}
 	    }
+	} else {
+	    #warn "ignoring '$_'";
 	}
     }
     $ls->xxfinish;
@@ -60,6 +86,9 @@ sub ls {
 
 use Chj::xperlfunc;
 
+if ($opt_all) {
+    xchdir git_cdup
+}
 xexec "trash", ls
 
 #use Chj::ruse;
