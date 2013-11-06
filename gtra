@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Wed Nov  6 20:31:01 GMT 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Call trash ('tra') on untracked files in the current working dir.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage if @ARGV;
+
+use Chj::IO::Command;
+
+sub git_prefix {
+    my $c= Chj::IO::Command->new_sender(qw"git rev-parse --show-prefix");
+    my $res= $c->xcontent;
+    $c->xxfinish;
+    # sigh, git tools really are not consistent. There's no -z flag
+    # for rev-parse.
+    chomp $res;
+    $res
+}
+
+sub ls {
+    my $ls= Chj::IO::Command->new_sender
+      ("git","status",
+       # only want those from the current location within the working
+       # dir, ok?:
+       #"--short", sigh, does not work together with -z
+       "-z",
+       # at least restrict paths to below CWD:
+       "."
+      );
+    my $prefix= git_prefix;
+    local $/ = "\0";
+    my @f;
+    while (<$ls>) {
+	chomp;
+	if (/^\?\? (.*)/s) {
+	    my $path=$1; # full path at this point
+	    if ($path=~ s/^\E$prefix//s) {
+		push @f, $path
+	    }
+	}
+    }
+    $ls->xxfinish;
+    @f
+}
+
+use Chj::xperlfunc;
+
+xexec "trash", ls
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
