@@ -58,6 +58,7 @@ sub mounts {
     while (<$f>) {
 	my @f= split " ";
 	@f == 6 or die "line in /proc/mounts with different number of fields";
+	# ^ XXX does linux provide some form of escaping?
 	push @m, bless \@f, "CHJ::Mount";
     }
     $f->xclose;
