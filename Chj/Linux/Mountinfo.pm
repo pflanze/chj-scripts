@@ -66,7 +66,7 @@ sub mounts {
 
 {
     package CHJ::Mountinfo;
-    our @fields=qw(dunno1 dunno2 inode from mountpoint options
+    our @fields=qw(dunno1 dunno2 dev from mountpoint options
 		   dunno3 type1 type2 moreoptions);
     my $i=0;
     for (@fields) {
