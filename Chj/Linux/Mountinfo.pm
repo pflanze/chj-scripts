@@ -66,7 +66,7 @@ sub mounts {
 
 {
     package CHJ::Mountinfo;
-    our @fields=qw(dunno1 dunno2 dev from mountpoint options
+    our @fields=qw(dunno1 dunno2 dev_major_minor from mountpoint options
 		   dunno3 type1 type2 moreoptions);
     my $i=0;
     for (@fields) {
@@ -74,6 +74,11 @@ sub mounts {
 	my $idx= $i;
 	*$_= sub { my $s=shift; $$s[$idx] };
 	$i++
+    }
+    sub dev {
+	my $s=shift;
+	my @d= split ":", $s->dev_major_minor;
+	$d[0]*256 + $d[1]
     }
 }
 
