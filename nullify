@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+# Thu Nov 14 12:50:03 GMT 2013
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  Replace path(s) with empty files. (To make space, but leave behind
+  the filename, with the original mtime [and permissions].)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xsysopen ":all";
+use Chj::xperlfunc ":all";
+
+sub nullify {
+    my ($path)=@_;
+    $path=~ m|[^/]\z|
+      or die "path does not end with filename: '$path'";
+    my $s= xlstat $path;
+    die "is a symlink: '$path'"
+      if $s->is_symlink;
+    my $tmp= $path."-tmp".rand;
+    my $f= xsysopen $tmp, O_EXCL|O_CREAT;
+    $f->xclose;
+    eval {
+	xchown $s->uid,$s->gid, $tmp;
+	1
+    }||do{
+	warn "could not chown '$path': $@"
+    };
+    xchmod $s->mode, $tmp; # does that always work?
+    xutime $s->atime, $s->mtime, $tmp;
+    xrename $tmp, $path;
+}
+
+nullify $_
+  for @ARGV;
+# no confirmation at all?
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
