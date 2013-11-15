@@ -15,18 +15,26 @@ sub usage {
   sure about gmail) outgoing links are represented as. If no argument
   given, read stdin.
 
+  Options:
+    --pass-through
+        If there's no match, just print the original value.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
+$|++;
+
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our $opt_passthrough;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
+	   "pass-through"=> \$opt_passthrough,
+	  ) or exit 1;
 
 
 use Chj::IO::Command;
@@ -39,7 +47,11 @@ sub degoogle {
 	$c->xxfinish;
 	print "\n";
     } else {
-	warn "no match for url '$str'\n";
+	if ($opt_passthrough) {
+	    print $str;
+	} else {
+	    warn "no match for url '$str'\n";
+	}
     }
 }
 
