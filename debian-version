@@ -125,6 +125,15 @@ our $releases=
    # "Debian 7.1 was released June 15th, 2013. Debian 7.0 was initially released on May 4th, 2013. The release included many major changes, described in our press release" hu  then linking to the press release for 7.0. WTH. hm that's on the 7.0 release page ah. well.
    #short entries for aliases, ok?
    ["wheezy", "7.1"],
+   ["wheezy", "7.2"],
+   ["wheezy", "7.3"],
+   ["wheezy", "7.4"],
+   ["wheezy", "7.5"],
+   ["wheezy", "7.6"],
+   ["wheezy", "7.7"],
+   ["wheezy", "7.8"],
+   ["wheezy", "7.9"],
+
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
