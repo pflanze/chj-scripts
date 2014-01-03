@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "usage: $0 {/dev,}device"
+    echo "  Put disk to sleep."
+    echo "  Since I *never* remember the right option to hdparm."
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+dev="$1"
+
+if ! echo -- "$dev" | grep -q /; then
+    dev="/dev/$dev"
+fi
+
+hdparm -y "$dev"
