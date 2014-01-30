@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -eu
+
+help () {
+    echo "$0 id outpath.tgz"
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    help
+fi
+
+id="$1"
+outpath="$2"
+
+bn=`basename "$outpath" .tgz`
+
+set -x
+
+git archive --format=tar --prefix="$bn"/ "$id" | gzip > "$outpath"
+# ^yeah, don't forget the / ..
