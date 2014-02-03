@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -eu
+
+help () {
+    echo "$0 user"
+    echo "  create tap device with given username or uid."
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    help
+fi
+
+user="$1"
+
+tunctl -u "$user"
+echo '(To delete it, run: tunctl -d $dev)'
