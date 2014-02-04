@@ -22,13 +22,16 @@ the latter if the former doesn't implement the same functionality as
 the latter. -- Well actually *always* require the latter since the
 former doesn't require the last path segment to exist :/.
 
+Optionally exports realpath, same as above but returns undef instead
+of exception.
+
 =cut
 
 
 package Chj::xrealpath;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(xrealpath);
-@EXPORT_OK=qw(xrealpath_dirname);
+@EXPORT_OK=qw(xrealpath_dirname realpath);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -50,17 +53,22 @@ use strict;
 #so we don't want this, right
 
 BEGIN {
-    if (0 and $] >= 5.008) {
-	warn "using Cwd::abs_path";
+    if ($] >= 5.008) {
+	#warn "using Cwd::abs_path";
 	require Cwd;
+	*realpath= sub ( $ ) {
+	    my ($path)=@_;
+	    scalar Cwd::abs_path ($path)
+	};
 	*xrealpath= sub ( $ ) {
 	    my ($path)=@_;
 	    my $res= Cwd::abs_path ($path);
 	    defined ($res) ? $res : die "xrealpath('$path'): $!";
 	};
     } else {
-	#warn "using Chj::Cwd::realpath::xrealpath";
+	warn "using Chj::Cwd::realpath::xrealpath";
 	require Chj::Cwd::realpath;
+	*realpath= *Chj::Cwd::realpath::realpath;
 	*xrealpath= *Chj::Cwd::realpath::xrealpath;
     }
 }
