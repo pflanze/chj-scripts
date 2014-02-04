@@ -72,7 +72,7 @@ sub ls {
 		# the caller to chdir there. Ugly
 		push @f, $path
 	    } else {
-		if ($path=~ s/^\E$prefix//s) {
+		if ($path=~ s/^\Q$prefix//s) {
 		    push @f, $path
 		}
 	    }
