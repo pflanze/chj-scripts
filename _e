@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Chj::Cwd::realpath ;
+use Chj::xrealpath 'realpath';
 use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
 use Chj::Unix::exitcode;
 use Chj::oerr;
