@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "# g-gc --aggressive is bad for performance."
+echo "# Undo it with: git repack -a -d -f"
