@@ -15,6 +15,7 @@ sub usage {
 
   --fullpath  full path (including directory) is output, not only
               the filename.
+  -a|--all    don't ignore dot files
 
   (Christian Jaeger <$email>)
 ";
@@ -24,6 +25,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_fullpath;
+my $opt_a;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -33,6 +35,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?a(ll)?$/) {
+	$opt_a=1;
     } elsif (/^--?full(?:-?path(?:=(.*))?)?$/) {
         if (defined $1) {
             $opt_fullpath=$1
@@ -47,7 +51,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
-$opt_fullpath = 1 if @args > 1;
+$opt_fullpath = 1
+  if @args > 1;
 
 sub showit {
     my ($dir)=@_;
@@ -59,7 +64,8 @@ sub showit {
 
     my @items;
     while (defined ($_=readdir DIR)){
-	next if /^[.~]/ or /~\z/;
+	next if ($_ eq "." or $_ eq "..");
+	next if (not $opt_a and (/^[.~]/ or /~\z/));
         my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
         if (-f _) {
 	    push @items,[$opt_fullpath ? "$dir/$_" : $_,
@@ -68,9 +74,9 @@ sub showit {
     }
 
     if (@items) {
-	print (
-	       (sort { $b->[1] <=> $a->[1] } @items)[0]->[0]
-	      );# heh, -> after the [0] is necessary here
+	print(
+	      (sort { $b->[1] <=> $a->[1] } @items)[0]->[0]
+	     );# heh, -> after the [0] is necessary here
 	print "\n";
     } # else  return error status ?
 }
