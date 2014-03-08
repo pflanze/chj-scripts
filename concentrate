@@ -27,15 +27,23 @@ PATH=/opt/chj/ssh-config-gen/:"$PATH"
 infile=/etc/hosts-in
 outfile=/etc/hosts
 
+mycpp () {
+    (
+	printenv -0 | perl -wn0e 'print "-D$_"' | xargs -0 -- cpp /dev/fd/10 "$@"
+	# | tee /dev/fd/2
+    ) 10<&0
+}
+
+
 if [ -f "$infile" -a -f "$outfile" ]; then
 
     case "$1" in
 	start)
-	filter_file "$infile"|cpp -Dmode_concentrate=1 > "$outfile"
+	filter_file "$infile" | mycpp -Dmode_concentrate=1 > "$outfile"
 	log start
 	;;
 	stop)
-	filter_file "$infile"|cpp -Dmode_concentrate=0 > "$outfile"
+	filter_file "$infile" | mycpp -Dmode_concentrate=0 > "$outfile"
 	log stop
 	;;
 	*)
