@@ -13,6 +13,10 @@ sub usage {
 
   interactively edit filenames
 
+   -d|--debug
+   --help
+   --print-only
+
   (Christian Jaeger <$email>)
 ";
 exit @_ ? 1 : 0;
