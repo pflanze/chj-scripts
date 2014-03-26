@@ -13,7 +13,7 @@ if [ $# -eq 1 ]; then
 	    if [ "$EDITOR" = "nc" ]; then 
 		exec nc -line 3 "$1"
 	    elif [ "$EDITOR" = "e" ]; then
-		exec e +3 "$1"
+		exec e "$1"
 	    else
 		exec "$EDITOR" "$1"
 	    fi
