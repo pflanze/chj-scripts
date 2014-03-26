@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cat <<'EOF'
+Things I never remember and never can find again from 'man less'
+without a linear scan:
+
+ Position 'n'/'N' search result jumps to another line than 0:
+       -jn or --jump-target=n
+
+EOF
