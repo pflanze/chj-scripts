@@ -7,4 +7,6 @@ without a linear scan:
  Position 'n'/'N' search result jumps to another line than 0:
        -jn or --jump-target=n
 
+ Search non-regex:
+       / ctrl-r
 EOF
