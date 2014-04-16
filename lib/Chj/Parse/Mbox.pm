@@ -15,7 +15,7 @@ Chj::Parse::Mbox
  stream_for_each sub {
     my ($t,$lines,$cursor)= @{$_[0]};
     ... @$lines ...
-    # $cursor is a Chj::Parse::Mbox::Cursor object
+    # $cursor is a Chj::Parse::Mbox::Section object
  }, mbox_stream_open "some/path.txt"
 
 =head1 DESCRIPTION
