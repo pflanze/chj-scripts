@@ -6,6 +6,7 @@
 use strict;
 
 our $sleeptime= 0.1;#
+our $postsleeptime=0.1;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -17,10 +18,15 @@ sub usage {
   (looking at stat info only). Exit with error code if there was an
   error.
 
-  Do this by polling (wech) with sleeptime $sleeptime seconds.
+  Do this by polling with sleeptime $sleeptime seconds.
 
-  * This might be a stepping stone in the simplification of my many
-  * old scripts like watchandprocess, observe_contentchange, ..
+  Options:
+
+    --post x   sleep x instead of $postsleeptime seconds after noticing
+               a change (floating point value)
+
+  (This might be a stepping stone in the simplification of my many
+   old scripts like watchandprocess, observe_contentchange, ..)
 
   (Christian Jaeger <$email>)
 ";
@@ -31,6 +37,7 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "post=s"=> \$postsleeptime,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -64,6 +71,9 @@ OUTER: { #GR
 	}
     }
 }
+
+sleep $postsleeptime
+  if $postsleeptime;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
