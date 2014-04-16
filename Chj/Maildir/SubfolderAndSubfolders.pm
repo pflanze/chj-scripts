@@ -167,44 +167,7 @@ sub record_subfolders { # record_scanning_for_subfolders
 sub rename {
     my $s=shift;
     my ($newname)=@_;
-    # shit: vorhernachher. ein parent benennt sich um. childs nachziehen.
-    # muss ich listen machen? kann ich nicht rekursiv.
-    # luschtig, ob haskell (lazy eval?) hier helfen würde?
-    # oder switcherei?  iterator, der next child, aber immer den parent der renamed werden soll mit führt?.
     my $oldname= $$s[Me]->name;
-#     {
-# 	my $oldbasepath= $$s[Me]->basepath;
-# 	$$s[Me]->set_name($newname);
-# 	my $newbasepath= $$s[Me]->basepath;
-# 	rename $oldbasepath,$newbasepath or do {
-# 	    if ($!==EEXIST  or $!==ENOTEMPTY) {# latter only for obscure systems?
-# 		return 0
-# 	    } else {
-# 		croak "rename: rename $oldbasepath,$newbasepath: $!";
-# 	    }
-# 	};
-#     }
-#     # iterator stuff:
-#     my $do;
-#     $do=sub {
-# 	my ($self)=@_;
-# 	#for my $child (values %{$$s[Subfolders]}) { NOPE
-# 	for my $child (values %{$$self[Subfolders]}) {
-# 	    $$s[Me]->set_name($oldname);
-# 	    my $oldbasepath= $child->[Me]->basepath;
-# 	    $$s[Me]->set_name($newname);
-# 	    my $newbasepath= $child->[Me]->basepath;
-# $DB::single=1;
-# 	    rename $oldbasepath,$newbasepath or do {
-# 		if ($!==EEXIST  or $!==ENOTEMPTY) {# latter only for obscure systems?
-# 		    return 0
-# 		} else {
-# 		    croak "rename: rename $oldbasepath,$newbasepath: $!";
-# 		}
-# 	    };
-# 	    $do->($child);
-# 	}
-#     };
     # read subsciptions (see also comment below):
     my $basedirectorypath= $$s[Me]->basedirectorypath;
     my $subscriptionfilepath= "$basedirectorypath/courierimapsubscribed";
