@@ -1,9 +1,7 @@
-# Wed Jul 21 16:02:09 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2004 by Christian Jaeger
+#
+# Copyright 2004-2014 by Christian Jaeger, ch at christianjaeger ch
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -46,9 +44,13 @@ sub new {
     $s
 }
 
-sub new_from_subbasename { # parentkette bilden und mich, am schluss, zurückgeben.     ALMOST same thing in SubfolderAndSubfolders.pm
+# build parent chain and return myself at the end. (Almost same thing
+# in SubfolderAndSubfolders.pm.)
+sub new_from_subbasename {
     my $class=shift;
-    my ($parent,$subbasename)=@_;# bei fla/Maildir/.blah.bluh.blam: und wir sind blah, dann: subbasename: .bluh.blam
+    my ($parent,$subbasename)=@_;
+    # with 'fla/Maildir/.blah.bluh.blam', we are 'blah',
+    #   then subbasename is '.bluh.blam'
     if ($subbasename=~ s/^\.([^.]+)//s) {
 	my $quotedname=$1;
 	my $s=$class->new_quoted($parent,$quotedname);
@@ -87,7 +89,7 @@ sub basefolder { # get the basefolder (toplevel parent) object
 
 sub _unquotename {
     my $n=shift;
-    #$n=~ s|0x  nee, wo ischt ende?
+    #$n=~ s|0x  nah
     $n=~ s/\&ANY-/Ö/sg;
     $n=~ s/\&APY-/ö/sg;
     $n=~ s/\&ANw-/Ü/sg;
@@ -95,9 +97,10 @@ sub _unquotename {
     $n=~ s/\&AMQ-/Ä/sg;
     $n=~ s/\&AOQ-/ä/sg;
     $n=~ s/\&-/\&/sg;
-    $n=~ s/\\0/\0/sg;#nicht unbedingt originalgetreu
-    $n=~ s|--|/|sg;#nicht unbedingt originalgetreu
-    $n=~ s/,/\./sg;#nicht unbedingt originalgetreu
+    # XX these are not necessarily restoring the original:
+    $n=~ s/\\0/\0/sg;
+    $n=~ s|--|/|sg;
+    $n=~ s/,/\./sg;
     $n
 }
 
@@ -116,8 +119,9 @@ sub quotedname {
     my $n= $s->truncator->trunc($$s[Name]);
     # change the chars which aren't escaped by encode_imap:
     $n=~ s/\./,/sg;##
-    $n=~ s|/|--|sg;##  ps kann auf ersetzerei aussenrum ev verzichen dann.?
-    $n=~ s/\0/\\0/sg;##  (just to be sure weil weiss nie wie sich das schraeg auswirken kann wenn in c string umgewandelt wird)
+    $n=~ s|/|--|sg;##  ps can't do without replacement outside? --?
+    # (possibly important for security, too: )
+    $n=~ s/\0/\\0/sg;
     # Thunderbird and/or Dovecot munge everything starting from and
     # including any ">" char, so replace that one as well:
     $n=~ s/>/}/sg;
@@ -129,7 +133,7 @@ sub imapboxstring {
     my $s=shift;
     my $parent_imapboxstring= $$s[Parent]->imapboxstring;
     (defined($parent_imapboxstring) ? $parent_imapboxstring."." : "")
-      . $s->quotedname # $$s[Name]; ## oder darf hier / vorkommen?
+      . $s->quotedname # $$s[Name]; ## or may / be used here?
 }
 
 
@@ -138,7 +142,9 @@ sub basedirectorypath {
     $$s[Parent]->basedirectorypath
 }
 
-sub lock { # create lock file in basefolder (if not exists) and lock it and return that lock
+# create lock file in basefolder (if not exists) and lock it and
+# return that lock
+sub lock {
     my $s=shift;
     my ($is_allowed_to_create_basedir)=@_;
     my $basedirectorypath= $s->basedirectorypath;
@@ -150,7 +156,8 @@ sub lock { # create lock file in basefolder (if not exists) and lock it and retu
 }
 
 
-our $subscribedfilename= "subscriptions"; # "subscriptions" for dovecot; "courierimapsubscribed" for courier.
+# "subscriptions" for dovecot; "courierimapsubscribed" for courier.
+our $subscribedfilename= "subscriptions";
 
 sub create {
     my $s=shift;
@@ -162,7 +169,7 @@ sub create {
 
     # first create parents
     $$s[Parent]->create($subscribe, $lock);
-    $s->maildirmake or return;# we exist already (right?) (ç)
+    $s->maildirmake or return;# we exist already (XX right?)
 
     my $basepath= $s->basepath;
     xsysopen "$basepath/maildirfolder",O_CREAT,0700;
@@ -180,12 +187,16 @@ sub basepath {
     $$s[Parent]->basepath . "." . $s->quotedname #  $$s[Name]
 }
 
-sub exists { #note: currently only used internally by Subfolder class (there's no such method in Basefolder class)
+sub exists {
+    # note: currently only used internally by Subfolder class (there's
+    # no such method in Basefolder class)
     my $s=shift;
     -d $s->basepath  # good enough check?
 }
 
-sub basename {# haha, in the shell `basename` sense: the last part of the unix path that's without slashes.
+sub basename {
+    # in the shell `basename` sense: the last part of the unix path
+    # without slashes
     my $s=shift;
     $$s[Parent]->basename . "." . $s->quotedname
 }
@@ -207,4 +218,4 @@ sub basename {# haha, in the shell `basename` sense: the last part of the unix p
 # }
 
 
-1;
+1

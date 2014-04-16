@@ -1,9 +1,7 @@
-# Wed Jul 21 16:04:04 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2004 by Christian Jaeger
+#
+# Copyright 2004-2014 by Christian Jaeger, ch at christianjaeger ch
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -21,7 +19,7 @@ package Chj::Maildir::Basefolder;
 
 use strict;
 
-use Chj::Path::Truncator::MD5;# a bit misused here.
+use Chj::Path::Truncator::MD5; # a bit misused here.
 
 use Chj::Maildir -extend=> (
 			    'Basedirectorypath',# unix path
@@ -36,7 +34,9 @@ sub new {
     $s
 }
 
-sub basefolder { # get the basefolder (toplevel parent) object (recursively called from Subfolder)
+# get the basefolder (toplevel parent) object (recursively called from
+# Subfolder)
+sub basefolder {
     my $s=shift;
     $s
 }
@@ -63,29 +63,33 @@ sub imapboxstring {
 #}
 
 sub create {
-    #my $class=shift;
     my $s=shift;
     $s->maildirmake;
 }
 
-sub basepath { # unix path to directory containing new/cur/tmp/etc.
+# unix path to directory containing new/cur/tmp/etc.
+sub basepath {
     my $s=shift;
-    $$s[Basedirectorypath]."/";# / is needed so that recursion will work out from Subfolder
+    $$s[Basedirectorypath]."/";
+    # ^ / is needed so that recursion from Subfolder will work
 }
 
-sub basename {# see Subfolder.pm;
+# see Subfolder.pm
+sub basename {
     ""
 }
 
 sub basedirectorypath { shift->[Basedirectorypath] }
 
 
-
 sub truncator {
     my $s=shift;
     $$s[Truncator]||= do {
 	my $t= Chj::Path::Truncator::MD5->new($$s[Basedirectorypath]);
-	my $max= int( $t->maxfilename / 2.5);# +- arbitrary decision by myself that we occupy up to half the space - this should allow to get a nesting depth of 2 of automatically generated folders after all.
+	my $max= int( $t->maxfilename / 2.5);
+	# ^ +- arbitrary decision that we occupy up to half the space
+	# - this should allow to get a nesting depth of 2 of
+	# automatically generated folders.
 	$t->set_maxfilename($max);
 	$t
     };
@@ -96,5 +100,4 @@ sub set_truncator {
 }
 
 
-
-1;
+1

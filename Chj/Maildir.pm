@@ -1,9 +1,7 @@
-# Wed Jul 21 15:49:55 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2004 by Christian Jaeger
+#
+# Copyright 2004-2014 by Christian Jaeger, ch at christianjaeger ch
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -16,8 +14,11 @@ Chj::Maildir
 
 =head1 TODO
 
- - quoting. derzeit darf kein . oder / drin sein in den namen. -- hm but see Subfolder, ?
- - not sure about transaction safety (sync), it's definitely unsafe on non-transactional filesystems (and maybe still on those as well)
+ - quoting. Currently names may not contain . or / -- hm but see
+   Subfolder, ?
+
+ - not sure about transaction safety (sync), it's definitely unsafe on
+   non-transactional filesystems (and maybe still on those as well)
 
 =cut
 
@@ -28,10 +29,11 @@ use strict;
 
 use Chj::Hostname;
 use Carp;
-use Scalar::Util 'tainted'; ##only for debugging ç (zum glück störts nicht wenn tainted aufrufe unten drin wenn -T gar nicht aktiv)
+# XX only for debugging (luckily there's no problem calling tainted
+# even when -T is not used):
+use Scalar::Util 'tainted';
 
 use Class::Array -fields=> (
-			    #'Basepath',nope
 			   );
 
 my $hostname = do {
@@ -39,13 +41,11 @@ my $hostname = do {
     $n =~ s|/|--|sg;
     $n =~ s|\.|,|sg;
     $n =~ m|(.*)|s;
-    # ^- warum eigentlich nicht normale quoting func aufrufen? (cj24.10.04)
+    # (^- why not call normal quoting function?)
     $1
 };
 
-# # schönheitsmethode?:
-# #sub create_childfolder {
-# sub new_childfolder {
+# sub create_childfolder {
 #     my $s=shift;
 #     my ($name)=@_;
 #     require Chj::Maildir::Subfolder;
@@ -55,7 +55,6 @@ my $hostname = do {
 sub deliver_file {
     my $s=shift;
     my ($path,$optionalfilename)=@_;
-    # 1090356705.4588.ethlife-a
     warn "deliver_file: tainted" if tainted $path;
     warn "deliver_file: tainted" if tainted $optionalfilename;
     my $basepath= $s->basepath;
@@ -64,17 +63,19 @@ sub deliver_file {
     my $targetpath= "$basepath/new/$filename";
     link $path,$targetpath
       or croak "deliver_file: link('$path','$targetpath'): $!";
-    # todo: is this automatically fail save on reiserfs? or do i have to do a dir sync anyway ?
+    # is this automatically fail safe (on which filesystems?)? or do i
+    # have to do a dir sync anyway ?
     $targetpath
 }
 
 {
-    my $deliverylaufnummer=0;# just to make sure that we don't get into problems in case we aren't using a fork-one-process-per-delivery approach.
+    # to make sure that we don't get into problems in case we aren't
+    # using a fork-one-process-per-delivery approach.
+    my $deliverycount=0;
 
     sub create_filename {
-	#my $class=shift;
-	my $f=time().".${$}_$deliverylaufnummer.$hostname";
-	$deliverylaufnummer++;
+	my $f=time().".${$}_$deliverycount.$hostname";
+	$deliverycount++;
 	$f;
     }
 }
@@ -99,4 +100,4 @@ sub maildirmake {
 }
 
 
-1;
+1

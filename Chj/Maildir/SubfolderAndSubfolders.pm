@@ -1,9 +1,7 @@
-# Wed Aug  4 15:36:49 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2004 by Christian Jaeger
+#
+# Copyright 2004-2014 by Christian Jaeger, ch at christianjaeger ch
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -53,7 +51,7 @@ use Chj::xopen 'xopen_read';
 use Chj::xtmpfile;
 
 use Class::Array -fields=> ('Me',
-			    'Subfolders' #arrayrf, eh nein hashrf weil für record schnell zugriff auf alte objekte möglich sein muss, key= (unquoted) name des childs.
+			    'Subfolders' # hashref, key is (unquoted) name of child
 			   );
 
 
@@ -63,11 +61,6 @@ sub new {
     ($$s[Me])=@_; # a Chj::Maildir::Subfolder
     $s
 }
-
-
-#($basedirectorypath,$basename)= .
-
-# basename  .
 
 #sub new_from_basename { <-- Subfolder.pm
 #}
@@ -130,9 +123,8 @@ sub new {
 #     }
 # }
 
-#^- shit isch nicht besser, weil weiss doch nöd wie regex aussehen muss für den rename, muss ja doch teile machen
-
-sub add_from_subbasename { # füge kette aller childs bei
+sub add_from_subbasename {
+    # add chain of all children
     my $s=shift;
     my ($subbasename)=@_;
     return unless length $subbasename;
@@ -163,14 +155,16 @@ sub record_subfolders { # record_scanning_for_subfolders
     my $d=xopendir $basedirectorypath;
     while(defined(my$item=$d->xnread)){
 	# try to be efficient here: only scan the dir once.
-	next unless $item=~/^\Q$basename\E(\..+)/s;#oh oh, nöd $_
+	next unless $item=~/^\Q$basename\E(\..+)/s;
 	my $rest=$1;
 	$s->add_from_subbasename($rest);
     }
     $d->xclose;
 }
 
-sub rename { # returns true if succeeded, false if the target already folder exists. exceptions on real errors (ist es etwa so dass man eigentlich nie exceptions trappen muss?)
+# returns true if succeeded, false if the target already folder
+# exists. exceptions on real errors.
+sub rename {
     my $s=shift;
     my ($newname)=@_;
     # shit: vorhernachher. ein parent benennt sich um. childs nachziehen.
@@ -228,7 +222,15 @@ sub rename { # returns true if succeeded, false if the target already folder exi
 	    $$s[Me]->set_name($newname);
 	    my $newbasepath= $$self[Me]->basepath;
 	    my $newimapboxstring= $$self[Me]->imapboxstring;
-	    # hm I *could* put a rename method into Subfolder.pm, rename($newname,$optionalwhichelementtorename). which does $optionalwhichelementtorename->set_name($newname). And changes the subscription. But then there were inkoherent folders there: parent of that self is different from original/other parent. and how to make it not need to reopen the subscriptions file again for each step? thus do it here for time being.
+	    # hm I *could* put a rename method into Subfolder.pm,
+	    # rename($newname,$optionalwhichelementtorename). which
+	    # does
+	    # $optionalwhichelementtorename->set_name($newname). And
+	    # changes the subscription. But then there were incoherent
+	    # folders there: parent of that self is different from
+	    # original/other parent. and how to make it not need to
+	    # reopen the subscriptions file again for each step? thus
+	    # do it here for time being.
 	    rename $oldbasepath,$newbasepath or do {
 		if ($!==EEXIST  or $!==ENOTEMPTY) {# latter only for obscure systems?
 		    return 0
@@ -248,7 +250,7 @@ sub rename { # returns true if succeeded, false if the target already folder exi
 	my $tmp= xtmpfile $subscriptionfilepath,0666;
 	$tmp->xprint ($subscrs);
 	$tmp->xclose;
-	#$tmp->xreplace_or_withmode($subscriptionfilepath,  ach, just use mode above on xtmpfile call
+	#$tmp->xreplace_or_withmode($subscriptionfilepath,  bah, just use mode above on xtmpfile call
 	$tmp->xrename($subscriptionfilepath);
     };
     if ($@) {
@@ -263,14 +265,5 @@ sub rename { # returns true if succeeded, false if the target already folder exi
     }
 }
 
-#sub moveinto {  oder  sub { mergeinto  todo, und "saubere" exceptionoben oder returnwert
 
-
-
-#sub DESTROY {   ##ps circular?
-#    my $self=shift;
-#    # çç dito rausschmeissen wenn nicht benutzt
-#    $self->SUPER::DESTROY;
-#}
-
-1;
+1
