@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "that's called filter-branch"
+echo " (and NOT g-format-patch*)"
+exit 1
