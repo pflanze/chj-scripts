@@ -21,6 +21,8 @@ sub usage {
   --first-header headername
                   print the header appearing first in the head text
   --no-cleanup    do not remove temporary directory created by parser
+  --unpack        unpack all parts (recursively) to a tempdir the path
+                  of which is printed to stdout
 
   (Christian Jaeger <$email>)
 ";
@@ -33,6 +35,7 @@ our ($opt_h,
      $opt_last_header,
      $opt_no_cleanup,
      $opt_first_header,
+     $opt_unpack,
     );
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
@@ -40,6 +43,7 @@ GetOptions("verbose"=> \$verbose,
 	   "last-header=s" => \$opt_last_header,
 	   "first-header=s" => \$opt_first_header,
 	   "no-cleanup" => \$opt_no_cleanup,
+	   "unpack"=> \$opt_unpack,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -47,6 +51,7 @@ usage unless @ARGV;
 use MIME::Parser;
 use Chj::xopen 'xopen_read';
 use Chj::singlequote;
+use Chj::xtmpdir;
 
 our $parser = new MIME::Parser;
 $parser->output_under("/tmp");# IMPORTANT! or it will put them to cwd. -- wondering: IS THIS really SAFE?
@@ -69,13 +74,14 @@ sub Count_true {
 
 usage "only give one of -h, --last-header or --first-header"
   if Count_true($opt_h, $opt_last_header, $opt_first_header)>1;
-my $search_header= $opt_h || $opt_last_header || $opt_first_header;
+
+our $search_header= $opt_h || $opt_last_header || $opt_first_header;
 
 if (@ARGV) {
     for (@ARGV) {
 	print "File ".singlequote($_).":\n" if $verbose;
 	my $f=xopen_read $_;
-	my $ent=parsemsg($f);
+	local our $ent=parsemsg($f);
 	eval {
 
 	    if ($search_header) { #show header
@@ -113,6 +119,10 @@ if (@ARGV) {
 			}
 		    }
 		}
+	    } elsif ($opt_unpack) {
+		my $outbase= xtmpdir;
+		$outbase->autoclean(0);
+		use Chj::repl;repl;
 	    } else {
 		#die "unknown command requested <--- unfinished";
 	    }
