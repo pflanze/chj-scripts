@@ -60,7 +60,7 @@ sub parsemsg {
 }
 
 sub Count_true {
-    my $count;
+    my $count=0;
     for (@_) {
 	$count++ if $_;
     }
@@ -114,11 +114,13 @@ if (@ARGV) {
 		    }
 		}
 	    } else {
-		die "unknown command requested <--- unfinished";
+		#die "unknown command requested <--- unfinished";
 	    }
 	};
 	my $e=$@;
-	unless ($opt_no_cleanup) {
+	if ($opt_no_cleanup) {
+	    print $parser->filer->output_dir."\n"
+	} else {
 	    eval {
 		# btw not the $ent; *SICK*.
 		#warn "running purge";
