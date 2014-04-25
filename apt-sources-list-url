@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# Fri Apr 25 02:37:57 BST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Reads sources-list line(s), outputs base URL.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage if @ARGV;
+
+#deb http://security.debian.org/ wheezy/updates main contrib non-free
+#deb-src http://security.debian.org/ wheezy/updates main contrib non-free
+
+sub path_append {
+    my $out= shift;
+    while (@_) {
+	$out=~ s|/$||s;
+	$out.= "/".shift;
+    }
+    $out
+}
+
+
+while (<>) {
+    chomp;
+    m/^\s*$/ and next;
+    m/^\s*\#/ and next;
+    if (my ($is_src,$base,$kind,$rest)= m/^\s*deb(-src)?\s+(\S+)\s+(\S+)(.*)/) {
+	print path_append ($base, "dists", $kind),"\n";
+    } else {
+	warn "ignoring line '$_'";
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
