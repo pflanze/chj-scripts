@@ -4,8 +4,25 @@
 
 set -eu
 
-# path for Compaq nc2400:
-base=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/
+declare -A bases
+bases=(
+# Compaq nc2400: \
+[0]=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/ \
+# Thinkpad T61: \
+[1]=/sys/devices/pci0000\:00/0000\:00\:01.0/0000\:01\:00.0/backlight/acpi_video0/ \
+)
+
+base=""
+for b in "${bases[@]}"; do
+  if [ -d "$b" ]; then
+      if [ -z "$base" ]; then
+	  base="$b"
+      else
+	  echo "multiple path matches, '$base' and '$b', exiting" >&2
+	  exit 1
+      fi
+  fi
+done
 
 brightnessfile="$base"/brightness
 actual_brightnessfile="$base"/actual_brightness
