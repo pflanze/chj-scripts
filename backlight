@@ -1,80 +1,100 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-# see also (to switch display off entirely): xset dpms force off
+# Mon May  5 16:37:19 BST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-set -eu
+use strict;
 
-declare -A bases
-bases=(
-# Compaq nc2400: \
-[0]=/sys/devices/pci0000\:00/0000\:00\:02.0/drm/card0/card0-LVDS-1/intel_backlight/ \
-# Thinkpad T61: \
-[1]=/sys/devices/pci0000\:00/0000\:00\:01.0/0000\:01\:00.0/backlight/acpi_video0/ \
-)
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname on|off|low|verylow|mid|status
 
-base=""
-for b in "${bases[@]}"; do
-  if [ -d "$b" ]; then
-      if [ -z "$base" ]; then
-	  base="$b"
-      else
-	  echo "multiple path matches, '$base' and '$b', exiting" >&2
-	  exit 1
-      fi
-  fi
-done
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
 
-brightnessfile="$base"/brightness
-actual_brightnessfile="$base"/actual_brightness
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+our $bases=
+  +{
+    '/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight/'
+    => 'nc2400', # Compaq
+    '/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/'
+    => 'T61', # Thinkpad
+   };
+
+our ($base,$system)=
+  (sub {
+       for my $base (keys %$bases) {
+	   if (-d $base) {
+	       return ($base, $$bases{$base})
+	   }
+       }
+       die "unknown system, need to adapt"
+   }->());
+
+our $brightnesses=
+  +{
+    T61=>    +{ #off=> 0, nope, not exist
+		on=> 15,
+		mid=> 10,
+		low=> 3,
+		verylow=> 0 },
+    nc2400=> +{ off=> 0,
+		on=> 15625,
+		mid=> 12625,
+		low=> 10625,
+		verylow=> 8625 },
+   };
+
+#XXX lib (exist already?)
+sub RevertHash ($) {
+    my ($h)=@_;
+    my $hh= +{};
+    for my $k (keys %$h) {
+	my $v= $$h{$k};
+	die "can't revert, double entry for '$v'"
+	  if exists $$hh{$v};
+	$$hh{$v}= $k;
+    }
+    $hh
+}
+
+our $brightness= $$brightnesses{$system} or die "missing entry for '$system'";
+our $rev_brightness= RevertHash $brightness;
+
+our $brightnessfile="$base/brightness";
+our $actual_brightnessfile="$base/actual_brightness";
+
+our ($cmd)=@ARGV;
+
+use Chj::xopen qw(xopen_read xopen_write);
+use Chj::Chomp;
+
+if ($cmd eq "status") {
+    my $v= Chomp (xopen_read ($actual_brightnessfile)->xcontent);
+    my $x= $$rev_brightness{$v};
+    defined $x or die "no mapping for value '$v'";
+    print "$x\n"
+} else {
+    my $v= $$brightness{$cmd};
+    defined $v or die "unknown command '$cmd' for system '$system'";
+    my $out= xopen_write $brightnessfile;
+    $out->xprint($v);
+    $out->xclose;
+}
 
 
-if ! [ -f "$brightnessfile" ]; then
-    echo "$0: missing '$brightnessfile', need adaptions" >&2
-    false
-fi
 
-case "${1-}" in
-    off)
-    echo 0 > "$brightnessfile"
-    ;;
-    on)
-    echo 15625 > "$brightnessfile"
-    ;;
-    mid)
-    echo 12625 > "$brightnessfile"
-    ;;
-    low)
-    echo 10625 > "$brightnessfile"
-    ;;
-    verylow)
-    echo 8625 > "$brightnessfile"
-    ;;
-    status)
-    s=`cat "$actual_brightnessfile"`
-    case "$s" in
-	15625)
-	echo on
-	;;
-	12625)
-	echo mid
-	;;
-	10625)
-	echo low
-	;;
-	8625)
-	echo verylow
-	;;
-	0)
-	echo off
-	;;
-	*)
-	echo "?? $s"
-	;;
-    esac
-    ;;
-    *)
-    echo "$0 on|off|low|verylow|mid|status"
-    exit 1
-    ;;
-esac
-
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
