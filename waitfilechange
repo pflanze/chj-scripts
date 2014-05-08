@@ -48,6 +48,8 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV;
 
 use Chj::xperlfunc ":all"; # 'xlstat'; #or xstat ?
+$Chj::xperlfunc::time_hires=1;
+
 *x_stat= *xlstat;
 use Time::HiRes 'sleep';
 
