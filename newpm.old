@@ -108,7 +108,6 @@ use Class::Array -fields=>
 	    print OUT <<"END" or warn "Fehler beim Schreiben: $!";
 $copy
 #
-# \$Id\$
 
 =head1 NAME
 

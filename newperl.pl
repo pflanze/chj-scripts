@@ -1,7 +1,7 @@
 
 
 my %adresse = (
-	       chris=> 'Christian Jaeger, christian at jaeger mine nu',
+	       chris=> 'Christian Jaeger, ch at christianjaeger ch',
 	      );
 
 
