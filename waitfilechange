@@ -24,6 +24,10 @@ sub usage {
 
     --post x   sleep x instead of $postsleeptime seconds after noticing
                a change (floating point value)
+    --loop cmd   run a loop around waiting and running cmd; re-runs cmd
+                 if the path(s) have changed during the run.  cmd is
+                 fed through Perl's auto-recognition of shell code
+                 (good or bad?)
 
   (This might be a stepping stone in the simplification of my many
    old scripts like watchandprocess, observe_contentchange, ..)
@@ -35,13 +39,15 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $cmd;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "post=s"=> \$postsleeptime,
+	   "loop=s"=> \$cmd,
 	   ) or exit 1;
 usage unless @ARGV;
 
-use Chj::xperlfunc 'xlstat'; #or xstat ?
+use Chj::xperlfunc ":all"; # 'xlstat'; #or xstat ?
 *x_stat= *xlstat;
 use Time::HiRes 'sleep';
 
@@ -54,26 +60,37 @@ sub getstats {
 }
 
 my $nfiles= @ARGV;
-my $stats= getstats;
 
-#there was something to ask for change right.  yep equal and equal_content
-
-OUTER: { #GR
-    while (1) {
-	sleep $sleeptime;
-	my $newstats= getstats;
-	for (my $i=0; $i<$nfiles; $i++) {
-	    if ($$stats[$i]->equal($$newstats[$i])) {
-		# ok keep on going
-	    } else {
-		last OUTER;
+sub waitchange ($) {
+    my ($stats)=@_;
+    my $newstats;
+  OUTER: {
+	while (1) {
+	    sleep $sleeptime;
+	    $newstats= getstats;
+	    for (my $i=0; $i<$nfiles; $i++) {
+		if ($$stats[$i]->equal($$newstats[$i])) {
+		    # ok keep on going
+		} else {
+		    last OUTER;
+		}
 	    }
 	}
     }
+    sleep $postsleeptime
+      if $postsleeptime;
+    $newstats
 }
 
-sleep $postsleeptime
-  if $postsleeptime;
+if (defined $cmd) {
+    my $stats= getstats;
+    while (1) {
+	$stats= waitchange $stats;
+	xsystem $cmd;
+    }
+} else {
+    waitchange getstats;
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
