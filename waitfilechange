@@ -24,7 +24,7 @@ sub usage {
 
     --post x   sleep x instead of $postsleeptime seconds after noticing
                a change (floating point value)
-    --loop cmd   run a loop around waiting and running cmd; re-runs cmd
+    --loop cmd   run a loop around running cmd and waiting.  re-runs cmd
                  if the path(s) have changed during the run.  cmd is
                  fed through Perl's auto-recognition of shell code
                  (good or bad?)
@@ -88,8 +88,8 @@ sub waitchange ($) {
 if (defined $cmd) {
     my $stats= getstats;
     while (1) {
-	$stats= waitchange $stats;
 	xsystem $cmd;
+	$stats= waitchange $stats;
     }
 } else {
     waitchange getstats;
