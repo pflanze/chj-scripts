@@ -45,9 +45,9 @@ our ($base,$system)=
 
 our $brightnesses=
   +{
-    T61=>    +{ #off=> 0, nope, not exist
+    T61=>    +{ #off=> -1, # nope
 		on=> 15,
-		mid=> 10,
+		mid=> 7,
 		low=> 3,
 		verylow=> 0 },
     nc2400=> +{ off=> 0,
