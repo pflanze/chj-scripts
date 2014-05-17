@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Sat May 17 19:50:27 BST 2014
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [file.html]
+
+  extract all youtube urls (unique)
+
+  Options:
+
+   --playlist  extract playlist urls only
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our %opt;
+GetOptions(
+	   #"verbose"=> \$opt{verbose},
+	   "help"=> sub{usage},
+	   "playlist"=> \$opt{playlist},
+	   ) or exit 1;
+#usage unless @ARGV;
+
+our %id;
+our @ids;
+sub add {
+    my ($id)= @_;
+    unless ($id{$id}) {
+	push @ids, $id;
+	$id{$id}++
+    }
+}
+
+while (<>) {
+    #while (m/href="\/watch\?v=([^?"]+)/g) {
+    # grr htat's only the chromium debugger
+    while (m/data-video-id="([^&" ]+)"/g) {
+	add($1)
+    }
+    unless ($opt{playlist}) {
+	while (m/youtube.com\/embed\/([^?"]+)/g) {
+	    add($1)
+	}
+	while (m/www\.youtube\.com\/watch\?v=([^&" ]+)/g) {
+	    add($1)
+	}
+    }
+}
+
+for (@ids) {
+    print "http://www.youtube.com/watch?v=$_\n"
+      or die $!
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
