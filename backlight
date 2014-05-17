@@ -9,7 +9,11 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname on|off|low|verylow|mid|status
+    print "$myname on|off|low|verylow|mid|list|status
+
+  if no command is given, status is presumed.
+
+  'list' shows the map of names to values.
 
   (Christian Jaeger <$email>)
 ";
@@ -23,7 +27,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV==1;
+usage unless @ARGV<=1;
 
 our $bases=
   +{
@@ -72,6 +76,12 @@ sub RevertHash ($) {
 
 our $brightness= $$brightnesses{$system} or die "missing entry for '$system'";
 our $rev_brightness= RevertHash $brightness;
+our $brightnesslist=
+  [
+   map {
+       [$_, $$rev_brightness{$_}]
+   } sort { $a <=> $b } keys %$rev_brightness
+  ];
 
 our $brightnessfile="$base/brightness";
 our $actual_brightnessfile="$base/actual_brightness";
@@ -81,11 +91,37 @@ our ($cmd)=@ARGV;
 use Chj::xopen qw(xopen_read xopen_write);
 use Chj::Chomp;
 
-if ($cmd eq "status") {
+if (!defined $cmd or $cmd eq "status") {
     my $v= Chomp (xopen_read ($actual_brightnessfile)->xcontent);
     my $x= $$rev_brightness{$v};
-    defined $x or die "no mapping for value '$v'";
-    print "$x\n"
+    if (defined $x) {
+	print "$x\n"
+    } else {
+	while (@$brightnesslist) {
+	    my ($x,$n)= @{shift @$brightnesslist}; ##destructive...
+	    if ($x < $v) {
+		if (my $next= $$brightnesslist[0]) {
+		    my ($to,$ton)=@$next;
+		    if ($v < $to) {
+			print "$v: between '$n' and '$ton'\n";
+			last;
+		    }
+		} else {
+		    print "$v: higher than '$n'\n";
+			last;
+		}
+	    } else {
+		print "$v: lower than '$n'\n";
+		last;
+	    }
+	}
+    }
+} elsif ($cmd eq "list") {
+    print
+      map {
+	  my ($a,$b)=@$_;
+	  "$a => $b\n"
+      } @$brightnesslist;
 } else {
     my $v= $$brightness{$cmd};
     defined $v or die "unknown command '$cmd' for system '$system'";
