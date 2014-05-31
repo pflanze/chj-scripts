@@ -25,29 +25,54 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-# use Getopt::Long;
-# our $verbose=0;
-# GetOptions("verbose"=> \$verbose,
-# 	   "help"=> sub{usage},
-# 	   ) or exit 1;
-usage unless @ARGV==7;
-
-#use Data::Dumper;
-#print Dumper @ARGV;
 
 our ($file2,
      $file1,
-     $sha1_1,
-     $perms_X,
-     $hmunknownwhyagainfile2,
-     $sha1_2,
-     $perms_Y
+     $_sha1_1,
+     $_perms_X,
+     $_hmunknownwhyagainfile2,
+     $_sha1_2,
+     $_perms_Y,
+
+     $_arg1,
+     $_arg2,
+     $_wording,
+    );
+
+if (@ARGV==7) {
+    ($file2,
+     $file1,
+     $_sha1_1,
+     $_perms_X,
+     $_hmunknownwhyagainfile2,
+     $_sha1_2,
+     $_perms_Y
     )= @ARGV;
+} elsif (@ARGV==9) {
+    (
+     $_arg1,
+     $file1,
+     $_sha1_1,
+     $_perms_X,
+
+     $file2,
+     $_sha1_2,
+     $_perms_Y,
+     $_arg2,
+
+     $_wording,
+    )= @ARGV;
+} else {
+    require Data::Dumper;
+    usage "got ".@ARGV." arguments.\n"
+      .Data::Dumper::Dumper(@ARGV);
+}
+
 
 use Chj::xperlfunc;
 
 xsystem "tkdiff", $file1,$file2;
-# ^ instead of xexec, since git diff issues a warning if we don't exit true. (and yep, not xxsystem heh)
+# ^ instead of xexec, since git diff issues a warning if we don't exit true.
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
