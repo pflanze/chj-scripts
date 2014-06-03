@@ -25,6 +25,10 @@ sub usage {
            don't have (same as no option, but no title is shown)
    --tab   use tab instead of space as separator
 
+
+  *HUH*: seems like git-cherry is doing exactly this?
+  Nobody on #git mentioned this when I asked (multiple times).
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
