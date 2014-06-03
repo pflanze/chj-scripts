@@ -1,4 +1,6 @@
 #!/bin/bash
 
-degoogle --pass | tee >(perl -wne '$|++; print "url: $_"' | log-timestamp >> ~/.down.log) \
-    | »» youtubedown 2>&1 | tee >(perl -wne '$|++; print "out: $_"' | log-timestamp >> ~/.down.log)
+degoogle --pass \
+    | tee >(perl -wne '$|++; print "url: $_"' | log-timestamp >> ~/.down.log) \
+    | »» youtubedown 2>&1 \
+    | tee >(perl -wne '$|++; print "out: $_"' | log-timestamp >> ~/.down.log)
