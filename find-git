@@ -30,6 +30,10 @@ sub usage {
       (only directories are excluded and) there is no note output with
       --verbose
 
+   --strip
+      don't print the .git element of the paths (i.e. print supposed
+      path to working dir)
+
    --verbose
       Tell which items are excluded or ignored.
 
@@ -44,6 +48,7 @@ our $verbose=0;
 our @exclude_path;
 our @exclude_item;
 our $opt_exclude_tmp;
+our $opt_strip;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "exclude=s"=> sub {
@@ -54,6 +59,7 @@ GetOptions("verbose"=> \$verbose,
 	       }
 	   },
 	   "exclude-tmp"=> \$opt_exclude_tmp,
+	   "strip"=> \$opt_strip,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV==1;
@@ -169,5 +175,5 @@ for my $dev (keys %$paths_by_dev_ino) {
 
 our $eol= "\n";
 for my $path (sort @paths) {
-    print $path, $eol
+    print( ($opt_strip ? dirname($path) : $path), $eol)
 }
