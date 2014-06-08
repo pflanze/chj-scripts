@@ -1,0 +1,173 @@
+#!/usr/bin/perl -w
+
+# didn't I do this already some time ago? (similarly)
+
+# Wed Nov 13 20:55:47 GMT 2013
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [rootdir]
+
+  Find all '.git' directories and symlinks on the system, while
+  ignoring filesystems like /proc, /sys, tmpfs and 'tmp' directories.
+
+  NOTE: for now, rootdir has to be absolute, or ignores/excludes won't
+  work properly.
+
+  Does not follow symlinks.
+
+  --exclude path
+      Skip path, which either needs to be absolute, or not contain any
+      slash
+
+   --exclude-tmp
+      Exclude 'tmp' directories. Same as '--exclude tmp' except that
+      (only directories are excluded and) there is no note output with
+      --verbose
+
+   --verbose
+      Tell which items are excluded or ignored.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our @exclude_path;
+our @exclude_item;
+our $opt_exclude_tmp;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "exclude=s"=> sub {
+	       if ($_[1]=~ m|/|) {
+		   push @exclude_path, $_[1]
+	       } else {
+		   push @exclude_item, $_[1]
+	       }
+	   },
+	   "exclude-tmp"=> \$opt_exclude_tmp,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV>1;
+
+our ($rootdir)= @ARGV ? $ARGV[0] : "/";
+
+use Chj::xopendir;
+use Chj::xperlfunc ":all";
+use Chj::singlequote ":all";
+use Chj::xopen "xopen_read";
+use Chj::Linux::Mountinfo ':all';
+
+sub note ($ $) {
+    if ($verbose) {
+	my ($msg,$path)=@_;
+	print STDERR $msg, ": ", singlequote_sh($path), "\n"
+    }
+}
+
+sub canonify ($) {
+    my $str=shift;
+    $str=~ s|/+|/|sg;
+    $str=~ s|/$||;
+    $str
+      ## does not bother about "./" vs "/" and "/."
+}
+
+our %ignore_fs_type=
+  map{ $_=> 1} qw(sysfs proc devtmpfs devpts tmpfs fusectl usbfs);
+# squashfs vfat ?
+
+our %exclude_path=
+  (
+   (map {
+       canonify($_)=> "--exclude"
+   } @exclude_path),
+   # The messages from those below override those above:
+   (map {
+       my $t= $_->type1;
+       if ($ignore_fs_type{$t}) {
+	   canonify($_->mountpoint)=> "fstype $t"
+	     # ah, wanted to check ->dev instead? but, why bother, as
+	     # long as we use "/" as root, hm. XXX
+       } else {
+	   ()
+       }
+   } mountinfos)
+  );
+
+our %exclude_item=
+  (map {
+      canonify($_)=> "--exclude"
+  } @exclude_item);
+
+
+our @ignoredtmp; #hack.
+sub scan {
+    my ($paths_by_dev_ino, $dir)= @_;
+    my $d= xopendir (length $dir ? $dir : "/");
+    # ^ check necessary as canonify shortens / to "". Unix.
+    while (defined (my $item= $d->xnread)) {
+	my $path= "$dir/$item";
+	if (defined (my $reason= $exclude_path{$path})) {
+	    note "excluding (path: $reason)", $path
+	} else {
+	    if (defined (my $reason= $exclude_item{$item})) {
+		note "excluding (item: $reason)", $path
+	    } else {
+		my $s= xlstat $path;
+		if ($item eq ".git") {
+		    if ($s->is_dir or $s->is_symlink) {
+			push @{$$paths_by_dev_ino{$s->dev}{$s->ino}}, $path;
+		    } else {
+			note "ignoring non-dir/link .git", $path;
+		    }
+		} else {
+		    if ($s->is_dir) {
+			if ($opt_exclude_tmp and $item eq "tmp") {
+			    #note "ignoring dir",$path;
+			    push @ignoredtmp, $path;
+			} else {
+			    scan ($paths_by_dev_ino, $path)
+			}
+		    } else {
+			#note "ignoring non-dir",$path
+		    }
+		}
+	    }
+	}
+    }
+    $d->xclose;
+}
+
+
+our $paths_by_dev_ino= {};
+scan $paths_by_dev_ino, canonify $rootdir;
+
+our @paths;
+for my $dev (keys %$paths_by_dev_ino) {
+    my $inos= $$paths_by_dev_ino{$dev};
+    for my $ino (keys %$inos) {
+	my $paths= $$inos{$ino};
+	my @_paths=
+	  sort {
+	      length($a) <=> length($b)
+	  } @$paths;
+	push @paths, $_paths[0]
+    }
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
+our $eol= "\n";
+for my $path (sort @paths) {
+    print $path, $eol
+}
