@@ -11,7 +11,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [rootdir]
+    print "$myname rootdir
 
   Find all '.git' directories and symlinks on the system, while
   ignoring filesystems like /proc, /sys, tmpfs and 'tmp' directories.
@@ -56,9 +56,9 @@ GetOptions("verbose"=> \$verbose,
 	   "exclude-tmp"=> \$opt_exclude_tmp,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage if @ARGV>1;
+usage unless @ARGV==1;
 
-our ($rootdir)= @ARGV ? $ARGV[0] : "/";
+our ($rootdir)= @ARGV;
 
 use Chj::xopendir;
 use Chj::xperlfunc ":all";
