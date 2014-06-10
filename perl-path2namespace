@@ -40,7 +40,7 @@ sub turn {
     if (m{(\S+\.pm)}) {
 	my $path=$1;
 	$path=~ s{^\./}{};
-	$path=~ s{^(?:.*/)?perllib/+}{};
+	$path=~ s{^(?:.*/)?(?:perl)?lib/+}{};
 	my $class= $path;
 	$class=~ s/\.pm$//;
 	$class=~ s|/|::|sg;
