@@ -33,7 +33,9 @@ for other dirs like ezmlm archives, it doesn't enforce any ordering.
 package Chj::Parse::Maildir;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
-@EXPORT_OK=qw(maildir_open_stream);
+@EXPORT_OK=qw(maildir_open_stream
+	      maildirP
+	      ezmlm_archiveP);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -46,6 +48,18 @@ use Chj::xperlfunc 'basename';
 use Chj::Parse::Maildir::Cursor;
 use Chj::NoteWarn;
 
+
+sub maildirP ($) {
+    my ($dirpath)=@_;
+    -d "$dirpath/new" and -d "$dirpath/cur"
+}
+
+sub ezmlm_archiveP ($) {
+    my ($dirpath)=@_;
+    -d "$dirpath/0"
+      # and -f "$dirpath/0/01" or so?
+      # readdir and stat and look at filenames and no subdirs?
+}
 
 sub _mappath {
     my ($path)=@_;
@@ -65,12 +79,11 @@ sub _stream_mappath ($) {
 sub maildir_open_stream ($) {
     my ($maildirpath)=@_;
     # is it a normal Maildir or something like a ezmlm archive?
-    if (-e "$maildirpath/new" and -e "$maildirpath/cur") {
+    if (maildirP $maildirpath) {
 	_stream_mappath
 	  stream_append (xopendir_pathstream "$maildirpath/new",
 			 xopendir_pathstream "$maildirpath/cur");
-    } elsif (-d "$maildirpath/0") {
-	# ezmlm archives
+    } elsif (ezmlm_archiveP $maildirpath) {
 	(stream_fold_right sub {
 	     my ($item0,$rest)=@_;
 	     (stream_fold_right sub {
