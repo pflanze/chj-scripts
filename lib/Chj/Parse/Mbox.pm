@@ -75,7 +75,7 @@ sub msgchomp {
 }
 
 sub mbox_stream_read {
-    my ($f, $maybe_lastline, $startpos)=@_;
+    my ($f, $maybe_lastline, $startpos, $i)=@_;
     defined $startpos or die "need 3rd argument";
     Delay {
 	my $sep= $maybe_lastline || <$f>;
@@ -102,9 +102,10 @@ sub mbox_stream_read {
 		my $message= Chj::Parse::Mbox::Message->new_
 		    (cursor=> $section,
 		     lines=> msgchomp(\@lines),
-		     t=> $t);
+		     maybe_mailbox_unixtime=> $t,
+		     index=> $i);
 		return cons( $message,
-			     mbox_stream_read ($f, $lastline, $pos));
+			     mbox_stream_read ($f, $lastline, $pos, $i+1));
 	    };
 	    while (<$f>) {
 		if (/^From /) {
@@ -123,7 +124,7 @@ sub mbox_stream_read {
 
 sub mbox_stream_open {
     my ($path)=@_;
-    mbox_stream_read( xopengzip_read($path,do_fallback=>1), undef, 0 );
+    mbox_stream_read( xopengzip_read($path,do_fallback=>1), undef, 0, 0 );
 }
 
 

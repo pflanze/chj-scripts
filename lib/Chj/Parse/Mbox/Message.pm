@@ -19,7 +19,7 @@ package Chj::Parse::Mbox::Message;
 
 use strict;
 
-use Chj::Struct ["cursor", "lines", "t"];
+use Chj::Struct ["cursor", "lines", "maybe_mailbox_unixtime", "index"];
 # cursor will actually be a Chj::Parse::Mbox::Section
 
 sub as_string {
@@ -29,6 +29,6 @@ sub as_string {
 
 _END_;
 #XXX would aliasing through ref work?before _END_.?
-*maybe_t= *t; # [with no Just wrapper..]
+#*maybe_t= *t; # [with no Just wrapper..]
 
 1

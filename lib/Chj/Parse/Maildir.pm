@@ -66,12 +66,14 @@ sub ezmlm_archiveP ($) {
 }
 
 sub _mappath {
-    my ($path)=@_;
+    my ($path, $maybe_index)=@_;
     my $name= basename $path;
     my ($maybe_t)= $name=~ m|^(\d{8-11})\.|;
     # (^ year-xx problem in ~1970, and then in ~2200 or something?)
-    Chj::Parse::Maildir::Message->new
-	(Chj::Parse::Maildir::Cursor->new($path),$maybe_t)
+    Chj::Parse::Maildir::Message->new_
+	(cursor=> Chj::Parse::Maildir::Cursor->new($path),
+	 maybe_mailbox_unixtime=> $maybe_t,
+	 maybe_index=> $maybe_index)
 }
 
 sub _stream_mappath ($) {
@@ -89,21 +91,26 @@ sub maildir_open_stream ($) {
     } elsif (ezmlm_archiveP $maildirpath) {
 	(stream_fold_right sub {
 	     my ($item0,$rest)=@_;
-	     (stream_fold_right sub {
-		  my ($item,$rest)=@_;
-		  my $path= "$maildirpath/$item0/$item";
-		  if ($item eq "index") {
-		      # ignore
-		      $rest
-		  } elsif ($item=~ /^\d{2,}$/s) {
-		      cons _mappath($path), $rest
-		  } else {
-		      WARN "apparent ezmlm archive contains unusual file, ignored: '$path'";
-		      $rest
-		  }
-	      },
-	      $rest,
-	      xopendir_stream "$maildirpath/$item0")
+	     if ($item0=~ /^\d{1,}$/s) {
+		 (stream_fold_right sub {
+		      my ($item,$rest)=@_;
+		      my $path= "$maildirpath/$item0/$item";
+		      if ($item eq "index") {
+			  # ignore
+			  $rest
+		      } elsif ($item=~ /^\d{2,}$/s) {
+			  cons _mappath($path, "$item0-$item"), $rest
+		      } else {
+			  WARN "apparent ezmlm archive contains unusual file, ignored: '$path'";
+			  $rest
+		      }
+		  },
+		  $rest,
+		  xopendir_stream "$maildirpath/$item0")
+	     } else {
+		 WARN "apparent ezmlm archive contains unusual subdir/item, ignored: '$item0'";
+		 $rest
+	     }
 	 },
 	 undef,
 	 xopendir_stream $maildirpath)

@@ -19,11 +19,18 @@ package Chj::Parse::Maildir::Message;
 
 use strict;
 
-use Chj::Struct ["cursor", "maybe_t"];
+use Chj::Struct ["cursor", "maybe_mailbox_unixtime", "maybe_index"];
+# index is multi-level when coming from ezmlm archives: e.g. "0-01"
 
 sub as_string {
     my $s=shift;
     $s->cursor->message_as_string
+}
+
+sub index {
+    my $s=shift;
+    # can '//' be used now?
+    $s->maybe_index // die "don't have an index"
 }
 
 _END_
