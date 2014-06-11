@@ -11,13 +11,13 @@ else
     unset ABSFILE
     unset RETURNSTRING
     for FILE in "$@"; do
-	#if ! ABSFILE="`chase \"$FILE\" 2>/dev/null`"; then
+	if ! ABSFILE="`chase \"$FILE\" 2>/dev/null`"; then
 	    if [ "`echo "$FILE"|cut -c 1`" != "/" ]; then
 		ABSFILE="`pwd`/$FILE"
 	    else 
 		ABSFILE="$FILE"
 	    fi
-	#fi
+	fi
 	# Escape quotes for use in lisp code:
 	ABSFILE="$(echo "$ABSFILE"|sed 's/"/\\"/g')"
 	#echo "Opening file '$ABSFILE'..."
