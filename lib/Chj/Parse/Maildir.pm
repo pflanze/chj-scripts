@@ -52,6 +52,9 @@ use Chj::NoteWarn;
 sub maildirP ($) {
     my ($dirpath)=@_;
     -d "$dirpath/new" and -d "$dirpath/cur"
+      # XX careful: can contain other maildirs, too, so don't just
+      # maildir_open_stream $dirpath and be done with it... XXX ah:
+      # should extend maildir_open_stream to recurse itself?
 }
 
 sub ezmlm_archiveP ($) {
