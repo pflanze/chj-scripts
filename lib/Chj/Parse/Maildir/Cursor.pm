@@ -34,7 +34,7 @@ sub xsendfile_to {
 sub message_as_string {
     my $s=shift;
     my $in= xopen_read ($s->itempath);
-    my $cntref= $in->xcontent_ref;
+    my $cntref= $in->xcontentref;
     $in->xclose;
     $$cntref
 }

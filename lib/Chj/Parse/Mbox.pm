@@ -12,9 +12,9 @@ Chj::Parse::Mbox
 
  use Chj::Parse::Mbox 'mbox_stream_open';
  use Chj::FP2::Stream ":all";
- stream_for_each sub {
-    my ($t,$lines,$cursor)= @{$_[0]};
-    ... @$lines ...
+stream_for_each sub {
+    my ($message)=@_;
+    ... $message->lines ... $message->cursor .. $message->t 
     # $cursor is a Chj::Parse::Mbox::Section object
  }, mbox_stream_open "some/path.txt"
 
@@ -60,7 +60,7 @@ use Chj::FP2::Lazy;
 use Chj::Chomp;
 use Date::Parse 'str2time';
 use Chj::Parse::Mbox::Section;
-
+use Chj::Parse::Mbox::Message;
 
 sub msgchomp {
     # remove the last newline since it is really part of the
@@ -99,7 +99,11 @@ sub mbox_stream_read {
 		  (mboxpath=> $f->path,
 		   from=> $startpos,
 		   to=> $pos);
-		return cons( [$t, msgchomp(\@lines), $section],
+		my $message= Chj::Parse::Mbox::Message->new_
+		    (cursor=> $section,
+		     lines=> msgchomp(\@lines),
+		     t=> $t);
+		return cons( $message,
 			     mbox_stream_read ($f, $lastline, $pos));
 	    };
 	    while (<$f>) {

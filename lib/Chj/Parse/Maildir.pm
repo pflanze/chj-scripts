@@ -46,6 +46,7 @@ use Chj::FP2::Lazy;
 use Chj::FP2::List ':all';
 use Chj::xperlfunc 'basename';
 use Chj::Parse::Maildir::Cursor;
+use Chj::Parse::Maildir::Message;
 use Chj::NoteWarn;
 
 
@@ -69,9 +70,8 @@ sub _mappath {
     my $name= basename $path;
     my ($maybe_t)= $name=~ m|^(\d{8-11})\.|;
     # (^ year-xx problem in ~1970, and then in ~2200 or something?)
-    my $lines= undef; ## or is it really used ?
-    my $cursor= Chj::Parse::Maildir::Cursor->new($path);
-    [$maybe_t,$lines,$cursor]
+    Chj::Parse::Maildir::Message->new
+	(Chj::Parse::Maildir::Cursor->new($path),$maybe_t)
 }
 
 sub _stream_mappath ($) {
