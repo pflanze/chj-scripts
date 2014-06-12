@@ -15,7 +15,7 @@ sub usage {
   (or the --ext-diff option in man git-diff).
   HM WELL. .gitconfig doesn't work. Use it as such:
 
-  GIT_EXTERNAL_DIFF=_cj-git-tkdiff g-diff
+  GIT_EXTERNAL_DIFF=_cj-git-diff CJ_GIT_DIFF_CMD=tkdiff g-diff
 
   grr really.(not even --ext-diff option necessary now.)
   (This is with git version 1.6.0)
@@ -71,7 +71,11 @@ if (@ARGV==7) {
 
 use Chj::xperlfunc;
 
-xsystem "tkdiff", $file1,$file2;
+my $cmd= $ENV{CJ_GIT_DIFF_CMD} // die "CJ_GIT_DIFF_CMD env var is not set";
+
+# XX split $cmd according to shell rules? ?
+
+xsystem $cmd, $file1,$file2;
 # ^ instead of xexec, since git diff issues a warning if we don't exit true.
 
 #use Chj::ruse;
