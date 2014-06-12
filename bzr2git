@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eu
+set -o pipefail
 
 usage () {
     echo "$0 pathto/.bzr nonexistingtarget.git"
