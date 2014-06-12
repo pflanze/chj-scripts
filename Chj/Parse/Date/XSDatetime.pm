@@ -17,7 +17,7 @@ Chj::Parse::Date::XSDatetime
 =cut
 
 
-# gemacht für / benutzt von rss-gen skript
+# (done for rss-gen script)
 
 package Chj::Parse::Date::XSDatetime;
 
@@ -30,9 +30,10 @@ use Class::Array -fields=>
   ;
 
 
+# https://en.wikipedia.org/wiki/ISO_8601
 
+# parse e.g.
 # 2006-02-09T06:00:00UTC+01:00
-# parsen.
 
 sub xparse_to_unix {
     my $s=shift;
