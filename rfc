@@ -25,7 +25,8 @@ if [ $# -eq 1 ]; then
 			    perl -e '<STDIN>;<STDIN>;while(<STDIN>){print}' < "$files" |less;;
 		    esac
 		else
-		    browser "http://datatracker.ietf.org/doc/rfc$1/"
+		    #http://datatracker.ietf.org/doc/rfc2822/?include_text=1
+		    browser "http://datatracker.ietf.org/doc/rfc$1/?include_text=1"
 		fi
 	    else 
 		echo "More than one match:"
