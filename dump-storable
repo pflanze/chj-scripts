@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# Sat Jun 14 20:31:52 BST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Storable ();
+use Data::Dumper;
+
+sub Dump {
+    my ($path)=@_;
+    Storable::retrieve $path
+  }
+
+print Dumper (map { Dump $_ } @ARGV)
+  or die $!;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
