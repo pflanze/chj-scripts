@@ -35,7 +35,8 @@ package Chj::Parse::Maildir;
 @EXPORT=qw();
 @EXPORT_OK=qw(maildir_open_stream
 	      maildirP
-	      ezmlm_archiveP);
+	      ezmlm_archiveP
+	      maildir_mtime);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -44,7 +45,7 @@ use Chj::FP2::IOStream ':all'; # xopendir_pathstream etc.
 use Chj::FP2::Stream;
 use Chj::FP2::Lazy;
 use Chj::FP2::List ':all';
-use Chj::xperlfunc 'basename';
+use Chj::xperlfunc 'basename', 'xLmtimed', 'max';
 use Chj::Parse::Maildir::Cursor;
 use Chj::Parse::Maildir::Message;
 use Chj::NoteWarn;
@@ -63,6 +64,27 @@ sub ezmlm_archiveP ($) {
     -d "$dirpath/0"
       # and -f "$dirpath/0/01" or so?
       # readdir and stat and look at filenames and no subdirs?
+}
+
+sub maildir_mtime ($) {
+    my ($dirpath)=@_;
+    if (maildirP $dirpath) {
+	die "getting mtime for Maildir format not implemented yet: '$dirpath'";
+    }
+    elsif (ezmlm_archiveP $dirpath) {
+	max (map {
+	    my ($subdirpath)= $_;
+	    my $s= xLmtimed($subdirpath);
+	    if ($s->is_dir) {
+		$s->mtime
+	    } else {
+		WARN "ignoring non-dir item in ezmlm archive: '$subdirpath'"
+	    }
+	} glob "$dirpath/*")
+    }
+    else {
+	die "don't know how to get mtime for '$dirpath'";
+    }
 }
 
 sub _mappath {
