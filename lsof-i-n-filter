@@ -33,28 +33,38 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 #usage if @ARGV;
 
+our $checkhead=
+  join(" ", qw(COMMAND     PID         USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME));
 
 our @entries;
 
 while (<>) {
-    next if /^COMMAND/;
     chomp;
-    if (my ($cmd, $pid, $user, $fd, $type, $device, $size_off, $node, $name)
-	=
-	/(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.*)/) {
-	push @entries,
-	  join("\t",
-	       ($cmd,
-		#$pid,
-		$user,
-		#$fd,
-		$type,
-		#$device,
-		#$size_off,
-		$node,
-		$name));
+    if (/^COMMAND/) {
+	my $ourhead= join(" ", split /\s+/, $_);
+	$ourhead eq $checkhead
+	  or die "head is different:
+expected: $checkhead
+     got: $ourhead
+ ";
     } else {
-	warn "no match for line: '$_'";
+	if (my ($cmd, $pid, $user, $fd, $type, $device, $size_off, $node, $name)
+	    =
+	    /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.*)/) {
+	    push @entries,
+	      join("\t",
+		   ($cmd,
+		    #$pid,
+		    $user,
+		    #$fd,
+		    $type,
+		    #$device,
+		    #$size_off,
+		    $node,
+		    $name));
+	} else {
+	    warn "no match for line: '$_'";
+	}
     }
 }
 
