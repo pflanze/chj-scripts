@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Tue Jun 17 20:17:03 BST 2014
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [file(s)]
+
+  filter output of lsof -i -n so that it can be diffed to see
+  differences in services.
+
+  stdin or file(s) to stdout.
+
+  Use like:
+    on lsof-i-n-filter tkdiff a b
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage if @ARGV;
+
+
+our @entries;
+
+while (<>) {
+    next if /^COMMAND/;
+    chomp;
+    if (my ($cmd, $pid, $user, $fd, $type, $device, $size_off, $node, $name)
+	=
+	/(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.*)/) {
+	push @entries,
+	  join("\t",
+	       ($cmd,
+		#$pid,
+		$user,
+		#$fd,
+		$type,
+		#$device,
+		#$size_off,
+		$node,
+		$name));
+    } else {
+	warn "no match for line: '$_'";
+    }
+}
+
+for (sort @entries) {
+    print "$_\n" or die $!;
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
