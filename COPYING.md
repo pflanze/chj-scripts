@@ -8,7 +8,7 @@ statements.
 The MIT License (MIT)
 ---------------------
 
-Copyright © 2013 Christian Jaeger
+Copyright © 2013-2014 Christian Jaeger
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
