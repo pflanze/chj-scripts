@@ -93,6 +93,8 @@ readlsof ["-n"], sub {
 	} else {
 	    die "unknown: ".Dumper($rec)." ";
 	}
+    } elsif ($t eq 'netlink') {
+	# ignore, ok?
     } else {
 	die "unknown file type '$t' in: ".Dumper($rec)." ";
     }
