@@ -3,7 +3,7 @@
 set -eu
 
 usage () {
-    echo "$0 on|off <user>"
+    echo "$0 <user> on|off"
     echo "  enable/disable internet access for the given user"
     exit 1
 }
@@ -13,8 +13,8 @@ if [ $# -ne 2 ]; then
     usage
 fi
 
-onoff="$1"
-user="$2"
+user="$1"
+onoff="$2"
 
 id -- "$user" > /dev/null
 
