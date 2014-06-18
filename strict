@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "use strict; use warnings FATAL => 'uninitialized';"
+
