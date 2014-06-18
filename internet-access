@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 on|off <user>"
+    echo "  enable/disable internet access for the given user"
+    exit 1
+}
+
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+onoff="$1"
+user="$2"
+
+DA=""
+case "$onoff" in
+    on)
+    DA=-D
+    ;;
+    off)
+    DA=-A
+    ;;
+    *)
+    echo "invalid on/off setting '$onoff'"
+    usage
+    ;;
+esac
+
+iptables -t filter $DA OUTPUT -m owner --uid-owner "$user" -j REJECT
