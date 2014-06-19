@@ -18,7 +18,7 @@ Chj::Parallel::Proxy
 
 package Chj::Parallel::Proxy;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xperlfunc ":all";
 use Chj::Transmittable;

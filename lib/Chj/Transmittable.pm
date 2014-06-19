@@ -37,7 +37,7 @@ package Chj::Transmittable;
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Fcntl 'LOCK_EX','LOCK_UN';
 use Storable qw(thaw nfreeze);

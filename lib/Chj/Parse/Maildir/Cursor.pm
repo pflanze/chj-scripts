@@ -17,7 +17,7 @@ Chj::Parse::Maildir::Cursor
 
 package Chj::Parse::Maildir::Cursor;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xopen 'xopen_read';
 

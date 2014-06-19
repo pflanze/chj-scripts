@@ -18,7 +18,7 @@ Chj::Parallel::Worker
 
 package Chj::Parallel::Worker;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 use Chj::Transmittable;
 use Chj::Parallel::Done;
 use Data::Dumper;

@@ -22,7 +22,7 @@ package Chj::numcores;
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 # Code partially borrowed from:
 # http://cpansearch.perl.org/src/DBR/App-OS-Detect-MachineCores-0.038/lib/App/OS/Detect/MachineCores.pm

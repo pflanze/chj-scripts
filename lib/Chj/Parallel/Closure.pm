@@ -19,7 +19,7 @@ see Chj::PClosure
 
 package Chj::Parallel::Closure;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["procname", # string (*)
 		 "env", # array

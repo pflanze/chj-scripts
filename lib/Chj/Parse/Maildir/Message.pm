@@ -17,7 +17,7 @@ Chj::Parse::Maildir::Message
 
 package Chj::Parse::Maildir::Message;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["cursor", "maybe_mailbox_unixtime", "maybe_index"];
 # index is multi-level when coming from ezmlm archives: e.g. "0-01"

@@ -37,7 +37,7 @@ package Chj::Format::JSON;
 @EXPORT_OK=qw(print2json);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 
 sub pr {

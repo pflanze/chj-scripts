@@ -20,7 +20,7 @@ concurrency value is 1, that runs everything in the same process.
 
 package Chj::Parallel::NullInstance;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::FP2::Stream ();
 use Scalar::Util 'weaken';

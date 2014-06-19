@@ -22,7 +22,7 @@ package Chj::Mylock;
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 use Chj::xopen 'xopen_write';
 use Chj::xtmpdir;
 

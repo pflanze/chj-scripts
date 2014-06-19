@@ -18,7 +18,7 @@ Chj::Parallel::Done
 
 package Chj::Parallel::Done;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["id","pid"];
 

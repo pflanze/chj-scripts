@@ -22,7 +22,7 @@ package Chj::MIME::EncWords;
 @EXPORT_OK=qw(decode_mimewords encode_mimewords);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use MIME::EncWords ();
 use utf8;

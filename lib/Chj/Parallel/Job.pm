@@ -18,7 +18,7 @@ Chj::Parallel::Job
 
 package Chj::Parallel::Job;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["id","pclosure","vals"];
 

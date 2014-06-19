@@ -18,7 +18,7 @@ Chj::Parallel
 
 package Chj::Parallel;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Parallel::Instance;
 use Chj::Parallel::NullInstance;

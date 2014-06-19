@@ -18,7 +18,7 @@ Chj::Parallel::Alldone
 
 package Chj::Parallel::Alldone;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["id"];
 

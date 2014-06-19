@@ -21,7 +21,7 @@ change!
 
 package Chj::Parse::Mbox::Section;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xopengzip ':all';
 

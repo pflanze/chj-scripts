@@ -39,7 +39,7 @@ package Chj::Parse::Maildir;
 	      maildir_mtime);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::FP2::IOStream ':all'; # xopendir_pathstream etc.
 use Chj::FP2::Stream;

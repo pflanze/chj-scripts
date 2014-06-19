@@ -42,7 +42,7 @@ package Chj::Try;
 	      standard_warn);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Carp;
 

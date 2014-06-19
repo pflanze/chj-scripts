@@ -35,7 +35,7 @@ some long-living structure don't end up retaining memory when revived.
 =cut
 
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 {
     package Chj::Ghostable::Ghost;

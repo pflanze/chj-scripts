@@ -17,7 +17,7 @@ Chj::Parse::Mbox::Message
 
 package Chj::Parse::Mbox::Message;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["cursor", "lines", "maybe_mailbox_unixtime", "index"];
 # cursor will actually be a Chj::Parse::Mbox::Section

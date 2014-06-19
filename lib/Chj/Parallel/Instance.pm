@@ -18,7 +18,7 @@ Chj::Parallel::Instance
 
 package Chj::Parallel::Instance;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::FP2::Lazy;
 use Scalar::Util 'weaken';
