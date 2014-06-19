@@ -29,23 +29,38 @@ sub usage {
 }
 
 
-my $regex=shift or usage;# "Bitte Regex und Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
-my $mode; # f=filelist in @ARGV, -=filelist on stdin, r=recursive with $path and $optionalpathregex
-my ($path,$optionalpathregex,$fileregex_is_negative, $opt_keep_time,$opt_no_trash,$opt_quiet);
+my $regex=shift or usage;
+my $mode;
+# f=filelist in @ARGV,
+# -=filelist on stdin,
+# r=recursive with $path and $optionalpathregex
+
+my ($path,
+    $optionalpathregex,
+    $fileregex_is_negative,
+    $opt_keep_time,
+    $opt_no_trash,
+    $opt_quiet);
+
 OPTPARSE: {
     local $_= $ARGV[0]; defined or usage;
     if ($_ eq '-r') {
 	$mode='r';
 	shift;
-	$path=shift or usage "Bitte zusätzlich zur Regex Pfad (und evtl. file*pfad*matchregex, welche mit spezialzeichen ! beginnen kann) angeben";
-	$optionalpathregex= shift; # Spezialzeichen ! am Anfang hat spezialbedeutung
-	$fileregex_is_negative=1 if $optionalpathregex and $optionalpathregex=~ s/^\!//s;
-    } elsif ($_ eq '-l') { ## which option should I use? 'files from stdin'
+	$path=shift
+	  or usage "missing path";
+	$optionalpathregex= shift;
+	# Special character ! at beginning has special meaning
+	$fileregex_is_negative=1
+	  if $optionalpathregex and $optionalpathregex=~ s/^\!//s;
+    } elsif ($_ eq '-l') {
 	$mode='-';
 	shift;
     } elsif ($_ eq '-T') { # same as tar's -T option
-	defined($ARGV[1])&&length($ARGV[1]) or usage "missing argument for -T";
-	open STDIN, "<$ARGV[1]" or die "opening '$ARGV[1]' for input: $!";
+	defined($ARGV[1]) && length($ARGV[1])
+	  or usage "missing argument for -T";
+	open STDIN, "<$ARGV[1]"
+	  or die "opening '$ARGV[1]' for input: $!";
 	$mode='-';
 	shift;
     } elsif ($_ eq '--keep-time') {
@@ -70,10 +85,8 @@ OPTPARSE: {
 }
 
 
-eval "sub doreg { $regex }"; # Operiert auf $_; Vorsicht, natürlich auch alien code möglich.
-if ($@) {
-    die "Konnte regex nicht parsen: $@";
-}
+eval "sub doreg { $regex }; 1"
+  or die "could not eval regex: $@";
 
 use Chj::App::Trash;
 
@@ -81,15 +94,19 @@ our $trash= do {
     if ($opt_no_trash) {
 	undef
     } else {
-	my $trasher= new Chj::App::Trash;
-	$trasher ->trashdir; #naja geht nur jetzt noch. so lang dass ich nicht auf perpartition wechsle. aber dann .. eben hier wieder anpassen.
+	Chj::App::Trash->new->trashdir
+	    # XXX only works as long as I don't change the trasher to
+	    # per-partition mechanism. Would have to change here.
     }
 };
 
-if ($trash and $mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich symlinks wirklich nicht? und werd ich nie mount --bind machen? NA: odersogar normaler ichdummkopfeinfacher mount innerhalb tree reicht für change. todo. na, einfach auf EXDEV testen unten und in jedem solchen Falle nachfragen sigh. todo also eher: aufräumen,streamlinen.
+if ($trash and $mode eq 'r')
+  # more problems: symlinks?, mount --bind?, mount within tree,
+  # XXX: test for EXDEV, ask
  {
     my $trashdev= (stat $trash)[0]; ## or die?
-    my $pathdev= (stat $path)[0]; defined $pathdev or die "could not stat '$path': $!";
+    my $pathdev= (stat $path)[0];
+    defined $pathdev or die "could not stat '$path': $!";
     ASK: {
 	my $ans;
 	do {
@@ -103,12 +120,15 @@ if ($trash and $mode eq 'r') ##naja, ist selbst in dem Fall dumm, oder folge ich
 	    }
 	    $ans=<STDIN>;
 	} until ($ans=~ /^y/i or $ans=~ /^n/i and die "user cancelled.\n");
-	$trash=undef; ##seufz so hasslich
+	$trash=undef; # ugly
     }
 }
+
 my $appendix= "".localtime();
 $appendix=~ s/ /_/sg;
-my $actualtrashdir= "$trash/$name/$appendix" if $trash;
+
+my $actualtrashdir= "$trash/$name/$appendix"
+  if $trash;
 
 
 sub scandir {
@@ -116,7 +136,6 @@ sub scandir {
     warn "Scanning dir $dir\n" if DEBUG;
     if (opendir DIR,$dir) {
         my $item;
-        #while (defined ($item= readdir DIR)) {   ->  AHA shit
         my @items= readdir DIR;
         closedir DIR;
         for $item (@items) {
@@ -131,10 +150,12 @@ sub scandir {
             } elsif (-f _) {
                 if (defined $optionalpathregex) {
                     if ("$dir/$item"=~ /$optionalpathregex/os) {
-                        warn "Datei $dir/$item matcht '$optionalpathregex'\n" if DEBUG;
+                        warn "File $dir/$item matches '$optionalpathregex'\n"
+			  if DEBUG;
                         next if $fileregex_is_negative;
                     } else {
-                        warn "Datei $dir/$item matcht '$optionalpathregex' NICHT\n" if DEBUG;
+                        warn "File $dir/$item does NOT match '$optionalpathregex'\n"
+			  if DEBUG;
                         next unless $fileregex_is_negative;
                     }
                 }
@@ -145,7 +166,7 @@ sub scandir {
             }
         }
     } else {
-        warn "Konnte Verzeichnis $dir nicht öffnen: $!\n";
+        warn "could not open dir '$dir': $!\n";
     }
 }
 
@@ -157,7 +178,8 @@ sub changefile {
     my $maybe_stat= ($opt_keep_time and xstat $path);
     my $maybe_apply_statinfo= sub {
 	if ($maybe_stat) {
-	    my $newstat= xlstat $path; # lstat here, since we will apply to whatever is *here* anyway, ok?
+	    # lstat here, since we will apply to whatever is *here* anyway, ok?
+	    my $newstat= xlstat $path;
 	    xutime $newstat->atime, $maybe_stat->mtime,  $path;
 	}
     };
@@ -172,7 +194,8 @@ sub changefile {
             if (sysopen OUT, "$path.$appendix",O_EXCL|O_CREAT|O_WRONLY) {
                 my $r=syswrite OUT,$_;
                 if (defined $r and $r==length($_)) {
-                    close OUT;#(sollte oben stehen, aber das würde $! spoilen)(c ist so haässlich)
+                    close OUT;
+		    #(should be placed above, but that would clobber $!)
 		  CHANGE:{
 			if ($trash) {
 			    my $trashpath= $folder;
@@ -228,10 +251,13 @@ sub changefile {
             warn "No match in $path\n" if DEBUG;
         }
     } else {
-        warn "Konnte Datei '$path' nicht öffnen: $!\n";
+        warn "Could not open file '$path': $!\n";
     }
 }
+
+
 #warn "mode=$mode";
+
 if ($mode eq 'r') {
     if (-d $path) {
 	scandir($path);
@@ -241,7 +267,8 @@ if ($mode eq 'r') {
 	$folder=~ s/\/$//s;
 	changefile($folder,$file);
     }
-} elsif ($mode eq '-') {
+}
+elsif ($mode eq '-') {
     while (<STDIN>) {
 	chomp;
 	m|(.*?)([^/]+)$|s or die "???";
@@ -249,13 +276,16 @@ if ($mode eq 'r') {
 	$folder=~ s/\/$//s;
 	changefile($folder,$file);
     }
-} elsif ($mode eq 'f') {
+}
+elsif ($mode eq 'f') {
     for (@ARGV) {
 	m|(.*?)([^/]+)$|s or die "???";
 	my ($folder,$file)=($1,$2);
 	$folder=~ s/\/$//s;
 	changefile($folder,$file);
     }
-} else {
+}
+else {
     die "?? mode=$mode";
 }
+
