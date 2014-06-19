@@ -7,7 +7,7 @@ use strict;
 use Fcntl;
 use File::Path;
 use POSIX 'EXDEV';
-use Chj::xperlfunc 'xstat','xlstat','xutime';
+use Chj::xperlfunc 'xstat','xlstat','xutime','xxsystem';
 
 sub usage {
     warn @_,"\n" if @_;
@@ -176,11 +176,18 @@ sub changefile {
     my ($folder,$file)=@_;
     my $path= length($folder)? "$folder/$file" : $file;##hum?
     my $maybe_stat= ($opt_keep_time and xstat $path);
+    my $is_exe= -x $path;
     my $maybe_apply_statinfo= sub {
 	if ($maybe_stat) {
 	    # lstat here, since we will apply to whatever is *here* anyway, ok?
 	    my $newstat= xlstat $path;
 	    xutime $newstat->atime, $maybe_stat->mtime,  $path;
+	}
+	if ($is_exe) {
+	    # how inelegant? but xstat objects don't have functional
+	    # setters (and updating methods) (it doesn't even have a
+	    # -x method!).
+	    xxsystem "chmod","+x","--",$path;
 	}
     };
     warn "Scanning file $path\n" if DEBUG;
