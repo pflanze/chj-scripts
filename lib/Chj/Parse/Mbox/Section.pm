@@ -28,7 +28,7 @@ use Chj::xopengzip ':all';
 use Chj::Struct ["mboxpath",
 		 "from", # incl
 		 "to", # excl
-		];
+		], "Chj::Parse::MailboxCursor";
 
 
 sub xsendfile_to {

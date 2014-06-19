@@ -21,7 +21,7 @@ use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xopen 'xopen_read';
 
-use Chj::Struct ["itempath"];
+use Chj::Struct ["itempath"], "Chj::Parse::MailboxCursor";
 
 sub xsendfile_to {
     my $s=shift;
