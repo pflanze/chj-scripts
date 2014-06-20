@@ -16,8 +16,6 @@ fi
 user="$1"
 onoff="$2"
 
-id -- "$user" > /dev/null
-
 DA=""
 case "$onoff" in
     off)
