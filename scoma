@@ -23,6 +23,13 @@ else
     usage
 fi
 
+
+gdir=`git rev-parse --git-dir`
+if [ "$gdir" != ".git" ]; then
+    echo "not in root of git working directory, aborting"
+    exit 1
+fi
+
 set -x
 
 git add .
