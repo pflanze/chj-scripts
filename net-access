@@ -21,7 +21,7 @@ id -- "$user" > /dev/null
 DA=""
 case "$onoff" in
     off)
-    if iptables -L -t filter|grep --quiet "owner UID match $user"; then
+    if iptables -L -t filter|grep --quiet "owner UID match $user "; then
 	echo "already off"
 	exit 1
     fi
