@@ -1,0 +1,129 @@
+#!/usr/bin/perl -w
+
+# Sat Jun 21 18:57:05 BST 2014
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname frompath topath
+
+  replace topath with frompath if they are files with differing
+  contents; if they are directories, recurse.
+
+  Purpose: keep mtimes (and permissions etc.) of (files at) topath intact
+  if contents haven't changed. rsync -r does not work for this purpose!
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+
+use Chj::FP::HashSet ":all";
+use Chj::xperlfunc ":all";
+use Chj::xopendir;
+use Chj::singlequote 'singlequote_sh';
+
+sub qsh {##lib?
+    join (" ", map { singlequote_sh $_ } @_)
+}
+
+
+{
+    package CHJ_usync::diritems;
+    use Chj::FP::HashSet ":all";
+
+    use Chj::Struct ["items"];
+    sub hashset {
+	my $s=shift;
+	array2hashset $s->items
+    }
+    _END_
+}
+sub diritems ($) {
+    my ($path)=@_;
+    my $d= xopendir $path;
+    my $v= CHJ_usync::diritems->new([sort $d->xnread]);
+    $d->xclose;
+    $v
+}
+
+sub usync {
+    my ($from, $to)=@_;
+    my $s0= xlstat $from;
+    my $copy= sub {
+	# XX using mv instead optionally
+	xxsystem "cp", "-a", "--", $from, $to
+    };
+    die "symlinks not supported (yet?): from ".qsh($from)
+      if $s0->is_link;
+    if (my $s1= Xlstat $to) {
+	die "symlinks not supported (yet?): to ".qsh($to)
+	  if $s1->is_link;
+	if ($s0->is_dir) {
+	    if ($s1->is_dir) {
+		my $i0= diritems $from;
+		my $i1= diritems $to;
+
+		for my $item (@{$i0->items}) {
+		    usync ("$from/$item", "$to/$item");
+		}
+
+		for my $item (@{hashset2array
+				  hashset_difference ($i1->hashset, $i0->hashset)}) {
+		    my $path= "$to/$item";
+		    xunlink $path;
+		    # XX what if directory? option then rm -rf (only
+		    # with option so that subdirs in web roots
+		    # etc. aren't removed accidentally?)
+		}
+	    } else {
+		# XX should just replace it?
+		die "source is dir, target is not: ".qsh($from, $to);
+	    }
+	} else {
+	    if ($s1->is_dir) {
+		# XX should just replace it?
+		die "source is not dir, target is: ".qsh($from, $to);
+	    } else {
+		# check whether they are normal files!
+		for my $s ($s0, $s1) {
+		    die "only normal files are supported (yet?): ".qsh($s->path)
+		      unless $s->is_file;
+		}
+		
+		my $r= xsystem "cmp", "-s", "--", $from, $to;
+		if ($r == 0) {
+		    # identical
+		} elsif ($r == 256) {
+		    unlink $to;
+		    &$copy;
+		} else {
+		    die "cmp gave status $r when comparing: ".qsh($from, $to);
+		}
+	    }
+	}
+    } else {
+	$s0->is_dir or $s0->is_file
+	  or die "source is not normal file: ".qsh($from);
+	&$copy;
+    }
+}
+
+usync @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
