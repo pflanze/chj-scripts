@@ -18,7 +18,7 @@ sub usage {
   if contents haven't changed. rsync -r does not work for this purpose!
 
   Options:
-
+   --delete            delete items that don't exist under frompath
    --exclude pattern   only matched against item names, no '/' are
                        currently allowed
 
@@ -33,9 +33,11 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our @exclude; # regexes
+our $opt_delete;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
+	   "delete"=> \$opt_delete,
 	   "exclude=s"=> sub {
 	       my ($k,$e)=@_;
 	       $e=~ /^[:+-]/ # XXX not sure. how does rsync work really?
@@ -52,6 +54,7 @@ usage unless @ARGV==2;
 use Chj::FP::HashSet ":all";
 use Chj::xperlfunc ":all";
 use Chj::xopendir;
+use Chj::Shelllike::Rmrf;
 use Chj::singlequote 'singlequote_sh';
 
 sub qsh {##lib?
@@ -109,14 +112,13 @@ sub usync {
 		    usync ("$from/$item", "$to/$item");
 		}
 
-		for my $item (@{hashset2array
-				  hashset_difference ($i1->hashset, $i0->hashset)}) {
-		    next if exclude $item;
-		    my $path= "$to/$item";
-		    xunlink $path;
-		    # XX what if directory? option then rm -rf (only
-		    # with option so that subdirs in web roots
-		    # etc. aren't removed accidentally?)
+		if ($opt_delete) {
+		    for my $item (@{hashset2array
+				      hashset_difference ($i1->hashset, $i0->hashset)}) {
+			next if exclude $item;
+			my $path= "$to/$item";
+			Rmrf $path;
+		    }
 		}
 	    } else {
 		# XX should just replace it?
@@ -132,12 +134,12 @@ sub usync {
 		    die "only normal files are supported (yet?): ".qsh($s->path)
 		      unless $s->is_file;
 		}
-		
+
 		my $r= xsystem "cmp", "-s", "--", $from, $to;
 		if ($r == 0) {
 		    # identical
 		} elsif ($r == 256) {
-		    unlink $to;
+		    xunlink $to;
 		    &$copy;
 		} else {
 		    die "cmp gave status $r when comparing: ".qsh($from, $to);
