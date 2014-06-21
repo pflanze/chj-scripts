@@ -17,17 +17,34 @@ sub usage {
   Purpose: keep mtimes (and permissions etc.) of (files at) topath intact
   if contents haven't changed. rsync -r does not work for this purpose!
 
+  Options:
+
+   --exclude pattern   only matched against item names, no '/' are
+                       currently allowed
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
+use Text::Glob qw( glob_to_regex );
+
 use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
+our @exclude; # regexes
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
+	   "exclude=s"=> sub {
+	       my ($k,$e)=@_;
+	       $e=~ /^[:+-]/ # XXX not sure. how does rsync work really?
+		 and die "rsync style filters not implemented: '$e'";
+	       $e=~ m|/|
+		 and die "only item matches are implemented, '/' not allowed: '$e'";
+	       #($e eq "." or $e eq ":" or $e eq "!" or .. ) XXX dito rsync
+	       push @exclude, glob_to_regex($e);
+	   },
 	   ) or exit 1;
 usage unless @ARGV==2;
 
@@ -61,6 +78,15 @@ sub diritems ($) {
     $v
 }
 
+sub exclude ($) {
+    my ($path)=@_;
+    for my $re (@exclude) {
+	$path=~ /$re/
+	  and return 1;
+    }
+    return 0;
+}
+
 sub usync {
     my ($from, $to)=@_;
     my $s0= xlstat $from;
@@ -79,11 +105,13 @@ sub usync {
 		my $i1= diritems $to;
 
 		for my $item (@{$i0->items}) {
+		    next if exclude $item;
 		    usync ("$from/$item", "$to/$item");
 		}
 
 		for my $item (@{hashset2array
 				  hashset_difference ($i1->hashset, $i0->hashset)}) {
+		    next if exclude $item;
 		    my $path= "$to/$item";
 		    xunlink $path;
 		    # XX what if directory? option then rm -rf (only
@@ -127,3 +155,16 @@ usync @ARGV;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
+
+__END__
+chris@novo:~$ usync a  b --exclude '*foo' --exclude baz
+main> :d @exclude 
+$VAR1 = qr/(?^:^(?=[^\.])[^\/]*foo$)/;
+$VAR2 = qr/(?^:^(?=[^\.])baz$)/;
+main> :d exclude "foo"
+$VAR1 = 1;
+main> :d exclude "afoo"
+$VAR1 = 1;
+main> :d exclude "a/foo"
+$VAR1 = 0;
+interesting. What I want actually. XX add test?
