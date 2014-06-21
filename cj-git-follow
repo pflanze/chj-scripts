@@ -33,19 +33,15 @@ usage unless @ARGV;
 
 use Chj::Git::Follow;
 
-if (@ARGV==1) {
-    print "$_\n" or die
-      for Chj::Git::Follow->new_path(@ARGV)->paths;
-} else {
-    my %path;
-    for my $path (@ARGV) {
-	for my $path (Chj::Git::Follow->new_path($path)->paths) {
-	    $path{$path}++
-	}
+my %path;
+for my $path (@ARGV) {
+    for my $path (Chj::Git::Follow->new_path($path)->paths) {
+	$path{$path}++
     }
-    print "$_\n" or die
-      for sort keys %path;
 }
+print "$_\n" or die
+  for sort keys %path;
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
