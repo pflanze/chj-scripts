@@ -273,7 +273,7 @@ sub dir_or_fold {
 }
 
 
-use Chj::Parallel;
+use Chj::Parallel_for_each;
 
 use Chj::Git::Functions 'git_ls_files';
 
