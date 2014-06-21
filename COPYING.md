@@ -37,6 +37,9 @@ These files:
 are copyright by Christian Jaeger and offered under the MIT
 License.
 
+The other files have their own copyright and licensing statements
+embedded within the file.
+
 
 The MIT License (MIT)
 ---------------------
