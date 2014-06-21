@@ -6,9 +6,18 @@
 
 =head1 NAME
 
-Chj::Parallel
+Chj::Parallel_for_each
 
 =head1 SYNOPSIS
+
+ use Chj::Parallel_for_each;
+ my $proc= sub { my ($val)=@_; ... };
+ Parallel_for_each ($array, $proc);
+ # runs $proc in several child processes (according to
+ # Chj::Linux::numcpus) in parallel (each child process running $proc
+ # many times, with a different value from $array each time; each
+ # child processes its own subset of $array).  Return values of $proc
+ # are ignored.  When a child finishes, POSIX::_exit(0) is called.
 
 =head1 DESCRIPTION
 
@@ -16,7 +25,7 @@ Chj::Parallel
 =cut
 
 
-package Chj::Parallel;
+package Chj::Parallel_for_each;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(Parallel_for_each);
 @EXPORT_OK=qw();
