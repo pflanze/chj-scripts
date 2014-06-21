@@ -1,8 +1,41 @@
-ml2json is copyright by Christian Jaeger and offered under the MIT
-License, with the exception of the file
-`lib/Chj/Ml2json/m2h_text_enriched.pm` and the files below `perllib/`
-and `ftemplate/` which have their own copyright and licensing
-statements.
+These files:
+
+ Chj/FP/ArrayUtil.pm
+ Chj/FP/Array_sort.pm
+ Chj/FP/Hash.pm
+ Chj/FP/HashSet.pm
+ Chj/FP/Predicates.pm
+ Chj/Format/JSON.pm
+ Chj/Ghostable.pm
+ Chj/MIME/EncWords.pm
+ Chj/Ml2json/Try.pm
+ Chj/Mylock.pm
+ Chj/NoteWarn.pm
+ Chj/PClosure.pm
+ Chj/Parallel.pm
+ Chj/Parallel/Alldone.pm
+ Chj/Parallel/Closure.pm
+ Chj/Parallel/Done.pm
+ Chj/Parallel/Instance.pm
+ Chj/Parallel/Job.pm
+ Chj/Parallel/NullInstance.pm
+ Chj/Parallel/Proxy.pm
+ Chj/Parallel/Worker.pm
+ Chj/Parse/MailboxCursor.pm
+ Chj/Parse/Maildir.pm
+ Chj/Parse/Maildir/Cursor.pm
+ Chj/Parse/Maildir/Message.pm
+ Chj/Parse/Mbox.pm
+ Chj/Parse/Mbox/Message.pm
+ Chj/Parse/Mbox/Section.pm
+ Chj/Struct.pm
+ Chj/Transmittable.pm
+ Chj/Try.pm
+ Chj/numcores.pm
+ Chj/tempdir.pm
+
+are copyright by Christian Jaeger and offered under the MIT
+License.
 
 
 The MIT License (MIT)
