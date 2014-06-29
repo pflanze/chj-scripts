@@ -1,3 +1,3 @@
 #!/bin/bash
 
-_browser-url-args "http://packages.debian.org/" "$@"
+_browser-url-args "https://packages.debian.org/" "$@"
