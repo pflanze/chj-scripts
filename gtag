@@ -3,19 +3,20 @@
 set -eu
 
 usage () {
-    echo "$0 tagname"
-    echo "  runs gdrop --no-prefix <tagname>"
+    echo "$0 tagname [commit]"
+    echo "  like 'git tag' but appends date_ to tagname"
+    echo "  (runs gdrop --no-prefix --no-move <tagname>)"
     ## hmm, pass through -a option though ?
     ## as well as -s ?
     ## should really change gdrop instead
     exit 1
 }
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 -o $# -gt 2 ]; then
     usage
 fi
 if [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
-exec gdrop --no-prefix "$@"
+exec gdrop --no-prefix --no-move "$@"

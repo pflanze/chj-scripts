@@ -17,6 +17,7 @@ sub usage {
   -s   passed to git tag
   -b|--base   instead of using prefix drop_, use prefix base_
   -n|--no-prefix   don't use a prefix at all
+  --no-move  don't actually change HEAD, but instead tag the commit reset_to_commit
 
   Environment vars:
    GDROP_FORCE=1  same effect as -f
@@ -32,6 +33,7 @@ our $opt_dry;
 our $opt_force;
 our $opt_base;
 our $opt_no_prefix;
+our $opt_no_move;
 our @gitopts;
 
 sub passgitopt ( $ ) {
@@ -62,6 +64,7 @@ GetOptions("verbose"=> \$verbose,
 	   "dry-run"=> \$opt_dry,
 	   "base"=> \$opt_base,
 	   "no-prefix"=> \$opt_no_prefix,
+	   "no-move"=> \$opt_no_move,
 	   passgitopt "a",
 	   passgitopt "s",
 	   passgitopt  "m=s",
@@ -102,10 +105,15 @@ sub _xxsystem {
     }
 }
 
-if ($opt_force or (&$cleanq)->[0]) {
-    _xxsystem "git", "tag", @gitopts, $tagname;
-    if (defined $maybe_reset_to_commit) {
-	_xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
+if ($opt_force or $opt_no_move or (&$cleanq)->[0]) {
+    if ($opt_no_move) {
+	_xxsystem "git", "tag", @gitopts, $tagname,
+	  (defined $maybe_reset_to_commit ? $maybe_reset_to_commit : ());
+    } else {
+	_xxsystem "git", "tag", @gitopts, $tagname;
+	if (defined $maybe_reset_to_commit) {
+	    _xxsystem "git", "reset", "--hard", $maybe_reset_to_commit;
+	}
     }
 } else {
     print STDERR "\n  *** working directory status is not clean: ***\n\n"
