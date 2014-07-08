@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname val[s]
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+my $first=$ARGV[0];
+usage if $first eq "-h" or $first eq "--help";
+
+sub f;
+
+my $mperinch= 0.0254;
+
+*f=
+  (
+  +{
+    "inch"=> sub {
+	my ($v)=@_;
+	["m", $v*$mperinch]
+    },
+    "meter"=> sub {
+	my ($v)=@_;
+	["inch", $v/$mperinch]
+    }
+   }->{$myname}
+   or die "unknown name '$myname'");
+
+sub print_f {
+    my ($U,$v)=@{ f ($_[0])};
+    print "$v $U\n"
+      or die $!;
+}
+
+print_f $_ for @ARGV;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
