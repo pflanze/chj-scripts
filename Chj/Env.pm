@@ -38,6 +38,7 @@ package Chj::Env;
 use strict;
 use Data::Dumper;
 use Carp;
+use Chj::xperlfunc qw(min max);
 
 sub pp_through {
     carp "pp_through:  <-";
@@ -45,27 +46,6 @@ sub pp_through {
     wantarray ? @_ : $_[-1] ##hmnm
 }
 
-sub max {
-    return () unless @_;
-    my $res=shift;
-    for (@_) {
-	if ($_>$res) {
-	    $res=$_
-	}
-    }
-    $res
-}
-
-sub min {
-    return () unless @_;
-    my $res=shift;
-    for (@_) {
-	if ($_<$res) {
-	    $res=$_
-	}
-    }
-    $res
-}
 
 sub _Mkzip {
     my ($minmax)=@_;
