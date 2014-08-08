@@ -303,14 +303,16 @@ sub mount_easily {
 	print "mounting '$path'..\n";
     }
 
+    # make copy so that modifications aren't carried over to
+    # subsequent calls of mount_easily
+    my $mountoptions= +{%$mountoptions};
+
     my $device_path;
     my $dest_path;
 
     # check whether we need -o loop: (safe enough?hopeso)
     {
 	my $s= xstat $path;
-	##BUG,right: the following results in effects on all
-	##'subsequently' processed mounts."!". (Even/especially in --auto mode..)
 	if ($s->is_file) {#hm is_regular ?
 	    $device_path=$path;
 	    $$mountoptions{loop}=1
