@@ -113,6 +113,7 @@ GetOptions("verbose"=> \$verbose,
 use Chj::Unix::Mount 'mounted','mount';
 use Chj::xperlfunc ":all";# qw(xmkdir basename dirname xstat xxsystem);
 use Chj::FP::lazy;
+use Chj::FP::ArrayUtil 'array_every';
 
 sub mydie { #forever
     die "$myname: @_\n";#hm or join  ?.  a forever-*question*
@@ -315,7 +316,24 @@ sub mount_easily {
 	my $s= xstat $path;
 	if ($s->is_file) {#hm is_regular ?
 	    $device_path=$path;
-	    $$mountoptions{loop}=1
+	    $$mountoptions{loop}=1;
+
+	    # check if file is chmod a-w, take this as a hint that the
+	    # image should always be mounted read-only
+	    if (array_every
+		(sub {
+		     my ($method)=@_;
+		     my $v= $s->$method;
+		     not ($v & 1)  # not writable
+		 },
+		 [qw(permissions_u permissions_g permissions_o)])) {
+		if ($$mountoptions{ro}) {
+		    print "image file is read-only, 'ro' flag given already\n";
+		} else {
+		    print "image file is read-only, thus adding ro flag\n";
+		    $$mountoptions{ro}=1;
+		}
+	    }
 	} elsif ($s->is_blockdevice) {
 	    $device_path=$path;
 	    delete $$mountoptions{loop} # =0 is not enough if I'm taking keys..
