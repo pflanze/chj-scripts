@@ -1,7 +1,4 @@
 #!/bin/sh
-# cj Mon,  9 Feb 2004 20:36:32 +0100
-# ein FILTER   sollt ich den nun auch filter_... nennen?
-
 
 usage () {
     echo "$0 fieldno"
