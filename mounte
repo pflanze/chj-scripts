@@ -324,7 +324,7 @@ sub mount_easily {
 		(sub {
 		     my ($method)=@_;
 		     my $v= $s->$method;
-		     not ($v & 1)  # not writable
+		     not ($v & 2)  # not writable
 		 },
 		 [qw(permissions_u permissions_g permissions_o)])) {
 		if ($$mountoptions{ro}) {
