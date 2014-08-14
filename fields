@@ -1,0 +1,63 @@
+#!/usr/bin/perl -w
+
+sub xeval {
+    my ($str)=@_;
+    my $res= eval q{use strict; use warnings FATAL => 'uninitialized';}. $str;
+    if ($@) {
+	die "eval '$str': $@"
+    }
+    $res
+}
+
+# Thu Aug 14 21:53:15 BST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname fieldnumber(s)
+
+  (New variant of the 'printfield' script.)
+
+  This script counts fields from 0. It terminates (currently with 'Use
+  of uninitialized value') if a field is missing.
+
+  Options:
+    --sep expr   separation string (perl expression!, careful!),
+                 default: one space character
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_sep;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sep=s"=> \$opt_sep,
+	   ) or exit 1;
+usage unless @ARGV;
+
+our @firstfields= @ARGV;
+our $lastfield= pop @firstfields;
+
+our $sep= defined $opt_sep ? xeval $opt_sep : " ";
+
+while (<STDIN>) {
+    chomp;
+    my @f= split /\s+/, $_;
+    for (@firstfields) {
+	print $f[$_], $sep
+	  or die $!;
+    }
+    print $f[$lastfield], "\n"
+      or die $!;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

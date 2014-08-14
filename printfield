@@ -4,6 +4,8 @@ usage () {
     echo "$0 fieldno"
     echo "  filters stdin to stdout, outputting only filed no. filedno, like"
     echo "  awk \"{print \\\$\$fieldno}\""
+    echo
+    echo " See also: fields"
     exit 1
 }
 
