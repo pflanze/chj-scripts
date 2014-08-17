@@ -2,4 +2,4 @@
 
 degoogle --pass \
     | »» perl -we 'my($url)=@ARGV; print "URL: $url\n"; exec "youtubedown",@ARGV' 2>&1 \
-    | tee >(log-timestamp >> ~/.down.log)
+    | tee >(log-timestamp --pid >> ~/.down.log)
