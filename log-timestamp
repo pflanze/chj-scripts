@@ -24,7 +24,7 @@ sub usage {
   --to file   write to the given file instead of stdout.
               it is opened in append mode.
 #  --specify   add a column with 'E' for stderr and 'O' for stdout  not implemented, requires threads/multiple processes (ok best way) or select.
-  --pid       add a column with the pid of the forked cmd  not implemented
+  --pid       add a column with the pid of the forked cmd
 
   (Christian Jaeger <$email>)
 ";
