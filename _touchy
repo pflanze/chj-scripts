@@ -34,6 +34,7 @@ use Chj::xsysopen;
 sub xtouchy {
     my ($str)=@_;
     my $path= fileescapeurl($str);
+    $path.=" " if $path=~ /~$/;
     xsysopen $path, O_CREAT|O_EXCL|O_WRONLY;
 }
 
