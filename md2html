@@ -1,0 +1,124 @@
+#!/bin/bash
+
+set -eu
+
+md () {
+    local path="$1"
+    local outdir="`dirname "$path"`";
+    local outpath="$outdir/`basename "$path" .md`.xhtml"
+    {
+	cat <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>
+EOF
+        echo "$path"
+	cat <<EOF
+</title><style type="text/css">
+<!--
+ul.menu {
+  border: 1px solid #000;
+  background-color: #eee;
+  padding: 5px;
+  list-style: none;
+  padding-left: 0.5em;
+}
+li.menu {
+  border-right: 1px solid #000;
+  list-style: none;
+  padding-left: 0.5em;
+  padding-right: 0.3em;
+  display: inline;
+}
+li.menu_last {
+  list-style: none;
+  padding-left: 0.5em;
+  padding-right: 0.3em;
+  display: inline;
+}
+.menu_selected {
+  font-weight: bold;
+}
+
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+pre {
+  padding: 4px;
+  background-color: #eee;
+  border: 1px solid #ccc;
+}
+
+* > code {
+  padding: 1px;
+  background-color: #eee;
+  border: 1px solid #ddd;
+}
+
+pre > code {
+  padding: 0px;
+  background-color: none;
+  border: none;
+}
+
+
+.header {
+  text-align: center;
+}
+.logo {
+  font-weight: bold;
+  font-size:36px;
+}
+
+body {
+  padding-left: 1.8em;
+  padding-right: 1.8em;
+}
+
+hr {
+  height: 1px;
+  background-color: #ccc;
+  border: none;
+}
+
+.footer_date {
+  text-align: center;
+  font-style: italic;
+  font-size: small;
+}
+
+.costlist {
+  border-spacing: 4px;
+}
+.costlist > thead > th {
+  border-bottom: 1px solid #666;
+}
+.costlist > tr > td {
+  padding-right: 0.5em;
+}
+
+blockquote {
+  padding: 1px;
+  background-color: #eee;
+  border: 1px solid #ddd;
+}
+-->
+</style></head><body>
+EOF
+
+        markdown "$path"
+
+	cat <<EOF
+</body></html>
+EOF
+    }  > "$outpath"
+}
+
+for path in "$@"; do
+    md "$path"
+done
+
