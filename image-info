@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Sun Aug 31 07:21:37 BST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path(s)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Image::Info qw(image_info dim);
+
+sub iinfo {
+    my ($path)=@_;
+    my $info = image_info($path);
+    if (my $error = $info->{error}) {
+	die "Can't parse image info: $error\n";
+    }
+
+    #my $color = $info->{color_type};
+
+    #my $type = image_type("image.jpg");  #hu
+    #if (my $error = $type->{error}) {
+    #   die "Can't determine file type: $error\n";
+    #}
+    #die "No gif files allowed!" if $type->{file_type} eq 'GIF';
+
+    # html_dim
+
+    my($w, $h) = dim($info);
+
+    print "${w}x${h}\n"
+      or die $!;
+}
+
+if (@ARGV) {
+    iinfo $_ for @ARGV;
+} else {
+    while (<STDIN>) {
+	chomp;
+	iinfo $_;
+    }
+}
+
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
