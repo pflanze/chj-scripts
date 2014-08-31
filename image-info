@@ -9,7 +9,13 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path(s)
+    print "$myname [path(s)]
+
+  Or read paths from stdin.
+
+
+  Options:
+    -z  0-terminate lines and expect the same on stdin
 
   (Christian Jaeger <$email>)
 ";
@@ -21,33 +27,45 @@ our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "z"=> sub{ $/= "\0" },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 #usage unless @ARGV;
 
 use Image::Info qw(image_info dim);
+use Chj::schemestring;
+use Chj::Chomp;
+
+$|++;
 
 sub iinfo {
     my ($path)=@_;
-    my $info = image_info($path);
-    if (my $error = $info->{error}) {
-	die "Can't parse image info: $error\n";
+    eval {
+	my $info = image_info($path);
+	if (my $error = $info->{error}) {
+	    die $error; #"Can't parse image info: $error\n";
+	}
+
+	#my $color = $info->{color_type};
+
+	#my $type = image_type("image.jpg");  #hu
+	#if (my $error = $type->{error}) {
+	#   die "Can't determine file type: $error\n";
+	#}
+	#die "No gif files allowed!" if $type->{file_type} eq 'GIF';
+
+	# html_dim
+
+	my($w, $h) = dim($info);
+
+	print "(dim ${w} ${h})$/"
+	  or die $!;
+
+	1
+    } || do {
+	print "(error ".schemestring(Chomp($@)).")$/"
+	  or die $!;
     }
-
-    #my $color = $info->{color_type};
-
-    #my $type = image_type("image.jpg");  #hu
-    #if (my $error = $type->{error}) {
-    #   die "Can't determine file type: $error\n";
-    #}
-    #die "No gif files allowed!" if $type->{file_type} eq 'GIF';
-
-    # html_dim
-
-    my($w, $h) = dim($info);
-
-    print "${w}x${h}\n"
-      or die $!;
 }
 
 if (@ARGV) {
