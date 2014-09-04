@@ -13,8 +13,8 @@ BEGIN {
 
 our $url=
   +{
-    leo=> 'http://dict.leo.org/?search=$1&searchLoc=0&relink=on&deStem=standard&lang=en',
-    fleo=> 'http://dict.leo.org/frde?search=$1&lp=frde',
+    leo=> 'https://dict.leo.org/?search=$1&searchLoc=0&relink=on&deStem=standard&lang=en',
+    fleo=> 'https://dict.leo.org/frde?search=$1&lp=frde',
    }->{$myname}
   or die "'$myname' unknown";
 
