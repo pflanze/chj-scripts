@@ -1,0 +1,17 @@
+#!/bin/bash
+
+usage () {
+    echo "$0 [path]"
+    echo "  translates input from 0-byte line endings to normal"
+    echo "  line endings, runs less on the result"
+    exit 1
+}
+
+if [ $# -eq 1 ]; then
+    tr0n < "$1" | less
+elif [ $# -eq 0 ]; then
+    tr0n | less
+else
+    usage
+fi
+

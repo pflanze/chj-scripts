@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ $# -ne 0 ]; then
+    echo "usage:"
+    echo "  find . -print0 | tr0n | less"
+    exit 1
+fi
+
+tr '\0' '\n'
+
