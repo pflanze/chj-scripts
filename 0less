@@ -7,11 +7,11 @@ usage () {
     exit 1
 }
 
-if [ $# -eq 1 ]; then
-    tr0n < "$1" | less
-elif [ $# -eq 0 ]; then
+if [ $# -eq 0 ]; then
     tr0n | less
 else
-    usage
+    for f in "$@"; do
+	tr0n < "$f" | less
+    done
 fi
 
