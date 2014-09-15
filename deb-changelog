@@ -2,27 +2,32 @@
 
 set -eu
 
-if [ $# -ne 1 ]; then
-     echo "usage: $0 packagename"
+if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
+     echo "usage: $0 packagename[s]"
      exit 1
 fi
 
-dir=/usr/share/doc/"$1"
-
-triedfiles=""
 try () {
     path="$dir"/"$1"
     if [ -e "$path" ]; then
-        zless "$path"
-        return 0
+	zless "$path" || true # not sure || true is necessary
+	return 0
     else
 	triedfiles="$triedfiles $path"
-        return 1
+	return 1
     fi
 }
 
-try changelog.Debian.gz || try changelog.gz || {
-    echo "could not find either of these files:$triedfiles" >&2
-    exit 1
+view () {
+    local dir=/usr/share/doc/"$1"
+    local triedfiles=""
+    
+    try changelog.Debian.gz || try changelog.gz || {
+	echo "could not find either of these files:$triedfiles" >&2
+	exit 1
+    }
 }
 
+for p in "$@"; do
+    view "$p"
+done
