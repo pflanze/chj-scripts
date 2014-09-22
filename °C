@@ -4,12 +4,13 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname temp[s]
+    print "$myname value[s]
 
   (Christian Jaeger <$email>)
 ";
@@ -20,29 +21,33 @@ usage unless @ARGV;
 my $first=$ARGV[0];
 usage if $first eq "-h" or $first eq "--help";
 
-sub temp;
+utf8::decode($myname);
 
-*temp=
+our $conv=
   +{
-    "C"=> sub {
+    "째C"=> sub {
 	my ($v)=@_;
 	#use fatal warnings somethng ?
-	["F", ($v*9/5)+32]
+	["째F", ($v*9/5)+32]
     },
-    "F"=> sub {
+    "째F"=> sub {
 	my ($v)=@_;
-	["C", ($v - 32)*5/9]
+	["째C", ($v - 32)*5/9]
+    },
+    "feet"=> sub {
+	my ($v)=@_;
+	["m", $v * 0.3048 ]
     }
-   }->{substr $myname, -1,1}
+   }->{$myname}
   or die "unknown name '$myname'";
 
-sub print_temp {
-    my ($U,$v)=@{ temp ($_[0])};
-    print "$v �$U\n"
+sub print_conv {
+    my ($U,$v)=@{ &$conv ($_[0])};
+    print "$v $U\n"
       or die $!;
 }
 
-print_temp $_ for @ARGV;
+print_conv $_ for @ARGV;
 
 
 #use Chj::ruse;
