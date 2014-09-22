@@ -3,7 +3,7 @@
 # Sat Aug 27 20:56:49 EDT 2011
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -27,27 +27,22 @@ our $conv=
   +{
     "°C"=> sub {
 	my ($v)=@_;
-	#use fatal warnings somethng ?
-	["°F", ($v*9/5)+32]
+	(($v*9/5)+32)." °F"
     },
     "°F"=> sub {
 	my ($v)=@_;
-	["°C", ($v - 32)*5/9]
+	(($v - 32)*5/9)." °C"
     },
     "feet"=> sub {
 	my ($v)=@_;
-	["m", $v * 0.3048 ]
+	($v * 0.3048)." m"
     }
    }->{$myname}
   or die "unknown name '$myname'";
 
-sub print_conv {
-    my ($U,$v)=@{ &$conv ($_[0])};
-    print "$v $U\n"
-      or die $!;
-}
-
-print_conv $_ for @ARGV;
+print &$conv ($_)."\n"
+    or die $!
+    for @ARGV;
 
 
 #use Chj::ruse;
