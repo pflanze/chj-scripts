@@ -400,7 +400,7 @@ sub mount_easily {
 			       if (my $uuid= maybe_uuid_from_dev ($device_path)) {
 				   print "found uuid '$uuid'\n"
 				     if $verbose;
-				   @_=("/dev/disk/by-uuid/$uuid",sub {
+				   @_=("$uuid",sub {
 					   my ($_key,$_next)=@_;
 					   # third try is key1 then key   hmm forever?..
 					   # ah no, $_key is schrott. derived from $uuidkey.
