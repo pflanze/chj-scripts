@@ -41,7 +41,7 @@ use Chj::IO::Command;
 
 sub degoogle {
     my ($str)=@_;
-    if (my ($encurl)= $str=~ m/url\?q=(.*?)(?:\&|$)/) {
+    if (my ($encurl)= $str=~ m/(?:url\?|&)q=(.*?)(?:\&|$)/) {
 	my $c= Chj::IO::Command->new_receiver ("urldecode");
 	$c->print($encurl);
 	$c->xxfinish;
