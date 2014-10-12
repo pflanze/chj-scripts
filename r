@@ -54,7 +54,7 @@ our %existingargs=
 sub maybe_trunc ( $ ) {
     my ($str)=@_;
     # scratch files
-    if ($str=~ /^\(?(\w{26})[-\)~]/) {
+    if ($str=~ /^\(?(\w{26,27})[-\)~]/) {
 	$1
     } else {
 	undef
