@@ -1,0 +1,103 @@
+#!/usr/bin/perl -w
+
+# Mon Oct 13 16:03:09 CEST 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname options path
+
+  or  path options
+
+  Options:
+
+   --mtime-from str
+   --mtime-to str
+   -z|-0  print \\0 instead of \\n after paths
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our ($opt_mtime_from, $opt_mtime_to);
+our $EOS= "\n";
+
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "mtime-from=s"=> \$opt_mtime_from,
+	   "mtime-to=s"=> \$opt_mtime_to,
+	   "0"=> sub {
+	       $EOS= "\0";
+	   },
+	   "z"=> sub {
+	       $EOS= "\0";
+	   },
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+use Chj::xopendir;
+use Chj::xperlfunc 'xlstat';
+use Date::Parse;
+sub xstr2time ($) {
+    my ($str)=@_;
+    my $t= str2time $str;
+    defined $t or die "invalid date-time string '$str'";
+    $t
+}
+
+our ($mtime_from, $mtime_to)=
+  map {
+      defined $_ ? xstr2time $_ : undef
+  } ($opt_mtime_from, $opt_mtime_to);
+
+our @restrictions=
+  (
+   $mtime_from ? sub {
+       my ($path,$item,$s)=@_;
+       $s->mtime >= $mtime_from
+   } : (),
+   $mtime_to ? sub {
+       my ($path,$item,$s)=@_;
+       $s->mtime <= $mtime_to
+   } : (),
+  );
+
+sub find {
+    my ($ppath, $item)=@_;
+    my $path= defined $item? "$ppath/$item" : $ppath;
+    ##^ XX gah, then undef will be passed to predicates, too
+    my $s= xlstat $path;
+
+  TEST: {
+	for my $restriction(@restrictions) {
+	    if (not &$restriction( $path, $item, $s)) {
+		last TEST;
+	    }
+	}
+	print $path, $EOS;
+    }
+
+    if ($s->is_dir) {
+	my $d= xopendir $path;
+	while (defined (my $item= $d->xnread)) {
+	    find ($path, $item);
+	}
+	$d->xclose;
+    } else {
+	# already reported
+    }
+}
+
+find @ARGV;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
