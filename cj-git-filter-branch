@@ -200,18 +200,21 @@ our $make_filter= sub {
     }
 };
 
-our $removefiles= &$make_filter
-  (
-   sub {
-       ('git update-index '
-	.join(' ',
-	      map {
-		  "--remove ".singlequote_sh($_)
-	      } @ARGV)
-	.' HEAD')
-   },
-   sub { $commit_filter_script__skip_empty_commits}
-  );
+sub make_removefiles {
+    my ($getpaths)=@_;
+    &$make_filter
+      (
+       sub {
+	   ('git update-index '
+	    .join(' ',
+		  map {
+		      "--remove ".singlequote_sh($_)
+		  } &$getpaths)
+	    .' HEAD')
+       },
+       sub { $commit_filter_script__skip_empty_commits}
+      );
+}
 
 our $opt_quiet_rm;
 
@@ -312,9 +315,20 @@ our $remove_all_but_those_in= &$make_filter
 
 our $cmds=
   [
-   ["remove-files" => $removefiles,
+   ["remove-files" => make_removefiles(sub { @ARGV }),
     "...",
     "remove all given file paths from repo (including their commit if empty)"],
+   ["remove-files-in" => make_removefiles
+    (sub {
+	 @ARGV==1 or die "expecting 1 argument, got @ARGV";
+	 my ($path)= @ARGV;
+	 my $f= xopen_read $path;
+	 my $lines= [map {chomp; $_} <$f>];
+	 $f->xclose;
+	 @$lines
+     }),
+    "path",
+    "remove all file paths listed in 'path' from repo (including their commit if empty)"],
    ["remove-dirs" => $removedirs,
     "...",
     "remove all files in the given dir paths (including their commit if empty)"],# basically just a recursive version of the remove-files thing. wouldn't that message be too long?
