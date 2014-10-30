@@ -313,13 +313,17 @@ our $remove_all_but_those_in= &$make_filter
 our $cmds=
   [
    ["remove-files" => $removefiles,
+    "...",
     "remove all given file paths from repo (including their commit if empty)"],
    ["remove-dirs" => $removedirs,
+    "...",
     "remove all files in the given dir paths (including their commit if empty)"],# basically just a recursive version of the remove-files thing. wouldn't that message be too long?
    ["remove-perlmatch" => $remove_perlmatch,
+    "expr",
     "remove all files whose paths are printed by the given perl code; like 'print if m|someregex|' is enough, perl is run with flags to automatically strip and add \\0 path separation bytes"],
 
    ["remove-all-but-those-in" => $remove_all_but_those_in,
+    "path",
     "remove all files except those which are listed (one path per line) in the file with the given path (if entries should match directories where the path is in, also give --prefix)"],
   ];
 
@@ -327,8 +331,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     my $cmdsstr= join("",
 		      map {
-			  my ($nam,$ptr,$desc)=@$_;
-			  "   --$nam  $desc\n"
+			  my ($nam,$ptr,$args,$desc)=@$_;
+			  "   --".join(" ",$nam,$args)."  $desc\n"
 		      }
 		      @$cmds);
     print "$myname --command [ commandarguments ]
