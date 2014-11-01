@@ -13,10 +13,9 @@ Chj::Parse::Maildir
  use Chj::Parse::Maildir 'maildir_open_stream';
  use Chj::FP2::Stream ":all";
  stream_for_each sub {
-    my ($t,$lines,$cursor)= @{$_[0]};
-    ... @$lines ...
-    # $cursor is a Chj::Parse::Maildir::Cursor object
- }, maildir_open_stream XXX "some/path"
+    my ($m)= @_;
+    # a Chj::Parse::Maildir::Message object
+ }, maildir_open_stream "some/path" #, $sorting_comparison
 
 
 =head1 DESCRIPTION
