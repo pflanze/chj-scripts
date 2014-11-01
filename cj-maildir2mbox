@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Sat Nov  1 15:28:31 CET 2014
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname maildirpath mboxpath
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($maildirpath,$mboxpath)=@ARGV;
+
+use Chj::Parse::Maildir 'maildir_open_stream';
+use Chj::FP2::Stream ":all";
+use Chj::xopen 'xopen_write';
+use Chj::xperlfunc ":all";
+
+our $localtimestr= gmtime time; # or localtime ?
+# ^ yep, without time zone, as usually done for mbox; but, should it
+#   really be GMT?
+
+our $out= xopen_write $mboxpath;
+
+sub maildirmessageid ($) {
+    my ($path)=@_;
+    # sigh, ~copy from Chj/Parse/Maildir.pm
+    my $name= basename $path;
+    my ($maybe_t, $maybe_index2)= $name=~ m|^(\d{8,11})\.([0-9_]+)?|;
+    # now format it
+    defined (my $t= $maybe_t) or die;
+    defined (my $index2= $maybe_index2) or die;
+    my @index2= split "_", $index2;
+    my ($pid,$serial);
+    if (@index2 == 2) {
+	($pid,$serial)= @index2;
+    } elsif (@index2==1) {
+	($pid,$serial)= $index2[0],0 ; # ok ??
+    } else {
+	die "don't know @index2";
+    }
+    # make it work with string-comparison:
+    sprintf '%07d-%012d-%08d', $serial, $t, $pid
+      # XXX so many assumptions, won't work in most cases. Will work
+      # for Maildirs created by cj-mbox2maildir, though.
+}
+
+sub maildircmp {
+    my ($a,$b)=@_;
+    maildirmessageid($a) cmp maildirmessageid($b)
+}
+
+stream_for_each sub {
+    my ($m)=@_;
+    # Do as Icedove/Thunderbird, don't list a mail address, just "-":
+    $out->xprint("From - $localtimestr\n");
+    my $str= $m->as_string;
+    $str=~ /\n\z/s or die "message doesn't terminate in newline";
+    $out->xprint($str);
+}, maildir_open_stream $maildirpath, \&maildircmp;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
