@@ -32,10 +32,6 @@ use Chj::FP2::Stream ":all";
 use Chj::xopen 'xopen_write';
 use Chj::xperlfunc ":all";
 
-our $localtimestr= gmtime time; # or localtime ?
-# ^ yep, without time zone, as usually done for mbox; but, should it
-#   really be GMT?
-
 our $out= xopen_write $mboxpath;
 
 sub maildirmessageid ($) {
@@ -68,8 +64,10 @@ sub maildircmp {
 
 stream_for_each sub {
     my ($m)=@_;
-    # Do as Icedove/Thunderbird, don't list a mail address, just "-":
-    $out->xprint("From - $localtimestr\n");
+    # Do as Icedove/Thunderbird, don't list a mail address, just "-".
+    # Also, Icedove/Thunderbird *does* use localtime here.
+    my $timestr= localtime $m->mailbox_unixtime;
+    $out->xprint("From - $timestr\n");
     my $str= $m->as_string;
     $str=~ /\n\z/s or die "message doesn't terminate in newline";
     $out->xprint($str);
