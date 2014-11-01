@@ -32,6 +32,9 @@ sub usage {
             of the Date: header if they differ by more than one day
             (more precisely, if the latter is more than $maxdatedifference
             seconds later than the former)
+  --keepstamps
+            parse the date from the 'From ' line and use it as timestamps
+            in the file names in the maildir.
 
   (Christian Jaeger <$email>)
 ";
@@ -47,6 +50,7 @@ GetOptions($option,
 	   "picky",
 	   "subject-modify=s",
 	   "parsedate",
+	   "keepstamps",
 	  )
   or exit 1;# msg has already been printed.!
 usage unless @ARGV==2;
@@ -59,7 +63,8 @@ use Chj::xopen 'xopen_read';
 use Chj::xsysopen ':all';  # Chj::xopen does not offer any excl option. Sigh still?. But doesn't matter?
 
 my $match=
-  $$option{parsedate} ? qr/^From (?:\S+\s+)+([A-Z][a-z]{2} [A-Z][a-z]{1,9} {1,2}\d+ \d{1,2}:\d{2}:\d{2} (?:20|19)\d\d)\s*$/
+  ($$option{parsedate} or $$option{keepstamps})
+  ? qr/^From (?:\S+\s+)+([A-Z][a-z]{2} [A-Z][a-z]{1,9} {1,2}\d+ \d{1,2}:\d{2}:\d{2} (?:20|19)\d\d)\s*$/
   :
   $$option{picky} ? qr/^From (?:\S+\s+)+(?:20|19)\d\d\s*$/
   : qr/^From /;
@@ -87,10 +92,14 @@ sub readandwrite {
     my $in_head;
     my $maybe_parseddate; # used if option parsedate is in effect
     my $opt_parsedate= $$option{parsedate};
+    my $opt_keepstamps= $$option{keepstamps};
     while (defined($_= $f->xreadline)) {
 	if (/$match/) {
-	    if ($opt_parsedate) {
+	    if ($opt_parsedate or $opt_keepstamps) {
 		$maybe_parseddate= str2time($1) or die "unparseable date '$1'";
+		if ($opt_keepstamps) {
+		    $time= $maybe_parseddate;
+		}
 	    }
 	    $out->xclose if $out;
 	    my $outpath= "$path_maildir/new/$time.${pid}_$n.mbox";
