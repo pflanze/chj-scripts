@@ -30,7 +30,7 @@ sub as_string {
 sub index {
     my $s=shift;
     # can '//' be used now?
-    $s->maybe_index // die "don't have an index"
+    $s->maybe_index // die "message does not have an index"
 }
 
 _END_
