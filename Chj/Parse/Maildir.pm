@@ -90,12 +90,14 @@ sub maildir_mtime ($) {
 sub _mappath {
     my ($path, $maybe_index)=@_;
     my $name= basename $path;
-    my ($maybe_t)= $name=~ m|^(\d{8-11})\.|;
+    my ($maybe_t, $maybe_index2)= $name=~ m|^(\d{8-11})\.([0-9_]+)?|;
     # (^ year-xx problem in ~1970, and then in ~2200 or something?)
     Chj::Parse::Maildir::Message->new_
 	(cursor=> Chj::Parse::Maildir::Cursor->new($path),
 	 maybe_mailbox_unixtime=> $maybe_t,
-	 maybe_index=> $maybe_index)
+	 # XXX: $maybe_index2 is not independent from other Maildirs,
+	 # thus using it won't be safe in general!
+	 maybe_index=> $maybe_index // $maybe_index2)
 }
 
 sub _stream_mappath ($) {

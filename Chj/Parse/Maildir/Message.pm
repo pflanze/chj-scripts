@@ -20,7 +20,8 @@ package Chj::Parse::Maildir::Message;
 use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::Struct ["cursor", "maybe_mailbox_unixtime", "maybe_index"];
-# index is multi-level when coming from ezmlm archives: e.g. "0-01"
+# index is multi-level when coming from ezmlm archives: e.g. "0-01",
+# or the "13733_13" part for a file like 1414796255.13733_13.mbox
 
 sub as_string {
     my $s=shift;
