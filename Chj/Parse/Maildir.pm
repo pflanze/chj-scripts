@@ -111,13 +111,14 @@ sub _stream_mappath ($) {
     stream_map \&_mappath, $s
 }
 
-sub maildir_open_stream ($) {
-    my ($maildirpath)=@_;
+sub maildir_open_stream ($;$) {
+    my ($maildirpath,$maybe_sort_cmp)=@_;
     # is it a normal Maildir or something like a ezmlm archive?
     if (maildirP $maildirpath) {
 	_stream_mappath
-	  stream_append (xopendir_pathstream "$maildirpath/new",
-			 xopendir_pathstream "$maildirpath/cur");
+	  # XXX this breaks sorting on the new/cur boundary
+	  stream_append (xopendir_pathstream ("$maildirpath/new",$maybe_sort_cmp),
+			 xopendir_pathstream ("$maildirpath/cur",$maybe_sort_cmp));
     } elsif (ezmlm_archiveP $maildirpath) {
 	(stream_fold_right sub {
 	     my ($item0,$rest)=@_;
@@ -136,7 +137,7 @@ sub maildir_open_stream ($) {
 		      }
 		  },
 		  $rest,
-		  xopendir_stream "$maildirpath/$item0")
+		  xopendir_stream "$maildirpath/$item0", $maybe_sort_cmp)
 	     } else {
 		 WARN "apparent ezmlm archive contains unusual subdir/item, ignored: '$item0'";
 		 $rest
