@@ -97,7 +97,7 @@ sub _mappath {
 	 maybe_mailbox_unixtime=> $maybe_t,
 	 # XXX: $maybe_index2 is not independent from other Maildirs,
 	 # thus using it won't be safe in general!
-	 maybe_index=> $maybe_index // $maybe_index2)
+	 index=> $maybe_index // $maybe_index2)
 }
 
 sub _stream_mappath ($) {
