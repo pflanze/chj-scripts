@@ -10,7 +10,7 @@ Chj::Parse::Maildir
 
 =head1 SYNOPSIS
 
- use Chj::Parse::Maildir 'maildir_stream_open';
+ use Chj::Parse::Maildir 'maildir_open_stream';
  use Chj::FP2::Stream ":all";
  stream_for_each sub {
     my ($t,$lines,$cursor)= @{$_[0]};
