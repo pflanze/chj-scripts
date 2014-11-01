@@ -90,7 +90,7 @@ sub maildir_mtime ($) {
 sub _mappath {
     my ($path, $maybe_index)=@_;
     my $name= basename $path;
-    my ($maybe_t, $maybe_index2)= $name=~ m|^(\d{8-11})\.([0-9_]+)?|;
+    my ($maybe_t, $maybe_index2)= $name=~ m|^(\d{8,11})\.([0-9_]+)?|;
     # (^ year-xx problem in ~1970, and then in ~2200 or something?)
     Chj::Parse::Maildir::Message->new_
 	(cursor=> Chj::Parse::Maildir::Cursor->new($path),
