@@ -23,7 +23,8 @@ use Chj::FP::Predicates;
 
 use Chj::Struct [[instance_ofP("Chj::Parse::MailboxCursor"), "cursor"],
 		 "maybe_mailbox_unixtime",
-		 [\&nonnullstringP, "index"]];
+		 [\&nonnullstringP, "index"]],
+  "Chj::Parse::MailboxMessage";
 # index is multi-level when coming from ezmlm archives: e.g. "0-01",
 # or the "13733_13" part for a file like 1414796255.13733_13.mbox
 

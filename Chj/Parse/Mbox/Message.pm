@@ -19,16 +19,13 @@ package Chj::Parse::Mbox::Message;
 
 use strict; use warnings FATAL => 'uninitialized';
 
-use Chj::Struct ["cursor", "lines", "maybe_mailbox_unixtime", "index"];
-# cursor will actually be a Chj::Parse::Mbox::Section
+use Chj::Struct ["cursor", "lines", "maybe_mailbox_unixtime", "index"],
+  # cursor will actually be a Chj::Parse::Mbox::Section
+  "Chj::Parse::MailboxMessage";
 
 sub as_string {
     my $s=shift;
     join("", @{$s->lines})
 }
 
-_END_;
-#XXX would aliasing through ref work?before _END_.?
-#*maybe_t= *t; # [with no Just wrapper..]
-
-1
+_END_
