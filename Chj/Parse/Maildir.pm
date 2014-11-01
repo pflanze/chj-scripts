@@ -69,7 +69,13 @@ sub ezmlm_archiveP ($) {
 sub maildir_mtime ($) {
     my ($dirpath)=@_;
     if (maildirP $dirpath) {
-	die "getting mtime for Maildir format not implemented yet: '$dirpath'";
+	# XX careful, same as comment for maildirP
+	max map {
+	    my $path= "$dirpath/$_";
+	    my $s= xLmtimed $path;
+	    $s->is_dir or die "not a dir: $path";
+	    $s->mtime
+	} "new", "cur" # , "tmp" ?
     }
     elsif (ezmlm_archiveP $dirpath) {
 	max (map {
