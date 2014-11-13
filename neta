@@ -1,0 +1,104 @@
+#!/bin/bash
+
+set -eu
+IFS=''
+
+etcpath=/etc/chj/neta
+
+usage () {
+    echo "on|off|list|l|-l|restore|r|-r [users]"
+    echo
+    echo "   list|l|-l  list the current status"
+    echo
+    echo "   restore|r|-r restores the state before the last on or"
+    echo "       off command. restore does not take users."
+    echo
+    echo " Reads list of default users from $etcpath if no users given."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+onoff="$1"
+shift
+
+status () {
+    local u="$1"
+    if iptables -L -t filter|grep --quiet "owner UID match $u "; then
+	echo -n off
+    else
+	echo -n on
+    fi
+    echo -e "\t$u";
+}
+
+list () {
+    for u in "$@"; do
+	status "$u"
+    done | csort -k2
+}
+
+mkdir -p /var/local/chj
+private mkdir -p /var/local/chj/neta
+
+store_path=/var/local/chj/neta/store
+store_tmp_path="$store_path".tmp
+
+store () {
+    for u in "$@"; do
+	status "$u"
+    done > "$store_tmp_path"
+}
+
+restore () {
+    # ignoring "$@"
+    local IFS=`echo -e '\t'`
+    while read onoff u; do
+	net-access "$u" "$onoff" || true
+    done < "$store_path"
+}
+
+
+na () {
+    store "$@"
+    for u in "$@"; do
+	net-access "$u" "$onoff" || true
+    done
+    mv -f "$store_tmp_path" "$store_path" || true
+}
+
+docmd () {
+    local cmd="$1"
+    shift
+    if [ -n "${1-}" ]; then
+	$cmd "$@"
+    else
+	IFS=$'\n' read -rd '' -a users < <(filter-stripcomments < "$etcpath") || true
+	$cmd ${users[@]}
+    fi
+}
+
+
+case "$onoff" in
+    on|off)
+    docmd na "$@"
+    ;;
+    list|l|-l)
+    docmd list "$@"
+    ;;
+    restore|r|-r)
+
+    # shells are soooo crap
+    IFS=$'\n' read -rd '' -a atmp < <(printfield 2 < "$store_path") || true
+    store ${atmp[@]}
+
+    restore
+    mv -f "$store_tmp_path" "$store_path" || true
+    ;;
+    *)
+    usage
+    ;;
+esac
+
