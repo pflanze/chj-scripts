@@ -13,13 +13,11 @@ sub usage {
 
   Do not output lines which occur only in one of the inputs.
 
-  --sorted  assume that inputs are sorted (do not keep unmatched
-            lines in a hashtable)
+  --sorted  assume that inputs are sorted
+            (otherwise sort files with csort)
 
   See also:
      minus
-
-  Bugs: --sorted variant schould be ok, have tested it.i thinkfully.
 
   (Christian Jaeger <$email>)
 ";
@@ -67,15 +65,14 @@ sub join_sorted {
     local our $curcmpline= $A->xreadline;
     local our $curturn= $B;
   WORK: {
-	defined $curcmpline or last WORK;
+	defined $curcmpline
+	  or last WORK;
 	chomp $curcmpline;
 	local our $line= $curturn->xreadline;
-	defined $line or last WORK;
-	do {
+	while (defined $line) {
 	    chomp $line; # XX spaghetti
-	    local our $res= ($line cmp $curcmpline);
-	    if (!$res) {
-		# match.
+	    local our $change= ($line cmp $curcmpline);
+	    if (not $change) {
 		xprint $line,"\n";
 		# begin anew:
 		$curcmpline= $A->xreadline;
@@ -84,7 +81,7 @@ sub join_sorted {
 		chomp $curcmpline;# !!!!!!!
 		$curturn= $B;
 	    } else {
-		if ($res<0) {
+		if ($change<0) {
 		    # continue to read lines from $curturn
 		} else {
 		    # overrun.
@@ -93,69 +90,23 @@ sub join_sorted {
 		}
 	    }
 	    $line= $curturn->xreadline;
-	} while (defined $line);
-    }
-    flush STDOUT or die "couldn't flush stdout: $!";
-}
-
-
-
-sub join_hashed {
-    die "unfinished, give --sorted option";
-    local our ($A,$B)=@_;
-    #local our @inputs= @_;
-    local our $t;# key-> seen in  0 = A, 1 = B.
-    my $read_check_output= sub ($ $ ) {
-	local our ($fh, $fh_is_b)=@_; # fh_is_b must not be undef
-    use Chj::repl;repl;
-	local our $line= $fh->xreadline;
-	chomp $line;
-	my $v;
-	if (defined( $v= $$t{$line})) {
-	    if ($v) {
-		if ($fh_is_b) {
-		    # double in b, ignore
-		} else {
-		    xprint $line,"\n";
-		    delete $$t{$line};
-		}
-	    } else {
-		if ($fh_is_b) {
-		    xprint $line,"\n";
-		    delete $$t{$line};
-		} # else ignore
-	    }
-	} else {
-	    $$t{$line}= $fh_is_b
-	}
-    };
-    while (1) {
-	local our $aline= $A->xreadline;
-	local our $bline= $B->xreadline;
-	if (defined $aline) {
-	    $read_check_output->($aline,0);
-	    if (defined $bline) {
-		$read_check_output->($bline,1);
-	    }
-	} else {
-	    while (defined $bline) {
-		$read_check_output->($bline,1);
-		$bline= $B->xreadline;
-	    }
-	    last;
 	}
     }
-    # (drop hashtable on the floor.)
-    flush STDOUT or die "flushing stdout: $!";
+    $A->xfinish;
+    $B->xfinish;
+    flush STDOUT
+      or die "couldn't flush stdout: $!";
 }
-
 
 use Chj::xopen 'xopen_read';
+use Chj::IO::Command;
 
-our @inputs= map { scalar xopen_read $_ } @args;
-
-if ($opt_sorted) {
-    join_sorted @inputs
-} else {
-    join_hashed @inputs
+sub sorted_file {
+    my ($path)=@_;
+    Chj::IO::Command->new_sender("csort", "--", $path)
 }
+
+my $open= $opt_sorted ? \&sorted_file : \&xopen_read;
+
+join_sorted map { scalar &$open ($_) } @args;
+
