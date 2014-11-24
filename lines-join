@@ -54,53 +54,47 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args==2;
 
-use IO::Handle; # for loading 'flush' *into the IO::Handle namespace* (that's enough for OO calls. but necessary!)
+# Need 'flush' in the IO::Handle namespace:
+use IO::Handle;
 
 sub xprint {
     print @_
       or die "printing to stdout: $!";
 }
 
-# sub key_of_line {
-#     my ($str)=@_;
-#     chomp $str;
-#     $str
-# }
-
 sub join_sorted {
     local our ($A,$B)=@_;
-    # immer schauen welche zeile nach welcher jo eh gleiche   wenn no nid gleich abwarten  wenn overrun umgekehrt abwarten.
     local our $curcmpline= $A->xreadline;
     local our $curturn= $B;
-    defined $curcmpline or goto END;
-    chomp $curcmpline;
-    local our $line= $curturn->xreadline;
-    defined $line or goto END;
-    do {
-	chomp $line; #sooo ein spaghetti
-	local our $res= ($line cmp $curcmpline);
-	if (!$res) {
-	    # match.
-	    xprint $line,"\n";
-	    # begin anew:
-	    $curcmpline= $A->xreadline;
-	    #last unless defined $curcmpline; #!!!!!!!!!!!!
-	    #!!!last geht nid hier raus sondern:
-	    goto END unless defined $curcmpline;
-	    chomp $curcmpline;# !!!!!!!
-	    $curturn= $B;
-	} else {
-	    if ($res<0) {
-		# continue to read lines from $curturn
+  WORK: {
+	defined $curcmpline or last WORK;
+	chomp $curcmpline;
+	local our $line= $curturn->xreadline;
+	defined $line or last WORK;
+	do {
+	    chomp $line; # XX spaghetti
+	    local our $res= ($line cmp $curcmpline);
+	    if (!$res) {
+		# match.
+		xprint $line,"\n";
+		# begin anew:
+		$curcmpline= $A->xreadline;
+		last WORK
+		  unless defined $curcmpline;
+		chomp $curcmpline;# !!!!!!!
+		$curturn= $B;
 	    } else {
-		# overrun.
-		$curturn= ($curturn eq $A ? $B : $A);
-		$curcmpline= $line;
+		if ($res<0) {
+		    # continue to read lines from $curturn
+		} else {
+		    # overrun.
+		    $curturn= ($curturn eq $A ? $B : $A);
+		    $curcmpline= $line;
+		}
 	    }
-	}
-	$line= $curturn->xreadline;
-    } while (defined $line);
-  END:
+	    $line= $curturn->xreadline;
+	} while (defined $line);
+    }
     flush STDOUT or die "couldn't flush stdout: $!";
 }
 
