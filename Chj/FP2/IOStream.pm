@@ -33,7 +33,9 @@ package Chj::FP2::IOStream;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
 @EXPORT_OK=qw(xopendir_stream
-	      xopendir_pathstream);
+	      xopendir_pathstream
+	      fh2stream
+	    );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict; use warnings FATAL => 'uninitialized';
@@ -43,6 +45,24 @@ use Chj::xopendir;
 use Chj::FP2::List ':all';
 use Chj::FP2::Stream 'stream_map', 'array2stream';
 use Chj::FP::Array_sort;
+
+
+sub fh2stream ($$$) {
+    my ($fh,$readmethod,$close)=@_;
+    my $next; $next= sub {
+	Delay {
+	    if (defined (my $v= $fh->$readmethod)) {
+		cons $v, &$next
+	    } else {
+		&$close($fh);
+		undef $next;
+		undef
+	    }
+	}
+    };
+    &$next
+}
+
 
 sub _xopendir_stream ($) {
     my ($path)=@_;
