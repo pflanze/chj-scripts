@@ -111,6 +111,8 @@ my $streams=
 
 my $results= intersectn array2list $streams;
 
+undef $streams;
+
 stream_for_each \&xprintln, $results;
 
 $_->xfinish for @$fhs;
