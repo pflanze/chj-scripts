@@ -15,11 +15,14 @@ sub usage {
 
   Do not output lines which occur only in one of the inputs.
 
-  --sorted  assume that inputs are sorted already
+  --sorted
+            assume that inputs are sorted already
             (otherwise sort files with csort)
 
-  Note: duplicate lines are still output as duplicates if they are
-  duplicated in all input files.
+  -u|--uniq|--unique
+            by default, duplicate lines are still output as duplicates
+            if they are duplicated in all input files. This eliminates
+            them.
 
   See also:
      minus
@@ -32,10 +35,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_sorted;
+our $opt_uniq;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sorted"=> \$opt_sorted,
+	   "unique"=> \$opt_uniq,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -94,10 +99,18 @@ sub intersectn {
 
 sub sorted_file {
     my ($path)=@_;
-    Chj::IO::Command->new_sender("csort", "--", $path)
+    Chj::IO::Command->new_sender("csort", ($opt_uniq ? "-u" : ()),
+				 "--", $path)
 }
 
-my $open= $opt_sorted ? \&xopen_read : \&sorted_file;
+sub uniqed_file {
+    my ($path)=@_;
+    Chj::IO::Command->new_sender("uniq",
+				 "--", $path)
+}
+
+my $open= ($opt_sorted ? ($opt_uniq ? \&uniqed_file : \&xopen_read)
+	   : \&sorted_file);
 
 my $fhs= array_map $open, \@ARGV;
 my $streams=
