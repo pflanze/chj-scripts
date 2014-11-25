@@ -13,7 +13,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname files...
 
-  Do not output lines which occur only in one of the inputs.
+  Do not output lines which are present only in one of the inputs.
 
   --sorted
             assume that inputs are sorted already
