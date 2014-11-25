@@ -1,1 +1,120 @@
-lines-join
+#!/usr/bin/perl -w
+
+# Copyright 2007, 2014 by Christian Jaeger, published under the same
+# terms as Perl 5.
+
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname files...
+
+  Do not output lines which occur only in one of the inputs.
+
+  --sorted  assume that inputs are sorted already
+            (otherwise sort files with csort)
+
+  Note: duplicate lines are still output as duplicates if they are
+  duplicated in all input files.
+
+  See also:
+     minus
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_sorted;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "sorted"=> \$opt_sorted,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+
+use Chj::xopen 'xopen_read';
+use Chj::IO::Command;
+use Chj::FP2::Stream ':all';
+use Chj::FP2::Lazy ':all';
+use Chj::FP2::List ':all';
+use Chj::FP::ArrayUtil ':all';
+use Chj::FP2::IOStream 'fh2stream';
+# Need 'flush' in the IO::Handle namespace:
+use IO::Handle;
+
+sub xprintln {
+    print @_, "\n"
+      or die "printing to stdout: $!";
+}
+
+# stream, stream -> stream
+sub intersect2 {
+    my ($s0,$s1)= @_;
+    Delay {
+	$s0= Force $s0;
+	$s1= Force $s1;
+	if (!defined $s0 or !defined $s1) {
+	    undef
+	} else {
+	    my $v0= car $s0;
+	    my $v1= car $s1;
+	    my $c= $v0 cmp $v1;
+	    if ($c == 0) {
+		cons $v0, intersect2 (cdr $s0, cdr $s1);
+	    } elsif ($c < 0) {
+		intersect2 (cdr $s0, $s1)
+	    } else {
+		intersect2 ($s0, cdr $s1)
+	    }
+	}
+    }
+}
+
+# non-empty-list-of stream -> stream
+sub intersectn {
+    my ($ss)=@_;
+    my $s0= car $ss;
+    my $ss2= cdr $ss;
+    if (nullP $ss2) {
+	$s0
+    } else {
+	intersect2 $s0, intersectn ($ss2);
+    }
+}
+
+
+sub sorted_file {
+    my ($path)=@_;
+    Chj::IO::Command->new_sender("csort", "--", $path)
+}
+
+my $open= $opt_sorted ? \&xopen_read : \&sorted_file;
+
+my $fhs= array_map $open, \@ARGV;
+my $streams=
+  array_map
+  sub { fh2stream($_[0],
+		  # read:
+		  "xreadline_chomp",
+		  # close: noop since we will close all of them explicitely
+		  sub { }) },
+  $fhs;
+
+my $results= intersectn array2list $streams;
+
+stream_for_each \&xprintln, $results;
+
+$_->xfinish for @$fhs;
+
+flush STDOUT
+  or die "couldn't flush stdout: $!";
+
