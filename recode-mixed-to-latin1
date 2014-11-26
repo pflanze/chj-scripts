@@ -31,3 +31,4 @@ tmpout=$(tempfile -d "$(dirname "$file")")
 cp-perms "$file" "$tmpout" 
 mv "$tmpout" "$file"
 
+rm "$tmp"
