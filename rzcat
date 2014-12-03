@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 file"
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+if [ "$1" = "--" ]; then
+    shift
+fi
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+
+tmpdir=`tempdir`
+
+tmp="$tmpdir/f"
+
+cleanup () {
+    rm "$tmp"
+    rmdir "$tmpdir"
+}
+
+trap cleanup EXIT
+
+rzip -k -d -o "$tmp" -- "$1"
+
+cat "$tmp"
+
