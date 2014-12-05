@@ -13,14 +13,17 @@ sub usage {
   Special options:
   -o outputfile  Will be merged into the filter. Otherwise,
                  output is filtered and then printed to stderr.
-  -t|--trim      Only output the filename, not the whole line.
+
+  -T  don't trim (by default only output the filename, not the
+      whole strace line)
 ";
 exit @_;
 }
 
 
 my (@options,@files);
-my ($opt_output,$opt_trim);
+my $opt_output;
+my $opt_trim=1;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -32,6 +35,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         $opt_output= $ARGV[++$i] || usage;
     } elsif (/^--?t(rim)?$/) {
         $opt_trim=1;
+    } elsif (/^--?T(rim)?$/) {
+        $opt_trim=0;
     } elsif (/^-/) {
         push @options,$_
     } else {
