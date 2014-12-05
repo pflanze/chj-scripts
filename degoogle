@@ -39,13 +39,21 @@ GetOptions("verbose"=> \$verbose,
 
 use Chj::IO::Command;
 
+sub decode_print {
+    my ($encurl)=@_;
+    my $c= Chj::IO::Command->new_receiver ("urldecode");
+    $c->print($encurl);
+    $c->xxfinish;
+    print "\n";
+}
+
 sub degoogle {
     my ($str)=@_;
-    if (my ($encurl)= $str=~ m/(?:url\?|&)q=(.*?)(?:\&|$)/) {
-	my $c= Chj::IO::Command->new_receiver ("urldecode");
-	$c->print($encurl);
-	$c->xxfinish;
-	print "\n";
+    my $encurl;
+    if (($encurl)= $str=~ m/(?:url\?|&)q=([^&].*?)(?:\&|$)/) {
+	decode_print $encurl;
+    } elsif (($encurl)= $str=~ m/(?:url\?|&)url=([^&].*?)(?:\&|$)/) {
+	decode_print $encurl;
     } else {
 	if ($opt_passthrough) {
 	    print $str;
