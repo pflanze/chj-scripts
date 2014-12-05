@@ -47,8 +47,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @files;
 
-#print "Options: @options\nFiles: @files\n"; exit;
-
 if ($opt_output) {
     unless ($opt_output=~ /^[<>|]/) {
 	$opt_output= ">$opt_output";
@@ -67,6 +65,3 @@ if ($opt_output) {
 	  : "| perl -ne 'print STDERR \$_ if /\\d\$/'",
 	@files;
 }
-__END__
-/"(.*?)", .*\d+$/
-
