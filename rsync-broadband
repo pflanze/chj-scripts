@@ -1,0 +1,4 @@
+#!/bin/sh
+
+BWLIMIT=500 rsync-3g "$@"
+
