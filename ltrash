@@ -18,4 +18,4 @@ if ($ENV{TRASHCAN}) {
 	die "Konnte Deinen Trashcan nicht finden. ";
 }
 
-exec qw(/bin/ls -lrt --show-control-chars --color ),@ARGV,"--",$trash;
+exec "l",@ARGV,"--",$trash;
