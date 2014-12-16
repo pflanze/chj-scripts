@@ -28,7 +28,6 @@ git filter-branch --env-filter \
     fi
     if [ "$GIT_AUTHOR_EMAIL" = '"$(quotestring "$frommail")"' ]; then
         GIT_AUTHOR_EMAIL='"$(quotestring "$tomail")"'
-	GIT_COMMITTER_EMAIL='"$(quotestring "$tomail")"'
     fi
     ' \
      "$@"
