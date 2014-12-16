@@ -8,6 +8,8 @@ if [ $# -lt 2 ]; then
 	echo "  committer email addresses from \$from-mail to \$to-mail."
 	echo "  NOTE: does *not* change the address in commit messages"
 	echo "  like in signed-off lines!"
+	echo " If CHANGEEMAIL_NAME is set, the name is changed to its "
+	echo "  value."
 	exit 1
 fi
 
@@ -25,9 +27,15 @@ git filter-branch --env-filter \
     '
     if [ "$GIT_COMMITTER_EMAIL" = '"$(quotestring "$frommail")"' ]; then
         GIT_COMMITTER_EMAIL='"$(quotestring "$tomail")"'
+	if [ -n "${CHANGEEMAIL_NAME-}" ]; then
+	    GIT_COMMITTER_NAME="$CHANGEEMAIL_NAME"
+	fi
     fi
     if [ "$GIT_AUTHOR_EMAIL" = '"$(quotestring "$frommail")"' ]; then
         GIT_AUTHOR_EMAIL='"$(quotestring "$tomail")"'
+	if [ -n "${CHANGEEMAIL_NAME-}" ]; then
+	    GIT_AUTHOR_NAME="$CHANGEEMAIL_NAME"
+	fi
     fi
     ' \
      "$@"
