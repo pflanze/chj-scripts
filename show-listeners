@@ -117,7 +117,7 @@ my $lastcol= do {
 my $format= <<'END';
 format STDOUT=
 @<<<  @>>>>>>>>>>>>>>> @<<<<< @|||||||... @>>>>> @LAST
-$prot $ip              $port  $user       $pid   $shown_progname
+$prot,$ip,             $port, $user,      $pid,  $shown_progname
 .
 1
 END
