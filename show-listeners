@@ -49,7 +49,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage if @files;
 
 
-my @lines= `netstat -A inet -p -l -n`;
+my @lines= `netstat -A inet -A inet6 -p -l -n`;
 
 ((shift @lines)=~/^(udp|tcp)/ and die) for (1..2);
 
@@ -65,7 +65,8 @@ my @records = map {
     };
     my @cols= split /\s+/;
     my ($prot, undef, undef, $ip_port) =@cols;
-    my ($ip,$port)= split /:/, $ip_port;
+    my ($ip,$port)= $ip_port=~ /(.*):(\d+)\z/s
+      or die "no match for ip_port '$ip_port'";
     [$prot,$ip eq '0.0.0.0' ? '*' : $ip,$port,$pid,$progname]
 } @lines;
 
