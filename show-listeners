@@ -1,19 +1,9 @@
 #!/usr/bin/perl
 
-#lsof -i -n|egrep '(LISTEN|UDP)'|awk '{print $7 " " $3 " " $1 " " $8 }'|sort -t ' ' -t ':' -k 1 -n -k 4|uniq
-# oder so. sort ist zu schwierig
+# Copyright (c) 2003,2005,2014 Christian Jaeger, published under the
+# Apache 2.0 license (see http://www.apache.org/licenses/)
 
-#netstat -t inet -p -l
-#netstat -t inet -p -l -n
-
-# Ich will:
-# sortiert nach:
-# 1. TCP dann UDP.
-# 2. Nach ip
-# 3. Nach port
-
-# Sam Jan 18 01:54:37 MET 2003
-# pflanze@gmx.ch
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -60,48 +50,47 @@ usage if @files;
 
 
 my @lines= `netstat -A inet -p -l -n`;
+
 ((shift @lines)=~/^(udp|tcp)/ and die) for (1..2);
 
-my @records;
-for (@lines ){
+my @records = map {
     chomp;
-    #/^(\w+)\s+\d+\s+\d+\s+(\d+\.\d+\.\d+\.\d+)\:(\d+)\s+  / or die "Line '$_' does not match";
-#    s/ LISTEN //; # so to make udp and tcp look same
-#cj Sun, 19 Jun 2005 03:24:43 +0200
-#HMM, there is also raw socket stuff and those look yet even different:
-#tcp        0      0 0.0.0.0:22491           0.0.0.0:*               LISTEN      490/gnuserv
-#udp        0      0 0.0.0.0:53              0.0.0.0:*                           285/dnscache
-#raw        0      0 0.0.0.0:1               0.0.0.0:*               7           786/ping
-
-    my ($prot,$ip,$port,$pid,$progname);
-    if (s/\s(\d+)\/(\S+)//) {# or die "no match
-	($pid,$progname)=($1,$2)
-    }
+    my ($pid,$progname)= do {
+	if (s/\s(\d+)\/(\S+)//) {
+	    ($1,$2)
+	} else {
+	    warn "no match: $_";
+	    (undef, undef)
+	}
+    };
     my @cols= split /\s+/;
-    $prot=$cols[0];
-    ($ip,$port)= split /:/, $cols[3];
-    push @records,[$prot,$ip eq '0.0.0.0' ? '*' : $ip,$port,$pid,$progname];
-}
+    my ($prot, undef, undef, $ip_port) =@cols;
+    my ($ip,$port)= split /:/, $ip_port;
+    [$prot,$ip eq '0.0.0.0' ? '*' : $ip,$port,$pid,$progname]
+} @lines;
 
 sub getuserfrompid{
     my ($pid)=@_;
     return 0 if $pid eq "-"; # kernel thread?
     $pid=~ /^\d+$/s or die "This is not a pid: '$pid'";
-    if (open PIDIN,"</proc/$pid/status") {
-	local $/; my $a=<PIDIN>; close PIDIN or die $!;
-	$a=~ /^Uid:\s*(.*)/m or die "could not find Uid entry in /proc/$pid/status:\n$a\n ";
-	my @uids=split /\s+/,$1;
-	my %uids;
-	$uids{$_}=undef for @uids;
-	#if (exists $uids{0}){
-	#    "root"
-	#} else {
-	    join ",", map {scalar getpwuid $_} sort keys %uids
-	#}
-    #} else { die $! }
-    } else { die "pid '$pid': $!\n" }
+    open PIDIN,"</proc/$pid/status"
+      or die "pid '$pid': $!\n";
+    local $/; my $a=<PIDIN>;
+    close PIDIN
+      or die $!;
+    $a=~ /^Uid:\s*(.*)/m
+      or die "could not find Uid entry in /proc/$pid/status:\n$a\n ";
+    my @uids=split /\s+/,$1;
+    my %uids;
+    $uids{$_}=undef for @uids;
+    #if (exists $uids{0}){
+    #    "root"
+    #} else {
+    join ",", map {scalar getpwuid $_} sort keys %uids
+    #}
 }
-sub getproggyfrompid{
+
+sub getprognamefrompid{
     my ($pid)=@_;
     return "(kernel thread?)" if $pid eq "-"; # kernel thread?
     $pid=~ /^\d+$/s or die "This is not a pid: '$pid'";
@@ -112,29 +101,37 @@ sub getproggyfrompid{
     } else { die "pid '$pid': $!\n" }
 }
 
-my ($prot,$ip,$port,$pid,$progname); my ($user,$proggy);
-my $lastcol;
-if ($opt_w) {
-    $lastcol= "*";
-} else {
-    my $linelength= $ENV{COLUMNS} || 80;
-    $lastcol= "<" x ( $linelength - 3 - length
+my ($prot,$ip,$port,$pid,$progname);
+my ($user,$shown_progname);
+
+my $lastcol= do {
+    if ($opt_w) {
+	"*"
+    } else {
+	my $linelength= $ENV{COLUMNS} || 80;
+	"<" x ( $linelength - 3 - length
 '@<<<  @>>>>>>>>>>>>>>> @<<<<< @|||||||... @>>>>> @') . "...";
-}
+    }
+};
+
 my $format= <<'END';
 format STDOUT=
 @<<<  @>>>>>>>>>>>>>>> @<<<<< @|||||||... @>>>>> @LAST
-$prot $ip              $port  $user       $pid   $proggy
+$prot $ip              $port  $user       $pid   $shown_progname
 .
+1
 END
+
 $format=~ s/LAST/$lastcol/;
-eval $format; die if $@;
+
+eval $format || die;
 
 if ($opt_h) {
     print <<'END';
 Proto               Ip Port     User(s)      Pid Command
 END
 }
+
 for (sort { $a->[0] cmp $b->[0]
 	      or
 		$a->[1] cmp $b->[1]
@@ -143,13 +140,9 @@ for (sort { $a->[0] cmp $b->[0]
     #print join(" ",@$_),"\n";
     ($prot,$ip,$port,$pid,$progname)=@$_;
     eval {
-	$user=$proggy="???";
+	$user=$shown_progname="???";
 	$user= getuserfrompid($pid);
-	$proggy= $opt_s ? $progname : getproggyfrompid($pid);
-    };
-    if (ref$@ or $@) {
-	print STDERR $@;
-    } else {
-	write;
-    }
+	$shown_progname= $opt_s ? $progname : getprognamefrompid($pid);
+	1
+    } ? write : print STDERR $@;
 }
