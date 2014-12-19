@@ -6,7 +6,7 @@ if [ "$1" == "--http" ]; then
 fi
 
 
-netstat -n -A inet -p |grep -v -F 127.0.0.1 | perl -we '
+netstat -n -A inet -A inet6 -p |grep -v -F 127.0.0.1 | perl -we '
 use strict;
 sub get_s_context {
     my ($pid)=@_;
