@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+usage () {
+    echo "$0 childcommit"
+    echo "  adds a parent commit with empty tree to \$childcommit,"
+    echo "  by way of a graft. (Useful for using git rebase -i or "
+    echo "  cj-git-patchtool on the first commit of the project.)"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+childcommit="$1"
+
+emptytree=`echo -n | git mktree`
+
+tailcommit=`echo empty | git commit-tree "$emptytree"`
+
+gitdir=`whichgit`
+
+graftspath="$gitdir/info/grafts"
+
+if [ -f "$graftspath" ]; then
+    trash "$graftspath"
+    echo "note: moved $graftspath to trash"
+fi
+
+echo "$childcommit" "$tailcommit" > "$graftspath"
+
