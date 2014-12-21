@@ -33,3 +33,6 @@ fi
 
 echo "$childcommit" "$tailcommit" > "$graftspath"
 
+echo "Ok. When you're done, edit $(printf '%q' "$graftspath"), replace"
+echo "the contents with the commitid of the earliest commit before the"
+echo "empty one, run git filter-branch. Then rm the grafts file."
