@@ -16,6 +16,10 @@ sub usage {
   watch given file(s) for changes, if a change happens, run cmd (which is
   run using perl's system call thus can contain shell stuff).
 
+
+  Options:
+   -a  also run before waiting
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -24,6 +28,7 @@ exit (@_ ? 1 : 0);
 my @args;
 my $DEBUG=0;
 our $verbose;
+our $opt_a;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -33,6 +38,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--?a$/) {
+	$opt_a=1;
     } elsif (/^--?v(erbose)?$/) {
 	$verbose=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
@@ -57,6 +64,9 @@ our $cmd=shift @args;
 our @files= @args;
 
 our @stats= map { scalar xstat $_ } @files; #vergiss das scalar nicht ach isch prl shit.
+
+xxsystem $cmd
+  if $opt_a;
 
 while (1) {
     sleep $sleeptime;
