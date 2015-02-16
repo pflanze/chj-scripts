@@ -47,7 +47,7 @@ our $whois= Chj::Whois::Cached->new ($datadir,$opt_dns_only,$opt_no_dns);
 sub check {
     my ($d)=@_;
     my $res= $whois->free($d);
-    my $resstr= defined($res) ? $res : "undef";
+    my $resstr= defined($res) ? ($res ? "free" : "taken") : "undef";
     print "$d\t$resstr\n";#wl 'free' undso  better? aber rg.
 }
 
