@@ -15,7 +15,10 @@ EOF
         echo "$path"
 	cat <<EOF
 </title><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><style type="text/css">
-<!--
+h1, h2, h3, h4 {
+    font-family: arial, helvetica, sans-serif;
+}
+
 ul.menu {
   border: 1px solid #000;
   background-color: #eee;
@@ -106,7 +109,6 @@ blockquote {
   background-color: #eee;
   border: 1px solid #ddd;
 }
--->
 </style></head><body>
 EOF
 
