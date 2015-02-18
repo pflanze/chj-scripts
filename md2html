@@ -70,6 +70,7 @@ a:hover {
 }
 
 pre {
+    margin: 12px 14px;
   padding: 4px;
   background-color: #eee;
   border: 1px solid #ccc;
