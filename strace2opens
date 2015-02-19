@@ -28,7 +28,7 @@ GetOptions("verbose"=> \$verbose,
 # from scratch because straceopens didn't work anymore, something.
 
 while (<>) {
-    if (my ($path)= m/^(?:\d+\ )?
+    if (my ($path)= m/^(?:\d+\s+)?
 		      open\(\"(.*?)\",/x) {
 	$path=~ s/\\"/"/sg;
 	# other stuff?
