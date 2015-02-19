@@ -5,7 +5,7 @@ set -eu
 md () {
     local path="$1"
     local outdir="`dirname "$path"`";
-    local outpath="$outdir/`basename "$path" .md`.xhtml"
+    local outpath="$outdir/`basename "$path" .md`.html"
     {
 	cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
