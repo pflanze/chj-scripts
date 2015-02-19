@@ -6,6 +6,10 @@ md () {
     local path="$1"
     local outdir="`dirname "$path"`";
     local outpath="$outdir/`basename "$path" .md`.html"
+    local customstyles=""
+    if [ -s "${CSSINCLUDE-}" ]; then
+	customstyles=`cat "$CSSINCLUDE"`
+    fi
     {
 	cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -137,6 +141,7 @@ blockquote {
   background-color: #eee;
   border: 1px solid #ddd;
 }
+$customstyles
 </style></head><body>
 EOF
 
