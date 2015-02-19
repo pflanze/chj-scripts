@@ -25,13 +25,13 @@ h1 {
 
 h2 {
     font-size: 22px;
-    margin-top: 26px;
+    margin-top: 28px;
     margin-bottom: 12px;
 }
 
 h3 {
     font-size: 16px;
-    margin-top: 22px;
+    margin-top: 24px;
     margin-bottom: 12px;
 }
 
