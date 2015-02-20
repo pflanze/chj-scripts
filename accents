@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+# Fre Feb 20 19:57:25 CET 2015
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+use utf8;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  Convert combinations of accents and characters (as input when a
+  keyboard doesn't support 'dead keys') into combined characters,
+  e.g. 'All^o Qu´ebec, ' into 'All, Québec, ê'.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+sub _conv {
+    # https://en.wikipedia.org/wiki/Cedilla
+    s/(?<!\\)¸c/ç/sg;
+    s/(?<!\\)¸C/Ç/sg;
+
+    # https://en.wikipedia.org/wiki/Circumflex
+    s/(?<!\\)\^a/â/sg;
+    s/(?<!\\)\^A/Â/sg;
+    s/(?<!\\)\^e/ê/sg;
+    s/(?<!\\)\^E/Ê/sg;
+    s/(?<!\\)\^i/î/sg;
+    s/(?<!\\)\^I/Î/sg;
+    s/(?<!\\)\^o/ô/sg;
+    s/(?<!\\)\^O/Ô/sg;
+    s/(?<!\\)\^u/û/sg;
+    s/(?<!\\)\^U/Û/sg;
+
+    # https://en.wikipedia.org/wiki/Umlaut_(diacritic)
+    s/(?<!\\)¨a/ä/sg;
+    s/(?<!\\)¨A/Ä/sg;
+    s/(?<!\\)¨e/ë/sg;
+    s/(?<!\\)¨E/Ë/sg;
+    s/(?<!\\)¨i/ï/sg;
+    s/(?<!\\)¨I/Ï/sg;
+    s/(?<!\\)¨o/ö/sg;
+    s/(?<!\\)¨O/Ö/sg;
+    s/(?<!\\)¨u/ü/sg;
+    s/(?<!\\)¨U/Ü/sg;
+
+    # https://en.wikipedia.org/wiki/Grave_accent
+    s/(?<!\\)`a/à/sg;
+    s/(?<!\\)`A/À/sg;
+    s/(?<!\\)`e/è/sg;
+    s/(?<!\\)`E/È/sg;
+    s/(?<!\\)`i/ì/sg;
+    s/(?<!\\)`I/Ì/sg;
+    s/(?<!\\)`o/ò/sg;
+    s/(?<!\\)`O/Ò/sg;
+    s/(?<!\\)`u/ù/sg;
+    s/(?<!\\)`U/Ù/sg;
+    # ẁ ỳ ..
+
+    # https://en.wikipedia.org/wiki/Acute_accent
+    s/(?<!\\)´a/á/sg;
+    s/(?<!\\)´A/Á/sg;
+    s/(?<!\\)´e/é/sg;
+    s/(?<!\\)´E/É/sg;
+    s/(?<!\\)´i/í/sg;
+    s/(?<!\\)´I/Í/sg;
+    s/(?<!\\)´o/ó/sg;
+    s/(?<!\\)´O/Ó/sg;
+    s/(?<!\\)´u/ú/sg;
+    s/(?<!\\)´U/Ú/sg;
+    # ń ḿ ..
+
+    s/\\(.)/$1/sg;
+    
+    # should really have made a table instead and match them always and
+    # emit a warning.. blah.
+}
+
+sub conv ($) {
+    local ($_)=@_;
+    _conv;
+    $_
+}
+
+use Chj::TEST;
+TEST { conv q{Der ¨Ubermut} } q{Der Übermut};
+TEST { conv q{Der \¨Ubermut} } q{Der ¨Ubermut};
+TEST { conv q{Der \\¨Ubermut} } q{Der \Übermut};
+
+if ($ENV{RUN_TESTS}) {
+    #use Chj::Backtrace; use Chj::repl; repl;
+    Chj::TEST::run_tests;
+
+} else {
+
+    binmode STDIN, "encoding(utf-8)" or die;
+    binmode STDOUT, "encoding(utf-8)" or die;
+
+    for (<>) {
+	_conv;
+	print or die $!;
+    }
+
+}
