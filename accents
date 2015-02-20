@@ -105,10 +105,13 @@ sub _conv {
             $c :
             do {
                 my $m= $$map{$cmd} // die "bug";
-                $$m{$c} // do {
-		    warn "unknown sequence '$cmd$c'";
-                    "$cmd$c"
-                }
+                $$m{$c} //
+		    ($cmd eq $c ?
+			"$cmd$c" # lines of ^^^ or so, ok?
+                        : do {
+			    warn "unknown sequence '$cmd$c'";
+			    "$cmd$c"
+		    })
             }
     }sge;
 }
@@ -123,6 +126,8 @@ use Chj::TEST;
 TEST { conv q{Der ¨Ubermut} } q{Der Übermut};
 TEST { conv q{Der \\¨Ubermut} } q{Der ¨Ubermut};
 TEST { conv q{Der \\\\¨Ubermut} } q{Der \\Übermut};
+TEST { conv q{Der ^^^^} } q{Der ^^^^}; # and no warning
+TEST { conv q{Der ^^^^^} } q{Der ^^^^^}; # with warning, hum..XXX?
 
 if ($ENV{RUN_TESTS}) {
     #use Chj::Backtrace; use Chj::repl; repl;
