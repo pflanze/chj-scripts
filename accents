@@ -122,6 +122,16 @@ sub conv ($) {
     $_
 }
 
+sub convfh ($) {
+    my ($fh)=@_;
+    binmode $fh, "encoding(utf-8)" or die;
+    while (<$fh>) {
+	_conv;
+	print or die $!;
+    }
+    close $fh or die $!;
+}
+
 use Chj::TEST;
 TEST { conv q{Der ¨Ubermut} } q{Der Übermut};
 TEST { conv q{Der \\¨Ubermut} } q{Der ¨Ubermut};
@@ -135,12 +145,15 @@ if ($ENV{RUN_TESTS}) {
 
 } else {
 
-    binmode STDIN, "encoding(utf-8)" or die;
     binmode STDOUT, "encoding(utf-8)" or die;
 
-    for (<>) {
-	_conv;
-	print or die $!;
+    if (@ARGV) {
+	for (@ARGV) {
+	    open my $in, "<", $_ or die "'$_': $!";
+	    convfh $in;
+	}
+    } else {
+	convfh *STDIN{IO};
     }
 
 }
