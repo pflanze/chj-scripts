@@ -29,65 +29,88 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 
-sub _conv {
-    # https://en.wikipedia.org/wiki/Cedilla
-    s/(?<!\\)¸c/ç/sg;
-    s/(?<!\\)¸C/Ç/sg;
-
-    # https://en.wikipedia.org/wiki/Circumflex
-    s/(?<!\\)\^a/â/sg;
-    s/(?<!\\)\^A/Â/sg;
-    s/(?<!\\)\^e/ê/sg;
-    s/(?<!\\)\^E/Ê/sg;
-    s/(?<!\\)\^i/î/sg;
-    s/(?<!\\)\^I/Î/sg;
-    s/(?<!\\)\^o/ô/sg;
-    s/(?<!\\)\^O/Ô/sg;
-    s/(?<!\\)\^u/û/sg;
-    s/(?<!\\)\^U/Û/sg;
-
-    # https://en.wikipedia.org/wiki/Umlaut_(diacritic)
-    s/(?<!\\)¨a/ä/sg;
-    s/(?<!\\)¨A/Ä/sg;
-    s/(?<!\\)¨e/ë/sg;
-    s/(?<!\\)¨E/Ë/sg;
-    s/(?<!\\)¨i/ï/sg;
-    s/(?<!\\)¨I/Ï/sg;
-    s/(?<!\\)¨o/ö/sg;
-    s/(?<!\\)¨O/Ö/sg;
-    s/(?<!\\)¨u/ü/sg;
-    s/(?<!\\)¨U/Ü/sg;
-
-    # https://en.wikipedia.org/wiki/Grave_accent
-    s/(?<!\\)`a/à/sg;
-    s/(?<!\\)`A/À/sg;
-    s/(?<!\\)`e/è/sg;
-    s/(?<!\\)`E/È/sg;
-    s/(?<!\\)`i/ì/sg;
-    s/(?<!\\)`I/Ì/sg;
-    s/(?<!\\)`o/ò/sg;
-    s/(?<!\\)`O/Ò/sg;
-    s/(?<!\\)`u/ù/sg;
-    s/(?<!\\)`U/Ù/sg;
-    # ẁ ỳ ..
-
-    # https://en.wikipedia.org/wiki/Acute_accent
-    s/(?<!\\)´a/á/sg;
-    s/(?<!\\)´A/Á/sg;
-    s/(?<!\\)´e/é/sg;
-    s/(?<!\\)´E/É/sg;
-    s/(?<!\\)´i/í/sg;
-    s/(?<!\\)´I/Í/sg;
-    s/(?<!\\)´o/ó/sg;
-    s/(?<!\\)´O/Ó/sg;
-    s/(?<!\\)´u/ú/sg;
-    s/(?<!\\)´U/Ú/sg;
-    # ń ḿ ..
-
-    s/\\(.)/$1/sg;
+our $map= +{
     
-    # should really have made a table instead and match them always and
-    # emit a warning.. blah.
+    # https://en.wikipedia.org/wiki/Cedilla
+    '¸'=> {
+	c=> 'ç',
+	C=> 'Ç',
+    },
+    
+    # https://en.wikipedia.org/wiki/Circumflex
+    '^'=> {
+	a=> 'â',
+	A=> 'Â',
+	e=> 'ê',
+	E=> 'Ê',
+	i=> 'î',
+	I=> 'Î',
+	o=> 'ô',
+	O=> 'Ô',
+	u=> 'û',
+	U=> 'Û',
+    },
+    
+    # https://en.wikipedia.org=> 'wiki=> 'Umlaut_(diacritic)
+    '¨'=> {
+	a=> 'ä',
+	A=> 'Ä',
+	e=> 'ë',
+	E=> 'Ë',
+	i=> 'ï',
+	I=> 'Ï',
+	o=> 'ö',
+	O=> 'Ö',
+	u=> 'ü',
+	U=> 'Ü',
+    },
+    
+    # https://en.wikipedia.org=> 'wiki=> 'Grave_accent
+    '`'=> {
+	a=> 'à',
+	A=> 'À',
+	e=> 'è',
+	E=> 'È',
+	i=> 'ì',
+	I=> 'Ì',
+	o=> 'ò',
+	O=> 'Ò',
+	u=> 'ù',
+	U=> 'Ù',
+	# ẁ ỳ ..
+    },
+    
+    # https://en.wikipedia.org=> 'wiki=> 'Acute_accent
+    '´'=> {
+	a=> 'á',
+	A=> 'Á',
+	e=> 'é',
+	E=> 'É',
+	i=> 'í',
+	I=> 'Í',
+	o=> 'ó',
+	O=> 'Ó',
+	u=> 'ú',
+	U=> 'Ú',
+	# ń ḿ ..
+    },
+};
+
+
+sub _conv {
+    s{([\\¸^¨`´])(.?)}{
+        my ($cmd, $c)= ($1,$2);
+        ($cmd eq '\\') ?
+            # ok to simply drop it at eof ?
+            $c :
+            do {
+                my $m= $$map{$cmd} // die "bug";
+                $$m{$c} // do {
+		    warn "unknown sequence '$cmd$c'";
+                    "$cmd$c"
+                }
+            }
+    }sge;
 }
 
 sub conv ($) {
@@ -98,8 +121,8 @@ sub conv ($) {
 
 use Chj::TEST;
 TEST { conv q{Der ¨Ubermut} } q{Der Übermut};
-TEST { conv q{Der \¨Ubermut} } q{Der ¨Ubermut};
-TEST { conv q{Der \\¨Ubermut} } q{Der \Übermut};
+TEST { conv q{Der \\¨Ubermut} } q{Der ¨Ubermut};
+TEST { conv q{Der \\\\¨Ubermut} } q{Der \\Übermut};
 
 if ($ENV{RUN_TESTS}) {
     #use Chj::Backtrace; use Chj::repl; repl;
