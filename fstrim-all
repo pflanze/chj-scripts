@@ -1,0 +1,83 @@
+#!/usr/bin/perl -w
+
+# Mon Feb 23 02:05:01 CET 2015
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Options
+   -v      verbose
+   --dry   only show the filesystems to be trimmed
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::xperlfunc ":all";
+use Linux::Proc::Mountinfo;
+
+our $mi = Linux::Proc::Mountinfo->read;
+our $flatten= $mi->root->flatten;
+#odd.
+
+our $by_node={};
+
+for (@$flatten) {
+    local our
+       ($mount_point,
+	$mount_source,
+	$mount_options,
+	$mount_id,
+	$major_minor,
+	$fs_type,
+       )=
+      ($_->mount_point,
+       $_->mount_source,
+       $_->mount_options,
+       $_->mount_id,
+       $_->major_minor,
+       $_->fs_type,
+      );
+    if (
+	# only look at filesystems that support fstrim
+	$fs_type eq "ext4"
+	and
+	# ignore encrypted volumes; XXX bad, lvm volumes would be here, too, right?
+	not($mount_source=~ m|^/dev/mapper/|)
+       ) {
+	$$by_node{$major_minor}||= $mount_point;
+    } else {
+	()
+    }
+}
+
+our @mount_points= sort values %$by_node;
+
+if ($opt_dry) {
+    print $_,"\n" for @mount_points;
+} else {
+    do {
+	#print STDERR $_,"\n"
+	#  if $verbose;
+	xsystem "fstrim", ($verbose ? "-v" : ()), "--", $_;
+    } for @mount_points;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
