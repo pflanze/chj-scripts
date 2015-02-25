@@ -15,6 +15,7 @@ our $url=
   +{
     leo=> 'https://dict.leo.org/?search=$1&searchLoc=0&relink=on&deStem=standard&lang=en',
     fleo=> 'https://dict.leo.org/frde?search=$1&lp=frde',
+    sleo=> 'https://dict.leo.org/esde?search=$1&lp=esde',
    }->{$myname}
   or die "'$myname' unknown";
 
