@@ -3,6 +3,9 @@
 # Mon Dec  7 23:55:11 EST 2009
 (my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
 
+# todo: overwrite files in-place, right? (Might even save SSD wear.)
+# Then remove those that we didn't write.
+
 use strict;
 
 our $metadatadir=".METADATA-v2";
