@@ -5,7 +5,7 @@
 
 use strict;
 
-our $sleeptime= 0.15;
+our $sleeptime= 0.3;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
