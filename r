@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -39,6 +40,7 @@ usage if $cmd eq "-h" or $cmd eq "--help"; # disables usage of those as cmd.
 
 our %existingargs=
   map {
+      utf8::decode($_); # grr.
       if (lstat $_) {
 	  $_ => 1
       } else {
@@ -54,12 +56,20 @@ our %existingargs=
 sub maybe_trunc ( $ ) {
     my ($str)=@_;
     # scratch files
-    if ($str=~ /^\(?(\w{26,27})[-\)~]/) {
+
+    # XXX localized date strings are a pain; or, how to match a
+    # unicode "wordy" character?
+    if ($str=~ /^\(?([\wäöüéè]{26,27})[-\)~]/) {
 	$1
     } else {
 	undef
     }
 }
+
+use Chj::TEST;
+TEST { maybe_trunc '(Fre_Mär_20_184758_CET_2015-secupgrades~' }
+'Fre_Mär_20_184758_CET_2015';
+
 
 our %truncatedargs=
   map {
