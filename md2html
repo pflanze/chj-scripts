@@ -2,6 +2,16 @@
 
 set -eu
 
+if which markdown > /dev/null; then
+    markdown=markdown
+elif which Markdown.pl > /dev/null; then
+    markdown=Markdown.pl
+else
+    echo "$0: Can't find 'markdown' or 'Markdown.pl' script"
+    exit 1
+fi
+
+
 md () {
     local path="$1"
     local outdir="`dirname "$path"`";
@@ -145,7 +155,7 @@ $customstyles
 </style></head><body>
 EOF
 
-        markdown "$path"
+        $markdown "$path"
 
 	cat <<EOF
 </body></html>
