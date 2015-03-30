@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+
+# Tue Mar 31 00:07:52 CEST 2015
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd args..
+
+  Run cmd with args, but swap stderr and stdout (i.e. give it fd 1 as
+  fd 2 and fd 2 as fd 1).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+
+use POSIX;
+
+defined (our $tmp= dup(1))
+  or die "dup(1): $!";
+
+defined dup2(2,1)
+  or die "dup2(2,1): $!";
+
+defined dup2($tmp,2)
+  or die "dup2($tmp,2): $!";
+
+#close $tmp
+#  or die "close($tmp): $!";
+#why does this fail?
+POSIX::close ($tmp)
+  or die "close($tmp): $!";
+
+exec @ARGV;
+exit 127; #?
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
