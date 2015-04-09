@@ -42,6 +42,9 @@ gitclone https://github.com/pflanze/chj-emacs.git emacs
 gitclone https://github.com/pflanze/fastrandom.git fastrandom
 gitclone https://github.com/pflanze/ssh-config-gen.git ssh-config-gen
 
+mkdir -p /usr/local/lib/site_perl/
+ln -s /opt/chj/perllib/Chj /usr/local/lib/site_perl/
+
 set +x
 export PATH=/opt/chj/bin:"$PATH"
 echo "please, as root, cd then  netoffer .git, then paste the code here"
