@@ -20,6 +20,10 @@ set -x
 apt-get install  \
     git \
     lzop \
+    rlwrap \
+    vim \
+    emacs \
+    xemacs21 \
     tcpdump \
     strace \
     libterm-readline-gnu-perl \
