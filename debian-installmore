@@ -44,6 +44,8 @@ gitclone https://github.com/pflanze/ssh-config-gen.git ssh-config-gen
 
 mkdir -p /usr/local/lib/site_perl/
 ln -s /opt/chj/perllib/Chj /usr/local/lib/site_perl/
+mkdir -p /usr/local/lib/site_perl/Class
+ln -s /opt/chj/perllib/Class/Array.pm /usr/local/lib/site_perl/Class
 
 set +x
 export PATH=/opt/chj/bin:"$PATH"
