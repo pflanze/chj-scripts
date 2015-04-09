@@ -67,8 +67,17 @@ sub mounts {
 
 {
     package CHJ::Mountinfo;
-    our @fields=qw(dunno1 dunno2 dev_major_minor from mountpoint options
-		   dunno3 type1 type2 moreoptions);
+    our @fields= do {
+      if (`cat /etc/debian_version` =~ /^8\./) {
+	# '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
+	qw(dunno1 dunno2 dev_major_minor from mountpoint options
+	   dunno3 dunno4 type1 type2 moreoptions)
+      } else {
+	# '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
+	qw(dunno1 dunno2 dev_major_minor from mountpoint options
+	   dunno3 type1 type2 moreoptions)
+      }
+    };
     my $i=0;
     for (@fields) {
 	no strict 'refs';
@@ -90,7 +99,7 @@ sub mountinfos {
     while (<$f>) {
 	my @f= split " ";
 	@f == @CHJ::Mountinfo::fields
-	  or die "line in $path with different number of fields: '$_'";
+	  or warn "line in $path with different number of fields: '$_'";
 	push @m, bless \@f, "CHJ::Mountinfo";
     }
     $f->xclose;
