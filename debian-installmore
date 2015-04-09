@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+gitclone () {
+    url=$1
+    path=$2
+
+    if [ ! -d "$path" ]; then
+	git clone "$url" "$path" || true
+    fi
+}
+
+echo "Install my preferred stuff on a fresh Debian install. Hit enter to start.."
+read foo
+
+set -x
+
+apt-get install  \
+    git \
+    lzop \
+    tcpdump \
+    strace \
+    libterm-readline-gnu-perl \
+    libbsd-resource-perl \
+    libyaml-perl \
+    libwww-perl \
+    libtext-csv-perl \
+    libsys-mmap-perl \
+    libmoo-perl \
+    libmoose-perl \
+    libjson-perl \
+    libinline-perl 
+
+
+mkdir -p /opt/chj
+cd /opt/chj
+gitclone https://github.com/pflanze/chj-bin.git bin
+gitclone https://github.com/pflanze/chj-perllib.git perllib
+gitclone https://github.com/pflanze/chj-emacs.git emacs
+gitclone https://github.com/pflanze/fastrandom.git fastrandom
+gitclone https://github.com/pflanze/ssh-config-gen.git ssh-config-gen
+
+set +x
+export PATH=/opt/chj/bin:"$PATH"
+echo "please, as root, cd then  netoffer .git, then paste the code here"
+netfetch 192.168.2.196 14123
+#well, different ip in most cases....
+#and this repo should be shared anyway
