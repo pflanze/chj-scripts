@@ -33,6 +33,7 @@ apt-get install  \
     libjson-perl \
     libinline-perl 
 
+dpkg-reconfigure locales
 
 mkdir -p /opt/chj
 cd /opt/chj
@@ -43,9 +44,9 @@ gitclone https://github.com/pflanze/fastrandom.git fastrandom
 gitclone https://github.com/pflanze/ssh-config-gen.git ssh-config-gen
 
 mkdir -p /usr/local/lib/site_perl/
-ln -s /opt/chj/perllib/Chj /usr/local/lib/site_perl/
+ln -s /opt/chj/perllib/Chj /usr/local/lib/site_perl/ || true
 mkdir -p /usr/local/lib/site_perl/Class
-ln -s /opt/chj/perllib/Class/Array.pm /usr/local/lib/site_perl/Class
+ln -s /opt/chj/perllib/Class/Array.pm /usr/local/lib/site_perl/Class || true
 
 set +x
 export PATH=/opt/chj/bin:"$PATH"
