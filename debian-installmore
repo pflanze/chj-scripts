@@ -33,7 +33,7 @@ apt-get install  \
     libjson-perl \
     libinline-perl 
 
-dpkg-reconfigure locales
+dpkg-reconfigure locales || true
 
 mkdir -p /opt/chj
 cd /opt/chj
