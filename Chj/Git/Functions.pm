@@ -513,7 +513,7 @@ sub status_is_clean {
     [
      (scalar ((($instatus==(1<<8)) or ($instatus==0))
 	      and
-	      $incnt=~ /\nnothing to commit .working directory clean/)),
+	      $incnt=~ /\nnothing to commit..working directory clean/)),
      $incnt
     ]
 }
