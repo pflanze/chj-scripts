@@ -23,6 +23,7 @@ $myname filenamewithoutsuffix_suffix
 
   Options
    -f|--force  unlink target even if it's not a symlink
+   --test      run test suite then terminate
 
 ";
 exit (@_ ? 1 : 0);
@@ -31,6 +32,7 @@ exit (@_ ? 1 : 0);
 my @files;
 my $DEBUG=0;
 my $opt_force;
+my $opt_test;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -42,6 +44,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?f(orce)?$/) {
 	$opt_force=1;
+    } elsif (/^--test?$/) {
+	$opt_test=1;
     } elsif (/^-/) {
 	warn "Unknown option '$_'\n";
 	usage(1)
@@ -57,18 +61,51 @@ sub absolutize($$) {  ## could be much better: check for symlinks in paths in fi
     $path=~ m|^/| ? $path : AddURL($base,$path)
 }
 
+sub split__without_suffix {
+    my ($path)=@_;
+    my ($tmp,$suffix);
+    (
+     ($tmp,$suffix)= $path=~ /^([^_]+)(_[^_]+)$/s
+     or ($tmp,$suffix)= $path=~ /^([^-]+)(-[^-]+)$/s
+     or ($tmp,$suffix)= $path=~ /^(.*\.[^_]+)(_[^_]+)$/s
+     or ($tmp,$suffix)= $path=~ /^(.*\.[^-]+)(-[^-]+)$/s
+     or return () );
+    ($tmp,$suffix)
+}
+
+use Chj::TEST;
+
+TEST {[split__without_suffix ""]} []; # whatever
+TEST {[split__without_suffix "-"]} []; # ["","-"]; # whatever
+TEST {[split__without_suffix "_"]} []; # whatever
+TEST {[split__without_suffix "foo"]} [];
+TEST {[split__without_suffix "foo.bar"]} [];
+TEST {[split__without_suffix "foo-bar"]} ["foo","-bar"];
+TEST {[split__without_suffix "foo_bar"]} ["foo","_bar"];
+TEST {[split__without_suffix "foo-bar_baz"]} ["foo-bar","_baz"];
+TEST {[split__without_suffix "foo_bar-baz"]} ["foo","_bar-baz"];
+
+#TEST {[split__without_suffix "foo.conf-bar_baz"]} ["foo.conf","-bar_baz"];
+TEST {[split__without_suffix "foo-bar.conf_baz"]} ["foo-bar.conf","_baz"];
+
+TEST {[split__without_suffix "foo.conf_bar-baz"]} ["foo.conf","_bar-baz"];
+#TEST {[split__without_suffix "foo_bar.conf-baz"]} ["foo_bar.conf","-baz"];
+
+#use Chj::repl;repl;
+
+if ($opt_test) {
+    my $rv= Chj::TEST::run_tests;
+    #exit ($rv == 0 ? 0 : 1);
+    exit 0; # XX: only newer Chj::TEST returns stats!
+}
+
 if (@files==1 or @files==2) {
   WITHOUT:
     my ($without,$suffix)=@files;
     if (!defined_and_length $suffix) {
-	my $tmp;
-	(($tmp,$suffix)= $without=~ /^([^_]+)(_[^_]+)$/s
-	 or ($tmp,$suffix)= $without=~ /^([^-]+)(-[^-]+)$/s
-	 or ($tmp,$suffix)= $without=~ /^(.*\.[^_]+)(_[^_]+)$/s
-	 or ($tmp,$suffix)= $without=~ /^(.*\.[^-]+)(-[^-]+)$/s
-	 or usage ("exactly one underscore or minus expected, "
-		   ."which is not the case in '$without'"));
-	$without= $tmp; # perfectly clean coding
+	($without,$suffix)= split__without_suffix $without
+	  or usage ("exactly one underscore or minus expected, "
+		    ."which is not the case in '$without'");
     }
     my $with= "$without$suffix";
     if (-l $without) {
