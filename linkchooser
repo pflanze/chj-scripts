@@ -64,11 +64,10 @@ sub absolutize($$) {  ## could be much better: check for symlinks in paths in fi
 sub split__without_suffix {
     my ($path)=@_;
     my ($tmp,$suffix);
-    (
-     ($tmp,$suffix)= $path=~ /^([^_]+)(_[^_]+)$/s
+    (0
+     or ($tmp,$suffix)= $path=~ /^(.*\.[^_-]+)([_-].+)$/s
+     or ($tmp,$suffix)= $path=~ /^([^_]+)(_[^_]+)$/s
      or ($tmp,$suffix)= $path=~ /^([^-]+)(-[^-]+)$/s
-     or ($tmp,$suffix)= $path=~ /^(.*\.[^_]+)(_[^_]+)$/s
-     or ($tmp,$suffix)= $path=~ /^(.*\.[^-]+)(-[^-]+)$/s
      or return () );
     ($tmp,$suffix)
 }
@@ -85,11 +84,11 @@ TEST {[split__without_suffix "foo_bar"]} ["foo","_bar"];
 TEST {[split__without_suffix "foo-bar_baz"]} ["foo-bar","_baz"];
 TEST {[split__without_suffix "foo_bar-baz"]} ["foo","_bar-baz"];
 
-#TEST {[split__without_suffix "foo.conf-bar_baz"]} ["foo.conf","-bar_baz"];
+TEST {[split__without_suffix "foo.conf-bar_baz"]} ["foo.conf","-bar_baz"];
 TEST {[split__without_suffix "foo-bar.conf_baz"]} ["foo-bar.conf","_baz"];
 
 TEST {[split__without_suffix "foo.conf_bar-baz"]} ["foo.conf","_bar-baz"];
-#TEST {[split__without_suffix "foo_bar.conf-baz"]} ["foo_bar.conf","-baz"];
+TEST {[split__without_suffix "foo_bar.conf-baz"]} ["foo_bar.conf","-baz"];
 
 #use Chj::repl;repl;
 
