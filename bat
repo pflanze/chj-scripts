@@ -5,6 +5,8 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
+our $loopsleep= 10; # seconds
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -13,6 +15,10 @@ sub usage {
 
   Show battery status.
 
+  Options:
+
+   -l|--loop   show BAT0 percentage oneline with timestamp
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -20,9 +26,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_loop;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "loop"=> \$opt_loop,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage if @ARGV;
@@ -45,26 +52,6 @@ sub xset_once ($$$) {
     }
 }
 
-
-use Chj::xopendir;
-
-our $power_base = "/sys/class/power_supply";
-
-our $by_prefix={};
-{
-    my $d= xopendir $power_base;
-    while (defined (my $item= $d->xnread)) {
-	my ($pref,$perhaps_num)= $item=~ /^(.+?)(\d*)\z/
-	  or die "no match: '$item'";
-	xset_once $by_prefix, [$pref, $perhaps_num],
-	  "$power_base/$item"; #spend some space..
-    }
-}
-
-for (keys %$by_prefix) {
-    $_ eq "AC" or $_ eq "BAT" or die "unknown type '$_'";
-}
-
 use Chj::xopen 'xopen_read';
 sub contents ($) {
     my ($path)=@_;
@@ -75,22 +62,62 @@ sub contents ($) {
     $$cntref
 }
 
-sub show {
+sub pseudonumify {
+    my ($v)=@_;
+    length $v ? $v : -1
+}
+
+# /move
+
+
+use Chj::xopendir;
+
+our $power_base = "/sys/class/power_supply";
+
+sub hardware_by_prefixes {
+    my $by_prefix={};
+    my $d= xopendir $power_base;
+    while (defined (my $item= $d->xnread)) {
+	my ($pref,$perhaps_num)= $item=~ /^(.+?)(\d*)\z/
+	  or die "no match: '$item'";
+	xset_once $by_prefix, [$pref, $perhaps_num],
+	  "$power_base/$item"; #spend some space..
+    }
+    for (keys %$by_prefix) {
+	$_ eq "AC" or $_ eq "BAT" or die "unknown type '$_'";
+    }
+    $by_prefix
+}
+
+
+our $by_prefix;
+
+sub show_bat_percentage {
+    my ($prefix,$field)=@_;
+    my $now= &$field("energy_now");
+    my $full= &$field("energy_full");
+    printf "$prefix%3.1f\n", 100 * $now / $full;
+}
+
+sub kindnum2field {
     my ($kind,$num)=@_;
     my $path= $$by_prefix{$kind}{$num}
-      or die "BUG";
-    my $field= sub {
+      or die "do not have a $kind$num";
+    sub {
 	my ($name)=@_;
 	contents("$path/$name");
-    };
+    }
+}
+
+sub show {
+    my ($kind,$num)=@_;
     print "$kind$num:\n";
+    my $field= kindnum2field ($kind,$num);
     print " type: ", &$field("type"), "\n";
     if ($kind eq "AC") {
 	print " online: ", &$field("online"), "\n";
     } elsif ($kind eq "BAT") {
-	my $now= &$field("energy_now");
-	my $full= &$field("energy_full");
-	printf " charge: %3.1f\n", 100 * $now / $full;
+	show_bat_percentage(" charge: ",$field);
     } else {
 	die "bug"
     }
@@ -98,18 +125,34 @@ sub show {
 }
 
 
-sub pseudonumify {
-    my ($v)=@_;
-    length $v ? $v : -1
-}
+$by_prefix= hardware_by_prefixes;
 
-for my $kind (sort { $a cmp $b } keys %$by_prefix) {
-    my $h= $$by_prefix{$kind};
-    for my $num (sort { pseudonumify($a) <=> pseudonumify($b) } keys %$h) {
-	show $kind, $num;
+if ($opt_loop) {
+    my $lasthw= time;
+    while (1) {
+	my $t= time;
+	if ($t > ($lasthw + $loopsleep * 10)) {
+	    # ~arbitrarily; and not safe anyway, stupid, when bat
+	    # removed, it will get exception saying no BAT0, and
+	    # anyway can't handle anything else. hu. But funny,
+	    # stupid, let it be.  ah btw could optimize _full file
+	    # similarly.
+	    $lasthw= $t;
+	    $by_prefix= hardware_by_prefixes;
+	}
+	my $field= kindnum2field ("BAT","0");
+	show_bat_percentage (localtime."\t", $field);
+	sleep $loopsleep;
+    }
+} else {
+    for my $kind (sort { $a cmp $b } keys %$by_prefix) {
+	my $h= $$by_prefix{$kind};
+	for my $num (sort { pseudonumify($a) <=> pseudonumify($b) } keys %$h) {
+	    show $kind, $num;
+	}
     }
 }
-	
+
 
 
 #use Chj::ruse;
