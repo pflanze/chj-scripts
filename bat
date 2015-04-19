@@ -129,19 +129,26 @@ $by_prefix= hardware_by_prefixes;
 
 if ($opt_loop) {
     my $lasthw= time;
+    my $rescan= sub {
+	my ($maybe_t)=@_;
+	my $t= $maybe_t || time;
+	# (could optimize _full file similarly.)
+	$lasthw= $t;
+	$by_prefix= hardware_by_prefixes;
+    };
     while (1) {
-	my $t= time;
-	if ($t > ($lasthw + $loopsleep * 10)) {
-	    # ~arbitrarily; and not safe anyway, stupid, when bat
-	    # removed, it will get exception saying no BAT0, and
-	    # anyway can't handle anything else. hu. But funny,
-	    # stupid, let it be.  ah btw could optimize _full file
-	    # similarly.
-	    $lasthw= $t;
-	    $by_prefix= hardware_by_prefixes;
-	}
-	my $field= kindnum2field ("BAT","0");
-	show_bat_percentage (localtime."\t", $field);
+	eval {
+	    my $t= time;
+	    if ($t > ($lasthw + $loopsleep * 10)) {
+		&$rescan ($t);
+	    }
+	    my $field= kindnum2field ("BAT","0");
+	    show_bat_percentage (localtime."\t", $field);
+	    1
+	} || do {
+	    print STDERR "note: $@";
+	    &$rescan;
+	};
 	sleep $loopsleep;
     }
 } else {
