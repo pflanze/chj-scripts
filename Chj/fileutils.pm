@@ -1,13 +1,12 @@
 package Chj::fileutils;
 
 # Tue Feb 12 22:37:21 2002  Christian Jaeger, pflanze@gmx.ch
-# 
-# Copyright 2001 by ethlife renovation project people
+#
+# Copyright 2002 by ethlife renovation project people
 # (christian jaeger, cesar keller, philipp suter, peter rohner)
 # Published under the terms of the GNU General Public License
-# Copyright 2003 by christian jaeger
-# 
-# $Id$
+# Copyright 2002-2015 by christian jaeger
+
 
 =head1 NAME
 
@@ -34,7 +33,8 @@ All other functions never keep open filehandles.
 
 require Exporter;
 @ISA='Exporter';
-@EXPORT_OK= qw(getlock releaselock fetchfile createfile writebackfile getfilehandle removefile);
+@EXPORT_OK= qw(getlock releaselock fetchfile file_contents
+ createfile writebackfile getfilehandle removefile);
 
 use strict;
 use Carp;
@@ -107,9 +107,12 @@ sub releaselock($) {
 
 =item $bufferref= fetchfile ( filepath )
 
-Returns a reference to the contents of the file at the time of 
-calling fetchfile. 
-Croaks on errors or if the file doesn't exist. 
+Returns a reference to the contents of the file at the time of calling
+fetchfile. Throws exceptions on errors.
+
+=item $str= file_contents ( filepath )
+
+Same as ${ fetchfile $filepath }.
 
 =item $fh= getfilehandle ( filepath )
 
@@ -189,12 +192,17 @@ special situations.)
 sub fetchfile($) {
     my ($file)=@_;
     sysopen my $IN,$file, O_RDONLY
-      or croak "Could not open $file for reading: $!";
+      or croak "Could not open file '$file' for reading: $!";
     local $/;
     my $cnt= <$IN>;
     close $IN
-      or croak "Error closing $file: $!";
+      or croak "Error closing file '$file': $!";
     \$cnt
+}
+
+sub file_contents ($) {
+    my ($file)=@_;
+    ${ fetchfile $file }
 }
 
 sub getfilehandle($) {
