@@ -133,7 +133,7 @@ our $releases=
    ["wheezy", "7.7"],
    ["wheezy", "7.8"],
    ["wheezy", "7.9"],
-
+   ["jessie", "8.0", "2015-04-25", ">43000", "20000..20100", undef, "2020-04 (next 5 years)"],
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
