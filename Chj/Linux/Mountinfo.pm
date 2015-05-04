@@ -99,7 +99,7 @@ sub mountinfos {
     while (<$f>) {
 	my @f= split " ";
 	@f == @CHJ::Mountinfo::fields
-	  or warn "line in $path with different number of fields: '$_'";
+	  or die "line in $path with different number of fields: '$_'";
 	push @m, bless \@f, "CHJ::Mountinfo";
     }
     $f->xclose;
