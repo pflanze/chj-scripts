@@ -25,8 +25,8 @@ which is stupid).
 
 package Chj::Cwd::realpath;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw();
-@EXPORT_OK=qw(realpath xrealpath);
+@EXPORT=qw(realpath xrealpath);
+@EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict; use warnings FATAL => 'uninitialized';
