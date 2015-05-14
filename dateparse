@@ -5,14 +5,18 @@ use strict;
 use Date::Parse;
 
 if (@ARGV) {
-    my ($printarg,$unix);
+    my $printarg;
+    my $unix=1;
     for (@ARGV) {
 	if ($_ eq '-u') {
 	    $unix=1;
 	    undef $_;
+	} elsif ($_ eq '-U') {
+	    $unix=0;
+	    undef $_;
 	}
     }
-    if ((grep {defined} @ARGV)>1) { 
+    if ((grep {defined} @ARGV)>1) {
         $printarg=1;
     }
     for (@ARGV) {
@@ -35,7 +39,7 @@ else {
 
     Parses the datestring and converts it into local time if possible.
     Don't forget to put quotes around the strings.
-    Prints the unixtime value as well if option -u is given.
+    Prints the unixtime value as well unless option -U is given.
 ";
 }
 
