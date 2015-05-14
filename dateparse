@@ -18,10 +18,9 @@ if (@ARGV) {
     for (@ARGV) {
             next unless defined;
         next unless length( $_);
-        my $d= str2time($_);
-        print "$_: " if $printarg;
-        print "$d " if $unix;
-        if (defined $d) {
+        if (my $d= str2time($_)) {
+	    print "$_: " if $printarg;
+	    print "$d " if $unix;
             print localtime($d)."\n";
         } else {
             print "$_: " unless $printarg;
