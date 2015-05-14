@@ -7,16 +7,16 @@ use Date::Parse;
 if (@ARGV) {
     my ($printarg,$unix);
     for (@ARGV) {
-      if ($_ eq '-u') {
-        $unix=1;
-        undef $_;
-      }
+	if ($_ eq '-u') {
+	    $unix=1;
+	    undef $_;
+	}
     }
     if ((grep {defined} @ARGV)>1) { 
         $printarg=1;
     }
     for (@ARGV) {
-            next unless defined;
+	next unless defined;
         next unless length( $_);
         if (my $d= str2time($_)) {
 	    print "$_: " if $printarg;
@@ -39,4 +39,3 @@ else {
 ";
 }
 
-# cj 10\09\2001
