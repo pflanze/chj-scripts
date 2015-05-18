@@ -47,12 +47,12 @@ sub files {
     my %files;
     my $do_accept_pipeerror;
     while (<$g>) {
-	if (/^# Untracked files/) {
+	if (/^(# )?Untracked files:/) {
 	    $do_accept_pipeerror=1;
 	    last;
 	}
 	chomp;
-	if (/^#\s+(modified|deleted|added|new file):\s+(.*)/) {
+	if (/^#?\s+(modified|deleted|added|new file):\s+(.*)/) {
 	    # ^ hm it seems 'added' isn't used
 	    my ($what,$path)=($1,$2);
 	    $files{git_unquote_path($path)}=$what;
