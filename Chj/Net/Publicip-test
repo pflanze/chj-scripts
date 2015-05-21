@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+use strict; use warnings FATAL => 'uninitialized';
+
+use Chj::TEST ":all";
+
+use Chj::Net::Publicip ":all";
+
+our @ips= publicip;
+#our @ifaces= publiciface;
+
+our $ip= publicip;
+#our $iface= publiciface;
+
+TEST {
+    $ip eq $ips[0]
+} 1;
+
+our @ips2= publicip_force;
+our $ip2= publicip_force;
+
+TEST {
+    @ips2 >= @ips
+} 1;
+
+TEST {
+    $ip2 eq $ips2[0]
+} 1;
+
+# likely, not guaranteed:
+
+TEST {
+    [ grep { $_ eq "127.0.0.1" } @ips2 ]
+} ["127.0.0.1"];
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+run_tests "main";
