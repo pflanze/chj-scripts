@@ -18,15 +18,18 @@ sub usage {
   (returns the exit code from ifconfig in case of error, probably 1)
   May return 0 but still no ip: if all checked interfaces were
   ok but none of them didn't look like a private net.
+
   Options:
+
   -f   If given, and no non-privetly looking ip is found, the first
        privately looking ip is printed.
   -a   All found ips are shown, not just publicly looking ones.
+  -i   Show interface name(s) instead of ip(s)
 ";
 exit;
 }
 
-my ($opt_f,$opt_a);
+my ($opt_f,$opt_a,$opt_i);
 my @ifaces;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -35,6 +38,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	    $opt_f=1;
 	} elsif ($_ eq '-a'){
 	    $opt_a=1;
+	} elsif ($_ eq '-i'){
+	    $opt_i=1;
 	} else {
 	    usage;
 	}
@@ -43,12 +48,15 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 
+our $get= $opt_i ?
+  \&Chj::Net::Publicip::_publiciface :
+  \&Chj::Net::Publicip::_publicip;
 
 if ($opt_a) {
-    print map {"$_\n"} Chj::Net::Publicip::_publicip($opt_f,@ifaces);
+    print map {"$_\n"} &$get($opt_f,@ifaces);
     exit Chj::Net::Publicip::last_best_exitcode;
 } else {
-    my $res= Chj::Net::Publicip::_publicip($opt_f,@ifaces);
+    my $res= &$get($opt_f,@ifaces);
     if ($res) {
 	print "$res\n";
 	exit 0;
