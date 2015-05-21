@@ -12,9 +12,23 @@ Chj::Net::Publicip
 =head1 SYNOPSIS
 
  use Chj::Net::Publicip qw(publicip publicip_force);
- my @ips = publicip; # returns all found ip's, sorted so that the most likely one comes first.
- my $public = publicip; # returns the "best looking" public-looking ip, undef if no or only private-looking ips have been found.
- my $someip = publicip_force; # "force" flag; returns the "next best" non-publicly looking one if no clear public one has been found.
+
+ my @ips = publicip; # returns all found ip's, sorted so that the most
+                     # likely one comes first.
+
+ my $public = publicip; # returns the "best looking" public-looking
+                        # ip, undef if no or only private-looking ips
+                        # have been found.
+
+ my $someip = publicip_force; # "force" flag; returns the "next best"
+                              # non-publicly looking one if no clear
+                              # public one has been found.
+
+ my $publiciface= publiciface; # same behaviour as publicip but
+                               # returns interface name instead of ip
+
+ my $publiciface= publiciface_force; # sama .. .._force ..
+
  # all of those can optionally take a list of interfaces to check
 
 =head1 DESCRIPTION
@@ -26,7 +40,7 @@ Chj::Net::Publicip
 package Chj::Net::Publicip;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
-@EXPORT_OK=qw(publicip publicip_force looks_private);
+@EXPORT_OK=qw(publicip publicip_force looks_private publiciface publiciface_force);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -119,8 +133,8 @@ sub _ips {
     \@ips
 }
 
-sub _publicip {
-    my ($opt_f,@ifaces)=@_;
+sub _publicIPS {
+    my ($wantarray, $opt_f, @ifaces)=@_;
 
     my $ips= _ips (@ifaces ? +{ map {$_=>1} @ifaces} : undef);
 
@@ -129,15 +143,22 @@ sub _publicip {
 	grep { $opt_f or $_->publicity_likelyness >= 1 } ## ok ?
 	  @$ips;
 
-    if (wantarray) {
-	return map { $_->ip } @sortedips;
+    if ($wantarray) {
+	return @sortedips;
     } else {
 	if (@sortedips) {
-	    $sortedips[0]->ip
+	    $sortedips[0]
 	} else {
 	    return undef
 	}
     }
+}
+
+sub _publicip {
+    my ($opt_f, @ifaces)=@_;
+    my $wantarray= wantarray;
+    my @r= map { $_->ip } _publicIPS ($wantarray, $opt_f, @ifaces);
+    $wantarray ? @r : $r[0]
 }
 
 sub publicip {
@@ -146,6 +167,21 @@ sub publicip {
 sub publicip_force {
     _publicip(1,@_)
 }
+
+sub _publiciface {
+    my ($opt_f, @ifaces)=@_;
+    my $wantarray= wantarray;
+    my @r= map { $_->iface } _publicIPS ($wantarray, $opt_f, @ifaces);
+    $wantarray ? @r : $r[0]
+}
+
+sub publiciface {
+    _publiciface(0,@_)
+}
+sub publiciface_force {
+    _publiciface(1,@_)
+}
+
 
 
 1;

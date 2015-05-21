@@ -7,14 +7,22 @@ use Chj::TEST ":all";
 use Chj::Net::Publicip ":all";
 
 our @ips= publicip;
-#our @ifaces= publiciface;
+our @ifaces= publiciface;
 
 our $ip= publicip;
-#our $iface= publiciface;
+our $iface= publiciface;
 
 TEST {
     $ip eq $ips[0]
 } 1;
+
+TEST {
+    $iface eq $ifaces[0]
+} 1;
+
+TEST {
+    [ grep {$_ eq "lo"} @ifaces ]
+} [];
 
 our @ips2= publicip_force;
 our $ip2= publicip_force;
@@ -32,6 +40,12 @@ TEST {
 TEST {
     [ grep { $_ eq "127.0.0.1" } @ips2 ]
 } ["127.0.0.1"];
+
+our @ifaces2= publiciface_force;
+
+TEST {
+    [ grep { $_ eq "lo" } @ifaces2 ]
+} ["lo"];
 
 
 #use Chj::ruse;
