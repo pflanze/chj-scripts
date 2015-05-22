@@ -13,13 +13,21 @@ our @ifaces= publiciface;
 our $ip= publicip;
 our $iface= publiciface;
 
-TEST {
-    $ip eq $ips[0]
-} 1;
+if (defined $ip) {
 
-TEST {
-    $iface eq $ifaces[0]
-} 1;
+    TEST {
+	$ip eq $ips[0]
+    } 1;
+
+    TEST {
+	$iface eq $ifaces[0]
+    } 1;
+
+}
+else {
+    warn "no public interface is up, skipping some tests";
+    TEST { $iface } undef;
+}
 
 TEST {
     [ grep {$_ eq "lo"} @ifaces ]
