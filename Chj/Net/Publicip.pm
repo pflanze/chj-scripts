@@ -134,7 +134,7 @@ sub _ips {
 }
 
 sub _publicIPS {
-    my ($wantarray, $opt_f, @ifaces)=@_;
+    my ($mapfn, $opt_f, @ifaces)=@_;
 
     my $ips= _ips (@ifaces ? +{ map {$_=>1} @ifaces} : undef);
 
@@ -143,22 +143,16 @@ sub _publicIPS {
 	grep { $opt_f or $_->publicity_likelyness >= 1 } ## ok ?
 	  @$ips;
 
-    if ($wantarray) {
-	return @sortedips;
+    if (wantarray) {
+	map { &$mapfn($_) } @sortedips;
     } else {
-	if (@sortedips) {
-	    $sortedips[0]
-	} else {
-	    return undef
-	}
+	@sortedips ? &$mapfn($sortedips[0]) : undef
     }
 }
 
 sub _publicip {
     my ($opt_f, @ifaces)=@_;
-    my $wantarray= wantarray;
-    my @r= map { $_->ip } _publicIPS ($wantarray, $opt_f, @ifaces);
-    $wantarray ? @r : $r[0]
+    _publicIPS (sub { $_[0]->ip }, $opt_f, @ifaces)
 }
 
 sub publicip {
@@ -170,9 +164,7 @@ sub publicip_force {
 
 sub _publiciface {
     my ($opt_f, @ifaces)=@_;
-    my $wantarray= wantarray;
-    my @r= map { $_->iface } _publicIPS ($wantarray, $opt_f, @ifaces);
-    $wantarray ? @r : $r[0]
+    _publicIPS (sub { $_[0]->iface }, $opt_f, @ifaces)
 }
 
 sub publiciface {
