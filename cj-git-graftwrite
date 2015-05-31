@@ -23,4 +23,4 @@ gitdir=$(git rev-parse --git-dir)
 
 graftpath=$(graftpath_of "$gitdir")
 
-cat > "$graftpath"
+rlwrap cat > "$graftpath"
