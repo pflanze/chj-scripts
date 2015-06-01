@@ -41,6 +41,8 @@ package Chj::Path::Calc;
 use strict;
 use Carp;
 
+warn "this module is depreciated";
+
 our $DEBUG=0;
 # ----------------------------------------
 # Environment:
