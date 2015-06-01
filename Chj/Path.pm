@@ -14,11 +14,6 @@ Chj::Path
 
 Not sure why I'm creating something from scratch here.
 
-Well, I just realize that Chj/Path/Calc.pm has broken handling of "//"
-I think.
-
-And where did I do it previously? Maildir?
-
 This doesn't access the file system, and it doesn't resolve
 "..". These are things that have to be implemented by the user.
 
