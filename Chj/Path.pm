@@ -1,8 +1,7 @@
 #
-# Copyright 2011 by Christian Jaeger, christian at jaeger mine nu
+# Copyright 2011-2015 by Christian Jaeger, christian at jaeger mine nu
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -163,88 +162,91 @@ sub contains_dotdot {
 
 end Class::Array;
 
-__END__
 
-  tests:
-calc> :l (new_from_string Chj::Path "hello//world/you")->string
-hello/world/you
-calc> :l (new_from_string Chj::Path "/hello//world/you")->string
-/hello/world/you
-calc> :l (new_from_string Chj::Path "/hello//world/you/")->string
-/hello/world/you/
-calc> :l (new_from_string Chj::Path "/")->string
-/
-calc> :l (new_from_string Chj::Path ".")->string
-.
-calc> :l (new_from_string Chj::Path "./")->string
-./
-calc> :l (new_from_string Chj::Path "./")->clean->string
-./
-calc> :l (new_from_string Chj::Path "./..")->string
-./..
-calc> :l (new_from_string Chj::Path "./..")->clean->string
-..
+use Chj::TEST;
 
-calc> :l (new_from_string Chj::Path "./foo/../bar/.//baz/.")->clean->string
-foo/../bar/baz/
-calc> :d (new_from_string Chj::Path "")->clean->string
-$VAR1 = '';
-# XX should this be an error?
+TEST { (new_from_string Chj::Path "hello//world/you")->string }
+  "hello/world/you";
+TEST { (new_from_string Chj::Path "/hello//world/you")->string }
+  "/hello/world/you";
+TEST { (new_from_string Chj::Path "/hello//world/you/")->string }
+  "/hello/world/you/";
+TEST { (new_from_string Chj::Path "/")->string }
+  "/";
+TEST { (new_from_string Chj::Path ".")->string }
+  ".";
+TEST { (new_from_string Chj::Path "./")->string }
+  "./";
+TEST { (new_from_string Chj::Path "./")->clean->string }
+  "./";
+TEST { (new_from_string Chj::Path "./..")->string }
+  "./..";
+TEST { (new_from_string Chj::Path "./..")->clean->string }
+  "..";
 
-calc> :l (new_from_string Chj::Path ".")->string
-.
-calc> :d (new_from_string Chj::Path ".")->clean->string
-$VAR1 = './';
+TEST { (new_from_string Chj::Path "./foo/../bar/.//baz/.")->clean->string }
+  "foo/../bar/baz/";
+TEST { (new_from_string Chj::Path "")->clean->string }
+  # XX should this be an error?
+  '.';
 
-calc> :l (new_from_string Chj::Path "/")->string
-/
-calc> :l (new_from_string Chj::Path "/")->clean->string
-/
-calc> :l (new_from_string Chj::Path "/.")->clean->string
-/
-calc> :l (new_from_string Chj::Path "/./")->clean->string
-/
-calc> :l (new_from_string Chj::Path "/./")->string
-/./
-calc> :l (new_from_string Chj::Path "/.")->string
-/.
+TEST { (new_from_string Chj::Path ".")->string }
+  ".";
+TEST { (new_from_string Chj::Path ".")->clean->string }
+  './';
 
-calc> :l (new_from_string Chj::Path "/.")->contains_dotdot
-0
-calc> :l (new_from_string Chj::Path "foo/bar/../baz")->contains_dotdot
-1
-calc> :l (new_from_string Chj::Path "../baz")->contains_dotdot
-1
-calc> :l (new_from_string Chj::Path "baz/..")->contains_dotdot
-1
-calc> :l (new_from_string Chj::Path "baz/..")->clean->contains_dotdot
-1
+TEST { (new_from_string Chj::Path "/")->string }
+  "/";
+TEST { (new_from_string Chj::Path "/")->clean->string }
+  "/";
+TEST { (new_from_string Chj::Path "/.")->clean->string }
+  "/";
+TEST { (new_from_string Chj::Path "/./")->clean->string }
+  "/";
+TEST { (new_from_string Chj::Path "/./")->string }
+  "/./";
+TEST { (new_from_string Chj::Path "/.")->string }
+  "/.";
 
-calc> :d Chj::Path->new_from_string(".")->clean->dirname
-can't take dirname of empty path at /usr/local/lib/site_perl/Chj/Path.pm line 124.
-calc> :d Chj::Path->new_from_string("foo")->clean->dirname->string
-$VAR1 = '.';
-calc> :d Chj::Path->new_from_string("foo/bar")->clean->dirname->string
-$VAR1 = 'foo';
-calc> :d Chj::Path->new_from_string("")->dirname
-can't take dirname of empty path at /usr/local/lib/site_perl/Chj/Path.pm line 134.
+TEST { (new_from_string Chj::Path "/.")->contains_dotdot }
+  "0";
+TEST { (new_from_string Chj::Path "foo/bar/../baz")->contains_dotdot }
+  "1";
+TEST { (new_from_string Chj::Path "../baz")->contains_dotdot }
+  "1";
+TEST { (new_from_string Chj::Path "baz/..")->contains_dotdot }
+  "1";
+TEST { (new_from_string Chj::Path "baz/..")->clean->contains_dotdot }
+  "1";
 
-calc> :d Chj::Path->new_from_string(".")->clean->has_endslash
-$VAR1 = 1;
-calc> :d Chj::Path->new_from_string(".")->clean->string
-$VAR1 = './';
+TEST_EXCEPTION { Chj::Path->new_from_string(".")->clean->dirname }
+  q{can't take dirname of empty path};
+TEST { Chj::Path->new_from_string("foo")->clean->dirname->string }
+  '.';
+TEST { Chj::Path->new_from_string("foo/bar")->clean->dirname->string }
+  'foo';
+TEST_EXCEPTION { Chj::Path->new_from_string("")->dirname }
+  q{can't take dirname of empty path};
+
+TEST { Chj::Path->new_from_string(".")->clean->has_endslash }
+  1;
+TEST { Chj::Path->new_from_string(".")->clean->string }
+  './';
 #ok
-calc> :d Chj::Path->new_from_string("")->clean->has_endslash
-$VAR1 = 0;
-calc> :d Chj::Path->new_from_string("")->clean->string
-$VAR1 = '.';
+TEST { Chj::Path->new_from_string("")->clean->has_endslash }
+  0;
+TEST { Chj::Path->new_from_string("")->clean->string }
+  '.';
 #h
 
-calc> :d Chj::Path->new_from_string("/foo")->to_relative->string
-$VAR1 = 'foo';
-calc> :d Chj::Path->new_from_string("/")->to_relative->string
-$VAR1 = './';
-calc> :d Chj::Path->new_from_string("")->to_relative->string
-is already relative at /usr/local/lib/site_perl/Chj/Path.pm line 147.
-calc> :d Chj::Path->new_from_string("/foo/")->to_relative->string
-$VAR1 = 'foo/';
+TEST { Chj::Path->new_from_string("/foo")->to_relative->string }
+  'foo';
+TEST { Chj::Path->new_from_string("/")->to_relative->string }
+  './';
+TEST_EXCEPTION { Chj::Path->new_from_string("")->to_relative->string }
+  q{is already relative};
+TEST { Chj::Path->new_from_string("/foo/")->to_relative->string }
+ 'foo/';
+
+
+1
