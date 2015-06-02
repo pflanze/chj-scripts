@@ -24,7 +24,7 @@ use Chj::xtmpfile;
 use Chj::xhome;
 
 my $usage;
-my ($opt_stop, $opt_bg,$opt_nonice, $opt_restart, $opt_status);
+my ($opt_stop, $opt_bg,$opt_nonice, $opt_restart, $opt_status, $opt_noask);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
@@ -59,6 +59,8 @@ ARG:{
 		    $opt_nonice=1;
 		} elsif ($1 eq 'nice') {
 		    $opt_nonice=0;
+		} elsif ($1 eq 'no-ask') {
+		    $opt_noask=1;
 		} elsif ($1 eq 'signal') {
 		    $signal=$ARGV[0]; shift @ARGV;
 		    if (defined( $signal) and $signal=~ /^\d+\z/) {
@@ -184,6 +186,7 @@ sub usage {
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
   --quiet|-q  be quiet (do not output the pid of the daemon)
+  --no-ask    don't ask whether to show the output at the end (never show it)
   --no-error-if-running|--no-error  do not report an error if the
               daemon is already running
               (with --quiet, suitable to be run repeatedly from crontab)
@@ -313,7 +316,7 @@ sub start {
 	    } else {
 		print STDERR "daemon exited successfully.\n";
 	    }
-	    if (askyn "do you want to look at the output? "){
+	    if (!$opt_noask and askyn "do you want to look at the output? "){
 		xexec "less",$output->path;
 	    }
 	}
