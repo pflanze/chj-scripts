@@ -185,7 +185,7 @@ sub usage {
   -N|--no-nice  do not lower priority
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
-  --quiet|-q  be quiet (do not output the pid of the daemon)
+  --quiet|-q  be quiet (do not output the pid of the daemon or exit code)
   --no-ask    don't ask whether to show the output at the end (never show it)
   --no-error-if-running|--no-error  do not report an error if the
               daemon is already running
@@ -305,21 +305,29 @@ sub start {
 	print STDERR ("daemon running as sid $pid",
 		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
 	  unless $opt_quiet;
+	my $maybe_exitcode;
 	unless ($opt_bg) {
 	    wait;
 	    if ($?) {
-		if ($?>255) {
-		    print STDERR "daemon exited with return code ".($?>>8)."\n";
-		} else {
-		    print STDERR "daemon exited by signal $?\n";
+		do {
+		    if ($?>255) {
+			print STDERR "daemon exited with return code ".($?>>8)."\n";
+		    } else {
+			print STDERR "daemon exited by signal $?\n";
+		    }
 		}
+		  unless ($opt_quiet);
+		$maybe_exitcode=1;
 	    } else {
-		print STDERR "daemon exited successfully.\n";
+		print STDERR "daemon exited successfully.\n"
+		  unless ($opt_quiet);
+		$maybe_exitcode=0;
 	    }
 	    if (!$opt_noask and askyn "do you want to look at the output? "){
-		xexec "less",$output->path;
+		xsystem "less",$output->path;
 	    }
 	}
+	exit ($maybe_exitcode // 0);
     } else {
 	use POSIX 'nice';
 	nice 5 unless $opt_nonice;
