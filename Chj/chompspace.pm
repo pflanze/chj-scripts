@@ -1,9 +1,6 @@
-# Wed Aug  4 13:05:02 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2004 by Christian Jaeger
+# Copyright 2004 by Christian Jaeger, ch at christianjaeger ch
 # Published under the same terms as perl itself
 #
-# $Id$
 
 =head1 NAME
 
@@ -23,7 +20,7 @@ package Chj::chompspace;
 #@EXPORT_OK=qw();
 use strict;
 
-sub chompspace($ ) {
+sub chompspace($) {
     my ($str)=@_;
     $str=~ s/^\s+//s;
     $str=~ s/\s+\z//s;
