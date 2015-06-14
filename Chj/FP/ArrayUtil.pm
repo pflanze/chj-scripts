@@ -73,7 +73,7 @@ sub array_zip2 ($$) {
 }
 
 sub array_map {
-    @_>1 or die;
+    @_>1 or die "wrong number of arguments";
     my $fn=shift;
     my $len= min (map { scalar @$_ } @_);
     my @res;
@@ -88,7 +88,7 @@ TEST{ array_map sub { $_[0]+$_[1]}, [1,2,20], [-1,4] } [ 0,6 ];
 
 # (should one use multi-arg stream_map with stream_iota instead?..)
 sub array_map_with_i {
-    @_>1 or die;
+    @_>1 or die "wrong number of arguments";
     my $fn=shift;
     my $len= min (map { scalar @$_ } @_);
     my @res;
@@ -102,7 +102,7 @@ TEST{ array_map_with_i sub { $_[0]+$_[1]+$_[2] }, [1,2,20], [-1,4] }
   [ 0,7 ];
 
 sub array_map_with_islast {
-    @_>1 or die;
+    @_>1 or die "wrong number of arguments";
     my $fn=shift;
     my $len= min (map { scalar @$_ } @_);
     my $last= $len - 1;

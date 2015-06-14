@@ -31,7 +31,7 @@ use Chj::FP2::List;
 sub xgetfile_utf8 ($) {
     my ($path)=@_;
     my $in= xopen_read ($path);
-    binmode $in, ":utf8" or die;
+    binmode $in, ":utf8" or die "binmode";
     $in->xcontent
 }
 
@@ -59,7 +59,7 @@ sub xprint_object ($$) {
 sub xputfile_utf8 ($$) {
     my ($path,$str)=@_;
     my $out= xopen_write($path);
-    binmode $out, ":utf8" or die;
+    binmode $out, ":utf8" or die "binmode";
     xprint_object ($out, $str);
     $out->xclose;
 }
