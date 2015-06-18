@@ -23,6 +23,8 @@ package Chj::Path;
 
 use strict;
 
+use Chj::TEST;
+
 use Class::Array -fields=>
   -publica=>
   'segments', # array of str not containing slashes
