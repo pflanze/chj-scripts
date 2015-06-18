@@ -41,6 +41,14 @@ sub segments_set {
     $s2
 }
 
+sub has_endslash_set {
+    my $s=shift;
+    my $s2= bless [@$s], ref $s;
+    ($$s2[Has_endslash])=@_;
+    $s2
+}
+
+
 
 sub new {
     my $cl=shift;
