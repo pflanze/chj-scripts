@@ -659,6 +659,7 @@ sub mk_caching_getANYid {
     sub setuid { !!(shift->[2] & 04000) }
     # ^ I have no desire to put is_ in front.
     sub setgid { !!(shift->[2] & 02000) }
+    # sticky is simply the lowest of the 3 permissions_s bits:
     sub sticky { !!(shift->[2] & 01000) }
     sub filetype { (shift->[2] & 0170000) >> 12 } # 4*3bits
     # guess access rights from permission bits
