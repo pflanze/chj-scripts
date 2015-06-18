@@ -222,6 +222,12 @@ sub contains_dotdot {
     0
 }
 
+sub canonicalize {
+    my $s=shift;
+    $s->clean->clean_dotdot->has_endslash_set(0)
+}
+
+
 end Class::Array;
 
 
@@ -310,9 +316,7 @@ TEST_EXCEPTION { Chj::Path->new_from_string("")->to_relative->string }
 TEST { Chj::Path->new_from_string("/foo/")->to_relative->string }
  'foo/';
 
-# XX: write pathstring_canonicalize somewhere (see cj-gitmetadata)
-TEST { Chj::Path->new_from_string("a/../C///x/")->clean->clean_dotdot
-  ->has_endslash_set(0)->string }
+TEST { Chj::Path->new_from_string("a/../C///x/")->canonicalize->string }
   'C/x';
 
 1
