@@ -38,8 +38,15 @@ sub usage {
   Also, only the files in the current HEAD are tracked ('of course').
 
   Options:
+
    --no-mtime / --no-times
        don't restore mtime, only user/group/permissions
+
+   --ignore-chown-errors
+       if chown fails with EPERM then still execute the chmod
+       afterwards, unless the chmod requests to set the setuid or
+       setgid bits, in which case the default behaviour still happens,
+       which reports a warning and leaves permissions at 0.
 
   (Christian Jaeger <$email>)
 ";
@@ -49,10 +56,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_no_time;
+our $opt_ignore_chown_errors;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "no-times"=> \$opt_no_time,
 	   "no-mtime"=> \$opt_no_time,
+	   "ignore-chown-errors"=> \$opt_ignore_chown_errors,
 	   ) or exit 1;
 usage unless @ARGV==1;# optinally take list of files to save[well,update?] or restore?
 our ($command)= @ARGV;
@@ -69,7 +78,7 @@ sub xContent ( $ ) {
     $$cntrf
 }
 #use Chj::xtmpfile;
-use POSIX 'ENOENT';
+use POSIX qw(ENOENT);
 sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     my ($path,$str)=@_;
     #my $f= xtmpfile $path;
@@ -114,6 +123,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 
 {
     package CHJ::Metadata;
+    use POSIX 'EPERM';
     our @statfields;
     BEGIN {
 	@statfields=
@@ -191,7 +201,8 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     # equal method needed?
     sub restore {
 	my $s=shift;
-	my ($stat)=@_;#since I already have it at hands..
+	my ($stat, # since I already have it at hands..
+	   )=@_;
 	if ($stat->type eq $s->type) {
 	    if ($stat->mtime != $s->mtime
 		and not $opt_no_time) {
@@ -209,7 +220,19 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		($stat->permissions != $s->permissions)) {
 		# make it safe: first disable all access, then set owner, then set perms.
 		xchmod 0, $$s[Path];
-		xchown $s->xuid, $s->xgid, $s->path;
+		eval {
+		    $! = 0;
+		    xchown $s->xuid, $s->xgid, $s->path;
+		    1
+		} || do {
+		    if ($! == EPERM
+			and $opt_ignore_chown_errors
+			and not $stat->permissions_s) {
+			# silently go on
+		    } else {
+			die $@
+		    }
+		};
 		xchmod $$s[Permissions], $$s[Path];
 	    }
 	} else {
