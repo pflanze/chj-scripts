@@ -34,6 +34,13 @@ use Class::Array -fields=>
   'is_absolute', # bool
   ;
 
+sub segments_set {
+    my $s=shift;
+    my $s2= bless [@$s], ref $s;
+    ($$s2[Segments])=@_;
+    $s2
+}
+
 
 sub new {
     my $cl=shift;
