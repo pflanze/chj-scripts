@@ -71,8 +71,8 @@ use Chj::xperlfunc 'Xlstat';
 usage "both -l and -x given, not supported"
   if $opt_l && $opt_x;
 
-our $is= $opt_l ? "is_link" :
-  $opt_x ? "is_executable" : "is_file";
+our $is= $opt_l ? sub{$_[0]->is_link} :
+  $opt_x ? sub{$_[0]->is_executable(0)} : sub{$_[0]->is_file};
 
 while(<STDIN>) {
     chomp;
