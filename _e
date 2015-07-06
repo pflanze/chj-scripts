@@ -99,19 +99,31 @@ sub startup_unlock {
 }
 
 my $maxargs= 30;
-if (@ARGV > $maxargs) {
-    die "more than $maxargs arguments? Must be wrong, right?"
-}
 
 my $nw;
+my $opt_f;
+my @ARGS;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
         usage
+    } elsif (/^--force-e$/) {
+	$opt_f=1;
     } elsif (/^-nw$/) {
         $nw=1;
+	push @ARGS, $_;
+    } else {
+	push @ARGS, $_;
     }
 }
+
+
+
+if (!$opt_f and @ARGS > $maxargs) {
+    die "$myname: more than $maxargs arguments (".@ARGS."). ".
+      "Add --force-e option to go through.\n"
+}
+
 
 
 sub reachable {
@@ -140,7 +152,7 @@ sub rungnuclientwithargs {
     # been started up in the background.
     alarm 0; # switch off previously set up alarms. #hacky?
     my @args;
-    for (@ARGV) {
+    for (@ARGS) {
 	push @args, do {
 	    if (/^-/) {
 		$_;
