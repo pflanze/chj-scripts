@@ -23,7 +23,7 @@ sub usage {
 
   options:
   -l   instead of filtering for files, filter for symlinks
-  -x   filter executables
+  -x   filter executables (NOTE: symlinks are *not* allowed)
   -v   reverse operation: suppress files (or symlinks or executables)
        and nothing else (except nonexisting ones as said above)
 
