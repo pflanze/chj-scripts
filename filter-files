@@ -52,12 +52,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_l=1;
     } elsif (/^--?x$/) {
 	$opt_x=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
