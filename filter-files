@@ -23,8 +23,9 @@ sub usage {
 
   options:
   -l   instead of filtering for files, filter for symlinks
-  -v   reverse operation: suppress files (or symlinks) and nothing else (except
-       nonexisting ones as said above)
+  -x   filter executables
+  -v   reverse operation: suppress files (or symlinks or executables)
+       and nothing else (except nonexisting ones as said above)
 
   (Christian Jaeger <$email>)
 ";
@@ -35,6 +36,7 @@ my @args;
 my $DEBUG=0;
 my $opt_v;
 our $opt_l;
+our $opt_x;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -48,6 +50,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_v=1;
     } elsif (/^--?l$/) {
 	$opt_l=1;
+    } elsif (/^--?x$/) {
+	$opt_x=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -64,7 +68,11 @@ usage if @args;
 
 use Chj::xperlfunc 'Xlstat';
 
-our $is= $opt_l ? "is_link" : "is_file";
+usage "both -l and -x given, not supported"
+  if $opt_l && $opt_x;
+
+our $is= $opt_l ? "is_link" :
+  $opt_x ? "is_executable" : "is_file";
 
 while(<STDIN>) {
     chomp;
