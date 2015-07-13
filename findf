@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec my.find -type f "$@"
