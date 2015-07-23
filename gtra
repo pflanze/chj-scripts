@@ -89,7 +89,7 @@ use Chj::xperlfunc;
 if ($opt_all) {
     xchdir git_cdup
 }
-xexec "trash", ls
+xexec "trash", "--", ls
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
