@@ -21,6 +21,7 @@ sub usage {
   Options:
    -l  hardlink instead of move
    -c  copy instead of move
+   -o  open up permissions to world readable
 
   (Christian Jaeger <$email>)
 ";
@@ -32,11 +33,13 @@ our $verbose=0;
 #our $opt_dry;
 our $opt_link;
 our $opt_copy;
+our $opt_o;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   "link"=> \$opt_link,
 	   "copy"=> \$opt_copy,
+	   "open"=> \$opt_o,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -67,15 +70,36 @@ our $do= do {
 
 use Chj::Random::Formatted 'random_passwd_string';
 
+sub xpermcheck {
+    my ($path, $str)=@_;
+    my $p= xstat ($path)->permissions_oct;
+    $p eq $str
+      or die "permissions on '$path' are not $str (but '$p')";
+}
+
+
 our $targetbase=
   $user_or_dir=~ m|/| ? $user_or_dir
   : "/home/$user_or_dir/DROP"; # XX do it right (with getpwnam)?
+
+xpermcheck $targetbase, "3733";
 
 our $targetsubdir= $targetbase."/".random_passwd_string (16);
 xmkdir $targetsubdir;
 xchmod 0770, $targetsubdir;
 
 for my $path (@ARGV) {
+    if ($opt_o) {
+	my $s= xlstat $path;
+	if (! $s->is_file) {
+	    die "not a file: '$path'";
+	}
+	my $perms= $s->permissions;
+	my $wantperms= $perms | 0444;
+	if ($perms != $wantperms) {
+	    xchmod $wantperms, $path
+	}
+    }
     my $filename= basename $path;
     $do->( $path, $targetsubdir."/".$filename);
 }
