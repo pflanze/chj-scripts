@@ -1,0 +1,85 @@
+#!/usr/bin/perl -w
+
+# Tue Oct 18 17:15:38 EDT 2011
+(my $email='chrjae%gmail,com')=~ tr/%,/@./;
+
+# {Mon Nov 28 04:47:01 2011}
+# hm, this won't be safe.
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname user_or_dir file(s)
+
+  Move file(s) to user, into a new randomly named subdirectory in the
+  DROP dir in the user's home, or, if user_or_dir contains slashes,
+  a subdir of that path.
+
+  Options:
+   -l  hardlink instead of move
+   -c  copy instead of move
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+our $opt_link;
+our $opt_copy;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "link"=> \$opt_link,
+	   "copy"=> \$opt_copy,
+	   ) or exit 1;
+usage unless @ARGV;
+
+our $user_or_dir= shift @ARGV;
+
+use Chj::xperlfunc ':all';
+
+sub xcopy {
+    my ($from,$to)=@_;
+    xxsystem "cp", "-a", "--", $from, $to
+}
+
+our $do= do {
+    if ($opt_link) {
+	if ($opt_copy) {
+	    usage "both --link and --copy given";
+	} else {
+	    \&xlink
+	}
+    } else {
+	if ($opt_copy) {
+	    \&xcopy
+	} else {
+	    \&xrename
+	}
+    }
+};
+
+use Chj::Random::Formatted 'random_passwd_string';
+
+our $targetbase=
+  $user_or_dir=~ m|/| ? $user_or_dir
+  : "/home/$user_or_dir/DROP"; # XX do it right (with getpwnam)?
+
+our $targetsubdir= $targetbase."/".random_passwd_string (16);
+xmkdir $targetsubdir;
+xchmod 0770, $targetsubdir;
+
+for my $path (@ARGV) {
+    my $filename= basename $path;
+    $do->( $path, $targetsubdir."/".$filename);
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
