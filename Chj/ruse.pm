@@ -88,7 +88,7 @@ sub new_import {
     my ($class)=@_;
     #$rdep{$class}{$caller}=[@_[1..$#_]];
     $rdep{$class}{$caller}=[@_];#warum nicht gleich alle. dann auch einfacher aufzurufen ?.
-    goto $orig_import;
+    goto &$orig_import;
 }
 
 {
