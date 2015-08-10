@@ -14,6 +14,7 @@ use constant catcherrors=> defined($ENV{CATCHERRORS}) ? ($ENV{CATCHERRORS}) : 1;
 # but do this anyway:
 use Carp;
 use Chj::Backtrace;
+use Chj::Trapl;
 
 use Scalar::Util 'tainted';
 
@@ -404,10 +405,12 @@ sub conditional_move_file($ $ ) {
 		}
 	    }
 	}
+	1
+    } || do {
+	if (!catcherrors) {
+	    die $@
+	}
     };
-    if (!catcherrors) {
-	die if ref$@ or $@;
-    }
     push @warns, "Error/exception:\n".$@ if $@;
 
     writewarnmail("warnings for email $quotedsubject",
@@ -462,12 +465,12 @@ elsif ($opt_stdin) {
 	    IO::Handle::sync ($t) or die "IO::Handle::sync: $!";
 	    $t->xclose; # must close *after* sync. of course.
 	    conditional_move_file ($path,$targetbase);
-	};
-	if (ref $@ or $@) {
+	    1
+	} || do {
 	    my $e=$@;
 	    unlink $path; # sort of tmpfile functionality recovery
 	    die $e
-	}
+	};
     } else {
 	die "delivery from stdin only implemented for --maildirs"
     }
