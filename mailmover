@@ -102,8 +102,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         } else {
             $opt_repeat=$ARGV[++$i]
         }
-	$opt_loop+=0;
-	$opt_loop or usage "missing argument for '$_' option";
+	$opt_repeat+=0;
+	$opt_repeat or usage "missing argument for '$_' option";
     } elsif (/^--maildirs?$/ or /^-m$/) {
 	$opt_maildirs=1;
     } elsif (/^--?(v+)(?:erbose)?$/) {
