@@ -97,7 +97,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
       HEADER:{
 	    local $_;
 	    while (defined($_=$fh->xreadline)) {
-		chomp;# is this safe enough (i.e. does it strip both cr and lf?)
+		s/[\r\n]\z//s; # chomp doesn't work for both chars, right?
 		if (length) {
 		    if (/^(\w[\w.-]+): *(.*)/) {
 			$lastheaderkey=lc($1);
