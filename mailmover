@@ -10,11 +10,12 @@
 
 use strict;
 
-use constant catcherrors=> defined($ENV{CATCHERRORS}) ? ($ENV{CATCHERRORS}) : 1;# true= exceptions and warnings are catched/collected and delivered by mail -> turn off for debugging.
-# but do this anyway:
+use constant DEBUG=> ($ENV{DEBUG} ? 1 : 0); # conditional needed for detainting
 use Carp;
 use Chj::Backtrace;
-use Chj::Trapl;
+use Chj::WithRepl qw(push_withrepl WithRepl_eval);
+
+push_withrepl (0) if DEBUG;
 
 use Scalar::Util 'tainted';
 
@@ -155,7 +156,7 @@ my $truncator= Chj::Path::Truncator::MD5->new($targetbase,3);
 
 my @warns;
 
-if (catcherrors) {
+unless (DEBUG) {
     $SIG{__WARN__}=sub{push @warns,"Warning:\n".(Carp::longmess @_)};
 }
 
@@ -210,7 +211,7 @@ sub conditional_move_file($ $ ) {
     my $quotedfrom;
     my $quotedfoldername;
     $quotedfrom=$quotedfoldername="(abgebrochen bevor geholt)";
-    eval {
+    WithRepl_eval {
 	my ($mail,$foldername,$type,$important)= analyze_file $filepath;
 	$quotedsubject= singlequote($mail->decodedheader("subject"),"(kein subject)");
 	$from=$mail->decodedheader("From");
@@ -407,7 +408,7 @@ sub conditional_move_file($ $ ) {
 	}
 	1
     } || do {
-	if (!catcherrors) {
+	if (DEBUG) {
 	    die $@
 	}
     };
@@ -453,7 +454,7 @@ elsif ($opt_files) {
 elsif ($opt_stdin) {
     if ($opt_maildirs) {
 	my $path= "$targetbase/tmp/".$maildirbasefolder->create_filename;
-	eval {
+	WithRepl_eval {
 	    my $t= xsysopen_excl $path, 0600;
 	    my $in= bless *STDIN{IO},"Chj::IO::File";
 	    $in->xsendfile_to($t);
