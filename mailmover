@@ -388,10 +388,10 @@ sub conditional_move_file($ $ ) {
 		    # und ehrlich kein autoreply?
 		    unless ($mail->lookslike_autoreply) {
 			unless (do {
-			    if (defined(my $spamhits=$mail->spamhits)) {
-				$spamhits >= 0.5
+			    if (defined(my $spamscore=$mail->spamscore)) {
+				$spamscore >= 0.5
 			    } else {
-				#(huh, ein mail ohne spamhits angabe?)
+				#(huh, ein mail ohne spamscore angabe?)
 				undef
 			    }
 			}) {

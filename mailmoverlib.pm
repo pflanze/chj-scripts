@@ -358,13 +358,14 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 	}
     }
 
-    sub spamhits {#ps. ebenso wie is_spam: was wenn multiple spamchecks were done?
+    sub spamscore {#ps. ebenso wie is_spam: was wenn multiple spamchecks were done?
 	my $self=shift;
 	if (my $status=$self->first_header("X-Spam-Status")) {
-	    if ($status=~ /hits=(-?\d+(?:\.\d+)?)/){
+	    if ($status=~ /score=(-?\d+(?:\.\d+)?)/){
 		$1
 	    } else {
-		warn "spamhits: X-Spam-Status header found but no hits match";
+		warn "spamscore: X-Spam-Status header found but no score match";
+		use Chj::repl;repl;
 		undef
 	    }
 	} else {
@@ -427,7 +428,7 @@ sub analyze_file($ ; $ ) {
 	}
     };
 
-    my $spamhits= $head->spamhits;
+    my $spamscore= $head->spamscore;
 
     if (!$foldername) {
 	if (my $subject= $head->header("subject")) {
@@ -540,7 +541,7 @@ sub analyze_file($ ; $ ) {
     }
 
     if (!$foldername) { # wie oft prüfe ich den noch hehe ?..
-	if (defined($spamhits) and $spamhits > 0) {
+	if (defined($spamscore) and $spamscore > 0) {
 	    $foldername = "möglicher spam";
 	}
     }
