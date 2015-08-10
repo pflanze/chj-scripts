@@ -30,6 +30,9 @@ BEGIN{
     ##is this safe? should bi right?
     require "$mydir/mailmoverlib.pm";
     require "$mydir/mailmover_autoreply.pm" if $do_send_autoreply;
+    my ($home)= $ENV{HOME}=~ m{^(/home/\w+)/?\z}
+      or die "weird HOME: '$ENV{HOME}'";
+    require "$home/.mailmover_config.pl"; # needs to define is_own_emailaddress; XXX hack.
 }
 use Chj::xtmpfile;
 use Chj::singlequote;
@@ -338,8 +341,7 @@ sub conditional_move_file($ $ ) {
 	    #	     and $targetfolder_is_symlink=~ /(?:inbox|new)/) # also wenn ichs eh in die inbox krieg, nix mehr dazu sagen eben. schlau?
 	   ) {
 	    if ($from) {
-		if ($from=~ /jaeger\@/ or $from=~ /christian\@jaeger\./
-		    or $from=~ /christian.*pflanze/ ) {
+		if (is_own_emailaddress($from)) {
 		    save_is_own($mail);
 		}
 		elsif (is_reply($mail)){
