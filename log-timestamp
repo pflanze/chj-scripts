@@ -97,18 +97,20 @@ my $logpid= $pid || $$;
 if ($opt_hires) {
     require Time::HiRes;
     while (<STDIN>) {
+	chomp;
 	#my $t= Time::HiRes::time();
 	#my $t_full=
 	my ($seconds, $microseconds) = Time::HiRes::gettimeofday();
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($seconds);
-	printf '%4d-%02d-%02d %02d:%02d:%02d.%06d %s',
+	printf '%4d-%02d-%02d %02d:%02d:%02d.%06d %s\n',
 	  $year+1900, $mon+1, $mday, $hour,$min,$sec, $microseconds,
 	    ($opt_pid ? "($logpid) $_" : $_)
 	      or die "printing to stdout: $!";
     }
 } else {
     while (<STDIN>) {
-	print localtime()."  ".($opt_pid ? "($logpid) $_" : $_)
+	chomp;
+	print localtime()."  ".($opt_pid ? "($logpid) $_" : $_)."\n"
 	  or die "printing to stdout: $!";
     }
 }
