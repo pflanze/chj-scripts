@@ -24,7 +24,7 @@ use Chj::xtmpfile;
 use Chj::xhome;
 
 my $usage;
-my ($opt_stop, $opt_bg,$opt_nonice, $opt_restart, $opt_status, $opt_noask);
+my ($opt_stop, $opt_start, $opt_bg, $opt_nonice, $opt_restart, $opt_status, $opt_noask);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
@@ -53,6 +53,8 @@ ARG:{
 		    $opt_CONT=1;
 		} elsif ($1 eq 'bg') {
 		    $opt_bg=1;
+		} elsif ($1 eq 'start') {
+		    $opt_start=1;
 		} elsif ($1 eq 'quiet') {
 		    $opt_quiet=1;
 		} elsif ($1 eq 'no-nice') {
@@ -168,6 +170,7 @@ sub usage {
   (all of them must be listed before the cmd, multiple short options
    may be given together)
   -b|--bg     do not wait for the daemon to terminate
+  --start     same as --bg but don't print pid
   -s|--stop|-k|--kill
               stop the previously started daemon; you have to give
               the exact same arguments.
@@ -304,9 +307,9 @@ sub start {
 				    })) {
 	print STDERR ("daemon running as sid $pid",
 		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
-	  unless $opt_quiet;
+	  unless ($opt_quiet or $opt_start);
 	my $maybe_exitcode;
-	unless ($opt_bg) {
+	unless ($opt_bg or $opt_start) {
 	    wait;
 	    if ($?) {
 		do {
@@ -337,7 +340,7 @@ sub start {
 
 {
     my $cnt=0;
-    for ($opt_stop, $opt_bg, $opt_restart, $opt_STOP, $opt_CONT, $opt_status) {
+    for ($opt_stop, $opt_start, $opt_bg, $opt_restart, $opt_STOP, $opt_CONT, $opt_status) {
 	$cnt++ if $_;
     }
     if ($cnt > 1) {
@@ -345,7 +348,7 @@ sub start {
 	if ($cnt == 2 and $opt_restart && $opt_bg) {
 	    # ok
 	} else {
-	    usage 'only one of --stop|--bg|--restart|--STOP|--CONT|--status can be given, except --bg is allowed with --restart'
+	    usage 'only one of --stop|--bg|--start|--restart|--STOP|--CONT|--status can be given, except --bg is allowed with --restart'
 	}
     }
 }
