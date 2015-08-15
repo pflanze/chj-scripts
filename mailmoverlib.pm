@@ -396,9 +396,12 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 }
 
 
-sub analyze_file($ ; $ ) {
-    my ($filepath,$optionalfilename)=@_;# optionalfilename is the filename of the file it will get in future in the maildir
-    my $filename= $optionalfilename || do {
+sub analyze_file($;$$) {
+    # $maybe_filename is the filename of the file it will get in
+    # future in the maildir
+    my ($filepath, $maybe_filename, $is_ham)=@_;
+
+    my $filename= $maybe_filename || do {
 	my $f=$filepath; $f=~ s{^.*/}{}s;
 	$f
     };
@@ -408,7 +411,7 @@ sub analyze_file($ ; $ ) {
     my ($foldername,$type,$important);
     $type="unbekannt";
 
-    my $is_spam= $head->is_spam;
+    my $is_spam= $is_ham ? 0 : $head->is_spam;
     if ($is_spam) {
 	warn "'$filename' is spam\n" if $DEBUG;
 	$foldername="spam";
@@ -535,7 +538,7 @@ sub analyze_file($ ; $ ) {
     }
 
     if (!$foldername) { # wie oft prüfe ich den noch hehe ?..
-	if (defined($spamscore) and $spamscore > 0) {
+	if (!$is_ham and defined($spamscore) and $spamscore > 0) {
 	    $foldername = "möglicher spam";
 	}
     }

@@ -59,6 +59,8 @@ sub usage {
 
   -m|--maildir        work with maildirs, not just plain dirs
 
+  --ham               mail(s) is/are ham, ignore X-Spam-Status headers
+
   '/filtered' is appended to targetbase to get the real target
   directory if -m option is not given.
 
@@ -71,9 +73,13 @@ my @args;
 my $DEBUG=0;
 my $verbose=0;
 my ($sourcedir);
-my ($opt_leaveinbox,$opt_loop,$opt_repeat);
-our $opt_maildirs;
-our ($opt_files, $opt_stdin);
+my ($opt_leaveinbox,
+    $opt_loop,
+    $opt_repeat,
+    $opt_is_ham,
+    $opt_maildirs,
+    $opt_files,
+    $opt_stdin);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -115,6 +121,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_files=1;
     } elsif (/^--stdin$/) {
 	$opt_stdin=1;
+    } elsif (/^--ham$/) {
+	$opt_is_ham=1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -215,7 +223,8 @@ sub conditional_move_file($ $ ) {
     my $quotedfoldername;
     $quotedfrom=$quotedfoldername="(abgebrochen bevor geholt)";
     WithRepl_eval {
-	my ($mail,$foldername,$type,$important)= analyze_file $filepath;
+	my ($mail,$foldername,$type,$important)=
+	  analyze_file ($filepath, undef, $opt_is_ham);
 	$quotedsubject= singlequote($mail->decodedheader("subject"),"(kein subject)");
 	$from=$mail->decodedheader("From");
 	$quotedfrom= singlequote $from;
