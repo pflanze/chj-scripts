@@ -4,6 +4,7 @@ use Chj::xperlfunc;
 use Chj::FileStore::MIndex;
 use Chj::FileStore::PIndex;
 use Chj::oerr;
+use FP::Lazy;
 
 our ($DEBUG,$verbose);
 
@@ -31,8 +32,10 @@ my $BUFSIZE=50000;
 		     );
     use base "Exporter";
     use Carp;
-    #our ($verbose,$raiseerrors)=(1,0);#  (sowieso: wohl doch besser mit x-versionen der funktionen.!)
-    our ($verbose,$raiseerrors)=(0,0);
+
+    our $verbose=0;
+    our $raiseerrors=0;
+
     sub pick_out_of_anglebrackets {
 	my ($str)=@_;
 	unless (defined $str) {
@@ -66,7 +69,7 @@ my $BUFSIZE=50000;
 	}
     }
 }
-#*pick_out_of_anglebrackets= \&MailUtil::pick_out_of_anglebrackets;
+
 import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 
 {
@@ -88,7 +91,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
     sub new_from_fh {
 	my $class=shift;
 	my ($fh)=@_; # assume this is blessed to Chj::IO::File? or do it now?
-	# assume it is rewinded.!
+	# assume it is rewinded (rewound).!
 	my $self= $class->SUPER::new;
 	@{$self}[Errors,Warnings]= ([],[]);
 
@@ -415,16 +418,10 @@ sub analyze_file($ ; $ ) {
 	warn "'$filename' is_spam: not scanned\n" if $verbose;
     }
 
-    my $from= $head->header_ignoringidenticalcopies("from"); #GRR do not play shit.w/o propr lazynss.
+    my $from= $head->header_ignoringidenticalcopies("from");
     my $content;
-    my $messageid;
-    $messageid=do {
-	#my $_messageid;
-	sub {
-	    my $_messageid= pick_out_of_anglebrackets($head->first_header("message-id"));
-	    $messageid=sub {$_messageid};# mich selber eliminieren. harakiri. kamikaze. damit wegen undef von pick dings nicht jedesmal dochneuausgewertet wird.   Und das alles statt einer Methode im head objekt. (Die das Resultat ins objekt speichert, das head objekt.). "wow" (kreuzfeld jakob)
-	    $_messageid
-	}
+    my $messageid= lazy {
+	pick_out_of_anglebrackets($head->first_header("message-id"))
     };
 
     my $spamscore= $head->spamscore;
