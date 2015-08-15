@@ -57,7 +57,8 @@ sub usage {
   -l|--loop-every n   keep running: sleep n seconds then scan again.
   --repeat n          only loop n times, then end. (to prevent memoryleaks from becoming awful, or for test runs with Devel::LeakTrace)
 
-  -m|--maildir        work with maildirs, not just plain dirs
+  -m|--maildir        work with maildirs, not just plain dirs; this is for
+                      the *output* only
 
   --ham               mail(s) is/are ham, ignore X-Spam-Status headers
 
