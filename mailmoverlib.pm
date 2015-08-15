@@ -365,7 +365,6 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 		$1
 	    } else {
 		warn "spamscore: X-Spam-Status header found but no score match";
-		use Chj::repl;repl;
 		undef
 	    }
 	} else {
