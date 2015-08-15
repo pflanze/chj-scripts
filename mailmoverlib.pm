@@ -105,27 +105,21 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 		    if (/^(\w[\w.-]+): *(.*)/) {
 			$lastheaderkey=lc($1);
 			push @headers,$_;
-			#if (exists $header{$lastheaderkey}) {
-			    #push @errors,"encountered header '$lastheaderkey' multiple times, now with '$_'";
-			    #undef $header{$lastheaderkey};  #hm. sinnlos weil ich es wiedersetzen muss um es verfollständigen lassen zu können.?.
-			    #push @{ $headers{$lastheaderkey} }, $header{$lastheaderkey};
-			    # so einfach geht das nicht :/
-			    # Na: einfach immer der *letzte*mitgleichemkey in %header aufbewahren.
-			    # und so isch multilinevervollständigung auch weiterhin korrekt
-			    # muss dann bei ->header() methode drauf schauen ob multiple.
-			    push @{ $headers{$lastheaderkey} }, [$#headers,$1,$2];
-			    $header{$lastheaderkey}=[$#headers,$1,$2];
-			#} else {
-			#    $header{$lastheaderkey}=[$#headers,$1,$2];
-			#}
+			# Always keep the *last* header with same name in %header.
+			# This way, multi-line build up is still correct.
+			# Have to check in (with?) ->header() method if multiple.
+			push @{ $headers{$lastheaderkey} }, [$#headers,$1,$2];
+			$header{$lastheaderkey}=[$#headers,$1,$2];
 		    } elsif (/^\s+(.*)/) {  #(naja, ist das alles so wirklich korrekt?)
 			if ($lastheaderkey) {
 			    $headers[-1].="\n\t$1";
-			    $header{$lastheaderkey}[2].="\n\t$1" if defined $header{$lastheaderkey};
+			    $header{$lastheaderkey}[2].="\n\t$1"
+			      if defined $header{$lastheaderkey};
 			    if (my $rf= $headers{$lastheaderkey}[-1]) {
 				$$rf[2].="\n\t$1"
-			    } else { warn "bug?" };
-			    #warn "(DEBUG: multiline header)";
+			    } else {
+				warn "bug?"
+			    };
 			} else {
 			    push @errors, "First header does not start with a key: '$_'";
 			}
@@ -136,7 +130,9 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 		    last HEADER;
 		}
 	    }
-	    # ran out of data before finishing headers? Well there is no guarantee that a mail has a body at all (not even the empty line inbetween), so it's not an error.
+	    # ran out of data before finishing headers? Well there is
+	    # no guarantee that a mail has a body at all (not even the
+	    # empty line inbetween), so it's not an error.
 	}
 	@{$self}[HeadersHash,HeadersArray,HeaderSHash]= (\%header,\@headers,\%headers);
 	$self->[Errors]= \@errors;
@@ -151,9 +147,11 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 		warn "header method called where multiple headers of key '$key' exists";
 		return undef
 	    }
-	    #$h->[2]
-	    #cj 4.8.04: spaces am ende von headers haben dazu geführt dass folders kreiert wurden welche in squirrelmail/courier-imap nicht subscribebar waren. weil wohl spaces am ende in courierimapsubscribes weggelöscht werden on read supi.
-	    # daher wirkli nun hier zentral? isch eigentlich falsch.  aber mal einfcahheitshaltberhier.
+	    # Don't return header values with space at the end, since
+	    # that would/may lead to things like creation of folders
+	    # ending in spaces and then some programs won't handle
+	    # them correctly (e.g. squirrelmail/courier-imap). Is this
+	    # a HACK or a good idea?
 	    chompspace($h->[2]);
 	} else {
 	    undef
@@ -206,7 +204,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 	}
     }
 
-    # gehört nicht mehr ins base package:
+    # does not belong into base package anymore:
     my %known_list_precedences= map {$_=>undef} qw( bulk list );
     sub mailinglist_id {
 	my $self=shift;
@@ -258,7 +256,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 		    # daher weiter oben nun noch X-Mailing-List-Name anschauen.
 		}
 	    }
-	    # Qmail list ist so: Mailing-List: contact qmail-help@list.cr.yp.to; run by ezmlm
+	    # 'Mailing-List: contact qmail-help@list.cr.yp.to; run by ezmlm'
 	    if ($value= $self->header("Mailing-List")) {
 		if ($value=~ /<([^<>]{3,})>/) {
 		    warn "even if Qmail (yet another ezmlm based, right??) mailing list didn't use <..> format, this list does ('$value')";
