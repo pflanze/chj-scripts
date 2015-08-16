@@ -56,7 +56,7 @@ while (<$f>) {
     chomp;
     next if /^\s*$/;
     next if /^\s*\#/;
-    if (my ($mac,$name)= /^($macre)\s+(\S+)\s*$/) {
+    if (my ($mac,$name)= /^($macre)\s+(.+?)\s*$/) {
 	die "multiple mentions of '$mac'"
 	  if exists $map{lc $mac};
 	$map{lc $mac}=$name;
