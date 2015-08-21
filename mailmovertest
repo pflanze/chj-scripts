@@ -53,7 +53,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 #our $f= xopen_read $args[0] if @args;
 #nö.
 
-our ($mail,$foldername,$type,$important);
+my ($mail,$foldername,$type,$important);
 sub init {
     ($mail,$foldername,$type,$important)= analyze_file $args[0] if @args;
 }
