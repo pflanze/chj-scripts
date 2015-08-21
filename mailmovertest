@@ -14,6 +14,7 @@ BEGIN{
     require "$mydir/mailmoverlib.pm";
     #require "$mydir/mailmover_autoreply.pm" if $do_send_autoreply;
 }
+use Chj::repl;
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
@@ -47,16 +48,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-#usage unless @args==1;
 
-#use Chj::xopen 'xopen_read';
-#our $f= xopen_read $args[0] if @args;
-#nö.
-
-my ($mail,$foldername,$type,$important);
-sub init {
-    ($mail,$foldername,$type,$important)= analyze_file $args[0] if @args;
+for my $path (@ARGV) {
+    print "-- $path:\n";
+    my ($mail,$foldername,$type,$important)= analyze_file $args[0] if @args;
+    repl;
 }
-init;
 
-use Chj::repl;repl;
