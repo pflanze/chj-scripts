@@ -139,6 +139,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 	$self
     }
 
+    # XX rename to maybe_header
     sub header {
 	my $self=shift;
 	my ($key)=@_;
@@ -158,6 +159,7 @@ import MailUtil qw(pick_out_of_anglebrackets oerr_pick_out_of_anglebrackets);
 	}
     }
 
+    # XX rename to maybe_first_header; etc.
     sub first_header {
 	my $s=shift;
 	($s->headers(@_))[0]
@@ -533,6 +535,18 @@ sub analyze_file($;$$) {
 	if (my $to= $head->header("to")) {
 	    if ($to=~ /^(postmaster\@[^\@;:,\s]+[a-z])/) {
 		$foldername= $1;# "TO DO: gefährlich!!" ne wohl nüme. right? oder was gemeint: dass mails die an "mich" gehen sollten weggemoved werden? doch todo? jup isch neuere notiz!
+	    }
+	}
+    }
+    if (!$foldername) {
+	if ($head->header('x-facebook')) {
+	    # XX how many times to get that header? Also, why never
+	    # decoded above?
+	    if (my $subject= $head->header("subject")) {
+		if ($subject=~ /\bTrending\b/i) {
+		    $foldername= "facebook-trending"
+		      # XX could I use "facebook/trending" ? (Would I want to?)
+		}
 	    }
 	}
     }
