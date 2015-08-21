@@ -546,6 +546,8 @@ sub analyze_file($;$$) {
 		if ($subject=~ /\bTrending\b/i) {
 		    $foldername= "facebook-trending"
 		      # XX could I use "facebook/trending" ? (Would I want to?)
+		} elsif ($subject=~ /\bdo you know /i) {
+		    $foldername= "facebook-doyouknow"
 		}
 	    }
 	}
