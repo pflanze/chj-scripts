@@ -627,7 +627,6 @@ sub _einstampfen { # testcase siehe lombi:~/perldevelopment/test/mailmoverlib/t1
 
 	#$str=~ s/^\s+//s;
 	$str= lc($str);
-	#if (length($str)>=10) {
         if (length($str)>=8) {
 	    $str
 	} else {
@@ -639,8 +638,6 @@ sub _einstampfen { # testcase siehe lombi:~/perldevelopment/test/mailmoverlib/t1
 }
 
 sub _eingestampftessubject {
-    #my ($str)=@_;# sollte decoded sein nach latin1 oder whatever  ehm. nöh besser ascii mit ?
-    #todo: mehrzeilige headers kommen nicht richtig durch, schon gar nicht hier, oder?
     my ($mail)=@_;
     _einstampfen($mail->decodedheader("subject","ascii"));
 }
@@ -655,10 +652,6 @@ sub is_reply {
     my $in_reply_to = pick_out_of_anglebrackets($mail->first_header("In-Reply-To")); # many (broken?) clients actually do seem to send multiple such headers
     return unless defined $in_reply_to;
     my $ownmsgidtable= Chj::FileStore::PIndex->new($ownmsgid_base);
-#     return 1 if ($ownmsgidtable->exists($in_reply_to));
-#     for (pick_out_of_anglebrackets($mail->header("References"))) {
-# 	return 1 if ($ownmsgidtable->exists($_));
-#     }
     return
       $ownmsgidtable->exists($in_reply_to)
 	or
