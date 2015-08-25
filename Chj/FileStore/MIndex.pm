@@ -50,42 +50,12 @@ use Chj::xperlfunc;
 use POSIX qw(EEXIST ENOENT ENOTEMPTY);
 use Carp;
 use Chj::xopendir;
+use Chj::FileStore::Helpers;
 
 use Class::Array -fields=> (
 			    'Basedir',
 			   );
 
-
-###ps. lame copy  PIndex.pm <-> MIndex.pm
-sub _escape_key {
-    #my $self=shift;
-    my ($str)=@_;
-    $str=~ s|\%|\%25|sg;
-    $str=~ s|/|\%2f|sg;
-    $str=~ s|\0|\%00|sg;
-    $str=~ s|\n|\%0a|sg;# weil sonst perl warnings gibt bei exists etc 'unsuccessful stat on filename with newline' auch wenn nicht am ende.
-    "=".$str
-}
-
-sub _escape_val {
-    my ($str)=@_;
-    $str=~ s|\%|\%25|sg;
-    $str=~ s|\0|\%00|sg;# ich könnte hier auch s|\0|\\0|sg machen weil eine normalanerkannte solche escape besteht die dann umgewandelt wird; bei / isch das andersch, gibt es keine allganerk escape die den / nicht enthaelt. daher escape_key andersch noetig
-    $str=~ s|/|\%2f|sg;# nun auch nötig
-    #$str=~ s|,|\%2c|sg;#das trennzeichen nein.
-    $str=~ s|\n|\%0a|sg;# weil sonst perl warnings gibt bei exists etc 'unsuccessful stat on filename with newline' auch wenn nicht am ende.
-    "=".$str
-}
-
-sub _unescape { ##todo should that die if receiving something not starting with a = ?
-    my ($str)=@_;
-    $str=~ s|\%0a|\n|sg;
-    $str=~ s|\%00|\0|sg;
-    $str=~ s|\%2f|/|sg;
-    $str=~ s|\%25|\%|sg;
-    #$str=~ s|\%2c|,|sg;
-    substr($str,1)
-}
 
 sub new {
     my $class=shift;
