@@ -430,7 +430,7 @@ sub analyze_file($;$$) {
     my $spamscore= $head->spamscore;
 
     if (!$foldername) {
-	if (my $subject= $head->header("subject")) {
+	if (my $subject= $head->decodedheader("subject")) {
 	    # mailinglist reminders
 	    if ($subject=~ /^\S+\s+mailing list memberships reminder\s*$/
 		and
@@ -464,7 +464,7 @@ sub analyze_file($;$$) {
 
     # noch gemäss subject einiges filtern:
     if (!$foldername) {
-	if (my $subject= $head->header("subject")) {
+	if (my $subject= $head->decodedheader("subject")) {
 	    # system mails
 	    if ($subject=~ /^([a-zA-Z][\w-]+)\s+\d+.*\d system check\s*\z/) {
 		$foldername="systemcheck-$1";$type="system";
@@ -542,12 +542,14 @@ sub analyze_file($;$$) {
 	if ($head->header('x-facebook')) {
 	    # XX how many times to get that header? Also, why never
 	    # decoded above?
-	    if (my $subject= $head->header("subject")) {
+	    if (my $subject= $head->decodedheader("subject")) {
 		if ($subject=~ /\bTrending\b/i) {
 		    $foldername= "facebook-trending"
 		      # XX could I use "facebook/trending" ? (Would I want to?)
 		} elsif ($subject=~ /\bdo you know /i) {
 		    $foldername= "facebook-doyouknow"
+		} else {
+		    #use Chj::repl;repl;
 		}
 	    }
 	}
