@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+# Mit Aug 26 17:01:23 BST 2015
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname fromname toname
+  rename all occurrences of the string fromname, with requirement for
+  word boundaries at the start and end of the string, to tostring in
+  all files listed by git ls-files.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+use Chj::Git::Functions qw(git_ls_files);
+use Chj::xperlfunc;
+
+($ENV{FROMSTR}, $ENV{TOSTR})= @ARGV;
+
+xexec "mysed", 's/\b\Q$ENV{FROMSTR}\E\b/$ENV{TOSTR}/sg',
+  git_ls_files;
+
+
+#use Chj::ruse;
+use Chj::Backtrace; use Chj::repl; repl;
