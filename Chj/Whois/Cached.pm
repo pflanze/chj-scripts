@@ -193,7 +193,7 @@ sub lookup_and_save_to_cache {
 		my $freechecker= Whois_freechecker ($lcdomain);
 		my $in= Chj::IO::Command-> new_sender("whois","-H",$lcdomain);
 		my $cnt= $in->xcontent;
-		$in->xxfinish;
+		$in->xfinish;
 		if (&$freechecker($cnt)) {
 		    [
 		     "free"
