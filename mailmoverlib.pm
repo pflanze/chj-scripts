@@ -544,12 +544,12 @@ sub analyze_file($;$$) {
 	    # decoded above?
 	    if (my $subject= $head->decodedheader("subject")) {
 		if ($subject=~ /\bTrending\b/i) {
-		    $foldername= "facebook-trending"
+		    $foldername= "facebook/trending"
 		      # XX could I use "facebook/trending" ? (Would I want to?)
 		} elsif ($subject=~ /\bdo you know /i) {
-		    $foldername= "facebook-doyouknow"
+		    $foldername= "facebook/doyouknow"
 		} elsif ($subject=~ /\bYou have more friends .*than you think/i) {
-		    $foldername= "facebook-morethanyouthink"
+		    $foldername= "facebook/morethanyouthink"
 		} else {
 		    #use Chj::repl;repl;
 		}
