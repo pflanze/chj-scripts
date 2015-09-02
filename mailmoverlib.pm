@@ -548,6 +548,8 @@ sub analyze_file($;$$) {
 		      # XX could I use "facebook/trending" ? (Would I want to?)
 		} elsif ($subject=~ /\bdo you know /i) {
 		    $foldername= "facebook-doyouknow"
+		} elsif ($subject=~ /\bYou have more friends .*than you think/i) {
+		    $foldername= "facebook-morethanyouthink"
 		} else {
 		    #use Chj::repl;repl;
 		}
