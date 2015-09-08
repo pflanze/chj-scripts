@@ -40,9 +40,10 @@ cj-gitmetadata save
 # need -f because on novo I have * in .gitignore
 git add -f .METADATA-v2
 
-git commit -a -m "$message" # || true
+if git commit -a -m "$message"; then
 
-if [ ! -f .git/scoma-no-push ]; then
-    git push origin master
+    if [ ! -f .git/scoma-no-push ]; then
+	git push origin master
+    fi
+
 fi
-
