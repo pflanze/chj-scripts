@@ -21,8 +21,13 @@ shift
 
 tmpf=`tempfile`
 
+exitcode=0
+
 if ! "$@" 2>&1 | tee "$tmpf" | log-timestamp >> "$logfile"; then
+    exitcode=${PIPESTATUS[0]}
     cat "$tmpf"
 fi
 
 rm "$tmpf"
+
+exit $exitcode
