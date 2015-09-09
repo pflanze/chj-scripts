@@ -7,8 +7,11 @@ IFS=
 usage () {
     echo "$0 logfile cmd [args]"
     echo "  run cmd with stdout and stderr piped through log-timestamp to logfile "
-    echo " (and tee'd to a tempfile); if cmd fails (non-zero exit code), cat "
+    echo " (and tee'd to a tempfile); if cmd fails (non-zero exit code, or one of "
+    echo " the exit codes listed in the CRONLOG_EXIT_OK env variable), cat "
     echo " the saved stderr+stdout to stdout."
+    echo " Set for example CRONLOG_EXIT_OK='0 1 2' to accept these 3 codes as OK "
+    echo " (default: 0)."
     exit 1
 }
 
@@ -21,11 +24,25 @@ shift
 
 tmpf=`tempfile`
 
+is_ok () {
+    local code="$1"
+    local c
+    local IFS=' '
+    for c in ${CRONLOG_EXIT_OK-""}; do
+	if [ "$c" = "$code" ]; then
+	    return 0
+	fi
+    done
+    return 1
+}
+
 exitcode=0
 
 if ! "$@" 2>&1 | tee "$tmpf" | log-timestamp >> "$logfile"; then
     exitcode=${PIPESTATUS[0]}
-    cat "$tmpf"
+    if ! is_ok "$exitcode"; then
+	cat "$tmpf"
+    fi
 fi
 
 rm "$tmpf"
