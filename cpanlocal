@@ -1,0 +1,4 @@
+#!/bin/bash
+
+perl -MCPAN -Mlocal::lib -we shell
+
