@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+usage () {
+    echo "$0 command file(s)"
+    echo "  read file, pipe through command, direct output to a tempfile,"
+    echo "  rename tempfile to file. Keeps a backup of file in file~."
+    echo "  Use lambda to 'compose' commands."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+cmd="$1"
+shift
+
+tmp=""
+
+cleanup () {
+    if [ -n "$tmp" ]; then
+	rm "$tmp"
+    fi
+}
+
+trap cleanup EXIT
+
+for file in "$@"; do
+    tmp=`tempfile -d "$(dirname "$file")"`
+    "$cmd" < "$file" > "$tmp"
+    rm -f "$file"'~'
+    ln "$file" "$file"'~'
+    mv "$tmp" "$file"
+    tmp=""
+    cp-perms "$file"'~' "$file"
+done
+
