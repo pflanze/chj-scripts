@@ -337,7 +337,9 @@ our $commands=
   +{
     save=> sub {
 
-	my $outdir= xtmpdir $metadatadir;
+	my $outdir=
+	  $opt_optimize ? $metadatadir : xtmpdir $metadatadir;
+
 	Parallel_for_each
 	  (scalar git_ls_files,
 	   sub {
@@ -352,16 +354,14 @@ our $commands=
 	       if (not $do_ignore) {
 		   if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
 		       my $content= $metadata->stringify."\n";
-		       my $oldpath= "$metadatadir/$path";
-		       my $newpath= "$outdir/$path";
+		       my $path= "$outdir/$path";
 		       my $oldcontent;
 		       if ($opt_optimize
-			   and
-			   defined ($oldcontent= XContent($oldpath))
+			   and defined ($oldcontent= XContent($path))
 			   and $oldcontent eq $content) {
-			   xlink $oldpath, $newpath;
+			   # do nothing
 		       } else {
-			   xPutfile($newpath, $content);
+			   xPutfile($path, $content);
 		       }
 		   } else {
 		       warn "path '$path' doesn't exist (anymore)\n";
@@ -369,9 +369,11 @@ our $commands=
 	       }
 	   });
 
-	xxsystem ("rm","-rf","--",$metadatadir);
-	$outdir->autoclean(0);
-	xrename "$outdir", $metadatadir;
+	unless ($opt_optimize) {
+	    xxsystem ("rm","-rf","--",$metadatadir);
+	    $outdir->autoclean(0);
+	    xrename "$outdir", $metadatadir;
+	}
     },
     restore=> sub {
 	my $metadatapaths= git_ls_files($metadatadir);
