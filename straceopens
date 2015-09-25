@@ -4,18 +4,21 @@
 
 use strict;
 
-our @traceoptions= ("-e","trace=open");
-
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
     print "$myname [ strace_options ] command
-  Trace open calls and by default filter out only successful
-  ones.
-  Special options:
-  -o outputfile  (default: print to stderr)
-  -T  don't trim (by default only output the filename, not the
-      whole strace line)
+
+  Show the file arguments of successful open and optionally other file
+  related calls.
+
+  Options:
+  -a|--all  show the arguments of all file related calls, not just open
+            calls
+  -o outputfile
+            (default: print to stderr)
+  -T        don't trim (by default only output the filename, not the
+            whole strace line)
 ";
 exit @_;
 }
@@ -24,6 +27,7 @@ exit @_;
 my (@options,@files);
 my $opt_output;
 my $opt_trim=1;
+my $opt_all;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -34,6 +38,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif ($_ eq '-o') {
         $opt_output= $ARGV[++$i] || usage;
+    } elsif (/^--?a(ll)?$/) {
+        $opt_all=1;
     } elsif (/^--?t(rim)?$/) {
         $opt_trim=1;
     } elsif (/^--?T(rim)?$/) {
@@ -48,6 +54,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     }
 }
 usage unless @files;
+
+my $traceclass= $opt_all ? "file" : "open";
+my @traceoptions= ("-e","trace=$traceclass");
 
 if ($opt_output) {
     unless ($opt_output=~ /^[<>|]/) {
