@@ -11,6 +11,8 @@ use strict;
 our $metadatadir=".METADATA-v2";
 our $metadataignorepath= "$metadatadir.ignore";
 
+my $opt_optimize=1;
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -69,16 +71,35 @@ our ($command)= @ARGV;
 use Chj::xperlfunc ':all';
 
 ##ENDLESS lib stuff:
+
 use Chj::xopen 'xopen_read', 'xopen_write';
-sub xContent ( $ ) {
-    my ($path)= @_;
-    my $f= xopen_read $path;
-    my $cntrf= $f->xcontentref;
-    $f->xclose;
-    $$cntrf
-}
-#use Chj::xtmpfile;
+# don't have 'perhaps_xopen_read' here yet.
 use POSIX qw(ENOENT);
+
+sub xContent ( $ ; $) {
+    my ($path, $maybe)= @_;
+    if (my $f= eval {
+	xopen_read $path
+    }) {
+	my $cntrf= $f->xcontentref;
+	$f->xclose;
+	$$cntrf
+    } else {
+	my $e= $@;
+	if ($maybe and $! == ENOENT) {
+	    undef
+	} else {
+	    die $e
+	}
+    }
+}
+
+sub XContent ($) {
+    my ($path)= @_;
+    xContent ($path, 1)
+}
+
+#use Chj::xtmpfile;
 sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     my ($path,$str)=@_;
     #my $f= xtmpfile $path;
@@ -330,7 +351,18 @@ our $commands=
 					   $path);
 	       if (not $do_ignore) {
 		   if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
-		       xPutfile("$outdir/$path", $metadata->stringify."\n");
+		       my $content= $metadata->stringify."\n";
+		       my $oldpath= "$metadatadir/$path";
+		       my $newpath= "$outdir/$path";
+		       my $oldcontent;
+		       if ($opt_optimize
+			   and
+			   defined ($oldcontent= XContent($oldpath))
+			   and $oldcontent eq $content) {
+			   xlink $oldpath, $newpath;
+		       } else {
+			   xPutfile($newpath, $content);
+		       }
 		   } else {
 		       warn "path '$path' doesn't exist (anymore)\n";
 		   }
