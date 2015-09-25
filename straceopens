@@ -4,6 +4,8 @@
 
 use strict;
 
+our @traceoptions= ("-e","trace=open");
+
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
@@ -11,9 +13,7 @@ sub usage {
   Trace open calls and by default filter out only successful
   ones.
   Special options:
-  -o outputfile  Will be merged into the filter. Otherwise,
-                 output is filtered and then printed to stderr.
-
+  -o outputfile  (default: print to stderr)
   -T  don't trim (by default only output the filename, not the
       whole strace line)
 ";
@@ -29,7 +29,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     if (/^--?h(elp)?$/) {
     	usage
     } elsif ($_ eq '--') {
-    	push @files, @ARGV[$i+1..$#ARGV];   ### hmm, sollte -- in argliste, aber versus unten.
+    	push @files, @ARGV[$i+1..$#ARGV];
+	# XX should '--' into argument list, but see below
     	last;
     } elsif ($_ eq '-o') {
         $opt_output= $ARGV[++$i] || usage;
@@ -41,7 +42,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         push @options,$_
     } else {
     	#push @files, $_
-        push @files, @ARGV[$i..$#ARGV];   ### hmm vgl oben
+        push @files, @ARGV[$i..$#ARGV];
+	# XX see above
 	last;
     }
 }
@@ -50,7 +52,7 @@ usage unless @files;
 if ($opt_output) {
     unless ($opt_output=~ /^[<>|]/) {
 	$opt_output= ">$opt_output";
-	exec "strace",@options,"-e","trace=open",
+	exec "strace",@options,@traceoptions,
 	  "-o",
 	    $opt_trim ?
 	      "| perl -e 'open STDOUT,\"$opt_output\" or die \$!; \$|=1; while(<STDIN>){print \"\$1\\n\" if /\"(.*?)\", .*\\d\$/}'"
@@ -58,7 +60,7 @@ if ($opt_output) {
 	    @files;
     }
 } else {
-    exec "strace",@options,"-e","trace=open",
+    exec "strace",@options,@traceoptions,
       "-o",
 	$opt_trim ?
 	  "| perl -ne 'print STDERR \"\$1\\n\" if /\"(.*?)\", .*\\d\$/'"
