@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+usage () {
+    echo "$0 < straceopens-output > list-of-paths-to-copy"
+    echo "  simple helper script to find necessary files to build a chroot"
+    exit 1
+}
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+grep ^/ | egrep -v '/(proc|sys|tmp|dev)(/|$)'
