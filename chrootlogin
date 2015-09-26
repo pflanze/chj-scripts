@@ -32,6 +32,8 @@ sub usage {
              'user' argument is only used to set the USER and USERNAME
              env vars. No lookup in the passwd database is done. HOME
              is set to \"/home/\$USERNAME\".
+  --no-mount
+             do not try to mount anything on /dev, /proc, /tmp, etc.
 
   (Christian Jaeger <$email>)
 ";
@@ -46,6 +48,7 @@ our $opt_untrusted;
 our $opt_timeout;
 our $opt_c;
 our ($opt_builtin, $opt_uid,$opt_gid,$opt_gids,@opt_gids);
+our $opt_no_mount;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
@@ -68,6 +71,7 @@ GetOptions("verbose"=> \$verbose,
 		   $1
 	       } split /,/, $str;
 	   },
+	   "no-mount"=> \$opt_no_mount,
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
@@ -138,29 +142,30 @@ my $Xauth= do {
 use Chj::Unix::Mount 'mount_if_not_already','mounted','mount';
 use Chj::Path::Expand ':all';
 
-mount_if_not_already qw(-t proc proc), "$chrootbase/proc";
-mount_if_not_already qw(-t usbfs usbfs), "$chrootbase/proc/bus/usb";
+unless ($opt_no_mount) {
+    mount_if_not_already qw(-t proc proc), "$chrootbase/proc";
+    mount_if_not_already qw(-t usbfs usbfs), "$chrootbase/proc/bus/usb";
+    mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
 
-mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
+    my $devfs_is_initialized= mounted "$chrootbase/dev";
 
-my $devfs_is_initialized= mounted "$chrootbase/dev";
+    if (not $devfs_is_initialized) {
+	mount "--bind", "/dev", "$chrootbase/dev";
+	mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
+    }
 
-if (not $devfs_is_initialized) {
-    mount "--bind", "/dev", "$chrootbase/dev";
-    mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
-}
+    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
+      "tmpfs","$chrootbase/lib/init/rw";
 
-mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
-  "tmpfs","$chrootbase/lib/init/rw";
-
-if (-l "$chrootbase/dev/shm") {
-    my $target= PathExpand_all("/dev/shm", $chrootbase);
-    #warn "target='$target'";
-    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
-      "tmpfs",$target;
-} else {
-    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
-      "tmpfs","$chrootbase/dev/shm";
+    if (-l "$chrootbase/dev/shm") {
+	my $target= PathExpand_all("/dev/shm", $chrootbase);
+	#warn "target='$target'";
+	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+	  "tmpfs",$target;
+    } else {
+	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+	  "tmpfs","$chrootbase/dev/shm";
+    }
 }
 
 # force libraries for getpwnam to be loaded from the host context
