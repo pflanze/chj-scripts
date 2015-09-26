@@ -224,6 +224,11 @@ if ($X) {
 	$< = $opt_uid; $> = $opt_uid;
 	#or die? how ?
 
+	-x $cmd[0] or do {
+	    print STDERR "can't access executable at '$cmd[0]'\n";
+	    exit 127; # correct code?
+	};
+	
 	local $^W; # prevent perl from looking up $!, needed?
 	exec @cmd or do {
 	    print STDERR "could not execute '$cmd[0]'\n";
