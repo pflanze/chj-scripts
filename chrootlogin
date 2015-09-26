@@ -22,6 +22,16 @@ sub usage {
   --timeout n  timeout for the X authority
                (instead of $timeout_trusted or $timeout_untrusted for trusted/untrusted)
   -c 'code'  pass as -c option to su
+  --builtin --uid uid --gid gid --gids gid,..
+             use Perl code to do the chroot and setgid/setuid calls
+             instead of relying on the 'chroot' and 'su' (the latter
+             from inside the chroot) tools (but the -X option does the
+             same, too). This *might* be safer for untrusted chroots
+             (modulo oversights and perhaps the perl interpreter
+             accessing the chroot implicitely).  In this case the
+             'user' argument is only used to set the USER and USERNAME
+             env vars. No lookup in the passwd database is done. HOME
+             is set to \"/home/\$USERNAME\".
 
   (Christian Jaeger <$email>)
 ";
@@ -35,6 +45,7 @@ our $opt_X;
 our $opt_untrusted;
 our $opt_timeout;
 our $opt_c;
+our ($opt_builtin, $opt_uid,$opt_gid,$opt_gids,@opt_gids);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
@@ -42,14 +53,42 @@ GetOptions("verbose"=> \$verbose,
 	   "untrusted"=>\$opt_untrusted,
 	   "timeout=n"=>\$opt_timeout,
 	   "c=s"=>\$opt_c,
+	   "builtin"=>\$opt_builtin,
+	   "uid=n"=>\$opt_uid,
+	   "gid=n"=>\$opt_gid,
+	   "gids=s"=> sub {
+	       my ($_name, $str)=@_;
+	       defined $opt_gids
+		 and usage "multiple --gids options given";
+	       $opt_gids= $str;
+	       @opt_gids= map {
+		   /^(\d+)\z/
+		     or usage "invalid --gids option, must be ".
+		       "comma-separated non-negative integers, got '$_'";
+		   $1
+	       } split /,/, $str;
+	   },
 	  ) or exit 1;
 usage unless @ARGV>=2;
 
-our ($chrootbase,$user,@cmd)=@ARGV;
+our ($chrootbase,$user,@cmd)= @ARGV;
+
+if ($opt_builtin) {
+    usage "missing --uid while --builtin is given" unless defined $opt_uid;
+    usage "missing --gid while --builtin is given" unless defined $opt_gid;
+    usage "missing --gids while --builtin is given" unless defined $opt_gids;
+    usage "option -c not accepted with --builtin; pass cmd and args as individual arguments instead"
+      if $opt_c;
+    @cmd or usage "missing cmd and args";
+} else {
+    usage "missing --builtin while one of --uid --gid --gids was given"
+      if (defined $opt_uid or defined $opt_gid or defined $opt_gids);
+}
 
 if ($opt_c and @cmd) {
     usage "both cmd and -c given"
 }
+
 
 # XXX: this is a *BAD* way to implement passing @cmd, but I don't know how
 # else to do it currently:
@@ -162,11 +201,40 @@ if ($X) {
 	}
 	exit 0;
     }
+
+} else {
+
+    if ($opt_builtin) {
+	# Partial COPY from $X variant above!
+	# But don't trust the chroot
+	my $home= "/home/$user";
+	xchroot $chrootbase;
+	chdir $home or do {
+	    # ugly but accessing $! would access files, right?
+	    print STDERR "could not chdir to '$home' within the chroot\n";
+	    exit 1;
+	};
+	$ENV{HOME}=$home;
+	$ENV{USER}=$user;
+	$ENV{USERNAME}=$user;
+	#$ENV{LOGNAME}=$name;
+	# ^ ps all this code again?.... see Chj::Unix::Su or so.
+	delete $ENV{XAUTHORITY}; #oh yes
+	$( = $opt_gid; $) = join " ", $opt_gid, @opt_gids;
+	$< = $opt_uid; $> = $opt_uid;
+	#or die? how ?
+
+	local $^W; # prevent perl from looking up $!, needed?
+	exec @cmd or do {
+	    print STDERR "could not execute '$cmd[0]'\n";
+	    exit 127; # correct code?
+	}
+    } else {
+	xexec "chroot", $chrootbase, "su", "-", $user,
+	  ($opt_c ? ("-c", $opt_c) : ());
+    }
+
 }
-
-xexec "chroot", $chrootbase, "su", "-", $user,
-  ($opt_c ? ("-c", $opt_c) : ());
-
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
