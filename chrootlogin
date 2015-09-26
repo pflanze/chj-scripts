@@ -25,13 +25,14 @@ sub usage {
   --builtin --uid uid --gid gid --gids gid,..
              use Perl code to do the chroot and setgid/setuid calls
              instead of relying on the 'chroot' and 'su' (the latter
-             from inside the chroot) tools (but the -X option does the
-             same, too). This *might* be safer for untrusted chroots
-             (modulo oversights and perhaps the perl interpreter
-             accessing the chroot implicitely).  In this case the
-             'user' argument is only used to set the USER and USERNAME
-             env vars. No lookup in the passwd database is done. HOME
-             is set to \"/home/\$USERNAME\".
+             from inside the chroot) tools (note: the -X option does
+             the same for calling xauth already). This *might* be
+             safer for untrusted chroots (modulo oversights and
+             perhaps the perl interpreter accessing the chroot
+             implicitely).  In this case the 'user' argument is only
+             used to set the USER and USERNAME env vars. No lookup in
+             the passwd database is done. HOME is set to
+             \"/home/\$USERNAME\".
   --no-mount
              do not try to mount anything on /dev, /proc, /tmp, etc.
 
@@ -178,6 +179,7 @@ unless ($opt_no_mount) {
 
 
 if ($X) {
+    # set up xauth
     if (xfork) {
 	xxwait;
     } else {
@@ -204,47 +206,47 @@ if ($X) {
 	    $f->xprint($Xauth);
 	    $f->xxfinish;
 	}
+	# XX why not exec here? I didn't trust that this does all the
+	# necessary setup? (Are secondary groups really set this way?)
 	exit 0;
     }
-
-} else {
-
-    if ($opt_builtin) {
-	# Partial COPY from $X variant above!
-	# But don't trust the chroot
-	my $home= "/home/$user";
-	xchroot $chrootbase;
-	chdir $home or do {
-	    # ugly but accessing $! would access files, right?
-	    print STDERR "could not chdir to '$home' within the chroot\n";
-	    exit 1;
-	};
-	$ENV{HOME}=$home;
-	$ENV{USER}=$user;
-	$ENV{USERNAME}=$user;
-	#$ENV{LOGNAME}=$name;
-	# ^ ps all this code again?.... see Chj::Unix::Su or so.
-	delete $ENV{XAUTHORITY}; #oh yes
-	$( = $opt_gid; $) = join " ", $opt_gid, @opt_gids;
-	$< = $opt_uid; $> = $opt_uid;
-	#or die? how ?
-
-	-x $cmd[0] or do {
-	    print STDERR "can't access executable at '$cmd[0]'\n";
-	    exit 127; # correct code?
-	};
-	
-	local $^W; # prevent perl from looking up $!, needed?
-	exec @cmd or do {
-	    print STDERR "could not execute '$cmd[0]'\n";
-	    exit 127; # correct code?
-	}
-    } else {
-	xexec "chroot", $chrootbase, "su", "-", $user,
-	  ($opt_c ? ("-c", $opt_c) : ());
-    }
-
 }
+
+if ($opt_builtin) {
+    # Partial COPY from $X variant above!
+    # But don't trust the chroot
+    my $home= "/home/$user";
+    xchroot $chrootbase;
+    chdir $home or do {
+	# ugly but accessing $! would access files, right?
+	print STDERR "could not chdir to '$home' within the chroot\n";
+	exit 1;
+    };
+    $ENV{HOME}=$home;
+    $ENV{USER}=$user;
+    $ENV{USERNAME}=$user;
+    #$ENV{LOGNAME}=$name;
+    # ^ ps all this code again?.... see Chj::Unix::Su or so.
+    delete $ENV{XAUTHORITY}; #oh yes
+    $( = $opt_gid; $) = join " ", $opt_gid, @opt_gids;
+    $< = $opt_uid; $> = $opt_uid;
+    #or die? how ?
+
+    -x $cmd[0] or do {
+	print STDERR "can't access executable at '$cmd[0]'\n";
+	exit 127; # correct code?
+    };
+
+    local $^W; # prevent perl from looking up $!, needed?
+    exec @cmd or do {
+	print STDERR "could not execute '$cmd[0]'\n";
+	exit 127; # correct code?
+    }
+} else {
+    xexec "chroot", $chrootbase, "su", "-", $user,
+      ($opt_c ? ("-c", $opt_c) : ());
+}
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
