@@ -228,7 +228,10 @@ if ($opt_builtin) {
     #$ENV{LOGNAME}=$name;
     # ^ ps all this code again?.... see Chj::Unix::Su or so.
     delete $ENV{XAUTHORITY}; #oh yes
-    $( = $opt_gid; $) = join " ", $opt_gid, @opt_gids;
+    # man perlvar: "To get the effect of an empty list for
+    # "setgroups()", just repeat the new effective gid." (Ugh, that
+    # doesn't set the empty list; so, well. XX no security issue here?)
+    $( = $opt_gid; $) = join " ", $opt_gid, @opt_gids ? @opt_gids : $opt_gid;
     $< = $opt_uid; $> = $opt_uid;
     #or die? how ?
 
