@@ -80,6 +80,20 @@ our $out= Chj::IO::Command->new_receiver ("less");
 
 our $rely_on_lsof_DEL=1; # whether to rely on DEL reporting.
 
+sub perhaps_chase ($) {
+    my $c= Chj::IO::Command->new_sender ("chase",@_);
+    my $path= $c->xcontent;
+    chomp $path;
+    $c->xfinish == 0 ? $path : ()
+}
+
+our $ignore=
+  +{ map{$_=>1}
+     '/SYSV00000000',
+     '/drm mm object',
+     perhaps_chase ('/usr/share/icons/hicolor/icon-theme.cache'),
+   };
+
 sub process_entry {
     my ($h)=@_;
     my $f=$$h{fileSet}  or die;
@@ -90,15 +104,12 @@ sub process_entry {
     local our $path= $$f{n};
     $out->xprint ("  checking path: '$path'\n")
       if $verbose;
-    if ($path eq '/SYSV00000000'
-	or
-	$path=~ m{^/SYSV[0-9a-f]{8}\z}
-	or
-	$path eq '/drm mm object'
-	or
-	$path=~ m{^/(?:tmp|dev|var|proc|run/shm)/}
-	or
-	$path=~ m|/\.galeon/mozilla/|) {
+    if ($$ignore{$path}
+	or $path=~ m{^/SYSV[0-9a-f]{8}\z}
+	or $path=~ m{^/(?:tmp|dev|var|proc|run/shm)/}
+	or $path=~ m|/\.galeon/mozilla/|
+	or $path=~ m{^/home/\w+/\.(config|cache)/dconf/user$}
+       ) {
 	# suppress
     } else {
 	my $report= sub {
