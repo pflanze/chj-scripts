@@ -11,10 +11,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname rootdir
+    print "$myname [rootdir]
 
   Find all '.git' directories and symlinks on the system, while
   ignoring filesystems like /proc, /sys, tmpfs and 'tmp' directories.
+
+  If rootdir is not given, . is used instead. (Note next paragraph!)
 
   NOTE: for now, rootdir has to be absolute, or ignores/excludes won't
   work properly.
@@ -62,9 +64,9 @@ GetOptions("verbose"=> \$verbose,
 	   "strip"=> \$opt_strip,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV==1;
+usage unless @ARGV<=1;
 
-our ($rootdir)= @ARGV;
+our ($rootdir)= @ARGV ? @ARGV : ".";
 
 use Chj::xopendir;
 use Chj::xperlfunc ":all";
