@@ -28,6 +28,8 @@ package Chj::Maildir;
 use strict;
 
 use Chj::Hostname;
+use Chj::time;
+use Chj::pid;
 use Carp;
 # XX only for debugging (luckily there's no problem calling tainted
 # even when -T is not used):
@@ -74,7 +76,7 @@ sub deliver_file {
     my $deliverycount=0;
 
     sub create_filename {
-	my $f=time().".${$}_$deliverycount.$hostname";
+	my $f= time.".".pid."_$deliverycount.$hostname";
 	$deliverycount++;
 	$f;
     }
