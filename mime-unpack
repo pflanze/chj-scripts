@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+# for now
+mime-parser --no-cleanup "$@"
