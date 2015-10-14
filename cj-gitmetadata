@@ -340,8 +340,59 @@ our $commands=
 	my $outdir=
 	  $opt_optimize ? $metadatadir : xtmpdir $metadatadir;
 
+	my $now_files= git_ls_files;
+
+	my $deletepid;
+	if ($opt_optimize) {
+	    # need to delete obsolete files; do it in parallel; do
+	    # chdir once.
+	    unless ($deletepid= xfork) {
+
+		chdir $metadatadir
+		  or (mkdir $metadatadir and xchdir $metadatadir);
+
+		my $files_of_type= sub {
+		    my ($type)=@_;
+		    my $c= Chj::IO::Command->new_sender
+		      ("/usr/bin/find", "-type", $type, "-print0");
+		    my %p=
+		      map {
+			  $_ eq "." ? () : do {
+			      s|^\./|| or die "path not starting with ./: '$_'";
+			      $_=> 1
+			  }
+		      }
+			$c->xreadline0chop;
+		    \%p
+		};
+
+		{
+		    # Since this runs in parallel to the creation of new
+		    # files, it will also yield some of the new ones; but
+		    # that doesn't matter as those entries will be skipped
+		    # anyways.
+		    my $files= &$files_of_type ("f");
+		    for (@$now_files) {
+			delete $$files{$_}
+		    }
+		    for my $file (keys %$files) {
+			xunlink $file;
+		    }
+		}
+
+		{
+		    # (try to) remove (possibly) stale dirs
+		    my $dirs= &$files_of_type ("d");
+		    for my $dir (reverse sort keys %$dirs) {
+			rmdir $dir
+		    }
+		}
+		exit 0;
+	    }
+	}
+
 	Parallel_for_each
-	  (scalar git_ls_files,
+	  ($now_files,
 	   sub {
 	       my ($path)=@_;
 
@@ -369,7 +420,9 @@ our $commands=
 	       }
 	   });
 
-	unless ($opt_optimize) {
+	if ($opt_optimize) {
+	    xxwaitpid $deletepid
+	} else {
 	    xxsystem ("rm","-rf","--",$metadatadir);
 	    $outdir->autoclean(0);
 	    xrename "$outdir", $metadatadir;
