@@ -6,7 +6,7 @@
 # todo: overwrite files in-place, right? (Might even save SSD wear.)
 # Then remove those that we didn't write.
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 our $metadatadir=".METADATA-v2";
 our $metadataignorepath= "$metadatadir.ignore";
@@ -69,6 +69,8 @@ usage unless @ARGV==1;# optinally take list of files to save[well,update?] or re
 our ($command)= @ARGV;
 
 use Chj::xperlfunc ':all';
+#use Chj::Backtrace;
+#use Chj::repl; repl;
 
 ##ENDLESS lib stuff:
 
@@ -328,65 +330,82 @@ sub dir_or_fold {
     }
 }
 
+sub _ignore {
+    my ($path)=@_;
+    $$ignore_path{$path} or $$ignore_filename{basename $path}
+}
+sub ignore_path {
+    my ($path)=@_;
+    dir_or_fold (*_ignore, $path)
+}
+
 
 use Chj::Parallel_for_each;
-
+use Chj::xpipe;
 use Chj::Git::Functions 'git_ls_files';
 
 our $commands=
   +{
     save=> sub {
+	mkdir $metadatadir;
 
 	my $outdir=
 	  $opt_optimize ? $metadatadir : xtmpdir $metadatadir;
 
 	my $now_files= git_ls_files;
 
+	my ($seen_r, $seen_w);
 	my $deletepid;
 	if ($opt_optimize) {
-	    # need to delete obsolete files; do it in parallel; do
-	    # chdir once.
-	    unless ($deletepid= xfork) {
+	    # collect seen paths from all subprocesses, in a
+	    # subprocess, then delete the now unused entries in the
+	    # metadatadir
 
-		chdir $metadatadir
-		  or (mkdir $metadatadir and xchdir $metadatadir);
+	    ($seen_r, $seen_w)= xpipe;
+	    $seen_w->autoflush(1);
+
+	    if ($deletepid= xfork) {
+		$seen_r->xclose;
+	    } else {
+		$seen_w->xclose;
+
+		my %new_path;
+		# children are sending in parallel, *counting on the
+		# OS* not mixing them up. XXX safety?
+		while (defined (my $v= $seen_r->xreadline0chop)) {
+		    # actually existing path, i.e. path newly saved
+		    # into $metadatadir, i.e. what we must not delete.
+		    $new_path{$v}=1;
+		}
+		$seen_r->xclose;
+		
+		xchdir $metadatadir;
 
 		my $files_of_type= sub {
 		    my ($type)=@_;
 		    my $c= Chj::IO::Command->new_sender
 		      ("/usr/bin/find", "-type", $type, "-print0");
-		    my %p=
-		      map {
-			  $_ eq "." ? () : do {
-			      s|^\./|| or die "path not starting with ./: '$_'";
-			      $_=> 1
-			  }
-		      }
-			$c->xreadline0chop;
-		    \%p
+		    map {
+			$_ eq "." ? () : do {
+			    s|^\./|| or die "path not starting with ./: '$_'";
+			    $_
+			}
+		    }
+		      $c->xreadline0chop
 		};
 
-		{
-		    # Since this runs in parallel to the creation of new
-		    # files, it will also yield some of the new ones; but
-		    # that doesn't matter as those entries will be skipped
-		    # anyways.
-		    my $files= &$files_of_type ("f");
-		    for (@$now_files) {
-			delete $$files{$_}
-		    }
-		    for my $file (keys %$files) {
-			xunlink $file;
+		# This also yields new paths
+		for (&$files_of_type ("f")) {
+		    unless ($new_path{$_}) {
+			xunlink $_
 		    }
 		}
 
-		{
-		    # (try to) remove (possibly) stale dirs
-		    my $dirs= &$files_of_type ("d");
-		    for my $dir (reverse sort keys %$dirs) {
-			rmdir $dir
-		    }
+		# (try to) remove (possibly) stale dirs
+		for (reverse sort &$files_of_type ("d")) {
+		    rmdir $_
 		}
+
 		exit 0;
 	    }
 	}
@@ -395,15 +414,9 @@ our $commands=
 	  ($now_files,
 	   sub {
 	       my ($path)=@_;
-
-	       my $pred= sub {
-		   my ($path)=@_;
-		   $$ignore_path{$path} or $$ignore_filename{basename $path}
-	       };
-	       my $do_ignore= dir_or_fold ($pred,
-					   $path);
-	       if (not $do_ignore) {
+	       if (not ignore_path($path)) {
 		   if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
+		       $seen_w->xprint($path,"\0");
 		       my $content= $metadata->stringify."\n";
 		       my $path= "$outdir/$path";
 		       my $oldcontent;
@@ -419,6 +432,8 @@ our $commands=
 		   }
 	       }
 	   });
+
+	$seen_w->xclose;
 
 	if ($opt_optimize) {
 	    xxwaitpid $deletepid
@@ -456,5 +471,3 @@ if (my $c= $$commands{$command}) {
 }
 
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
