@@ -212,8 +212,31 @@ if (!$ENV{DISPLAY} or $nw) {
 	  or die "$myname: could not create base dir for lock files ".
 	    "'$lockfilebase': $!\n";
     }
-    my $tty=`/usr/bin/tty`; chomp $tty;
-    $tty=~ s/\//-/sg;
+    my $tty= do {
+	# HACK: if stdin is redirected, but we're still on a tty
+	# (i.e. reopening /dev/tty works), `tty` would just say
+	# /dev/tty (huh, Linux?). Thus get this before reopening /
+	# only reopen if this is empty. But in any case, this means
+	# that locking will interfere, bah; XXX how to figure out
+	# which pts this reopened tty corresponds to?
+	my $s= `LANG=C /usr/bin/tty 2>/dev/null`;
+	chomp $s;
+	# wow what the *, tty writes errors to stdout ?!
+	$s="" if $s=~ /not a tty/;
+	if (length ($s) > 3) {
+	    $s=~ s/\//-/sg;
+	    $s
+	} else {
+	    open STDIN, "<", "/dev/tty"
+	      or die "/dev/tty: $!";
+	    open STDOUT, ">", "/dev/tty"
+	      or die "/dev/tty: $!";
+	    open STDERR, ">&1"
+	      or die "redirecting stderr: $!";
+	    warn "reopened tty";
+	    "reopened-tty"
+	}
+    };
     my $linkfile= "$lockfilebase/$tty";
     if (my $pid=readlink $linkfile){
 	if (kill 0,$pid){
