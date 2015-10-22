@@ -203,6 +203,19 @@ sub rungnuclientwithargs {
     }
 }
 
+sub perhaps_uniq {
+    my @v=@_;
+    if (@v) {
+	my $v0= shift @v;
+	for (@v) {
+	    return () unless $_ eq $v0
+	}
+	return $v0
+    } else {
+	()
+    }
+}
+
 if (!$ENV{DISPLAY} or $nw) {
     $ENV{TERM}="linux";
     # check/create display lock file: (this is independent from
@@ -212,36 +225,46 @@ if (!$ENV{DISPLAY} or $nw) {
 	  or die "$myname: could not create base dir for lock files ".
 	    "'$lockfilebase': $!\n";
     }
-    my $tty= do {
-	# HACK: if stdin is redirected, but we're still on a tty
-	# (i.e. reopening /dev/tty works), `tty` would just say
-	# /dev/tty (huh, Linux?). Thus get this before reopening /
-	# only reopen if this is empty. But in any case, this means
-	# that locking will interfere, bah; XXX how to figure out
-	# which pts this reopened tty corresponds to?
-	my $s= `LANG=C /usr/bin/tty 2>/dev/null`;
-	chomp $s;
-	# wow what the *, tty writes errors to stdout ?!
-	$s="" if $s=~ /not a tty/;
-	if (length ($s) > 3) {
-	    $s=~ s/\//-/sg;
-	    $s
+    my $ttypath= do {
+	# The `tty` tool simply reports what stdin is connected to,
+	# not the controlling tty. And reopening /dev/tty does not
+	# work for gnuclient for some reason (huh). So, check all 3
+	# std filehandles in the hopes to find the original.
+	my @paths=
+	  map {
+	      my $path= "/proc/self/fd/$_";
+	      if (defined (my $devpath = readlink $path)) {
+		  if ($devpath =~ m|^/dev/pts|) {
+		      $devpath
+		  } else {
+		      ()
+		  }
+	      } else {
+		  ()
+	      }
+	  } 0,1,2;
+
+	if (my ($path)= perhaps_uniq @paths) {
+	    $path
 	} else {
-	    open STDIN, "<", "/dev/tty"
-	      or die "/dev/tty: $!";
-	    open STDOUT, ">", "/dev/tty"
-	      or die "/dev/tty: $!";
-	    open STDERR, ">&1"
-	      or die "redirecting stderr: $!";
-	    warn "reopened tty";
-	    require Chj::Unix::Terminal::Raw;
-	    my $r= Chj::Unix::Terminal::Raw->new;
-	    $r->alwaysraw;
-	    warn "tty is now raw"; # you are now dead
-	    "reopened-tty"
+	    $ENV{SSH_TTY} || die "no controlling tty?";
+	    # XX `ps -h -o tty -p $$` seems to be another way. Really
+	    # use it? How does it work?
 	}
     };
-    my $linkfile= "$lockfilebase/$tty";
+
+    open STDIN, "<", $ttypath
+      or die "$ttypath: $!";
+    open STDOUT, ">", $ttypath
+      or die "$ttypath: $!";
+    open STDERR, ">&1"
+      or die "redirecting stderr: $!";
+
+    my $linkfile= do {
+	my $s= $ttypath;
+	$s=~ s/\//-/sg;
+	"$lockfilebase/$s"
+    };
     if (my $pid=readlink $linkfile){
 	if (kill 0,$pid){
 	    die "$myname: you have already an emacs frame running ".
