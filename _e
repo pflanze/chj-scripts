@@ -72,14 +72,22 @@ sub simple_dirname { # always correct?
 
 my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
 if (not -d $lockfilebase) {
-    retry_after (sub { mkdir $lockfilebase },
-		 sub { my $d= simple_dirname $lockfilebase;
-		      length($d) and do {
-			  mkdir $d;
-			  warn "created '$d'";
-			  1
-		      }},
-		 sub {die "$0: could not create lock dir '$lockfilebase': $!\n" });
+    retry_after (sub {
+		     mkdir $lockfilebase
+		 },
+		 sub {
+		     my $d= simple_dirname $lockfilebase;
+		     length($d) and do {
+			 mkdir $d;
+			 warn "created '$d'";
+			 1
+		     }
+		 },
+		 sub {
+		     die "$0: could not create lock dir '$lockfilebase': ".
+		       "$!\n";
+		 }
+		);
 }
 my $startuplock_path= $lockfilebase."/.startuplock";
 my $startuplockfh= do {
@@ -191,25 +199,26 @@ sub rungnuclientwithargs {
 	    }
 	    startup_unlock;
 	    exit 0;
-	    # nobody is waiting for us, right? uhm. hope so. mb need double fork?
 	}
     }
 }
 
-my $tty;
 if (!$ENV{DISPLAY} or $nw) {
-    $ENV{TERM}="linux"; #if $ENV{TERM} eq "xterm";
-    # check/create display lock file: (this is independent from startup lock!)
+    $ENV{TERM}="linux";
+    # check/create display lock file: (this is independent from
+    # startup lock!)
     unless (-d $lockfilebase) {
 	mkdir $lockfilebase,0700
-	  or die "$myname: could not create base dir for lock files '$lockfilebase': $!\n";
+	  or die "$myname: could not create base dir for lock files ".
+	    "'$lockfilebase': $!\n";
     }
-    $tty=`/usr/bin/tty`; chomp $tty;
+    my $tty=`/usr/bin/tty`; chomp $tty;
     $tty=~ s/\//-/sg;
     my $linkfile= "$lockfilebase/$tty";
     if (my $pid=readlink $linkfile){
 	if (kill 0,$pid){
-	    die "$myname: you have already an emacs frame running on this terminal.\n";
+	    die "$myname: you have already an emacs frame running ".
+	      "on this terminal.\n";
 	} else {
 	    unlink $linkfile
 	      or die "$myname: could not unlink stale '$linkfile': $!\n";
@@ -230,9 +239,11 @@ if (!$ENV{DISPLAY} or $nw) {
 	    }
 	}
 	closedir DIR;
-	open OUT,">$lockfilebase/.lastcleanup" or die $!; print OUT "~";close OUT;
+	open OUT,">$lockfilebase/.lastcleanup"
+	  or die $!; print OUT "~";close OUT;
     }
-    symlink "$$",$linkfile or die "$myname: could not create symlink $linkfile: $!\n";
+    symlink "$$",$linkfile
+      or die "$myname: could not create symlink $linkfile: $!\n";
 }
 
 $SIG{ALRM}= sub {
@@ -240,9 +251,8 @@ $SIG{ALRM}= sub {
 };
 alarm $TIMEOUT;
 eval {
-    startup_lock; #this and the above 5 lines and the catching should of course be abstracted away.
-    if (reachable) { #btw we're (still) getting a second chance, starting it on our own here.. (we're using two approaches for 'waiting' for the emacs server process hehe)
-	#alarm 0;#!!
+    startup_lock;
+    if (reachable) {
 	rungnuclientwithargs;
     } else {
 	require Chj::ulimit;
@@ -253,15 +263,17 @@ eval {
 	do {
 	    sleep 1;
 	    $z++ > ($TIMEOUT - 5)
-	      and die "Timeout waiting for $emacs to start up. Maybe you can still attach to it with screen -r .. (screen -ls for the list of screens).\n";
+	      and die "Timeout waiting for $emacs to start up. ".
+		"Maybe you can still attach to it with screen -r .. ".
+		  "(screen -ls for the list of screens).\n";
 	} until reachable;
-	#alarm 0;#!!
 	rungnuclientwithargs;
     }
 };
 if (ref $@ or $@) {
     if ($@ eq "ALRM\n") {
-	die "$myname ($$): timed out waiting for lock (another process supposedly starting up xemacs)\n";
+	die "$myname ($$): timed out waiting for lock (another process ".
+	  "supposedly starting up xemacs)\n";
     } else {
 	die $@
     }
