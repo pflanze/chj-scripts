@@ -234,6 +234,10 @@ if (!$ENV{DISPLAY} or $nw) {
 	    open STDERR, ">&1"
 	      or die "redirecting stderr: $!";
 	    warn "reopened tty";
+	    require Chj::Unix::Terminal::Raw;
+	    my $r= Chj::Unix::Terminal::Raw->new;
+	    $r->alwaysraw;
+	    warn "tty is now raw"; # you are now dead
 	    "reopened-tty"
 	}
     };
