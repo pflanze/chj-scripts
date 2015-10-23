@@ -12,10 +12,11 @@ if [ $# -eq 1 ]; then
     if [ "$1" = "-h" -o "$1" = "--help" ]; then
 	usage
     else
-	if ! echo "$1"|egrep -q -i '^[0-9]+$'; then
+	no=`perl -we '($_)=@ARGV; s/^RFC//i; print' "$1"`
+	if ! echo "$no"|egrep -q -i '^[0-9]+$'; then
 	    usage
 	else
-	    files=(/usr/share/doc/RFC/links/rfc$1[-.]*)
+	    files=(/usr/share/doc/RFC/links/rfc$no[-.]*)
 	    if [ ${#files[*]} -eq 1 ]; then
 		if [ -f "$files" ]; then
 		    case "$files" in 
@@ -26,7 +27,7 @@ if [ $# -eq 1 ]; then
 		    esac
 		else
 		    #http://datatracker.ietf.org/doc/rfc2822/?include_text=1
-		    browser "http://datatracker.ietf.org/doc/rfc$1/?include_text=1"
+		    browser "http://datatracker.ietf.org/doc/rfc$no/?include_text=1"
 		fi
 	    else 
 		echo "More than one match:"
