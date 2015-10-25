@@ -372,7 +372,7 @@ our $commands=
 		my %new_path;
 		# children are sending in parallel, *counting on the
 		# OS* not mixing them up. XXX safety?
-		while (defined (my $v= $seen_r->xreadline0chop)) {
+		while (defined (my $v= $seen_r->xreadline0_chop)) {
 		    # actually existing path, i.e. path newly saved
 		    # into $metadatadir, i.e. what we must not delete.
 		    $new_path{$v}=1;
@@ -391,7 +391,7 @@ our $commands=
 			    $_
 			}
 		    }
-		      $c->xreadline0chop
+		      $c->xreadline0_chop
 		};
 
 		# This also yields new paths
