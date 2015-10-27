@@ -75,11 +75,12 @@ sub import_constants {
     }
 }
 
-use enum qw(E_success
-            E_invalidformat
-            E_invalidmonthname
-            E_dateoutofrange
-           );
+use constant +{
+	       E_success=> 0,
+	       E_invalidformat=> 1,
+	       E_invalidmonthname=> 2,
+	       E_dateoutofrange=> 3,
+	      };
 our @errmsgs; #  hm schon wieder das gleiche wie in Chj/Parse/Date/Syslog
 $errmsgs[E_invalidformat]= "invalid log line format";
 $errmsgs[E_invalidmonthname]= "invalid month name";
