@@ -34,7 +34,7 @@ our @orig_halt= "/sbin/halt";
 
 use Chj::xperlfunc;
 
-if (maybe_askyn "Are you sure you want to run 'halt'? ") {
+if (maybe_askyn "Are you sure you want to run 'halt'?") {
     xexec (@orig_halt, @ARGV);
 } else {
     die "cancelled by user\n";

@@ -130,7 +130,7 @@ if ($dryrun) {
 	# just do it
     } else {
 	&$prin;
-	make_sure("Do you want to download the above ".@urls." url's? ");
+	make_sure("Do you want to download the above ".@urls." url's?");
     }
     my $logfile= Force $Sessioncrashedfile_log;
     my $logfile_tmp= $logfile.".tmp";

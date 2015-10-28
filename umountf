@@ -84,7 +84,7 @@ sub umountf {
     }
     my @pid= keys %$pid; # @ as plural?.r
     if (@pid) {
-	if (maybe_askyn "** Kill the above  processes? ") {
+	if (maybe_askyn "** Kill the above  processes?") {
 	  DO: {
 		my $n=10;
 		while (# INT
