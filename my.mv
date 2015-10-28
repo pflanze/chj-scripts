@@ -179,7 +179,7 @@ sub xmove { # does xrename and if it's a cross boundary, asksetc and checks and 
     if ($! == EXDEV) {
 	require Chj::Util::AskYN;
 	if ($interactive) {
-	    return unless Chj::Util::AskYN::askyn("$myname: verschieben von »$from« nach »$to« über Dateisystemgrenzen hinweg forcieren? ");##ps bei undef returnwert abbrechen? oder gibt das eine exception?
+	    return unless Chj::Util::AskYN::maybe_askyn("$myname: verschieben von »$from« nach »$to« über Dateisystemgrenzen hinweg forcieren? ");##ps bei undef returnwert abbrechen? oder gibt das eine exception?
 	} elsif (! defined $interactive) {
 	    die "xmove: won't move across filesystem boundaries without -f flag or interactive confirmation";
 	}
@@ -214,8 +214,8 @@ sub move {
     }
     if ($interactive and lstat($to)) { # könnt auch ein ln machen, aber nur bei files, nicht bei dirs.
 	require Chj::Util::AskYN;
-	#return unless (askyn("$myname: overwrite '$to'? "));
-	return unless (Chj::Util::AskYN::askyn("$myname: »$to« überschreiben? "));
+	#return unless (maybe_askyn("$myname: overwrite '$to'? "));
+	return unless (Chj::Util::AskYN::maybe_askyn("$myname: »$to« überschreiben? "));
     }
     xmove $from,$to;
     print "»$from« -> »$to«\n" if $verbose;

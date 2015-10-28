@@ -114,7 +114,7 @@ our @urls=
 use Chj::Util::AskYN;
 sub make_sure ( $ ) {
     my ($question)=@_;
-    if (!askyn($question)) { #should rather be called ask_confirmation or something like that.
+    if (!maybe_askyn($question)) { #should rather be called ask_confirmation or something like that.
 	die "$myname: exiting on user request.\n";
     }
 }

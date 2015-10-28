@@ -72,10 +72,10 @@ for my $to (@files) {
 	# ok
     } else {
 	my $newto= "$user-request\@$host";
-	if (askyn "address '$to' doesn't look like a subscription address. should I change it to '$newto' instead? ") {
+	if (maybe_askyn "address '$to' doesn't look like a subscription address. should I change it to '$newto' instead? ") {
 	    $to=$newto;
 	} else {
-	    if (askyn "So I will send your subscription mail to '$to'. Are you sure I should do that? ") {
+	    if (maybe_askyn "So I will send your subscription mail to '$to'. Are you sure I should do that? ") {
 		# so be it
 	    } else {
 		print "cancelled.\n";

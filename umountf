@@ -73,7 +73,7 @@ sub umountf {
     #my $in= Chj::IO::Command->new_sender ($cmd);
     #ach  why  wenn jus ausgeben hahaha
     #xxsystem $cmd;
-    #if (askyn "
+    #if (maybe_askyn "
     #ach ich depp muss die pids haben hjahaahha
     my $in= Chj::IO::Command->new_sender ($cmd);
     my $pid={};
@@ -84,7 +84,7 @@ sub umountf {
     }
     my @pid= keys %$pid; # @ as plural?.r
     if (@pid) {
-	if (askyn "** Kill the above  processes? ") {
+	if (maybe_askyn "** Kill the above  processes? ") {
 	  DO: {
 		my $n=10;
 		while (# INT

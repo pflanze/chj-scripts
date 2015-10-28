@@ -104,7 +104,7 @@ our @tables= #$sh->fetchrow_array; tja  exhaust  oder sow as  nixda
   };
 
 if (@tables) {
-    if (askyn "Ok to delete ".@tables." tables? ") {
+    if (maybe_askyn "Ok to delete ".@tables." tables? ") {
 	for (@tables) {
 	    my $del= $DB->prepare("drop table $_");
 	    $del->execute # == 1 or die "unexpectedly got non-1 return val"; nein ist eh nicht 1

@@ -326,7 +326,7 @@ sub start {
 		  unless ($opt_quiet);
 		$maybe_exitcode=0;
 	    }
-	    if (!$opt_noask and askyn "do you want to look at the output? "){
+	    if (!$opt_noask and maybe_askyn "do you want to look at the output? "){
 		xsystem "less",$output->path;
 	    }
 	}

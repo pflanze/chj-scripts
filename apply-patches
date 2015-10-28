@@ -181,7 +181,7 @@ sub run_on_dir {
 		if ($status) {
 		    $errors++;
 		    print "\n";
-		    if (!askyn "($myname) got errors, do you want to continue anyway? ") {
+		    if (!maybe_askyn "($myname) got errors, do you want to continue anyway? ") {
 			exit 1;
 		    }
 		}

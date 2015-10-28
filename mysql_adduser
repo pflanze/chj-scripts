@@ -140,7 +140,7 @@ if (!@args) {
 	    my ($result1)=$check->fetchrow_array;
 	    if (!$result1 or $result1 ne $db){
 		#die "No such database '$db'.\n";
-		if (askyn "No such database '$db'. Should I create it? [y/n] ") {
+		if (maybe_askyn "No such database '$db'. Should I create it? [y/n] ") {
 		    #my $cr= $DB->prepare("create database ?");;
 		    #$cr->execute($db)==1 or die "couldn't create db '$db' ??";
 		    $DB->do("create database $db")==1 or die "couldn't create db '$db' ??";
