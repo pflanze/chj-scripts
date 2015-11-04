@@ -154,8 +154,8 @@ foreach my $file (@files) {
 		      or die "print OUT: $!";
 		    close OUT
 		      or die "close OUT: $!";
-		    munmap($in)
-		      or die "munmap: $!";
+#		    munmap($in)
+#		      or die "munmap: $!";
 		    close IN
 		      or die "close IN: $!";
 
