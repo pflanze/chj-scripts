@@ -17,7 +17,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname save|restore
+    print "$myname save|restore [files to restore]
 
   save: create a directory '$metadatadir' which contains metadata
   information for all files in the current repository except for the
@@ -65,8 +65,10 @@ GetOptions("verbose"=> \$verbose,
 	   "no-mtime"=> \$opt_no_time,
 	   "ignore-chown-errors"=> \$opt_ignore_chown_errors,
 	   ) or exit 1;
-usage unless @ARGV==1;# optinally take list of files to save[well,update?] or restore?
-our ($command)= @ARGV;
+
+usage unless @ARGV>=1;
+
+our ($command,@args)= @ARGV;
 
 use Chj::xperlfunc ':all';
 #use Chj::Backtrace;
@@ -347,6 +349,9 @@ use Chj::Git::Functions 'git_ls_files';
 our $commands=
   +{
     save=> sub {
+	usage "save cannot take path arguments"
+	  if @args;
+	
 	mkdir $metadatadir;
 
 	my $outdir=
@@ -444,7 +449,13 @@ our $commands=
 	}
     },
     restore=> sub {
-	my $metadatapaths= git_ls_files($metadatadir);
+	my $metadatapaths= @args ?
+	  [
+	   map {
+	       "$metadatadir/$_"
+	   } @args
+	  ]
+	    : git_ls_files($metadatadir);
 
 	Parallel_for_each
 	  ($metadatapaths,
