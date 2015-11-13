@@ -123,7 +123,7 @@ $namespace
 
 package $namespace;
 ${exporterdefs}
-use strict; use warnings FATAL => 'uninitialized';
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 $baseclassdefs
 
 # sub new {
