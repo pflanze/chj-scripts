@@ -3,12 +3,12 @@
 set -eu
 
 if [ $# -lt 2 ]; then
-    find-f-grep . "$@"
+    findf-grep . "$@"
 elif [ $# -ge 2 ]; then
     if [ -d "$1" ]; then
-        find-f-grep "$@"
+        findf-grep "$@"
     else
-        find-f-grep . "$@"
+        findf-grep . "$@"
     fi    
 else
     echo "usage: $0 [dir] regex [options]"

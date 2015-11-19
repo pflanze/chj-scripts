@@ -26,7 +26,7 @@ find "$dir" -type f -a \! -name "*~" -a -print0 |xargs -0 $grep "$@"
 
 
 #good:
-#> find-f-grep .  Foo -- -F
+#> findf-grep .  Foo -- -F
 #grep: -F: No such file or directory
-#> find-f-grep .  Foo -F
+#> findf-grep .  Foo -F
 #found -F flag
