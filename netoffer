@@ -37,7 +37,7 @@ fi
 
 ip=`publicip -f`
 
-passwdgen | tee >(
+passwdgen 24 | tee >(
 {
 echo "--Run:--"
 echo "echo `cat` | netfetch $zz$ip $PORT"
