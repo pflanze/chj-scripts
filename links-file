@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+for f in "$@"; do
+    if echo "$f"|grep -q /; then
+	links "$f"
+    else
+	links ./"$f"
+    fi
+done
