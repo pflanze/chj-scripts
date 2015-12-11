@@ -55,19 +55,21 @@ sub packagename {
 
 
 sub aptinstall {
-    my ($module_or_path)=@_;
-    my $nam= packagename $module_or_path;
+    my @nam= map { packagename $_ } @_;
     if ($opt_names) {
-	print $nam, "\n";
+	print $_, "\n"
+	  for @nam;
     } elsif ($opt_dry) {
-	print join " ", "apt-get","install", $nam, "\n";
+	print join " ", "apt-get","install", @nam, "\n";
     } else {
-	print "== try to install $nam ... ===========\n";
-	xsystem "apt-get","install", $nam
+	do {
+	    print "== try to install $_ ... ===========\n";
+	    xsystem "apt-get","install", $_
+	} for @nam;
     }
 }
 
-aptinstall $_ for @ARGV;
+aptinstall @ARGV;
 
 
 #use Chj::ruse;
