@@ -59,13 +59,15 @@ sub aptinstall {
     if ($opt_names) {
 	print $_, "\n"
 	  for @nam;
-    } elsif ($opt_dry) {
-	print join " ", "apt-get","install", @nam, "\n";
     } else {
-	do {
-	    print "== try to install $_ ... ===========\n";
-	    xsystem "apt-get","install", $_
-	} for @nam;
+	my @cmd= ("apt-get", "install", @nam);
+	my $cmd= join(" ", @cmd);
+	if ($opt_dry) {
+	    print $cmd, "\n";
+	} else {
+	    print "== running $cmd ... ===========\n";
+	    xsystem @cmd;
+	}
     }
 }
 
