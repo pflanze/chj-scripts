@@ -18,6 +18,10 @@ sub usage {
   --names     show package names only, one per line
   --dry-run   show apt commands instead of actually running them
 
+  --parse     try to pick out package names from between double
+              quotes, as usually listed in Makefile.PL dependency
+              declarations.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -27,10 +31,12 @@ use Getopt::Long;
 our $verbose=0;
 our $opt_names;
 our $opt_dry;
+our $opt_parse;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "names"=> \$opt_names,
 	   "dry-run"=> \$opt_dry,
+	   "parse"=> \$opt_parse,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -40,6 +46,11 @@ use Chj::Chomp;
 
 sub path2namespace {
     Chomp(Xbacktick "perl-path2namespace", "--no-use", @_)
+}
+
+sub parse {
+    my ($str)=@_;
+    $str=~ /"([^"]+)"/g
 }
 
 sub packagename {
@@ -55,7 +66,10 @@ sub packagename {
 
 
 sub aptinstall {
-    my @nam= map { packagename $_ } @_;
+    my @nam= map {
+	$opt_parse ? map { packagename $_ } parse $_
+	  : packagename $_
+      } @_;
     if ($opt_names) {
 	print $_, "\n"
 	  for @nam;
