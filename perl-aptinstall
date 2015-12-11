@@ -42,7 +42,7 @@ sub path2namespace {
     Chomp(Xbacktick "perl-path2namespace", "--no-use", @_)
 }
 
-sub aptinstall {
+sub packagename {
     my ($module_or_path)=@_;
     my $module=
       ($module_or_path=~ m|/|
@@ -50,6 +50,13 @@ sub aptinstall {
        : $module_or_path);
     my $nam= lc $module; $nam=~ s|::|-|g;
     $nam= "lib".$nam."-perl";
+    $nam
+}
+
+
+sub aptinstall {
+    my ($module_or_path)=@_;
+    my $nam= packagename $module_or_path;
     if ($opt_names) {
 	print $nam, "\n";
     } elsif ($opt_dry) {
