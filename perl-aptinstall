@@ -15,6 +15,7 @@ sub usage {
 
   changes that into libfoo-bar-perl and run apt-get install on it.
 
+  --names     show package names only, one per line
   --dry-run   show apt commands instead of actually running them
 
   (Christian Jaeger <$email>)
@@ -24,9 +25,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_names;
 our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "names"=> \$opt_names,
 	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -47,7 +50,9 @@ sub aptinstall {
        : $module_or_path);
     my $nam= lc $module; $nam=~ s|::|-|g;
     $nam= "lib".$nam."-perl";
-    if ($opt_dry) {
+    if ($opt_names) {
+	print $nam, "\n";
+    } elsif ($opt_dry) {
 	print join " ", "apt-get","install", $nam, "\n";
     } else {
 	print "== try to install $nam ... ===========\n";
