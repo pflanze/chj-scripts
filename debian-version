@@ -75,7 +75,8 @@ exit (@_ ? 1 : 0);
     }
     end Class::Array;
     # for CHJ::Release_with_key:
-    *maybe_release_date= *release_date;
+    sub maybe_release_date;
+    *maybe_release_date= \&release_date;
 }
 
 our $release_by_name;
