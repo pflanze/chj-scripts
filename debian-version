@@ -76,13 +76,19 @@ exit (@_ ? 1 : 0);
     end Class::Array;
 }
 
+our $release_by_name;
 {
     package CHJ::Release::Alias;
     use Class::Array -fields=> -publica=>
       qw(name
 	 number
 	 maybe_release_date);
-    #$release_by_name -> needs to be later. h
+
+    sub fullinfo {
+	my $s=shift;
+	$$release_by_name{$$s[Name]}->fullinfo
+    }
+
     end Class::Array;
 }
 
@@ -160,19 +166,11 @@ sub index_of_by {
 }
 *index_by= index_of_by($releases);
 
-our $release_by_name= index_by ("name");
+$release_by_name= index_by ("name");
 our $release_by_number= index_by ("number");
 $$release_by_name{sid}= $$release_by_name{$$releases[-1][0]};
 #^hm. http://www.debian.org/releases/ says that *testing* is called squeeze, unstable is sid. I'm somewhat confusing those here hm.
 
-{
-    package CHJ::Release::Alias;
-    # class definition see above
-    sub fullinfo {
-	my $s=shift;
-	$$release_by_name{$$s[Name]}->fullinfo
-    }
-}
 
 use Chj::Fileutil 'xCatfile';
 
