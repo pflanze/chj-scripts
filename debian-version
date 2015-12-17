@@ -74,6 +74,8 @@ exit (@_ ? 1 : 0);
 	."]")
     }
     end Class::Array;
+    # for CHJ::Release_with_key:
+    *maybe_release_date= *release_date;
 }
 
 our $release_by_name;
@@ -194,9 +196,20 @@ use Chj::Fileutil 'xCatfile';
     no warnings;## agains 'used only once: possible typo'
     *as_string=_delegate ("as_string");
     #*fullinfo=_delegate ("fullinfo");
+    
+    *maybe_release_date= _delegate("maybe_release_date");
+    
     sub fullinfo {
 	my $s=shift;
-	"[found: ".$s->key."] ".$$s[Release]->fullinfo
+	"[found: ".$s->key.
+	  do {
+	    if (defined (my $rd= $s->maybe_release_date)) {
+	      " (released $rd)"
+	    } else {
+	      ""
+	    }
+	  }
+	    ."] ".$$s[Release]->fullinfo
     }
     # no need for proxies of the fields right?
     end Class::Array;
