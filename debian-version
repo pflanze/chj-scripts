@@ -41,8 +41,10 @@ exit (@_ ? 1 : 0);
 	my $class=shift;
 	if (@_==7) {
 	    bless [@_],$class
-	} elsif (@_==2) {
+	} elsif (@_==2 or @_==3) {
 	    bless [@_], "CHJ::Release::Alias"
+	} else {
+	    die "invalid number of arguments: @_"
 	}
     }
     sub as_string {
@@ -78,7 +80,8 @@ exit (@_ ? 1 : 0);
     package CHJ::Release::Alias;
     use Class::Array -fields=> -publica=>
       qw(name
-	 number);
+	 number
+	 maybe_release_date);
     #$release_by_name -> needs to be later. h
     end Class::Array;
 }
@@ -147,10 +150,10 @@ sub index_of_by {
     sub {
 	my ($method)= @_;
 	my %idx;
-	for (@$list) {
-	    my $k= $_->$method;
+	for my $item (@$list) {
+	    my $k= $item->$method;
 	    next if not $k or $idx{$k};
-	    $idx{$k}= $_;
+	    $idx{$k}= $item;
 	}
 	\%idx
     }
