@@ -21,7 +21,7 @@ sub usage {
   Options:
    -l  hardlink instead of copy
    -c  copy (now default)
-   -o  open up permissions to world readable
+   -o  open up permissions to world readable (now default)
 
   (Christian Jaeger <$email>)
 ";
@@ -33,7 +33,7 @@ our $verbose=0;
 #our $opt_dry;
 our $opt_link;
 our $opt_copy=1;
-our $opt_o;
+our $opt_o=1;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
@@ -88,7 +88,9 @@ our $targetsubdir= $targetbase."/".random_passwd_string (16);
 xmkdir $targetsubdir;
 xchmod 0770, $targetsubdir;
 
-for my $path (@ARGV) {
+
+sub possibly_fix_perms {
+    my ($path)=@_;
     if ($opt_o) {
 	my $s= xlstat $path;
 	if (! $s->is_file) {
@@ -100,8 +102,13 @@ for my $path (@ARGV) {
 	    xchmod $wantperms, $path
 	}
     }
+}
+
+for my $path (@ARGV) {
     my $filename= basename $path;
-    $do->( $path, $targetsubdir."/".$filename);
+    my $targetpath= $targetsubdir."/".$filename;
+    $do->( $path, $targetpath );
+    possibly_fix_perms ($targetpath);
 }
 
 #use Chj::ruse;
