@@ -14,13 +14,13 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname user_or_dir file(s)
 
-  Move file(s) to user, into a new randomly named subdirectory in the
+  Copy file(s) to user, into a new randomly named subdirectory in the
   DROP dir in the user's home, or, if user_or_dir contains slashes,
   a subdir of that path.
 
   Options:
-   -l  hardlink instead of move
-   -c  copy instead of move
+   -l  hardlink instead of copy
+   -c  copy (now default)
    -o  open up permissions to world readable
 
   (Christian Jaeger <$email>)
@@ -32,7 +32,7 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 our $opt_link;
-our $opt_copy;
+our $opt_copy=1;
 our $opt_o;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
