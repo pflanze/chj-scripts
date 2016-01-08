@@ -1,11 +1,24 @@
 #!/usr/bin/perl -w
 
-use strict;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
-# invoke gpg with all the keyrings that Debian (as of >etch) provides.
+use strict; use warnings FATAL => 'uninitialized';
 
-# By giving a comma separated list of numbers you can choose which
-# ones to take; by default all of them are taken.
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname $myname [keyindex,...] args...
+
+  invoke gpg with all the keyrings that Debian (as of >etch) provides.
+
+  By giving a comma separated list of numbers you can choose which
+  ones to take; by default all of them are taken.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
 
 my @indexes= do {
     if (@ARGV) {
@@ -20,6 +33,8 @@ my @indexes= do {
 	()
     }
 };
+
+usage if (@ARGV and $ARGV[0] =~ /^--?h(elp)?$/);
 
 
 my @debian_keyrings=
