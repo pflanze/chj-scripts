@@ -29,23 +29,26 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV<=1;
 
-our $bases=
-  +{
-    '/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight/'
-    => 'nc2400', # Compaq
-    '/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/'
-    => 'T61', # Thinkpad
-   };
+our @bases=
+  (
+   ['/sys/devices/pci0000:00/0000:00:02.0/backlight/acpi_video0'
+    => 'x200'], # ThinkPad
+   ['/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight/'
+    => 'nc2400'], # Compaq
+   ['/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/'
+    => 'T61'], # Thinkpad
+  );
 
 our ($base,$system)=
-  (sub {
-       for my $base (keys %$bases) {
-	   if (-d $base) {
-	       return ($base, $$bases{$base})
-	   }
-       }
-       die "unknown system, need to adapt"
-   }->());
+  &{sub {
+      for (@bases) {
+	  my ($base,$system)=@$_;
+	  if (-d $base) {
+	      return @$_
+	  }
+      }
+      die "unknown system, need to adapt"
+  }};
 
 our $brightnesses=
   +{
@@ -59,6 +62,11 @@ our $brightnesses=
 		mid=> 12625,
 		low=> 10625,
 		verylow=> 8625 },
+    x200=>   +{ #off=> 0,
+		on=> 15,
+		mid=> 7,
+		low=> 3,
+		verylow=> 0 },
    };
 
 #XXX lib (exist already?)
