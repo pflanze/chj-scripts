@@ -54,7 +54,7 @@ sub stripcomment_n_sort {
     my $in= xopen_read $path;
     my $t= xtmpfile; ## und name angeben ?
     my $out= xreceiverpipeline_with_out_to($t,
-					   ["filter_stripcomments"],
+					   ["filter-stripcomments"],
 					   ["csort"],
 					  );
 #    warn "ha";
