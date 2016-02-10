@@ -220,7 +220,7 @@ sub changefile {
 				}
 			      ASK:{
 				    print STDERR "'$path' could not be moved to '$trashpath/$file', because they are not on the same filesystem. What should I do: [l]eave file unchanged, [L]eave always without asking, [o]verwrite old file without backup, [O]verwrite always without asking ? ";
-				    my $ans=<STDERR>;chomp $ans;
+				    my $ans=<STDIN>;chomp $ans;
 				    if ($ans eq 'l') {
 					unlink "$path.$appendix";
 					last CHANGE;
