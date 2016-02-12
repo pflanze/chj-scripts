@@ -128,6 +128,7 @@ sub show {
 $by_prefix= hardware_by_prefixes;
 
 if ($opt_loop) {
+    $|=1;
     my $lasthw= time;
     my $rescan= sub {
 	my ($maybe_t)=@_;
