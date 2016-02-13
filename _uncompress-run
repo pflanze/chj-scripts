@@ -61,30 +61,27 @@ use Chj::xperlfunc 'basename';
 
 our $TMPDIR="/tmp";
 
-sub uncompress {
+sub maybe_uncompress {
     my ($file)=@_;
     $file= xrealpath $file;
     my $c=  Chj::IO::Command->new_sender($filecmd,"--",$file);
     my $cnt=$c->xcontent;
     $c->xxfinish;
-    my $decmd= do {
+    if (my ($suffix,$decmd)= do {
 	if ($cnt=~ /: gzip compressed/) {
-	    ["gunzip"]
+	    ("gz", ["gunzip"])
 	} elsif ($cnt=~ /: bzip2 compressed/) {
-	    ["bunzip2"]
+	    ("bz2", ["bunzip2"])
 	} elsif ($cnt=~ /: XZ compressed/) {
-	    ["xz", "-d"]
+	    ("xz", ["xz", "-d"])
 	} else {
-	    undef
+	    ()
 	}
-    };
-    $decmd and do {
+    }) {
 	my $f= xopen_read $file;
 	my $tdir= xtmpdir $TMPDIR."/";
 	my $filename= basename $file;
-	##ugly, shouldn't this be done by the decompression detection routine.
-	$filename=~ s/\.(gz|bz2)\z//is;
-	##/ugly
+	$filename=~ s/\.$suffix\z//is;
 	my $t= xtmpfile "$tdir/$filename";
 	my $r= xreceiverpipeline_with_out_to($t, $decmd);
 	$f->xsendfile_to($r);
@@ -92,6 +89,8 @@ sub uncompress {
 	$t->xclose;
 	$t->xputback(0644);
 	bless [$tdir, $t->path], "CJ_uncompress_run::Tmpfile"
+    } else {
+	undef
     }
 }
 
@@ -111,7 +110,7 @@ sub uncompress {
 
 if (@fileargs==1) {
     my $file= $fileargs[0][0];
-    if (my $uncompressed= uncompress $file) {
+    if (my $uncompressed= maybe_uncompress $file) {
 	xxsystem $origprog, map {
 	    if ($$_[1]) {
 		$uncompressed->path
