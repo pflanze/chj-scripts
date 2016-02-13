@@ -41,16 +41,14 @@ use Chj::xperlfunc;
 use Chj::Unix::SuperPATH;
 
 sub normalexe {
-#    &{(do{ # really, I'm not joking, those *3* layers around the if are necessary.
-&{ # ah no, this works, too. but once you decide (usually you have to,right???!) to use do, then you have to wrap it up in two additional layers. Funny, why is the do not necessary here?. (*because* it would take 3 layers otherwise?)
+    &{
 	if ($origprog=~ m|/|) {
 	    \&xexec
 	} else {
 	    \&xsuperexec
 	}
-}
-#    })}
-($origprog,@ARGV);
+    }
+      ($origprog,@ARGV);
 }
 
 use Chj::IO::Command;
@@ -81,9 +79,8 @@ sub uncompress {
 	}
     };
     $decmd and do {
-	#wiedermal  pipelinenötig
 	my $f= xopen_read $file;
-	my $tdir= xtmpdir $TMPDIR."/"; # do not use lengthy program path. Well, I really meant to say this to xtmpfile; but there I'm now using the (exact) filename anyway (with xputback).
+	my $tdir= xtmpdir $TMPDIR."/";
 	my $filename= basename $file;
 	##ugly, shouldn't this be done by the decompression detection routine.
 	$filename=~ s/\.(gz|bz2)\z//is;
@@ -92,10 +89,8 @@ sub uncompress {
 	my $r= xreceiverpipeline_with_out_to($t, $decmd);
 	$f->xsendfile_to($r);
 	$r->xxfinish;
-	$t->xclose;#ps ich gebe $t hin aber in wahrheit tut es fd gell geben ?.
-	$t->xputback(0644);#hm forever--mask or perms?
-	## what with the cleanup??.switched off now  ? I think. rite?.
-	## but the wrapper object will need to make some ordering anyway so don't bother.
+	$t->xclose;
+	$t->xputback(0644);
 	bless [$tdir, $t->path], "CJ_uncompress_run::Tmpfile"
     }
 }
