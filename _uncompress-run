@@ -74,6 +74,8 @@ sub uncompress {
 	    ["gunzip"]
 	} elsif ($cnt=~ /: bzip2 compressed/) {
 	    ["bunzip2"]
+	} elsif ($cnt=~ /: XZ compressed/) {
+	    ["xz", "-d"]
 	} else {
 	    undef
 	}
