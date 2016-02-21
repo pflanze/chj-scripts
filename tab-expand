@@ -5,7 +5,7 @@ set -e
 if [ -n "$TAB_EXPAND_N" ]; then 
     N=$TAB_EXPAND_N  # w/o quotes so code can be given ok?
 else
-    N=4
+    N=8
 fi
 
 if [ $# -gt 0 ]; then
