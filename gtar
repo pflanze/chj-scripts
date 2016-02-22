@@ -3,7 +3,8 @@
 set -eu
 
 help () {
-    echo "$0 id outpath.tgz"
+    echo "$0 id outpath"
+    echo "  outpath should end in .tar, .tgz, .tar.gz, .tar.bz2, .tar.xz"
     exit 1
 }
 
@@ -14,9 +15,26 @@ fi
 id="$1"
 outpath="$2"
 
-bn=`basename "$outpath" .tgz`
+base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz)[^/]*$}{}s; print'`
 
-set -x
+produce () {
+    local bn=`basename "$base"`
+    git archive --format=tar --prefix="$bn"/ "$id"
+    # ^yeah, don't forget the / ..
+}
 
-git archive --format=tar --prefix="$bn"/ "$id" | gzip > "$outpath"
-# ^yeah, don't forget the / ..
+compress=''
+if echo "$outpath" | grep -q 'gz$'; then
+    produce | gzip > "$outpath"
+elif echo "$outpath" | egrep -q '\.xz$'; then
+    produce > "$base.tar"
+    xz "$base.tar"
+elif echo "$outpath" | egrep -q '\.rz$'; then
+    produce > "$base.tar"
+    rzip "$base.tar"
+elif echo "$outpath" | egrep -q 'bz2$'; then
+    produce > "$base.tar"
+    bzip2 "$base.tar"
+else
+    produce > "$outpath"
+fi
