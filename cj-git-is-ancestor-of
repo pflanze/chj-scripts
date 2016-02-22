@@ -9,12 +9,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname commit1 commit2
+    print "$myname ancestor descendant
 
-  Returns true (and says so by default) if commit1 is in the history
-  seen from commit2.
+  Returns true (and says so by default) if ancestor is in the history
+  seen from descendant.
 
-  NOTE: gives true for the case of commit1 == commit2.
+  NOTE: gives true for the case of ancestor == descendant.
 
   Options:
   -q|--quiet   only use exit status to tell result, do not print anything
