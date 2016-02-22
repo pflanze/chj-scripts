@@ -53,9 +53,9 @@ sub show_ancestority ( $ $ $ ) {
     $is
 }
 sub main_both {
-    my $is1= show_ancestority (1,$ancestor,$descendant);
-    my $is2= show_ancestority (1,$descendant,$ancestor);
-    exit (($is1 or $is2) ? 0 : 1);
+    exit ((show_ancestority (1,$ancestor,$descendant)
+	   or
+	   show_ancestority (1,$descendant,$ancestor)) ? 0 : 1);
 }
 sub main_one {
     my $is= show_ancestority (0,$ancestor,$descendant);
