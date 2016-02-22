@@ -37,15 +37,15 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV==2;
 
-our ($commit1,$commit2)=@ARGV;
+our ($ancestor,$descendant)=@ARGV;
 
 use Chj::Git::Functions 'is_ancestor_of';
 
 sub show_ancestority ( $ $ $ ) {
-    my ($show_prelude,$commit1,$commit2)=@_;
-    my $is= is_ancestor_of ($commit1,$commit2,$verbose);
+    my ($show_prelude,$ancestor,$descendant)=@_;
+    my $is= is_ancestor_of ($ancestor,$descendant,$verbose);
     if (!$opt_quiet) {
-	print(($show_prelude ? "is '$commit1' ancestor of '$commit2'?: " : ""),
+	print(($show_prelude ? "is '$ancestor' ancestor of '$descendant'?: " : ""),
 	      ($is ? "yes" : "no"),
 	      "\n")
 	  or die;
@@ -53,12 +53,12 @@ sub show_ancestority ( $ $ $ ) {
     $is
 }
 sub main_both {
-    my $is1= show_ancestority (1,$commit1,$commit2);
-    my $is2= show_ancestority (1,$commit2,$commit1);
+    my $is1= show_ancestority (1,$ancestor,$descendant);
+    my $is2= show_ancestority (1,$descendant,$ancestor);
     exit (($is1 or $is2) ? 0 : 1);
 }
 sub main_one {
-    my $is= show_ancestority (0,$commit1,$commit2);
+    my $is= show_ancestority (0,$ancestor,$descendant);
     exit ($is ? 0 : 1);
 }
 
