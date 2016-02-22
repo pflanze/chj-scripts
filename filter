@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+usage () {
+    echo "usage: $0 cmd [arguments] < in > out"
+    echo "  run cmd and arguments on each chomp'ed line, print those "
+    echo "  for which it returns success."
+    exit 1
+}
+
+if [ $# -ge 1 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+	usage
+    fi
+else
+    usage
+fi
+
+
+while read line; do
+    #if "$@" "$(echo "$line")"; then
+    # line seems to already have been chomped
+    if "$@" "$line"; then
+	echo "$line"
+    fi
+done
+
