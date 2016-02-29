@@ -19,7 +19,9 @@ try () {
 }
 
 view () {
-    local dir=/usr/share/doc/"$1"
+    local package="$1"
+    local packagename=`echo "$package"|sed s/:.*//`
+    local dir=/usr/share/doc/"$packagename"
     local triedfiles=""
     
     try changelog.Debian.gz || try changelog.gz || {
