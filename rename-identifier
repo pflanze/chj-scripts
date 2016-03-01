@@ -14,6 +14,9 @@ sub usage {
   word boundaries at the start and end of the string, to tostring in
   all files listed by git ls-files.
 
+  Options:
+    --scm  require Scheme symbol boundaries instead of word boundaries
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -21,9 +24,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_scm=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "scm"=> \$opt_scm,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV==2;
@@ -33,7 +37,15 @@ use Chj::xperlfunc;
 
 ($ENV{FROMSTR}, $ENV{TOSTR})= @ARGV;
 
-xexec "mysed", 's/\b\Q$ENV{FROMSTR}\E\b/$ENV{TOSTR}/sg',
+my $scmboundary=
+  '\s|[()"`\'\[\]\|]';
+
+xexec "mysed",
+  ($opt_scm ?
+   ('s/(?:^|(?<='.$scmboundary.'))\Q$ENV{FROMSTR}\E(?:(?='.$scmboundary.')|$)'
+    .'/$ENV{TOSTR}/sg')
+   :
+   ('s/\b\Q$ENV{FROMSTR}\E\b/$ENV{TOSTR}/sg')),
   grep { not -l $_ } git_ls_files;
 
 
