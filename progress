@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Mit Mär 30 20:15:50 BST 2016
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname pid fd
+
+  reports progress reading or writing from/to fd <fd> by process <pid>
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+our ($pid, $fd)=@ARGV;
+
+use Chj::xperlfunc qw(xstat);
+
+#XX use functional-perl predicates for this? also, taint mode
+$pid=~ /^\d+\z/ or die;
+$fd=~ /^\d+\z/ or die;
+
+use Chj::xopen qw(xopen_read);
+
+sub xfilesize {
+    xstat("/proc/$pid/fd/$fd")->size
+}
+
+sub xinfopos {
+    my $cnt= xopen_read("/proc/$pid/fdinfo/$fd")->xcontent;
+    my ($pos)= $cnt=~ /(?:^|\n)pos:\s*(\d+)(?:\n|$)/s
+      or die "no match";
+    $pos
+}
+
+while (1) {
+    my $s= xfilesize;
+    my $pos= xinfopos;
+    printf "%2.1f%%\n", $pos/$s * 100;
+    sleep 1;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
