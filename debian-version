@@ -241,11 +241,12 @@ sub parseversion {
 	if ($r1 eq $r2) {
 	    make_release_with_key (join(" / ",@parts),$r1)
 	} else {
+	    #warn "shit: '$r1' '$r2'";
 	    die ("'$file' contains contradicting information, "
 		 ."leading to release "
-		 .$r1->as_string
+		 .(ref $r1 ? $r1->as_string : $r1)
 		 ." vs "
-		 .$r2->as_string)
+		 .(ref $r2 ? $r2->as_string : $r2))
 	}
     } else {
 	if ($r1) {
