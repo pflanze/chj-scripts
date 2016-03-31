@@ -69,14 +69,15 @@ sub mounts {
     package CHJ::Mountinfo;
     our @fields= do {
       my $v= `cat /etc/debian_version`;
-      if ($v =~ /^8\./ or $v =~ /^stretch/) { #sigh they had to change this file format WTF
-	# '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
-	qw(dunno1 dunno2 dev_major_minor from mountpoint options
-	   dunno3 dunno4 type1 type2 moreoptions)
-      } else {
+      my ($maybe_version)= $v =~ /^(\d+)\./;
+      if ($maybe_version and $maybe_version < 8 ) {
 	# '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
 	qw(dunno1 dunno2 dev_major_minor from mountpoint options
 	   dunno3 type1 type2 moreoptions)
+      } else {
+	# '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
+	qw(dunno1 dunno2 dev_major_minor from mountpoint options
+	   dunno3 dunno4 type1 type2 moreoptions)
       }
     };
     my $i=0;
