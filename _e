@@ -11,6 +11,12 @@ sub xfork {
     $p
 }
 
+sub tty {
+    my $s= `tty`;
+    chomp $s;
+    $s
+}
+
 
 $|++;
 
@@ -247,7 +253,7 @@ if (!$ENV{DISPLAY} or $nw) {
 	if (my ($path)= perhaps_uniq @paths) {
 	    $path
 	} else {
-	    $ENV{SSH_TTY} || die "no controlling tty?";
+	    $ENV{SSH_TTY} || tty || "no controlling tty?";
 	    # XX `ps -h -o tty -p $$` seems to be another way. Really
 	    # use it? How does it work?
 	}
