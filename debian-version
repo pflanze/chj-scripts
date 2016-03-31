@@ -91,7 +91,10 @@ our $release_by_name;
 	my $s=shift;
 	$$release_by_name{$$s[Name]}->fullinfo
     }
-
+    sub as_string {
+        my $s=shift;
+        $s->name
+    }
     end Class::Array;
 }
 
