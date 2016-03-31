@@ -256,7 +256,7 @@ sub parseversion {
 	}
     } else {
 	if ($r1) {
-	    make_release_with_key ($parts[0],undef)
+	    make_release_with_key ($parts[0],$r1)
 	} else {
 	    die "couldn't find release for key '$parts[0]'";
 	}
