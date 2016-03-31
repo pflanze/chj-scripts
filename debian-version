@@ -149,6 +149,8 @@ our $releases=
    ["jessie", "8.1", "2015-06-06"],
    ["jessie", "8.2", "2015-09-05"],
 
+   ["stretch", "9.0"],
+
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
    ["?", undef, undef, undef, undef, undef, undef ]
@@ -225,6 +227,7 @@ sub maybe_find_release {
 	$key=~ /^(\d+\.\d+)\.\d+\s*\z/s and $$release_by_number{$1}
     }
 }
+#use Chj::repl;repl;die "WRTF"; exit;
 
 sub parseversion {
     my ($versionstring,$maybe_file)=@_;
