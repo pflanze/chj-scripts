@@ -50,7 +50,8 @@ if (@ARGV) {
       for @ARGV;
 } else {
     while (<STDIN>) {
-	xprint unix2local $_
+	s/^(\d{10}(?:\.\d*)?)(\s)/ unix2local ($1).$2 /e;
+	print;
     }
 }
 
