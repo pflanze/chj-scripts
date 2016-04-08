@@ -33,8 +33,10 @@ GetOptions("verbose"=> \$verbose,
 sub unix2local {
     my ($line)=@_;
     if ($line=~ s/^(\d{10})(\.\d*)?//) {
-	my ($unix,$fract)=($1,$2);
-	localtime($unix)." ".$fract.$line
+	my ($unix,$maybe_fract)=($1,$2);
+	localtime($unix)
+	  .(defined $maybe_fract ? " ".$maybe_fract : "")
+	    .$line
     } else {
 	$line
     }
