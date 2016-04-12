@@ -76,24 +76,20 @@ use Chj::xperlfunc ':all';
 
 ##ENDLESS lib stuff:
 
-use Chj::xopen 'xopen_read', 'xopen_write';
-# don't have 'perhaps_xopen_read' here yet.
+use Chj::xopen qw(perhaps_open_read xopen_write);
 use POSIX qw(ENOENT);
 
 sub xContent ( $ ; $) {
     my ($path, $maybe)= @_;
-    if (my $f= eval {
-	xopen_read $path
-    }) {
+    if (my $f= perhaps_open_read $path) {
 	my $cntrf= $f->xcontentref;
 	$f->xclose;
 	$$cntrf
     } else {
-	my $e= $@;
 	if ($maybe and $! == ENOENT) {
 	    undef
 	} else {
-	    die $e
+	    die "open_read '$path': $!";
 	}
     }
 }
