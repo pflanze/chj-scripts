@@ -36,7 +36,7 @@ package Chj::xpipe;
 @ISA='Exporter';
 require Exporter;
 @EXPORT= qw(xpipe);
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 use Chj::IO::Pipe;
 use Carp;

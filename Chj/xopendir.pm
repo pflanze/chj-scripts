@@ -89,7 +89,7 @@ package Chj::xopendir;
 @ISA='Exporter'; require Exporter;
 @EXPORT= qw(xopendir);
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 use Chj::IO::Dir;
 
 sub xopendir($) {

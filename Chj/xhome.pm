@@ -40,7 +40,7 @@ package Chj::xhome;
 	     );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 #our $HOME=
 
