@@ -146,10 +146,10 @@ BEGIN {
     if ($@) {
 	$has_posix=0;
 	require Errno;
-	Errno->import( 'EINVAL');
+	Errno->import( qw(EINVAL ENOENT));
     } else {
 	$has_posix=1;
-	POSIX->import( 'EINVAL');
+	POSIX->import( qw(EINVAL ENOENT));
     }
 }
 
@@ -275,7 +275,7 @@ sub new {
 #sub bless {
 
 
-sub xopen { ## should i prototype arguments?
+sub perhaps_open {
     my $proto=shift;
     my $self= ref $proto ? $proto : $proto->new;
     my $rv;
@@ -288,7 +288,7 @@ sub xopen { ## should i prototype arguments?
     }
     $rv or do {
 	$Chj::IO::ERRSTR=$!; $Chj::IO::ERRNO=$!+0;
-	croak "xopen @_: $!";
+	return ()
     };
     #my $filename= $_[0]=~ /^[<>!+]+\z/ ? $_[1] : $_[0];
     #$metadata{pack "I",$self}= $filename;
@@ -300,6 +300,27 @@ sub xopen { ## should i prototype arguments?
 	$self->set_opened_name(1,$_[0]);
     }
     $self
+}
+
+sub xopen {
+    my $proto=shift;
+    if (my ($fh)= $proto->perhaps_open (@_)) {
+	$fh
+    } else {
+	croak "xopen @_: $Chj::IO::ERRSTR";
+    }
+}
+
+# die on all errors except ENOENT
+sub perhaps_xopen {
+    my $proto=shift;
+    if (my ($fh)= $proto->perhaps_open (@_)) {
+	$fh
+    } elsif ($Chj::IO::ERRNO == ENOENT) {
+	()
+    } else {
+	croak "xopen @_: $Chj::IO::ERRSTR";
+    }
 }
 
 sub xsysopen {
