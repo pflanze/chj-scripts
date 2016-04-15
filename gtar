@@ -2,18 +2,25 @@
 
 set -eu
 
+default_outpath=../$(basename "$(pwd)").tar.xz
+
 help () {
-    echo "$0 id outpath"
+    echo "$0 [id outpath]"
     echo "  outpath should end in .tar, .tgz, .tar.gz, .tar.bz2, .tar.xz"
+    echo "  If no argument is given, uses: HEAD $default_outpath"
     exit 1
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -eq 2 ]; then
+    id="$1"
+    outpath="$2"
+elif [ $# -eq 0 ]; then
+    id=HEAD
+    outpath=$default_outpath
+else
     help
 fi
 
-id="$1"
-outpath="$2"
 
 base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz)[^/]*$}{}s; print'`
 
