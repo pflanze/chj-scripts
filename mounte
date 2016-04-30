@@ -537,8 +537,15 @@ sub mount_easily {
 		    }
 		}
 	    } else {
-		print "$myname thinks that no fsck is needed for filesystem type '$fstype'\n"
-		  if ($verbose or $verbosevolume);
+		# always run fsck? without -n, since -n means not to
+		# write notice that it's been checked, so it would run
+		# each time fully. Will fail if mounted, but then? Hm,
+		# todo: a mount check that detects mount of the
+		# source, not target? Question: do all fsck checkers
+		# behave this way? XX: some filesystems like FAT do
+		# not seem to have a mount counter, hence full check
+		# will happen every time!
+		xxsystem "fsck", $device_path;
 	    }
 	} elsif ($device_fileinfo=~ /^Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
 	    #ok
