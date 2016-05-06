@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+
+usage () {
+    echo "usage: $0 oldtagname newtagname"
+    echo "  deletes then recreates the given tag. Only accepts contentless tags for now, OK?"
+    exit 1
+}
+
+
+if [ $# != 2 ]; then
+    usage
+fi
+
+oldtagname="$1"
+newtagname="$2"
+
+obj=`gcat "$oldtagname"`
+
+# XXX how to cut apart head vs body, finally, please!
+head="$obj"
+
+if echo "$head" | grep -q '^tag '; then
+    echo "'$oldtagname' is an annotated tag, cannot currently rename these"
+    exit 1
+fi
+
+g-tag "$newtagname" "$oldtagname"
+g-tag -d "$oldtagname"
+
+echo "OK. (Don't forget to remove it from places you've pushed it to already.)"
