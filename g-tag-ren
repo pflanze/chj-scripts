@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# mostly-copy from g-ren
+
+#[todo check for -h ?]
+
+set -eu  #? don't have that in g-ren
+
+for f in "$@"; do
+    newf="`ren --nonfiles "$f"`"
+    g-tag-rename "$f" "$newf"
+done
