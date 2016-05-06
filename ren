@@ -16,6 +16,7 @@ sub usage {
    -d|--debug
    --help
    --print-only
+   --nonfiles     do not access the file system; implicates --print-only
 
   (Christian Jaeger <$email>)
 ";
@@ -25,9 +26,11 @@ exit @_ ? 1 : 0;
 use Getopt::Long;
 our $DEBUG=0;
 our $opt_print_only;
+our $opt_nonfiles;
 GetOptions("d|debug"=> \$DEBUG,
 	   "help"=> sub{usage},
 	   "print-only"=> \$opt_print_only,
+	   "nonfiles"=> \$opt_nonfiles,
 	  ) or exit 1;
 usage unless @ARGV;
 
@@ -93,8 +96,14 @@ sub cached_maxfilenamelen {
 sub ren {
     my ($path)=@_;
 
-    lstat $path or die "'$path': $!";
-    my $path_is_d= -d _;
+    my $path_is_d= do {
+	if ($opt_nonfiles) {
+	    undef
+	} else {
+	    lstat $path or die "'$path': $!";
+	    -d _
+	}
+    };
 
     $path=~ s|/+\z||s;
     # ^important
@@ -107,14 +116,14 @@ sub ren {
 	    if (length($newname)) {
 		if ($newname ne $filename) {
 		    my $newpath= "$folder$newname";
-		    if (lstat $newpath) {
+		    if (!$opt_nonfiles and lstat $newpath) {
 			die "target exists"; # ask user for forcing instead?
 			if(!1){
 			    return
 			}
 		    }
 		    eval {
-			if ($opt_print_only) {
+			if ($opt_nonfiles or $opt_print_only) {
 			    print $newpath."\n";
 			} else {
 			    if ($path_is_d) {
