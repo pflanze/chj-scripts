@@ -507,6 +507,7 @@ sub git_tags () {
 
 
 sub status_is_clean {
+    local $ENV{LANG}="C";
     my $in= Chj::IO::Command->new_combinedsender( "git","status");
     my $incnt= $in->xcontent;
     my $instatus= $in->xfinish;
