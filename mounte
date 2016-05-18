@@ -536,6 +536,9 @@ sub mount_easily {
 			# else ok
 		    }
 		}
+	    } elsif ($fstype eq 'ROM') {
+		# $fstype=~ /iso9660/i nope doesn't happen
+		# read-only file system
 	    } else {
 		# always run fsck? without -n, since -n means not to
 		# write notice that it's been checked, so it would run
