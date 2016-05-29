@@ -98,6 +98,7 @@ sub mountinfos {
     my $path= "/proc/self/mountinfo";
     my $f= xopen_read $path;
     my @m;
+    local $_;
     while (<$f>) {
 	my @f= split " ";
 	@f == @CHJ::Mountinfo::fields
