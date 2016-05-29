@@ -68,17 +68,28 @@ sub mounts {
 {
     package CHJ::Mountinfo;
     our @fields= do {
-      my $v= `cat /etc/debian_version`;
-      my ($maybe_version)= $v =~ /^(\d+)\./;
-      if ($maybe_version and $maybe_version < 8 ) {
-	# '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
-	qw(dunno1 dunno2 dev_major_minor from mountpoint options
-	   dunno3 type1 type2 moreoptions)
-      } else {
-	# '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
-	qw(dunno1 dunno2 dev_major_minor from mountpoint options
-	   dunno3 dunno4 type1 type2 moreoptions)
-      }
+	my $v= `cat /etc/debian_version`;
+	my ($maybe_version)= $v =~ /^(\d+)\./;
+	if ($maybe_version and $maybe_version < 8 ) {
+	    # '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
+	    qw(dunno1 dunno2 dev_major_minor from mountpoint options
+	       dunno3 type1 type2 moreoptions)
+	} else {
+	    if (my ($release_name)= $v=~ m|^([a-z]{3,})/|) {
+		if ($release_name eq "jessie") {
+		    qw(dunno1 dunno2 dev_major_minor from mountpoint options
+		       dunno3 dunno4 type1 type2 moreoptions)
+		} elsif ($release_name eq "stretch") {
+		    # '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
+		    qw(dunno1 dunno2 dev_major_minor from mountpoint options
+		       dunno5 type1 type2 moreoptions)
+		} else {
+		    die "don't know how to handle release '$release_name'";
+		}
+	    } else {
+		die "no match for release name in: '$v'";
+	    }
+	}
     };
     my $i=0;
     for (@fields) {
