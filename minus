@@ -5,7 +5,7 @@
 
 use strict;
 #use Chj::IO::File;
-use Chj::xopen qw(xopen_input xopen_output);
+use Chj::xopen qw(xopen_read xopen_write);
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
@@ -66,7 +66,7 @@ my ($infile,$minusfile,$minusminusinfile)=@args;
 #     $file1{$key}=$n++;
 # }
 
-my $minus= xopen_input $minusfile;
+my $minus= xopen_read $minusfile;
 my %minus;
 my @minus;
 if (defined $minusminusinfile) {
@@ -92,7 +92,7 @@ if (defined $minusminusinfile) {
 
 # and *now* look at input.
 
-my $in= xopen_input $infile;
+my $in= xopen_read $infile;
 while(defined(my$line=$in->xreadline)){
     my $key=$opt_i ? lc($line) : $line; chomp $key;
     #print $line unless exists $minus{$key};
@@ -117,7 +117,7 @@ while(defined(my$line=$in->xreadline)){
 # well, aber sortiert ist das garantiert nicht mehr. und zeilenenden.
 
 if (defined $minusminusinfile) {
-    $minusminusinfile= xopen_output $minusminusinfile;
+    $minusminusinfile= xopen_write $minusminusinfile;
 #     for (keys %minus){
 # 	if (defined $minus{$_}){
 # 	    $minusminusinfile->xprint($minus[$minus{$_}]);
