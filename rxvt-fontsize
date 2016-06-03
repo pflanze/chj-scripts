@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+font=${RXVT_UNICODE_FONT:-Inconsolata}
+#  security? nah ?
+
+usage () {
+    echo "usage: $0 n"
+    echo "  sets font size in current rxvt-unicode window to n pixels"
+    echo "  using font $font (RXVT_UNICODE_FONT)"
+    exit 1
+}
+
+if ! [ $# -eq 1 ]; then
+    usage
+fi
+
+if ! echo "$1" | egrep -q '^[0-9]+$'; then
+    usage
+fi
+
+printf '\e]710;%s\007' "xft:$font:pixelsize=$1"

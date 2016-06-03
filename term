@@ -7,6 +7,15 @@ use strict;
 
 use POSIX qw(setsid);
 
+my $font= $ENV{RXVT_UNICODE_FONT} || "Inconsolata";
+my $fontsize= $ENV{RXVT_UNICODE_FONTSIZE} || 18;
+
+$font=~ /^\w[\w ]*\w$/s
+  or die "invalid font format: $font";
+$fontsize=~ /^\d+$/s
+  or die "invalid fontsize format: $fontsize";
+
+
 my $pid=fork;
 defined
   $pid or die "fork: $!";
@@ -35,9 +44,11 @@ if ($pid) {
 		       map {
 			   singlequote_sh $_
 		       }
-		       ("urxvt", ("-tn", "xterm",
-				  ($> == 0 ? ("-bg", "#ffd8d8") : ()),
-				  @args)));
+		       ("urxvt",
+			"-fn", "xft:$font,pixelsize=$fontsize",
+			("-tn", "xterm",
+			 ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+			 @args)));
 	exec "/bin/bash", "-c", join("\n",@scriptlines)
 	  or exit 127;
     };
