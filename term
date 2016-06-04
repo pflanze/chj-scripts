@@ -46,7 +46,7 @@ if ($pid) {
 			   singlequote_sh $_
 		       }
 		       ("urxvt",
-			"-fn", "pixelsize=$fontsize,xft:$font",
+			"-fn", "xft:$font:pixelsize=$fontsize",
 			("-tn", "xterm",
 			 ($> == 0 ? ("-bg", "#ffd8d8") : ()),
 			 @args)));
