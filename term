@@ -9,7 +9,6 @@ use POSIX qw(setsid);
 
 my $font= $ENV{RXVT_UNICODE_FONT} || "Inconsolata";
 my $fontsize= $ENV{RXVT_UNICODE_FONTSIZE} || 18;
-warn "fontsize=$fontsize";
 
 $font=~ /^\w[\w ]*\w$/s
   or die "invalid font format: $font";
@@ -51,7 +50,6 @@ if ($pid) {
 			 ($> == 0 ? ("-bg", "#ffd8d8") : ()),
 			 @args)));
 	my $script= join("\n",@scriptlines);
-	warn "script='$script'";
 	exec "/bin/bash", "-c", $script
 	  or exit 127;
     };
