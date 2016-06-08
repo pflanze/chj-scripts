@@ -42,7 +42,9 @@ my @debian_keyrings=
    ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
    ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
    ["debian-keyring"=> "/usr/share/keyrings/debian-role-keys.gpg"],
-   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.pgp"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-nonupload.gpg"],
+   ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
+   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
   );
 
 if (@indexes) {
