@@ -148,6 +148,17 @@ our $releases=
    ["wheezy", "7.7"],
    ["wheezy", "7.8"],
    ["wheezy", "7.9"],
+   ["wheezy", "7.10"],
+   ["wheezy", "7.11"],
+   # future ones:
+   ["wheezy", "7.12"],
+   ["wheezy", "7.13"],
+   ["wheezy", "7.14"],
+   ["wheezy", "7.15"],
+   ["wheezy", "7.16"],
+   ["wheezy", "7.17"],
+   ["wheezy", "7.18"],
+
    ["jessie", "8.0", "2015-04-25", ">43000", "20000..20100", undef, "2020-04 (next 5 years)"],
    ["jessie", "8.1", "2015-06-06"],
    ["jessie", "8.2", "2015-09-05"],
