@@ -36,7 +36,24 @@ our $conv=
     "feet"=> sub {
 	my ($v)=@_;
 	($v * 0.3048)." m, ".($v * 12). " in"
-    }
+    },
+    do {
+	my $f= sub {
+	    my ($gal)=@_;
+	    my $imperial_gallon= 4.54609; # l, used in the United
+                                          # Kingdom, Canada, and some
+                                          # Caribbean nations
+	    my $US_gallon= 3.785; # l, used in the US and some Latin
+                                  # American and Caribbean countries
+
+	    # While there is no official symbol for the gallon (as
+	    # there are for SI units), gal is in common use.
+	    "$gal gal (imperial) = ".($gal * $imperial_gallon)." l"
+	      .", $gal gal (US) = ".($gal * $US_gallon)." l"
+	};
+	(gal=> $f,
+	 gallon=> $f)
+    },
    }->{$myname}
   or die "unknown name '$myname'";
 
