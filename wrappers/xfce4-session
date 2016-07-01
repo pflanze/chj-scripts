@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# dpkg-divert --local --rename /usr/bin/xfce4-session
+# ln -s /opt/chj/bin/wrappers/xfce4-session /usr/bin/
+
+#set -euo pipefail
+#IFS=
+
+if [ -f ~/.bash_profile ]; then
+    source ~/.bash_profile
+fi
+
+exec /usr/bin/xfce4-session.distrib "$@"
