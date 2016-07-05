@@ -16,7 +16,7 @@ if ($ENV{TRASHCAN}) {
 } elsif (-e $ENV{HOME}."/.Trash/") {
     $trash=$ENV{HOME}."/.Trash/";
 } else {
-	die "Konnte Deinen Trashcan nicht finden. ";
+	die "Couldn't find your trash can!";
 }
 
 if ($ARGV[0]=~ /^--?h(elp)?$/ or @ARGV<2) {
