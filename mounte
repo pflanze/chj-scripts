@@ -431,7 +431,8 @@ sub mount_easily {
 	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
 	my $open= sub {
 	    if (-f $device_path) {
-		my $in=  Chj::IO::Command->new_sender("losetup","-fs",$device_path);
+		my $in=  Chj::IO::Command->new_sender("losetup","-f","--show",
+						      $device_path);
 		my $new= $in->xcontent; chomp $new; #chop?
 		$in->xxfinish;
 		print "using loop device: '$new'\n";# to stderr? xprint ?
