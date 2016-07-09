@@ -40,7 +40,7 @@ cj-gitmetadata save
 # need -f because on novo I have * in .gitignore
 git add -f .METADATA-v2
 
-if git commit -a $options; then
+if eval "git commit -a $options"; then
 
     if [ ! -f .git/scoma-no-push ]; then
 	git push origin master
