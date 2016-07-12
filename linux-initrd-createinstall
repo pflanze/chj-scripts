@@ -65,10 +65,11 @@ our @cmd=("update-initramfs",
 
 Do xxsystem=> @cmd;
 
-Do xsystem=> "mvnumber", "$boot/initrd.img.old";#well.
-Do xrename=> "$boot/initrd.img", "$boot/initrd.img.old";
-Do xsymlink=> "initrd.img-$kernel_version", "$boot/initrd.img";
-
+if (-e "$boot/initrd.img") {
+    Do xsystem=> "mvnumber", "$boot/initrd.img.old";#well.
+    Do xrename=> "$boot/initrd.img", "$boot/initrd.img.old";
+    Do xsymlink=> "initrd.img-$kernel_version", "$boot/initrd.img";
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
