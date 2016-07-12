@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Christian Jaeger (http://christianjaeger.ch)
+
+if [ $# -ne 1 ]; then
+    echo "usage: $0 interface"
+    echo "  Configures interface and starts dhcp + dns service on it."
+    echo "  Don't forget to run 'masquerade on' separately if necessary."
+    exit 1
+fi
+
+set -eux
+
+if="$1"
+
+hostaddr=1
+startaddr=23
+endaddr=255
+iptrunk=192.168.66
+ip=$iptrunk.$hostaddr
+network=$iptrunk.0
+netmask=255.255.255.0
+
+# configure interface
+ifconfig $if $ip netmask $netmask up
+
+dhcprange=$iptrunk.$startaddr,$iptrunk.$endaddr
+
+# (turn off a DJBDNS dnscache that I've been using in some cases
+if [ -e /etc/dnscache1/ ]; then
+    svc -d /etc/dnscache1/
+fi
+if [ -e /etc/dnscache2/ ]; then
+    svc -d /etc/dnscache2/
+fi
+# )
+
+# stop possibly previously running instance (killall isn't such a safe
+# idea in general, but works for me(tm))
+killall dnsmasq || true
+
+dnsmasq -u dnsmasq -i $if --dhcp-range=$dhcprange
+
+set +x
+echo Ok.
