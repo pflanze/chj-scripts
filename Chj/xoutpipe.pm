@@ -42,7 +42,7 @@ package Chj::xoutpipe;
 @ISA='Exporter';
 require Exporter;
 @EXPORT= qw(xoutpipe);
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 use Chj::IO::Command;
 
 sub xoutpipe {

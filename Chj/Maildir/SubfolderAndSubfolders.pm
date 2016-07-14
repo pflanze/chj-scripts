@@ -202,7 +202,7 @@ sub rename {
 		}
 	    };
 	    $subscrs=~ s/^\Q$oldimapboxstring\E$/$newimapboxstring/m;
-	    for my $child (values %{$$self[Subfolders]}) {
+	    for my $child (sort values %{$$self[Subfolders]}) {
 		$do->($child);
 	    }
 	};

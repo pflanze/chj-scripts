@@ -51,7 +51,7 @@ L<Chj::IO::CommandStandalone>
 
 package Chj::IO::Command;
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 use base qw(
 	    Chj::IO::CommandCommon

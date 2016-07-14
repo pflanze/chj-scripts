@@ -1,9 +1,7 @@
-# Fri May  2 23:32:08 2003  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2003 by Christian Jaeger
+#
+# Copyright (c) 2003-2014 by Christian Jaeger ch@christianjaeger.ch
 # Published under the same terms as perl itself.
 #
-# $Id$
 
 =head1 NAME
 
@@ -129,7 +127,7 @@ L<Chj::xopen>, L<Chj::IO::SysFile>, L<Chj::xsysopen>
 
 package Chj::IO::File;
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 our @ISA=("IO");
 sub import { };
@@ -148,10 +146,10 @@ BEGIN {
     if ($@) {
 	$has_posix=0;
 	require Errno;
-	Errno->import( 'EINVAL');
+	Errno->import( qw(EINVAL ENOENT));
     } else {
 	$has_posix=1;
-	POSIX->import( 'EINVAL');
+	POSIX->import( qw(EINVAL ENOENT));
     }
 }
 
@@ -277,7 +275,7 @@ sub new {
 #sub bless {
 
 
-sub xopen { ## should i prototype arguments?
+sub perhaps_open {
     my $proto=shift;
     my $self= ref $proto ? $proto : $proto->new;
     my $rv;
@@ -290,7 +288,7 @@ sub xopen { ## should i prototype arguments?
     }
     $rv or do {
 	$Chj::IO::ERRSTR=$!; $Chj::IO::ERRNO=$!+0;
-	croak "xopen @_: $!";
+	return ()
     };
     #my $filename= $_[0]=~ /^[<>!+]+\z/ ? $_[1] : $_[0];
     #$metadata{pack "I",$self}= $filename;
@@ -302,6 +300,27 @@ sub xopen { ## should i prototype arguments?
 	$self->set_opened_name(1,$_[0]);
     }
     $self
+}
+
+sub xopen {
+    my $proto=shift;
+    if (my ($fh)= $proto->perhaps_open (@_)) {
+	$fh
+    } else {
+	croak "xopen @_: $Chj::IO::ERRSTR";
+    }
+}
+
+# die on all errors except ENOENT
+sub perhaps_xopen {
+    my $proto=shift;
+    if (my ($fh)= $proto->perhaps_open (@_)) {
+	$fh
+    } elsif ($Chj::IO::ERRNO == ENOENT) {
+	()
+    } else {
+	croak "xopen @_: $Chj::IO::ERRSTR";
+    }
 }
 
 sub xsysopen {
@@ -339,6 +358,26 @@ sub sysopen {
     $self->set_opened_path(1,$_[0]);
     $self
 }
+
+
+sub set_layer_or_encoding {
+    my $self=shift;
+    my ($layer_or_encoding)=@_;
+    my $layer=
+      ($layer_or_encoding=~ /^:/ ? $layer_or_encoding
+       : ":encoding($layer_or_encoding)");
+    binmode($self, $layer) or die;
+}
+
+sub perhaps_set_layer_or_encoding {
+    my $self=shift;
+    my ($maybe_layer_or_encoding)=@_;
+    if (defined $maybe_layer_or_encoding) {
+	$self->set_layer_or_encoding ($maybe_layer_or_encoding);
+    }
+}
+
+
 
 sub read {
     my $self=shift;
@@ -559,7 +598,7 @@ sub xreadline0 {
     $self->xreadline
 }
 #^ 'since it would be tedious' to add  once again  wantarray checking and then mapping with a Chomp   we leave that up to the receiver, good idea?.
-sub xreadline0chop {
+sub xreadline0_chop {
     my $self=shift;
     local $/= "\0";
     # and yes we really *have* to differ. or it would give the number of items. SIGH.
@@ -569,7 +608,7 @@ sub xreadline0chop {
 	} $self->xreadline
     } else {
 	my $str= $self->xreadline;
-	chop $str;
+	chop $str if defined $str;
 	$str
     }
 }

@@ -19,7 +19,7 @@ Chj::Unix::Signal
 
 package Chj::Unix::Signal;
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 use Class::Array -fields=>
   -publica=>

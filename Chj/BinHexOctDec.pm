@@ -32,7 +32,7 @@ Note: does NOT croak on invalid input but insteda just soweit wie geht
 =cut
 
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 sub bin {
     my $this=shift;

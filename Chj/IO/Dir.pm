@@ -1,10 +1,11 @@
-# Mon Jul 14 07:37:04 2003  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# moved here from Chj::xopendir.
 #
-# Copyright 2003 by Christian Jaeger
-# Published under the same terms as perl itself.
+# Copyright (c) 2003-2014 Christian Jaeger, copying@christianjaeger.ch
 #
-# $Id$
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version). See the file COPYING.md that came
+# bundled with this file.
+#
 
 =head1 NAME
 
@@ -21,7 +22,7 @@ See L<Chj::xopendir>.
 
 package Chj::IO::Dir;
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 use Symbol;
 use Carp;

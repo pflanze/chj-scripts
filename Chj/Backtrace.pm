@@ -20,7 +20,7 @@ TODO: breaks Chj::repl's signal catching. Surely others, too. What to do about i
 
 
 package Chj::Backtrace;
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 use Carp;
 
 # Carp::longmess 'usually' inserts a needless repetition

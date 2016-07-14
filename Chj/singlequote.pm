@@ -22,7 +22,7 @@ package Chj::singlequote;
 # importing 'many' is probably not a good idea (depreciated)
 %EXPORT_TAGS=(all=>[qw(singlequote singlequote_sh singlequote_many)]);
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 sub singlequote($ ;$ ) {
     my ($str,$alternative)=@_;

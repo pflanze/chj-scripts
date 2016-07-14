@@ -1,9 +1,11 @@
-# Sat Apr 26 18:16:52 2003  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
-# 
-# Copyright 2003 by Christian Jaeger
-# Published under the same terms as perl itself.
 #
-# $Id$
+# Copyright (c) 2003-2014 Christian Jaeger, copying@christianjaeger.ch
+#
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version). See the file COPYING.md that came
+# bundled with this file.
+#
 
 =head1 NAME
 
@@ -87,7 +89,7 @@ package Chj::xopendir;
 @ISA='Exporter'; require Exporter;
 @EXPORT= qw(xopendir);
 
-use strict;
+use strict; use warnings; use warnings FATAL => 'uninitialized';
 use Chj::IO::Dir;
 
 sub xopendir($) {

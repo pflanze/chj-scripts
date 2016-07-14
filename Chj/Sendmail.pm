@@ -43,7 +43,8 @@ use HTTP::Date;
 use Mail::Address;
 use Encode 'encode';
 use Chj::singlequote;#debug only
-
+use Chj::time;
+use Email::Date::Format qw(email_date);
 
 BEGIN {
     eval( ($] >= 5.008) ?
@@ -83,7 +84,7 @@ sub sendmail {
 sub preparemail {
     my @realargs;# array of references
     my $Charset= 'ISO-8859-1'; # unless overridden
-    my ($flag_Data,$flag_Encoding,$flag_ContentType);
+    my ($flag_Data,$flag_Encoding,$flag_ContentType,$flag_Date);
     my $Data;
     for (my $i=0; $i<$#_; $i+=2) {
 	local $_= \ $_[$i];
@@ -92,6 +93,8 @@ sub preparemail {
 	    $Data= encode($Charset,$_[$i+1]);
 	    $Data=~ s/\015\012/\n/sg;
 	    push @realargs, $_, \ $Data;
+	} elsif (lc($$_) eq 'date') {
+	    $flag_Date=1;
 	} elsif ($$_ eq 'Encoding') {
 	    $flag_Encoding=1;
 	    push @realargs, $_, \ $_[$i+1];
@@ -142,6 +145,9 @@ sub preparemail {
     }
     if (!$flag_Encoding) {
 	unshift @realargs, \ ("Encoding","quoted-printable");
+    }
+    if (!$flag_Date) {
+	unshift @realargs, \ ("Date",email_date(time));
     }
     #use Data::Dumper; warn __PACKAGE__.": realargs= ".Dumper( \@realargs);
     my $msg= MIME::Lite->new(map { $$_} @realargs)
