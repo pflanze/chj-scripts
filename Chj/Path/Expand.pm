@@ -43,9 +43,6 @@ use Chj::singlequote ':all';
 
 # 'syntax' to make passing the function as first argument to itself simpler
 sub call {
-    #my ($fn,@args)=@_;
-    #@_=($fn,@args);
-
     # "Deep recursion on anonymous subroutine" can be disabled here
     # (heh, at the place where a new frame is *not* allocated, how
     # comes?):
