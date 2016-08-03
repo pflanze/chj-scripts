@@ -159,10 +159,13 @@ unless ($opt_no_mount) {
       "tmpfs","$chrootbase/lib/init/rw";
 
     if (-l "$chrootbase/dev/shm") {
-	my $target= PathExpand_all("/dev/shm", $chrootbase);
-	#warn "target='$target'";
-	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
-	  "tmpfs",$target;
+	if (my ($target)= perhaps_PathExpand_all("/dev/shm", $chrootbase)) {
+	    #warn "target='$target'";
+	    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
+	      "tmpfs",$target;
+	}
+	# else: newer distroy (jessie) that doesn't have that dir anymore.
+	# EHR, how would this ever be called though, if -l must have failed?
     } else {
 	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
 	  "tmpfs","$chrootbase/dev/shm";
