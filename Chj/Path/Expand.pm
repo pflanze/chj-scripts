@@ -33,13 +33,45 @@ Chj::Path::Expand - resolving paths safely for chroots
 
 package Chj::Path::Expand;
 @ISA="Exporter"; require Exporter;
-@EXPORT=qw(PathExpand_relative PathExpand_all);
+@EXPORT=qw(
+	      PathExpand_relative
+	      PathExpand_all
+	      perhaps_PathExpand_relative
+	      perhaps_PathExpand_all
+	 );
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use Chj::xperlfunc 'xreadlink','xlstat';
+use Chj::xperlfunc 'xreadlink','Xlstat';
 use Chj::Path;
 use Chj::singlequote ':all';
+use POSIX 'ENOENT'; # or where forever?
+
+#use Chj::Backtrace;
+
+{
+    package Chj::Path::Expand::Error;
+    use Chj::singlequote 'singlequote';
+    use overload '""' => sub { die "it is an error to use an Error as a string" };
+    sub new {
+	my $cl=shift;
+	@_==5 or die;
+	bless[@_], $cl
+    }
+    sub _make_acc { my ($i)=@_; sub { my $s=shift; $$s[$i] } }
+    *msg= _make_acc(0);
+    *path= _make_acc(1);
+    *errno= _make_acc(2);
+    *errstr= _make_acc(3);
+    *is_origpath= _make_acc(4);
+    sub errorstring {
+	my $s=shift;
+	$s->msg.": ".
+	  join(", ",
+	       singlequote($s->path),
+	       $s->errstr)
+    }
+}
 
 # 'syntax' to make passing the function as first argument to itself simpler
 sub call {
@@ -57,7 +89,7 @@ sub _expand {
 	my ($_expand, $p,$segments,$level)=@_;
 	die "too many levels of symlinks (cycle?) at path: ".singlequote($p->string)." with remaining segments: ".singlequote_many(@$segments)
 	  if $level > 100;
-	#use Data::Dumper; print Dumper ($p, $segments,$level);
+	#use Data::Dumper; print "AAA: ".Dumper ($p, $segments,$level);
 	if (not @$segments) {
 	    $p
 	} else {
@@ -75,34 +107,43 @@ sub _expand {
 		my $p2= $p->add_segment($segment);
 
 		my $path2= $p2->string;
-		my $s= xlstat $path2;
-		if ($s->is_symlink) {
-		    my $targstr= xreadlink $path2;
-		    my $targ= Chj::Path->new_from_string($targstr);
-		    if ($targ->is_absolute) {
-			if ($do_expand_absolute) {
-			    my $targ_relative_from_base=
-			      # XX another point where $base would matter
-			      $targ->to_relative;
+		if (defined (my $s= Xlstat ($path2))) {
+		    if ($s->is_symlink) {
+			my $targstr= xreadlink $path2;
+			my $targ= Chj::Path->new_from_string($targstr);
+			if ($targ->is_absolute) {
+			    if ($do_expand_absolute) {
+				my $targ_relative_from_base=
+				  # XX another point where $base would matter
+				  $targ->to_relative;
+				call ($_expand,
+				      call ($_expand,
+					    $nullpath,
+					    $targ_relative_from_base->segments,
+					    $level+1),
+				      $segments2,
+				      $level);
+				# is $level correct here?
+			    } else {
+				die "absolute symlink '$targstr' at '$path2'"
+			    }
+			} else {
 			    call ($_expand,
-				  call ($_expand,
-					$nullpath,
-					$targ_relative_from_base->segments,
-					$level+1),
+				  call ($_expand, $p, $targ->segments, $level+1),
 				  $segments2,
 				  $level);
-			    # is $level correct here?
-			} else {
-			    die "absolute symlink '$targstr' at '$path2'"
 			}
 		    } else {
-			call ($_expand,
-			      call ($_expand, $p, $targ->segments, $level+1),
-			      $segments2,
-			      $level);
+			call ($_expand, $p2, $segments2, $level)
 		    }
 		} else {
-		    call ($_expand, $p2, $segments2, $level)
+		    Chj::Path::Expand::Error->new
+			("lstat",
+			 $path2,
+			 $!+0,
+			 "$!",
+			 # is_origpath: (wow parens needed, Perl)
+			 ($level==0 and !@$segments2))
 		}
 	    }
 	}
@@ -123,7 +164,8 @@ our $nullpath= Chj::Path->new_from_string(".")->clean;
 #provide this from Chj::Path ?
 
 sub _PathExpand {
-    my ($do_expand_absolute,$path,$maybe_base)=@_;
+    @_==4 or die;
+    my ($do_expand_absolute, $path, $maybe_base, $is_perhaps)=@_;
     local $nullpath= do {
 	if (defined $maybe_base) {
 	    Chj::Path->new_from_string($maybe_base)->clean;
@@ -133,17 +175,34 @@ sub _PathExpand {
     };
     my $p= Chj::Path->new_from_string($path)->clean;
     assert_no_dotdot $p; # well, what for *exactly?*
-    _expand($do_expand_absolute)->($nullpath, $p->segments, 0)->string
+    my $res= _expand($do_expand_absolute)->($nullpath, $p->segments, 0);
+    UNIVERSAL::isa($res, "Chj::Path::Expand::Error") ?
+	(($is_perhaps
+	  # allow ENOENT for original path
+	  and $res->errno == ENOENT
+	  and $res->is_origpath
+	 ) ? () : die $res->errorstring)
+	  : $res->string
 }
 
 sub PathExpand_relative ( $ ; $ ) {
     my ($path,$maybe_base)=@_;
-    _PathExpand (0, $path, $maybe_base);
+    _PathExpand (0, $path, $maybe_base, 0);
 }
 
 sub PathExpand_all ( $ ; $ ) {
     my ($path,$maybe_base)=@_;
-    _PathExpand (1, $path, $maybe_base);
+    _PathExpand (1, $path, $maybe_base, 0);
+}
+
+sub perhaps_PathExpand_relative ( $ ; $ ) {
+    my ($path,$maybe_base)=@_;
+    _PathExpand (0, $path, $maybe_base, 1);
+}
+
+sub perhaps_PathExpand_all ( $ ; $ ) {
+    my ($path,$maybe_base)=@_;
+    _PathExpand (1, $path, $maybe_base, 1);
 }
 
 1
@@ -201,4 +260,40 @@ chris@tie:/tmp/chris/foo$ lns /bar bada
 #bada -> /bar -> /bard
 calc> :l PathExpand_all "foo/bada/hello"
 bard/hello
+
+{Mit Aug  3 16:57:45 BST 2016}
+sigh (non-existing /jessie dir)
+main> perhaps_PathExpand_all('/dev/shm', '/jessie');
+main> 
+bad. see. level 0 still, no symlink followed yet.
+sgh. not what I wanted.
+that shohuld throw error.
+main> eval { PathExpand_all('/dev/shm', '/jessie') } || "$@"
+$VAR1 = 'can\'t lstat: \'/jessie/\', Datei oder Verzeichnis nicht gefunden at /usr/local/lib/site_perl/Chj/Path/Expand.pm line 178.
+';
+
+ah now with defined check it actually works
+main> perhaps_PathExpand_all('/dev/shm', '/jessie');
+Exception: can't lstat: '/jessie/', Datei oder Verzeichnis nicht gefunden at /usr/local/lib/site_perl/Chj/Path/Expand.pm line 178.
+Chj::Path::Expand 1> 
+
+chrisperl@novo:~/tmp/testing$ mkdir jessie
+chrisperl@novo:~/tmp/testing$ ./t-Chj\:\:Path\:\:Expand
+main> perhaps_PathExpand_all('/dev/shm', 'jessie');
+Exception: can't lstat: 'jessie//dev', Datei oder Verzeichnis nicht gefunden at /usr/local/lib/site_perl/Chj/Path/Expand.pm line 178.
+Chj::Path::Expand 1> 
+
+chrisperl@novo:~/tmp/testing$ mkdir jessie/dev
+chrisperl@novo:~/tmp/testing$ ./t-Chj\:\:Path\:\:Expand
+main> perhaps_PathExpand_all('/dev/shm', 'jessie');
+Exception: can't lstat: 'jessie//dev/shm', Datei oder Verzeichnis nicht gefunden at /usr/local/lib/site_perl/Chj/Path/Expand.pm line 178.
+Chj::Path::Expand 1> 
+UH  wrong again? sigh.
+it should give nothing now.
+
+  YES now it works:
+main> perhaps_PathExpand_all('/dev/shm', 'jessie');
+main> perhaps_PathExpand_all('/dev/shm/foo', 'jessie');
+Exception: lstat: 'jessie//dev/shm', Datei oder Verzeichnis nicht gefunden at /usr/local/lib/site_perl/Chj/Path/Expand.pm line 179.
+Chj::Path::Expand 1> 
 
