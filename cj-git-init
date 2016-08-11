@@ -51,6 +51,7 @@ if [ -d ".git" ]; then
 *.o
 *.o[1-9]
 *.o[1-9][0-9]
+.test*
 
 EOF
     fi
