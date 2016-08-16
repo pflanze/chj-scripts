@@ -9,9 +9,9 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname directory [directory2 ..]
-  Outputs name of the last modified *file* which does not begin
-  with a dot or ~ or end in ~ in given directory
+    print "$myname [directory [directory2 ..]]
+  Outputs name of the last modified *file* which does not begin with a
+  dot or ~ or end in ~ in given directory. Default directory is '.'.
 
   --fullpath  full path (including directory) is output, not only
               the filename.
@@ -49,7 +49,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args;
 
 $opt_fullpath = 1
   if @args > 1;
@@ -81,7 +80,10 @@ sub showit {
     } # else  return error status ?
 }
 
-for (@args) {
-    showit $_
+if (@args) {
+    for (@args) {
+	showit $_
+    }
+} else {
+    showit "."
 }
-
