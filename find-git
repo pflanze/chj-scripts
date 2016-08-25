@@ -68,7 +68,7 @@ usage unless @ARGV<=1;
 
 our ($rootdir)= @ARGV ? @ARGV : ".";
 
-use Chj::xopendir;
+use Chj::xopendir qw(perhaps_opendir);
 use Chj::xperlfunc ":all";
 use Chj::singlequote ":all";
 use Chj::xopen "xopen_read";
@@ -120,8 +120,13 @@ our %exclude_item=
 our @ignoredtmp; #hack.
 sub scan {
     my ($paths_by_dev_ino, $dir)= @_;
-    my $d= xopendir (length $dir ? $dir : "/");
+    my $path= length $dir ? $dir : "/";
     # ^ check necessary as canonify shortens / to "". Unix.
+    my ($d)= perhaps_opendir $path
+      or do {
+	  warn "warning: opendir('$path'): $!\n";
+	  return
+      };
     while (defined (my $item= $d->xnread)) {
 	my $path= "$dir/$item";
 	if (defined (my $reason= $exclude_path{$path})) {
