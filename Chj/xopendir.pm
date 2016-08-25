@@ -88,6 +88,7 @@ L<Chj::xopen>
 package Chj::xopendir;
 @ISA='Exporter'; require Exporter;
 @EXPORT= qw(xopendir);
+@EXPORT_OK=(@EXPORT, qw(perhaps_opendir));
 
 use strict; use warnings; use warnings FATAL => 'uninitialized';
 use Chj::IO::Dir;
@@ -95,6 +96,11 @@ use Chj::IO::Dir;
 sub xopendir($) {
     unshift @_, 'Chj::IO::Dir';
     goto &Chj::IO::Dir::xopendir;
+}
+
+sub perhaps_opendir($) {
+    unshift @_, 'Chj::IO::Dir';
+    goto &Chj::IO::Dir::perhaps_opendir;
 }
 
 1;

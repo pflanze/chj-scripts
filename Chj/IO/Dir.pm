@@ -68,6 +68,18 @@ sub opendir {
     }
 }
 
+sub perhaps_opendir {
+    my $class=shift;
+    my $hdl= gensym;
+    if (CORE::opendir $hdl,$_[0]) {
+	bless $hdl, $class;
+	$metadata{pack "I",$hdl}=[1, $_[0]];
+	($hdl)
+    } else {
+	()
+    }
+}
+
 sub new {
     my $class=shift;
     my $self= gensym;
