@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# they removed the -s short option flag, leaving only --show. *Man*.
+
+exec losetup -f --show "$@"
