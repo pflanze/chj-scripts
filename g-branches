@@ -11,7 +11,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [..?]
 
-  g-branch, but removing the '* ' and '  ' before the branch names.
+  g-branch, but removing the '* ' and '  ' before the branch names,
+  and ignoring ' -> ' aliases.
 
   (Christian Jaeger <$email>)
 ";
@@ -28,6 +29,7 @@ my $in= Chj::IO::Command->new_sender("git","branch", @ARGV);
 
 while (<$in>) {
     s/^[ *] //;
+    next if / -> /; # XX unless an option is given?
     print or die $!;
 }
 
