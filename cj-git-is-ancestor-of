@@ -17,9 +17,10 @@ sub usage {
   NOTE: gives true for the case of ancestor == descendant.
 
   Options:
-  -q|--quiet   only use exit status to tell result, do not print anything
-               unless errors happen (0=true, 1=false, other=error)
-  -a|--both    show ancestority (ehr?) both ways.
+  -q|--quiet    only use exit status to tell result, do not print anything
+                unless errors happen (0=true, 1=false, other=error)
+  -v|--verbose  show arguments ('prefix')
+  -a|--both     show ancestority (ehr?) both ways (shows prefix even without -v)
 
   (Christian Jaeger <$email>)
 ";
@@ -30,7 +31,9 @@ use Getopt::Long;
 our $verbose=0;
 our $opt_quiet=0;
 our $opt_both=0;
-GetOptions("verbose"=> \$verbose,
+GetOptions("verbose"=> sub {
+	       $verbose++
+	   },
 	   "help"=> sub{usage},
 	   "q|quiet"=> \$opt_quiet,
 	   "a|both"=> \$opt_both,
@@ -43,7 +46,7 @@ use Chj::Git::Functions 'is_ancestor_of';
 
 sub show_ancestority ( $ $ $ ) {
     my ($show_prelude,$ancestor,$descendant)=@_;
-    my $is= is_ancestor_of ($ancestor,$descendant,$verbose);
+    my $is= is_ancestor_of ($ancestor,$descendant,$verbose > 1);
     if (!$opt_quiet) {
 	print(($show_prelude ? "is '$ancestor' ancestor of '$descendant'?: " : ""),
 	      ($is ? "yes" : "no"),
@@ -58,7 +61,7 @@ sub main_both {
 	   show_ancestority (1,$descendant,$ancestor)) ? 0 : 1);
 }
 sub main_one {
-    my $is= show_ancestority (0,$ancestor,$descendant);
+    my $is= show_ancestority ($verbose,$ancestor,$descendant);
     exit ($is ? 0 : 1);
 }
 
