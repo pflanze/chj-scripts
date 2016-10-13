@@ -35,7 +35,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-use Chj::xopen 'xopen_readwrite';
+use Chj::xopen 'xopen_update';
 use Chj::IO::Command;
 
 our $rand= Chj::IO::Command->new_sender("fastrandom")
@@ -53,7 +53,7 @@ sub dorandbuf {
 
 sub wipequick ( $ ) {
     my ($path)=@_;
-    my $f= xopen_readwrite $path; #hm because xopen_write truncates.
+    my $f= xopen_update $path; #hm because xopen_write truncates.
     my $s=$f->xstat;
     my $size= $s->size;
       #/ 2 ;###

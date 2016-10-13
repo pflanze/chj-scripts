@@ -297,6 +297,61 @@ sub is_uuiddev ( $ ) {
 
 use Chj::xperlfunc;
 
+
+{
+    package mounte::DevicePath;
+    # field 0: origpath
+    # field 1: overridden device path
+    sub origpath {
+	my $s=shift;
+	$$s[0]
+    }
+    sub devicepath {
+	my $s=shift;
+	$$s[1] // $$s[0]
+    }
+    sub set_devicepath {
+	my $s=shift;
+	($$s[1])=@_;
+    }
+}
+
+{
+    package mounte::File;
+    our @ISA= 'mounte::DevicePath';
+    # field 2: loop file path
+    use Chj::xperlfunc;
+
+    sub devicepath {
+	my $s=shift;
+	$$s[1] // do {
+	    $$s[2] //= do {
+		my $c= Chj::IO::Command->new_sender
+		  ("losetup", "-f", "--show", "--", $$s[0]);
+		my $p= $c->xcontent;
+		$c->xxfinish;
+		chomp $p;
+		print "using loop device: '$p'\n";# to stderr? xprint ?
+		$p
+	    }
+	}
+    }
+    sub DESTROY {
+	my $s=shift;
+	if (defined $$s[2]) {
+	    #unlink $$s[2]; ehr.
+	    xsystem "losetup", "-d", $$s[2];
+	    undef $$s[2]
+	}
+    }
+}
+
+{
+    package mounte::Devicefile;
+    our @ISA= 'mounte::DevicePath';
+}
+
+
 sub mount_easily {
     my ($path, $verbosevolume, $ignore_if_mountpoint_missing)=@_;
     my $device_fileinfo;
@@ -315,8 +370,12 @@ sub mount_easily {
     {
 	my $s= xstat $path;
 	if ($s->is_file) {#hm is_regular ?
-	    $device_path=$path;
-	    $$mountoptions{loop}=1;
+	    $$mountoptions{loop}= 1;
+	    # What about resolving it ourselves, since only this way
+	    # we can run fsck on loop files!! D'oh. Ah but want mount
+	    # to do it for recording it properly for umount ? =>
+	    # instead do it before the fsck, gah.
+	    $device_path= bless [$path], "mounte::File";
 
 	    # check if file is chmod a-w, take this as a hint that the
 	    # image should always be mounted read-only
@@ -335,27 +394,27 @@ sub mount_easily {
 		}
 	    }
 	} elsif ($s->is_blockdevice) {
-	    $device_path=$path;
+	    $device_path= bless [$path], "mounte::Devicefile";
 	    delete $$mountoptions{loop} # =0 is not enough if I'm taking keys..
 	} elsif ($s->is_dir) {
 	    if (my $dev= maybe_dev_from_mnt $path) {
-		$device_path= $dev;
+		$device_path= bless [$dev], "mounte::Devicefile";
 		$dest_path= $path; #hm what in the case of mapper?
 	    } else {
 		die "could not find device to mount on '$path'";
 	    }
 	} else {
-	    die "hm?, file '$device_path' is neither block device nor regular file nor directory"
+	    die "hm?, file '$path' is neither block device nor regular file nor directory"
 	}
     }
 
     my $id_= Delay {
-	my $maybe_uuid= maybe_uuid_from_dev $device_path;
-	defined($maybe_uuid)? $maybe_uuid : basename $device_path;
+	my $maybe_uuid= maybe_uuid_from_dev($device_path->origpath); # XX correct?
+	defined($maybe_uuid)? $maybe_uuid : basename ($device_path->origpath); # XX
     };
 
     ##(BUG: should be recursive instead of only one deep)
-    if (my $luks= maybe_luks $device_path) {
+    if (my $luks= maybe_luks ($device_path->origpath)) { # XX correct?
 	print $luks;
 	my $maybe_pw= do {
 	    # use device_path *before* having been set to losetup -fs output below!
@@ -391,13 +450,13 @@ sub mount_easily {
 			undef
 		    }
 		};
-		&$lookup ($device_path,
-			  (is_uuiddev($device_path) ? $lookup :
+		&$lookup ($device_path->origpath, # XX correct?
+			  (is_uuiddev($device_path->origpath) ? $lookup :
 			   sub {
 			       my ($key1,$_next)=@_;
 			       print "as second try, resolve to and check the uuid first\n"
 				 if $verbose;
-			       if (my $uuid= maybe_uuid_from_dev ($device_path)) {
+			       if (my $uuid= maybe_uuid_from_dev ($device_path->origpath)) {
 				   print "found uuid '$uuid'\n"
 				     if $verbose;
 				   @_=("$uuid",sub {
@@ -417,8 +476,8 @@ sub mount_easily {
 		  # I'm too lazy to figure out the whole chain of attempts above,
 		  # and anyway better just try at the end if the above failed?:
 		  || do {
-		      my $bn=basename($device_path);
-		      if ($bn eq $device_path) {
+		      my $bn=basename($device_path->origpath);
+		      if ($bn eq ($device_path->origpath)) {
 			  undef
 		      } else {
 			  &$lookup($bn,$lookup)
@@ -430,22 +489,10 @@ sub mount_easily {
 	};
 	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber wählen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
 	my $open= sub {
-	    if (-f $device_path) {
-		my $in=  Chj::IO::Command->new_sender("losetup","-f","--show",
-						      $device_path);
-		my $new= $in->xcontent; chomp $new; #chop?
-		$in->xxfinish;
-		print "using loop device: '$new'\n";# to stderr? xprint ?
-		#ah another (earlier) mutation:
-		$device_path=$new;
-		# seems necessary?:, got "couldn't find filesystem type
-		# in 'file' output 'symbolic link to `../dm-3'"
-		# randomly
-		sleep 1;
-	    }
-	    my $cmd=sub {
+	    my $cmd= sub {
 		my (@options)=@_;
-		("cryptsetup", "luksOpen",@options, $device_path, Force($id_))
+		("cryptsetup", "luksOpen",
+		 @options, $device_path->devicepath, Force($id_))
 	    };
 	    if (defined $maybe_pw) {
 		my $out= Chj::IO::Command->new_receiver(&$cmd("--key-file=-"));
@@ -479,7 +526,7 @@ sub mount_easily {
 	    &$open
 	}
 	# here comes the mutation: #careful, 'combine' this mentally with the setting of $device_fileinfo above.
-	$device_path= $devicemapper_path;
+	$device_path->set_devicepath($devicemapper_path);
 	# hm and now get the id of the decrypted volume ?. or actually
 	# hide that??. hide / ignore it for now and we get the "same
 	# id for mapper and for mount point" behaviour.
@@ -496,7 +543,7 @@ sub mount_easily {
 	#(kind of catch-all-the cases above where I didn't ~thread through )
 	$device_fileinfo= do {
 	    # well almost copypaste from 'try_file $devicemapper_path' above but well.
-	    my ($ok,$cnt)= try_file $device_path;
+	    my ($ok,$cnt)= try_file $device_path->devicepath;
 	    if ($ok) {
 		$cnt
 	    } else {
@@ -521,10 +568,10 @@ sub mount_easily {
 	    if (lc ($fstype) eq "ext2") {
 		if ($$mountoptions{ro}) {
 		    # run read-only check, die if there was an error:
-		    xxsystem "e2fsck","-n", $device_path;
+		    xxsystem "e2fsck","-n", $device_path->devicepath;
 		} else {
 		    # run a normal (interactive) check:
-		    my $res= xsystem "e2fsck", $device_path;
+		    my $res= xsystem "e2fsck", $device_path->devicepath;
 		    if ($res==0) {
 			#ok
 		    } elsif ($res < 256) {
@@ -549,7 +596,7 @@ sub mount_easily {
 		# behave this way? XX: some filesystems like FAT do
 		# not seem to have a mount counter, hence full check
 		# will happen every time!
-		xxsystem "fsck", $device_path;
+		xxsystem "fsck", $device_path->devicepath;
 	    }
 	} elsif ($device_fileinfo=~ /^Reiser/) { # no followed by " filesystem", hence specialcasing needed; sigh.
 	    #ok
@@ -573,7 +620,7 @@ sub mount_easily {
 	my ($dest_path)=@_;
 	my $options= join(",", keys %$mountoptions); ### XXX: BUG right, should filter for those with true as value!
 	mount( (length $options ? ("-o",$options) : ()),
-	       $device_path,
+	       $device_path->devicepath, # XX wooow that was a joke, mount is given the devicepath anyway? When is loop flag toggled off then or what?
 	       $dest_path);
     };
     my $private_dest_path= $dest_path."/mnt";
