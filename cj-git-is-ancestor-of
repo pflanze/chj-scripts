@@ -20,7 +20,7 @@ sub usage {
   -q|--quiet    only use exit status to tell result, do not print anything
                 unless errors happen (0=true, 1=false, other=error)
   -v|--verbose  show arguments ('prefix')
-  -a|--both     show ancestority (ehr?) both ways (shows prefix even without -v)
+  -a|--both     show ancestry both ways (shows prefix even without -v)
 
   (Christian Jaeger <$email>)
 ";
