@@ -30,10 +30,13 @@ if (@ARGV) {
 	next unless defined;
         next unless length( $_);
         if (my $d= str2time($_)) {
-	    print "$_: " if $printarg;
-	    print "$d " if $unix;
-            print localtime($d) if $back;
-	    print "\n";
+	    my @v=
+	      (
+	       ($printarg ? "$_:" : ()),
+	       ($unix ? "$d" : ()),
+	       ($back ? localtime($d)."" : ())
+	      );
+	    print join(" ", @v),"\n";
         } else {
             print "$_: " unless $printarg;
             print "invalid format\n";
