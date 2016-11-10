@@ -7,12 +7,19 @@ use Date::Parse;
 if (@ARGV) {
     my $printarg;
     my $unix=1;
+    my $back=1;
     for (@ARGV) {
 	if ($_ eq '-u') {
 	    $unix=1;
 	    undef $_;
 	} elsif ($_ eq '-U') {
 	    $unix=0;
+	    undef $_;
+	} elsif ($_ eq '-b') {
+	    $back=1;
+	    undef $_;
+	} elsif ($_ eq '-B') {
+	    $back=0;
 	    undef $_;
 	}
     }
@@ -23,9 +30,13 @@ if (@ARGV) {
 	next unless defined;
         next unless length( $_);
         if (my $d= str2time($_)) {
-	    print "$_: " if $printarg;
-	    print "$d " if $unix;
-            print localtime($d)."\n";
+	    my @v=
+	      (
+	       ($printarg ? "$_:" : ()),
+	       ($unix ? "$d" : ()),
+	       ($back ? localtime($d)."" : ())
+	      );
+	    print join(" ", @v),"\n";
         } else {
             print "$_: " unless $printarg;
             print "invalid format\n";
@@ -40,6 +51,9 @@ else {
     Parses the datestring and converts it into local time if possible.
     Don't forget to put quotes around the strings.
     Prints the unixtime value as well unless option -U is given.
+
+    -b  also convert back (default)
+    -B  do not convert back
 ";
 }
 

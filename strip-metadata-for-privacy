@@ -1,3 +1,19 @@
 #!/bin/bash
 
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+tmp=`tempdir .`
+
+ln "$@" "$tmp"
+
 mat "$@"
+
+for f in "$@"; do
+    lnfile="$tmp/`basename "$f"`"
+    cp-perms "$lnfile" "$f"
+    touch -r "$lnfile" "$f"
+done
+
+rm -rf -- "$tmp"
