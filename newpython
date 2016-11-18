@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ $# -eq 1 ]; then
+    if test -f "$1"; then
+	echo "File $1 existiert bereits!" >&2
+    else
+	echo -n -e '#!/usr/bin/python\n\n'> "$1"
+	chmod +x "$1"
+	if [ "$EDITOR" ]; then
+	    if [ "$EDITOR" = "nc" ]; then 
+		exec nc -line 3 "$1"
+	    elif [ "$EDITOR" = "e" ]; then
+		exec e "$1"
+	    else
+		exec "$EDITOR" "$1"
+	    fi
+	else
+	    echo "Your EDITOR env var is not set"
+	fi
+    fi
+else
+    echo "usage: $0 path" >&2
+    exit 1
+fi
