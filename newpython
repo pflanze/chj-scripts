@@ -4,7 +4,7 @@ if [ $# -eq 1 ]; then
     if test -f "$1"; then
 	echo "File $1 existiert bereits!" >&2
     else
-	echo -n -e '#!/usr/bin/python\n\n'> "$1"
+	echo -n -e '#!/usr/bin/env python\n\n'> "$1"
 	chmod +x "$1"
 	if [ "$EDITOR" ]; then
 	    if [ "$EDITOR" = "nc" ]; then 
