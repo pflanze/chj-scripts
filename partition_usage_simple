@@ -2,6 +2,8 @@
 
 # jaeger-ethlife.ethz.ch Sun, 15 Jun 2003 20:13:17 +0200
 
+{
+
 DEV="$1"
 
 if [ ! "$DEV" ]; then
@@ -80,3 +82,5 @@ done
 echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"|cut -b1-$COLUMNS
 echo "  (Hint: use raw -qa to find out about possible raw device bindings, "
 echo "   unless you have all mappings in /etc/rawtab.)"
+
+} | less
