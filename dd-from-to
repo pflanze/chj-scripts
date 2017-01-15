@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+
+usage () {
+    echo "usage: $0 infile outfile"
+    echo "  copies in big blocks, with caching disabled."
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+infile="$1"
+outfile="$2"
+
+
+dd bs=8M iflag=nocache,dsync oflag=nocache,dsync if="$infile" of="$outfile"
+
