@@ -138,15 +138,6 @@ our $releases=
    ["wheezy", "7.0", "2013-05-04", ">36000", "<17500", undef, undef],
    # sigh, now Debian starts to publish point releases as 7.X versions
    #   ** ah,yes,because before:  [19 Jul 2014] Updated Debian 6.0: 6.0.10 released
-   #["wheezy", "7.1", "2013-06-15", ">36000", "<17500", undef, undef],
-   # don't go that route.
-   # "Debian 7.1 was released June 15th, 2013. Debian 7.0 was initially released on May 4th, 2013. The release included many major changes, described in our press release" hu  then linking to the press release for 7.0. WTH. hm that's on the 7.0 release page ah. well.
-   #short entries for aliases, ok?
-   #[25 Apr 2016] Security support for Wheezy handed over to the LTS team
-   #  For Debian 7 Wheezy LTS there will be no requirement to add a separate wheezy-lts suite to your sources.list any more and your current setup will continue to work without further changes.
-   #  For how to use Debian Long Term Support please read LTS/Using.
-   #  You should also subscribe to the announcement mailing list for security updates for Wheezy LTS.
-   # A few packages are not covered by the Wheezy LTS support. These can be detected by installing the debian-security-support package.
 
    # https://wiki.debian.org/DebianReleases/PointReleases
    # As of February 2009 they should happen at about every two months.
@@ -169,7 +160,6 @@ our $releases=
    ["wheezy", "7.9", "05 Sep 2015"],
    ["wheezy", "7.10", "02 Apr 2016"],
    ["wheezy", "7.11", "04 Jun 2016"],
-   # future ones:
    ["wheezy", "7.12"],
    ["wheezy", "7.13"],
    ["wheezy", "7.14"],
