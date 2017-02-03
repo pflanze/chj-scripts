@@ -132,24 +132,43 @@ our $releases=
    #  The availability and updates of OpenJDK, GNU Java compiler, GNU Java bytecode interpreter, Classpath and other free versions of Sun's Java technology, into Debian GNU/Linux 5.0 allow us to ship Java-based applications in Debian's "main" repository.
    #  Further improvements in system security include the installation of available security updates before the first reboot by the Debian Installer, the reduction of setuid root binaries and open ports in the standard installation, and the use of GCC hardening features in the builds of several security-critical packages. Various applications have specific improvements, too. PHP for example is now built with the Suhosin hardening patch.
    #  In addition to the regular installation media, Debian GNU/Linux can now also be directly used without prior installation. The special images used, known as live images, are available for CDs, USB sticks, and netboot setups. Initially, these are provided for the amd64 and i386 architectures only.
-   ["squeeze", "6.0", "2011-02-06", ">29000", "<15000", undef, undef],
+
+   ["squeeze", "6.0", "2011-02-06", ">29000", "<15000", undef, "2016-02-12"],
+
    ["wheezy", "7.0", "2013-05-04", ">36000", "<17500", undef, undef],
    # sigh, now Debian starts to publish point releases as 7.X versions
+   #   ** ah,yes,because before:  [19 Jul 2014] Updated Debian 6.0: 6.0.10 released
    #["wheezy", "7.1", "2013-06-15", ">36000", "<17500", undef, undef],
    # don't go that route.
    # "Debian 7.1 was released June 15th, 2013. Debian 7.0 was initially released on May 4th, 2013. The release included many major changes, described in our press release" hu  then linking to the press release for 7.0. WTH. hm that's on the 7.0 release page ah. well.
    #short entries for aliases, ok?
-   ["wheezy", "7.1"],
-   ["wheezy", "7.2"],
-   ["wheezy", "7.3"],
-   ["wheezy", "7.4"],
-   ["wheezy", "7.5"],
-   ["wheezy", "7.6"],
-   ["wheezy", "7.7"],
-   ["wheezy", "7.8"],
-   ["wheezy", "7.9"],
-   ["wheezy", "7.10"],
-   ["wheezy", "7.11"],
+   #[25 Apr 2016] Security support for Wheezy handed over to the LTS team
+   #  For Debian 7 Wheezy LTS there will be no requirement to add a separate wheezy-lts suite to your sources.list any more and your current setup will continue to work without further changes.
+   #  For how to use Debian Long Term Support please read LTS/Using.
+   #  You should also subscribe to the announcement mailing list for security updates for Wheezy LTS.
+   # A few packages are not covered by the Wheezy LTS support. These can be detected by installing the debian-security-support package.
+
+   # https://wiki.debian.org/DebianReleases/PointReleases
+   # As of February 2009 they should happen at about every two months.
+   # oldstable is subjected to a similar handling until it is
+   # considered as end-of-life, although the periods may be longer.
+   # Debian Etch 4.0r4 (name Etch and a half) was the first point
+   # release to introduce improved hardware support, through optional
+   # packages.
+
+   # https://www.debian.org/News/
+
+   ["wheezy", "7.1", "15 Jun 2013"],
+   ["wheezy", "7.2", "12 Oct 2013"],
+   ["wheezy", "7.3", "14 Dec 2013"],
+   ["wheezy", "7.4", "08 Feb 2014"],
+   ["wheezy", "7.5", "26 Apr 2014"],
+   ["wheezy", "7.6", "12 Jul 2014"],
+   ["wheezy", "7.7", "18 Oct 2014"],
+   ["wheezy", "7.8", "10 Jan 2015"],
+   ["wheezy", "7.9", "05 Sep 2015"],
+   ["wheezy", "7.10", "02 Apr 2016"],
+   ["wheezy", "7.11", "04 Jun 2016"],
    # future ones:
    ["wheezy", "7.12"],
    ["wheezy", "7.13"],
@@ -162,7 +181,22 @@ our $releases=
    ["jessie", "8.0", "2015-04-25", ">43000", "20000..20100", undef, "2020-04 (next 5 years)"],
    ["jessie", "8.1", "2015-06-06"],
    ["jessie", "8.2", "2015-09-05"],
+   ["jessie", "8.3", "2016-01-23"],
+   ["jessie", "8.4", "02 Apr 2016"],
+   ["jessie", "8.5", "04 Jun 2016"],
+   ["jessie", "8.6", "17 Sep 2016"],
+   ["jessie", "8.7", "2017-01-14"],
+   ["jessie", "8.8", ],
+   ["jessie", "8.9", ],
+   ["jessie", "8.10", ],
+   ["jessie", "8.11", ],
+   ["jessie", "8.12", ],
+   ["jessie", "8.13", ],
+   ["jessie", "8.14", ],
+   ["jessie", "8.15", ],
+   ["jessie", "8.16", ],
 
+   # next:
    ["stretch", "9.0"],
 
    # The last entry must/should always be the sid distribution (check
