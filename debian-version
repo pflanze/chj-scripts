@@ -197,7 +197,7 @@ our $releases=
    ["jessie", "8.16", ],
 
    # next:
-   ["stretch", "9.0"],
+   ["stretch", "9.0", undef, undef, undef, undef, undef],
 
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
