@@ -584,7 +584,8 @@ sub mount_easily {
 			# else ok
 		    }
 		}
-	    } elsif ($fstype eq 'ROM') {
+	    } elsif ($fstype eq 'ROM'
+		     or lc($fstype) eq 'squashfs') {
 		# $fstype=~ /iso9660/i nope doesn't happen
 		# read-only file system
 	    } else {
