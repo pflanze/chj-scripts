@@ -145,7 +145,12 @@ use Chj::Path::Expand ':all';
 
 unless ($opt_no_mount) {
     mount_if_not_already qw(-t proc proc), "$chrootbase/proc";
-    mount_if_not_already qw(-t usbfs usbfs), "$chrootbase/proc/bus/usb";
+    {
+	my $p= "$chrootbase/proc/bus/usb";
+	if (-e $p) {
+	    mount_if_not_already qw(-t usbfs usbfs), $p;
+	}
+    }
     mount_if_not_already qw(-t sysfs sysfs), "$chrootbase/sys";
 
     my $devfs_is_initialized= mounted "$chrootbase/dev";
