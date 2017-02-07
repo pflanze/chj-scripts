@@ -2,6 +2,9 @@
 
 ## Installation
 
+(In all repositories there may be a signed tag every now and
+then. Feel free to check with `git tag -v $tagname`.)
+
 As root:
 
     cd /opt
