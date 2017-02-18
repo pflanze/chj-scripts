@@ -4,7 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
-use warnings FATAL => 'uninitialized';
+#use warnings FATAL => 'uninitialized';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
