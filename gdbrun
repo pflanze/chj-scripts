@@ -1,0 +1,108 @@
+#!/usr/bin/perl -w
+
+# Don Aug 23 19:52:32 CEST 2007
+(my $email='christian%pflanze,mine,nu')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+use Chj::singlequote 'singlequote';#not singlequote_sh ?
+
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [gdbopts] -- cmd [args]
+
+  Run gdb with gdbopts on cmd and args.
+
+  (Note: there remains a parent waiting for the child for removing the
+  tmp file; if killed, the tmp file will remain.)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+usage if $ARGV[0]=~ /^--?h(elp)?$/;
+
+
+my $i=0;
+sub nextarg {
+    my $v=$ARGV[$i++];
+    defined $v
+      or die "unexpected end of argument list";
+    $v
+}
+sub haveargs {
+    $i < @ARGV
+}
+
+sub end_if_splitter {
+    my ($v)=@_;
+    die bless [],"SPLITTER" if $v eq "--";
+}
+
+sub until_splitter (&) {
+    my ($thunk)= @_;
+    eval {
+	&$thunk;
+	1
+    } || do {
+	my $e= $@;
+	if (UNIVERSAL::isa($e, "SPLITTER")) {
+	    # fine
+	} else {
+	    die $e
+	}
+    }
+}
+
+my @gdbopts;
+my @cmd;
+
+until_splitter {
+    my $first= nextarg;
+
+    end_if_splitter $first;
+
+    if ($first=~ /^-/) {
+	# have gdbopts
+	push @gdbopts, $first;
+	while(1) {
+	    my $v= nextarg;
+	    end_if_splitter $v;
+	    push @gdbopts, $v;
+	}
+    } else {
+	# no gdbopts
+	# actually do NOT expect a splitter here, now. If one is there, pass it to cmd.
+	push @cmd, $first;
+    }
+};
+
+while (haveargs) {
+    push @cmd, nextarg;
+}
+
+
+usage "no cmd/args given" unless @cmd;
+
+my @args= @cmd;
+my $program= shift @args;
+
+#use Data::Dumper; print Dumper(\@gdbopts, \@cmd);
+#__END__
+
+my $t= xtmpfile;
+$t->xprint("run ".join(" ", map { singlequote $_ } @args)."\n");
+$t->xclose;
+
+if (xfork) {
+    xxwait
+} else {
+    xexec "gdb", @gdbopts, "-x", $t->path, $program
+}
+
