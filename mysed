@@ -218,25 +218,8 @@ sub changefile {
 				    unlink "$path.$appendix";
 				    last CHANGE;
 				}
-			      ASK:{
-				    print STDERR "'$path' could not be moved to '$trashpath/$file', because they are not on the same filesystem. What should I do: [l]eave file unchanged, [L]eave always without asking, [o]verwrite old file without backup, [O]verwrite always without asking ? ";
-				    my $ans=<STDIN>;chomp $ans;
-				    if ($ans eq 'l') {
-					unlink "$path.$appendix";
-					last CHANGE;
-				    } elsif ($ans eq 'L') {
-					unlink "$path.$appendix";
-					$opt_L=1;
-					last CHANGE;
-				    } elsif ($ans eq 'o') {
-					last ASK;
-				    } elsif ($ans eq 'O') {
-					undef $trash;##todo bad, not really same as L handling, i.e. if getting back to region in subtree where it *is* on same filesystem, this is 'gone.
-					last ASK;
-				    } else {
-					redo ASK;
-				    }
-				}#/ASK
+				# slow path
+				xxsystem "mv", "--", $path, "$trashpath/$file";
 			    } else {
 				die "Could not move `$path' to trash dir `$trashpath/$file': $!";
 			    }
