@@ -38,7 +38,7 @@ trans "$file1" "$tmp1"
 trans "$file2" "$tmp2"
 
 if [[ ${DISPLAY+set} = set ]]; then
-    tkdiff "$tmp1" "$tmp2"
+    cj-guidiff "$tmp1" "$tmp2"
 else
     diff -u "$tmp1" "$tmp2"
 fi

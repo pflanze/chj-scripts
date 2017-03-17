@@ -78,7 +78,7 @@ xxsystem "apt-get", @upgrade;#
 my $dpkgliafter= dpkgli ("after");
 my $listenersafter= listeners ("after");
 
-xsystem "tkdiff", $listenersbefore, $listenersafter;
+xsystem "cj-guidiff", $listenersbefore, $listenersafter;
 
 
 #use Chj::ruse;

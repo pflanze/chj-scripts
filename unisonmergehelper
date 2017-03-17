@@ -55,7 +55,7 @@ if ($CURRENT1=~ /\.gnumeric$/) {
     ($file1,$file2)=($CURRENT1,$CURRENT2);
 }
 
-system "tkdiff", $file1, $file2;
+system "cj-guidiff", $file1, $file2;
 # wenn's zurückkehrt, wird es BITTE das file "$CURRENT1-merge" geschrieben haben.
 
 $file1=~ /(^.*?)(\.[^.]*)?$/;  ##ps. cj 25.2.04: sollte das nich [^.]+ sein? statt *
