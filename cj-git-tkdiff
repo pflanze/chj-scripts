@@ -1,17 +1,4 @@
 #!/bin/bash
 
-if [ -z "$CJ_GIT_DIFF_CMD" ]; then
-    if which tkdiff > /dev/null; then
-	CJ_GIT_DIFF_CMD=tkdiff
-    elif which xxdiff > /dev/null; then
-	CJ_GIT_DIFF_CMD=xxdiff
-    else
-	echo "$0: please install a known GUI diff program, fix this script, or set CJ_GIT_DIFF_CMD" >&2
-	exit 1
-    fi
-fi
-
-export CJ_GIT_DIFF_CMD
-
 # --no-pager not understood here.
-GIT_EXTERNAL_DIFF=_cj-git-diff PAGER=cat git diff "$@"
+CJ_GIT_DIFF_CMD=cj-guidiff GIT_EXTERNAL_DIFF=_cj-git-diff PAGER=cat git diff "$@"
