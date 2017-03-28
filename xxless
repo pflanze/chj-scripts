@@ -1,0 +1,5 @@
+#!/bin/bash
+
+for f in "$@"; do
+    xxd < "$f" | less
+done
