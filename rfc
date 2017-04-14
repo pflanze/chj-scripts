@@ -4,7 +4,7 @@ set -eu
 
 usage () {
     echo "$0 rfcnumber"
-    echo "  Give an rfc number (number only)."
+    echo "  Give an RFC number (number only)."
     exit 1
 }
 
@@ -38,6 +38,6 @@ if [ $# -eq 1 ]; then
         fi
     fi
 else
-   echo "Please give 1 argument, an rfc number."
+    usage
 fi
 
