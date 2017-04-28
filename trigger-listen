@@ -38,6 +38,7 @@ sub usage {
   again (thus no triggers are being missed).
 
   Options:
+  --verbose|-v show command (and arguments) when triggered
   --sleep n    sleep n instead of $sleeptime  (I don't remember the
                use of the sleeptime right now)
   --umask val  use umask instead of the current one for creating the
@@ -78,7 +79,7 @@ GetOptions("verbose"=> \$verbose,
 	   "inet"=>\$opt_inet,
 	   ) or exit 1;
 usage unless @ARGV >= 2;
-$DEBUG||=$verbose;
+
 our $socketpath= shift @ARGV;
 our @cmd= @ARGV;
 if ($opt_accept_arguments and $opt_sleeptime) {
@@ -118,8 +119,13 @@ if (defined $maybe_old_umask) {
 }
 
 use Chj::xperlfunc ":all";
+use Chj::singlequote "singlequote_sh";
 
 sub xrun {
+    if ($verbose) {
+	$|++;
+	print "running ".join(" ",map { singlequote_sh $_ } @_)."\n";
+    }
     if ($opt_no_wait) {
 	#if (xfork) {
 	#    # return right away
