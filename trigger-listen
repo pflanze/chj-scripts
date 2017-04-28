@@ -95,7 +95,8 @@ load $IO_Socket_class; import $IO_Socket_class;
 
 if (defined $umask) {
     umask oct($umask)
-      or die "umask: $!";
+	# 'umask' never fails, returns the previous umask even when
+	# setting!!
 }
 
 unlink $socketpath #okay?  check for running daemons...
