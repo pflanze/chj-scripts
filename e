@@ -7,6 +7,8 @@ set -eu
 
 if which xemacs > /dev/null; then
     exec r _e "$@"
+elif which xemacs21 > /dev/null; then
+    exec r _e "$@"
 elif [[ -n ${DISPLAY-} ]]; then
     exec E "$@"
 else
