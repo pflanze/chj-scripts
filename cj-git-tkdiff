@@ -1,6 +1,4 @@
 #!/bin/bash
 
-#GIT_EXTERNAL_DIFF=_cj-git-diff CJ_GIT_DIFF_CMD=tkdiff git diff --no-pager "$@"
-#crap. --no-pager not understood here.
-
-GIT_EXTERNAL_DIFF=_cj-git-diff CJ_GIT_DIFF_CMD=tkdiff PAGER=cat git diff "$@"
+# --no-pager not understood here.
+CJ_GIT_DIFF_CMD=cj-guidiff GIT_EXTERNAL_DIFF=_cj-git-diff PAGER=cat git diff "$@"

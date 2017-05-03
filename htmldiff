@@ -143,6 +143,6 @@ for(0..1){
     $tmpfiles[$_]= [$fh,$filename];
 }
 
-system( ($opt_diff ? ("diff", "-u") : "tkdiff"), map {$_->[1]} @tmpfiles);
+system( ($opt_diff ? ("diff", "-u") : "cj-guidiff"), map {$_->[1]} @tmpfiles);
 
 unlink0(@$_) for @tmpfiles;
