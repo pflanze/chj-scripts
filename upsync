@@ -31,7 +31,8 @@ sub usage {
   Options:
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
-                    disappear locally (NOT YET IMPLEMENTED?).
+                    disappear locally (only when they were observed to appear
+                    during the same program run before).
   --dry|--dry-run   only show which files would be synched.
   --ignore 'perl expr'  ignore dir and file paths matching spec
   --sound           play sounds upon uploads/deletes
