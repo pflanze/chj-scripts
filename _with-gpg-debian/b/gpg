@@ -1,1 +1,3 @@
-/usr/bin/gpg
+#!/bin/bash
+
+exec /usr/bin/gpg "$@"
