@@ -25,9 +25,9 @@ sub usage {
     print "$myname basedir 'filespec as perl expr' targetbase
 
   scan basedir and it's subdirs periodically, files which match
-  filespec (a perl expression acting on \$path_from_base or \$_, which
-  is the path from basedir, or \$filename for just the file name) and
-  have changed are copied to the target (an ssh url).
+  filespec (a perl expression acting on \$path_from_base or \$path or
+  \$_, which are all the path from basedir, or \$filename for just the
+  file name) and have changed are copied to the target (an ssh url).
 
   Options:
   -c|--continuous   keep watching the hierarchy and sync files again if they
@@ -91,7 +91,7 @@ use Chj::singlequote;
 
 sub sub_from_spec ( $ ) {
     my ($string)=@_;
-    my $s= eval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; '.$string.' }';
+    my $s= eval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$string.' }';
     if (ref $@ or $@) {
 	my $str= "$@"; chomp $str;
 	die "filespec ".singlequote($filespec_code).": $str ";
