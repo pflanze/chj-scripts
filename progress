@@ -51,7 +51,16 @@ sub xinfopos {
 while (1) {
     my $s= xfilesize;
     my $pos= xinfopos;
-    printf "%2.1f%%\n", $pos/$s * 100;
+    eval {
+	printf "%2.1f%%\n", $pos/$s * 100;
+	1
+    } || do {
+	if ($@=~ /division/) {
+	    print "$pos\n";
+	} else {
+	    die $@
+	}
+    };
     sleep 1;
 }
 
