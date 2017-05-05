@@ -8,7 +8,7 @@ use strict;
 our $sleeptime=1;#
 $|++;
 
-use Chj::xperlfunc;
+use Chj::xperlfunc ":all";
 sub _mkplaymp3 {
     my ($path)=@_;
     sub {
@@ -25,8 +25,9 @@ sub usage {
     print "$myname basedir 'filespec as perl expr' targetbase
 
   scan basedir and it's subdirs periodically, files which match
-  filespec (a perl expression acting on \$_) and have changed are
-  copied to the target (an ssh url).
+  filespec (a perl expression acting on \$path_from_base or \$_, which
+  is the path from basedir, or \$filename for just the file name) and
+  have changed are copied to the target (an ssh url).
 
   Options:
   -c|--continuous   keep watching the hierarchy and sync files again if they
@@ -90,7 +91,7 @@ use Chj::singlequote;
 
 sub sub_from_spec ( $ ) {
     my ($string)=@_;
-    my $s= eval 'sub { my($v)=@_; local $_=$v; '.$string.' }';
+    my $s= eval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; '.$string.' }';
     if (ref $@ or $@) {
 	my $str= "$@"; chomp $str;
 	die "filespec ".singlequote($filespec_code).": $str ";
@@ -107,7 +108,6 @@ use Chj::ruse;#
 use Chj::Backtrace;#
 use Chj::Unix::ShellRPC::UpsyncWithSSH;
 use Chj::xopendir;
-use Chj::xperlfunc;
 use Chj::FP::Memoize 'memoize_1ary';
 use Chj::singlequote;
 use Digest::MD5;
@@ -237,7 +237,7 @@ sub scan_base ( $ $ ) {
 		if ($st->is_dir) {
 		    &$scandir ($itempath_from_base);
 		} elsif ($st->is_file) {
-		    if (&$filespec_pred ($itempath)) {
+		    if (&$filespec_pred ($itempath_from_base)) {
 			# already done or not ?.
 			if (my $old= $$lastsynched{$itempath_from_base}) {
 			    my ($oldst,$oldmd5)=@$old;
