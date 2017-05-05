@@ -54,7 +54,7 @@ my $DEBUG=0;
 our $opt_dryrun;
 our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
-our $verbose;
+our $verbose=0;
 our @ignore_expr= '$filename eq ".git" or $filename=~ /~$/';
 # ^ add a --no-ignore option to clear these?
 our $opt_sound;
@@ -66,9 +66,9 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, @ARGV[$i+1..$#ARGV];
     	last;
     } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1; $verbose=1;
+	$DEBUG=1; $verbose++;
     } elsif (/^--?v(erbose)?$/) {
-	$verbose=1;
+	$verbose++;
     } elsif (/^--?c(ontinuous)?$/) {
 	$opt_continuous=1;
     } elsif (/^--?dry(-?run)?$/) {
@@ -218,7 +218,7 @@ sub scan_base ( $ $ ) {
 	    my $itempath_from_base= $path_from_base."/".$item;
 	    if (ignore($itempath_from_base)) {
 		print "ignoring '$itempath_from_base'\n"
-		  if $verbose;
+		  if $verbose>1;
 	    } else {
 		my $itempath= $basedir."/".$itempath_from_base;
 		#my $st= xstat $itempath; # eben, ev xlstat ? ah und X
