@@ -5,10 +5,10 @@ IFS=
 
 wikis='~/*/*wiki/.git'
 
-# ~copy from chj-bin
-ggc () {
-    git grep --cached -E "$@" | cat  # avoid pager
-}
+# ggc from chj-bin is better (reorders arguments, too)
+#ggc () {
+#    git grep --cached -E "$@" | cat  # avoid pager
+#}
 
 
 usage () {
