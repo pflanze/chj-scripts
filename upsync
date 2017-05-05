@@ -29,6 +29,9 @@ sub usage {
   \$_, which are all the path from basedir, or \$filename for just the
   file name) and have changed are copied to the target (an ssh url).
 
+  NOTE: the filespec is not used for directories. Only --ignore also
+  treats directories!
+
   Options:
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
