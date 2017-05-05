@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+base=/opt/chj/cj-git-patchtool/
+bn=`basename "$0"`
+
+exec "$base/$bn" "$@"
