@@ -40,8 +40,12 @@ usage unless @ARGV;
 
 our $socketpath= shift @ARGV;
 
-our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+use Chj::schemestring 'schemestring_oneline';
 use Chj::load;
+
+
+our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+
 load $IO_Socket_class; import $IO_Socket_class;
 
 
@@ -54,7 +58,6 @@ our $socket= $IO_Socket_class->new
   (
    Type=> &SOCK_STREAM,
    $opt_inet ? (Proto=> "tcp") : (),
-   #(Listen=> 0),
    ($opt_inet ?
     do {
 	my @spl= split ":", $socketpath;
@@ -67,21 +70,21 @@ our $socket= $IO_Socket_class->new
   )
   or die "opening socket '$socketpath': $!";#!
 
-use Chj::schemestring 'schemestring_oneline';
-
-#warn "START";
 $socket->send(@ARGV ?
 	      "trigger: ".join("\t",map { schemestring_oneline $_ } @ARGV)."\n"
 	      :
 	      "trigger\n")
   or do {
-      #warn "DED";  ach kommt EH nicht hierhin? throws exception schon selber???
+      # ah doesn't get here, socket->send already throws exceptions?
       die "send: $!";
       };
+
 my $result= <$socket>;
+
 if ($result ne "ok\n") {
     die "$myname: did not get an ok from the server, but: $result";
 }
+
 $socket->close
   or die "close: $!";
 
