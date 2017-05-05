@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+wikis='~/*/*wiki/.git'
+
+# ~copy from chj-bin
+ggc () {
+    git grep --cached -E "$@" | cat  # avoid pager
+}
+
+
+usage () {
+    echo "$0 searcharguments"
+    echo "  runs ggc (git grep --cached -E) with the given arguments"
+    echo "  on the wiki repositories at $wikis"
+    exit 1
+}
+
+if [[ $# = 0 || $1 = -h || $1 = --help ]]; then
+    usage
+fi
+
+searcharguments="$@"
+
+gw () {
+    w=`dirname "$1"`
+    (
+	set +e
+	echo "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "$COLUMNS"`"
+	cd "$w"
+	ggc "$searcharguments"
+	echo
+    ) || true
+}
+
+
+eval 'for w in '"$wikis"'; do gw "$w"; done'
