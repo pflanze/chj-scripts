@@ -22,7 +22,7 @@ if [[ $# = 0 || $1 = -h || $1 = --help ]]; then
     usage
 fi
 
-searcharguments="$@"
+searcharguments=("$@")
 
 gw () {
     w=`dirname "$1"`
@@ -30,7 +30,7 @@ gw () {
 	set +e
 	echo "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "$COLUMNS"`"
 	cd "$w"
-	ggc "$searcharguments"
+	ggc "${searcharguments[@]}"
 	echo
     ) || true
 }
