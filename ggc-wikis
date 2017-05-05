@@ -15,6 +15,9 @@ usage () {
     echo "$0 searcharguments"
     echo "  runs ggc (git grep --cached -E) with the given arguments"
     echo "  on the wiki repositories at $wikis"
+    echo "  Env vars:"
+    echo "    ABS=1  print absolute paths, and print separators to stderr instead"
+    echo "    Z=1    add -z to git grep, print absolute paths, and don't print separators"
     exit 1
 }
 
@@ -24,14 +27,43 @@ fi
 
 searcharguments=("$@")
 
+perhaps_abs () {
+    if [[ ${Z-} = 1 ]]; then
+	W="$1" perl -0 -wne 'print "$ENV{W}/$_" or die'
+    elif [[ ${ABS-} = 1 ]]; then
+	W="$1" perl -wne 'print "$ENV{W}/$_" or die'
+    else
+	cat
+    fi
+}
+
+note () {
+    # When asked for absolute paths, don't spoil STDOUT with notes
+    if ! [[ ${Z-} = 1 ]]; then
+	if [[ ${ABS-} = 1 ]]; then
+	    echo "$@" >&2
+	else
+	    echo "$@"
+	fi
+    fi
+}
+
+ggcZ () {
+    if [[ ${Z-} = 1 ]]; then
+	ggc -z "$@"
+    else
+	ggc "$@"
+    fi
+}
+
 gw () {
     w=`dirname "$1"`
     (
 	set +e
-	echo "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "$COLUMNS"`"
+	note "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "$COLUMNS"`"
 	cd "$w"
-	ggc "${searcharguments[@]}"
-	echo
+	ggcZ "${searcharguments[@]}" | perhaps_abs "$w"
+	note
     ) || true
 }
 
