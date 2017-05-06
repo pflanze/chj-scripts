@@ -4,7 +4,16 @@
 (my $email='chrjae%gmail,com')=~ tr/%,/@./;
 
 use strict;
+
+my $protocol_version=2;
+
+use Chj::schemestring 'parse_schemestring';
 use Time::HiRes 'time','sleep';
+use Chj::load;
+use Chj::xperlfunc ":all";
+use Chj::singlequote "singlequote_sh";
+use POSIX ":sys_wait_h"; # WNOHANG
+use Chj::xpipe;
 
 sub uninterrupted_sleep ( $ ) {
     my ($sleeptime)=@_;
@@ -61,7 +70,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-use Chj::load;
 use Getopt::Long;
 our $verbose=0;
 our $DEBUG;
@@ -119,24 +127,34 @@ if (defined $maybe_old_umask) {
     umask ($maybe_old_umask);
 }
 
-use Chj::xperlfunc ":all";
-use Chj::singlequote "singlequote_sh";
+# XX interesting I don't implement xsystem in terms of exec, uh?
+sub myxsystem {
+    if (my $pid= xfork) {
+	my $res= waitpid $pid, 0;
+	if ($res<0) {
+	    die "waitpid($pid): $!"
+	} else {
+	    "$?"
+	}
+    } else {
+	xexec @_
+    }
+}
 
-sub xrun {
+sub xrun_ {
+    my $dowait=shift;
     if ($verbose) {
 	$|++;
 	print "running ".join(" ",map { singlequote_sh $_ } @_)."\n";
     }
-    if ($opt_no_wait) {
-	return xlaunch @_;
+    if ($opt_no_wait and ! $dowait) {
+	"pid: ".xlaunch @_;
     } else {
-	return xsystem @_;
+	"exitvalue: ".(myxsystem @_);
     }
 }
 
 my $numchildren=0;
-
-use POSIX ":sys_wait_h"; # WNOHANG
 
 my $runner_child=-2;
 
@@ -157,12 +175,14 @@ $SIG{CHLD}= do {
 # handler which is not lossy (as I thought), but just does stuff once,
 # being triggered, and has a call frequency limit:
 
-our $start_triggered_handler = sub {
+sub start_triggered_handler () {
     if ($runner_child= xfork) {
 	# sender:
 	sub {
+	    my ($_msg)=@_;
 	    if (kill "USR1", $runner_child) {
 		warn "$$ sent signal to runner_child" if $DEBUG;
+		"signalled\n"
 	    } else {
 		#  currently just die since we don't restart the runner_child
 		die "$myname ($$): could not send signal to runner_child: $!";
@@ -174,6 +194,7 @@ our $start_triggered_handler = sub {
 	    warn "runner_child got signal" if $DEBUG;
 	    $flag=1;
 	};
+	delete $SIG{CHLD};
 	while (1) {
 	    # use both interruptible and uninterruptible sleeps
 	    sleep 100000;
@@ -183,9 +204,11 @@ our $start_triggered_handler = sub {
 		    uninterrupted_sleep $sleeptime;
 		    warn "runner_child going to run command now" if $DEBUG;
 		    $flag=0;
-		    my $res= xrun @cmd;
+		    my $res= xrun_ undef, @cmd;
 		    # XX: print if there was a problem?
 		    if ($flag) {
+			# received another signal while it was running
+			# (or launched)
 			redo RUNIT;
 		    }
 		}
@@ -194,17 +217,17 @@ our $start_triggered_handler = sub {
 	    }
 	}
     }
-};
+}
 
 # handler which is just serial, but runs as many times as 'signalled',
 # without frequency limit, but also can handle arguments:
 
-use Chj::xpipe;
-
-our $start_piped_handler= sub {
+sub start_piped_handler () {
     my ($in,$send)=xpipe;
+    my ($recv, $out)= xpipe;
     if ($runner_child= xfork) {
 	$in->xclose;
+	$out->xclose;
 	# sender:
 	sub {
 	    my ($msg)=@_;
@@ -212,55 +235,61 @@ our $start_piped_handler= sub {
 	    $send->xprint($msg,"\n");
 	    $send->xflush;
 	    warn "$$ passed on message to runner_child" if $DEBUG;
+	    scalar <$recv>
 	}
     } else {
 	$send->xclose;
+	$recv->xclose;
+	delete $SIG{CHLD};
+	# ^ !!, otherwise $? used in xrun_ will be clobbered (-1). Is
+	# this a Perl design issue? !
 	while (<$in>) {
 	    chomp;
-	    if (my $args= maybe_parsemsg ($_)) {
+	    if (my $dowait_args= maybe_parsemsg ($_)) {
 		warn "runner_child got request to run command" if $DEBUG;
-		my $res= xrun @cmd,@$args;
-		# XX: print if there was a problem?
+		my ($dowait, $args)= @$dowait_args;
+		$out->xprint(xrun_($dowait, @cmd, @$args)."\n");
+		$out->xflush;
 	    } else {
 		die "piped_handler: got strange message '$_'";
 	    }
 	}
 	exit 1;
     }
-};
+}
 
-use Chj::schemestring 'parse_schemestring';
-sub maybe_parsemsg ( $ ) { # return vector of values, or false.
+sub maybe_parsemsg ($) { # return [$do_wait, [values..]], or false on failure
     my ($str)=@_;
-    if ($opt_accept_arguments) {
-	if ($str=~ /^trigger(?::(.*))?/s) {
-	    if (my $args=$1) {
-		# split on tab, then de-escape schemestring
-		[
-		 map {
-		     parse_schemestring($_)
-		 } split /\t/, $args
-		]
-	    } else {
-		[]
-		  # XX do not die if a non commandline containing msg
-		  # is received? ok for now. maybe extend with a new
-		  # option to be restrictive in future.
-	    }
- 	} else {
+    $str=~ s/trigger $protocol_version://
+      or return;
+    $str=~ s/^([01])://
+      or return;
+    my ($do_wait) = $1;
+    my @args=
+      map {
+	  parse_schemestring($_)
+      } split /\t/, $str;
+    #^ XX parse failures here? undef?
+
+    if (@args) {
+	if ($opt_accept_arguments) {
+	    [ $do_wait, \@args ]
+	} else {
 	    undef
 	}
     } else {
-	$str eq 'trigger' ? [] : undef
+	[ $do_wait, \@args ]
     }
 }
 
 
 # --- main ----------------------------
 
-our $pass_to_handler= &{ $opt_accept_arguments ?
-			   $start_piped_handler
-			     : $start_triggered_handler };
+our $pass_to_handler=
+  $opt_accept_arguments ?
+  start_piped_handler
+  : start_triggered_handler;
+
 
 eval {
     while(1) {
@@ -285,10 +314,10 @@ eval {
 	    } else {
 		while (<$conn>) {
 		    chomp;
+		    # XX parse a first time just for error-checking?
 		    if (maybe_parsemsg($_)) {
 			warn "$$ got trigger" if $DEBUG;
-			&$pass_to_handler($_);
-			$conn->send("ok\n")
+			$conn->send(&$pass_to_handler($_))
 			  or warn "$myname: $$ could not send ok back to sender: $!";
 			# (the ok does not mean that the cmd has been
 			# run successfully or already in any way)
