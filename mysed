@@ -195,7 +195,7 @@ sub changefile {
         local $/=undef;
         local $_=<FILE>;
         close FILE;
-        if (my $cnt = doreg()) {
+        if (defined $_ and my $cnt = doreg()) {
             print "$cnt ".($cnt==1 ? "change": "changes")." in $path\n"
 	      unless $opt_quiet;
             if (sysopen OUT, "$path.$appendix",O_EXCL|O_CREAT|O_WRONLY) {
