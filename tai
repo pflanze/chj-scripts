@@ -1,3 +1,13 @@
 #!/bin/sh
 
-exec tai64nlocal
+if [ $# = 0 ]; then
+    exec tai64nlocal
+elif [ $# = 1 -a -d "$1" ]; then
+    tai "$1"/'@'* "$1"/current
+else
+    {
+	for f in "$@"; do
+	    tai64nlocal < "$f"
+	done
+    } | less
+fi
