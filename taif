@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 dir-or-file"
+    echo "  show tail -f of the given file, or 'dir/current', passed"
+    echo "  through tai64nlocal."
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ -d "$1" ]; then
+    file="$1"/current
+else
+    file="$1"
+fi
+
+fasttail "$file" | tai64nlocal
+
