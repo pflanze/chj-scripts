@@ -4,7 +4,16 @@
 (my $email='chrjae%gmail,com')=~ tr/%,/@./;
 
 use strict;
+
+my $protocol_version=2;
+
+use Chj::schemestring 'parse_schemestring';
 use Time::HiRes 'time','sleep';
+use Chj::load;
+use Chj::xperlfunc ":all";
+use Chj::singlequote "singlequote_sh";
+use POSIX ":sys_wait_h"; # WNOHANG
+use Chj::xpipe;
 
 sub uninterrupted_sleep ( $ ) {
     my ($sleeptime)=@_;
@@ -85,12 +94,12 @@ our @cmd= @ARGV;
 if ($opt_accept_arguments and $opt_sleeptime) {
     usage "--accept-arguments is incompatible with --sleep"
 }
+
 $sleeptime= $opt_sleeptime if defined $opt_sleeptime;
 
-our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
-#require $IO_Socket_class; import $IO_Socket_class;
-#GRRR no. replace :: etc...
-use Chj::load;
+our $IO_Socket_class=
+  $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+
 load $IO_Socket_class; import $IO_Socket_class;
 
 my $maybe_old_umask;
@@ -109,7 +118,7 @@ our $socket= $IO_Socket_class->new
    $opt_inet ? (LocalAddr=> $socketpath) : (Local=> $socketpath),
    $opt_inet ? (Proto=> "tcp") : (),
    #:
-   (Listen=> 1), # wow for INET Listen means queue size, for UNIX it's boolean  -- ehr, or BAH?!f
+   (Listen=> 1), # (for INET Listen means queue size, for UNIX it's boolean? or not?)
    $opt_inet ? (ReuseAddr=> 1) : (),
   )
   or die "opening socket '$socketpath': $!";#!
@@ -118,27 +127,34 @@ if (defined $maybe_old_umask) {
     umask ($maybe_old_umask);
 }
 
-use Chj::xperlfunc ":all";
-use Chj::singlequote "singlequote_sh";
+# XX interesting I don't implement xsystem in terms of exec, uh?
+sub myxsystem {
+    if (my $pid= xfork) {
+	my $res= waitpid $pid, 0;
+	if ($res<0) {
+	    die "waitpid($pid): $!"
+	} else {
+	    "$?"
+	}
+    } else {
+	xexec @_
+    }
+}
 
-sub xrun {
+sub xrun_ {
+    my $dowait=shift;
     if ($verbose) {
 	$|++;
 	print "running ".join(" ",map { singlequote_sh $_ } @_)."\n";
     }
-    if ($opt_no_wait) {
-	#if (xfork) {
-	#    # return right away
-	#hm just use what I already wrote!
-	return xlaunch @_; ## sensible code?
+    if ($opt_no_wait and ! $dowait) {
+	"pid: ".xlaunch @_;
     } else {
-	return xsystem @_;
+	"exitvalue: ".(myxsystem @_);
     }
 }
 
 my $numchildren=0;
-
-use POSIX ":sys_wait_h"; # WNOHANG
 
 my $runner_child=-2;
 
@@ -147,26 +163,29 @@ $SIG{CHLD}= do {
     sub {
 	while (1) {
 	    $pid= waitpid -1,WNOHANG;
-	    last if (($pid == -1) or ($pid == 0)); #GRR somehow mis documented??!
+	    last if (($pid == -1) or ($pid == 0)); # mis-documented?
 	    $numchildren--;
 	    if ($pid == $runner_child) {
 		die "runner_child died";
 	    }
 	}
-    };
+    }
 };
 
 # handler which is not lossy (as I thought), but just does stuff once,
 # being triggered, and has a call frequency limit:
 
-our $start_triggered_handler = sub {
+sub start_triggered_handler () {
     if ($runner_child= xfork) {
 	# sender:
 	sub {
+	    my ($_msg)=@_;
 	    if (kill "USR1", $runner_child) {
 		warn "$$ sent signal to runner_child" if $DEBUG;
+		"signalled\n"
 	    } else {
-		die "$myname ($$): could not send signal to runner_child: $!"; ## currently just die since we don't restart the runner_child
+		#  currently just die since we don't restart the runner_child
+		die "$myname ($$): could not send signal to runner_child: $!";
 	    }
 	}
     } else {
@@ -175,8 +194,9 @@ our $start_triggered_handler = sub {
 	    warn "runner_child got signal" if $DEBUG;
 	    $flag=1;
 	};
+	delete $SIG{CHLD};
 	while (1) {
-	    # use both interruptible and uninterruptible sleeps hehe
+	    # use both interruptible and uninterruptible sleeps
 	    sleep 100000;
 	    if ($flag) {
 	      RUNIT: {
@@ -184,9 +204,11 @@ our $start_triggered_handler = sub {
 		    uninterrupted_sleep $sleeptime;
 		    warn "runner_child going to run command now" if $DEBUG;
 		    $flag=0;
-		    my $res= xrun @cmd;
-		    ## todo: print if there was a problem  ?
+		    my $res= xrun_ undef, @cmd;
+		    # XX: print if there was a problem?
 		    if ($flag) {
+			# received another signal while it was running
+			# (or launched)
 			redo RUNIT;
 		    }
 		}
@@ -195,17 +217,17 @@ our $start_triggered_handler = sub {
 	    }
 	}
     }
-};
+}
 
 # handler which is just serial, but runs as many times as 'signalled',
 # without frequency limit, but also can handle arguments:
 
-use Chj::xpipe;
-
-our $start_piped_handler= sub {
+sub start_piped_handler () {
     my ($in,$send)=xpipe;
+    my ($recv, $out)= xpipe;
     if ($runner_child= xfork) {
 	$in->xclose;
+	$out->xclose;
 	# sender:
 	sub {
 	    my ($msg)=@_;
@@ -213,79 +235,92 @@ our $start_piped_handler= sub {
 	    $send->xprint($msg,"\n");
 	    $send->xflush;
 	    warn "$$ passed on message to runner_child" if $DEBUG;
+	    scalar <$recv>
 	}
     } else {
 	$send->xclose;
+	$recv->xclose;
+	delete $SIG{CHLD};
+	# ^ !!, otherwise $? used in xrun_ will be clobbered (-1). Is
+	# this a Perl design issue? !
 	while (<$in>) {
 	    chomp;
-	    if (my $args= maybe_parsemsg ($_)) {
+	    if (my $dowait_args= maybe_parsemsg ($_)) {
 		warn "runner_child got request to run command" if $DEBUG;
-		my $res= xrun @cmd,@$args;
-		## todo: print if there was a problem  ?
+		my ($dowait, $args)= @$dowait_args;
+		$out->xprint(xrun_($dowait, @cmd, @$args)."\n");
+		$out->xflush;
 	    } else {
 		die "piped_handler: got strange message '$_'";
 	    }
 	}
 	exit 1;
     }
-};
+}
 
-use Chj::schemestring 'parse_schemestring';
-sub maybe_parsemsg ( $ ) { # return vector of values, or false.
+sub maybe_parsemsg ($) { # return [$do_wait, [values..]], or false on failure
     my ($str)=@_;
-    if ($opt_accept_arguments) {
-	if ($str=~ /^trigger(?::(.*))?/s) {
-	    if (my $args=$1) {
-		# split on tab, then deescape schemestring
-		[
-		 map {
-		     parse_schemestring($_)
-		 } split /\t/, $args
-		]
-	    } else {
-		[]  ## do not die if a non commandline containing msg is received? ok for now. maybe extend with a new option to be restrictive in future.
-	    }
- 	} else {
+    $str=~ s/trigger $protocol_version://
+      or return;
+    $str=~ s/^([01])://
+      or return;
+    my ($do_wait) = $1;
+    my @args=
+      map {
+	  parse_schemestring($_)
+      } split /\t/, $str;
+    #^ XX parse failures here? undef?
+
+    if (@args) {
+	if ($opt_accept_arguments) {
+	    [ $do_wait, \@args ]
+	} else {
 	    undef
 	}
     } else {
-	$str eq 'trigger' ? [] : undef
+	[ $do_wait, \@args ]
     }
 }
 
 
 # --- main ----------------------------
 
-our $pass_to_handler= &{ $opt_accept_arguments ?
-			   $start_piped_handler
-			     : $start_triggered_handler };
+our $pass_to_handler=
+  $opt_accept_arguments ?
+  start_piped_handler
+  : start_triggered_handler;
+
 
 eval {
     while(1) {
 	my $conn= $socket->accept
 	  or do {
-	      if ($! == 4) {## get constant from POSIX ~
+	      if ($! == 4) {# XX get constant from POSIX
 		  # OS error code   4:  Interrupted system call
 		  redo
 	      } else {
 		  die "accept: $!";
 	      }
 	  };
-	warn "got a connection from ".$conn->peername if $DEBUG;###todo convert to a human-readable something.
+	warn "got a connection from ".$conn->peername if $DEBUG;
+	# ^ XX convert to a human-readable format
+
 	if ($numchildren < $maxchildren) {
 	    if (my $pid= xfork) {
 		undef $conn;
 		warn "forked off child $pid" if $DEBUG;
-		$numchildren++; ###btw race! (in the ++ itself) hehhe.
+		$numchildren++;
+		# ^ XX race (in the ++ itself)?
 	    } else {
 		while (<$conn>) {
 		    chomp;
+		    # XX parse a first time just for error-checking?
 		    if (maybe_parsemsg($_)) {
 			warn "$$ got trigger" if $DEBUG;
-			&$pass_to_handler($_);
-			$conn->send("ok\n")
+			$conn->send(&$pass_to_handler($_))
 			  or warn "$myname: $$ could not send ok back to sender: $!";
-			#(btw of course the ok doesn't mean that the cmd has been run successfully or already in any way)
+			# (the ok does not mean that the cmd has been
+			# run successfully or already in any way)
 			warn "$$ sent ok back to trigger-send" if $DEBUG;
 		    } else {
 			warn "$$ got unrecognized message '$_'" if $DEBUG;
@@ -296,7 +331,8 @@ eval {
 		exit 0;
 	    }
 	} else {
-	    warn "$myname: too many children, dropping connection\n";##from ...
+	    warn "$myname: too many children, dropping connection\n";
+	    # XX from ...
 	}
 	warn "going to accept again" if $DEBUG;
     }

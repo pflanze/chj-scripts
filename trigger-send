@@ -5,6 +5,8 @@
 
 use strict;
 
+my $protocol_version=2;
+
 our $timeout=10;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -22,6 +24,7 @@ sub usage {
   --timeout seconds   instead of the default $timeout
   --inet       Interpret socketpath as listen address[:port] instead of
                filesystem path
+  --wait       Wait for the command to finish, and exit with its exit code.
 
   (Christian Jaeger <$email>)
 ";
@@ -31,17 +34,22 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_inet;
+our $opt_wait;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "timeout"=> \$timeout,
-	   "inet"=>\$opt_inet,
+	   "inet"=> \$opt_inet,
+	   "wait"=> \$opt_wait,
 	  ) or exit 1;
 usage unless @ARGV;
 
 our $socketpath= shift @ARGV;
 
-our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+use Chj::schemestring 'schemestring_oneline';
 use Chj::load;
+
+our $IO_Socket_class= $opt_inet ? "IO::Socket::INET" : "IO::Socket::UNIX";
+
 load $IO_Socket_class; import $IO_Socket_class;
 
 
@@ -54,7 +62,6 @@ our $socket= $IO_Socket_class->new
   (
    Type=> &SOCK_STREAM,
    $opt_inet ? (Proto=> "tcp") : (),
-   #(Listen=> 0),
    ($opt_inet ?
     do {
 	my @spl= split ":", $socketpath;
@@ -67,21 +74,38 @@ our $socket= $IO_Socket_class->new
   )
   or die "opening socket '$socketpath': $!";#!
 
-use Chj::schemestring 'schemestring_oneline';
+my $msg=
+  "trigger $protocol_version:".($opt_wait ? "1" : "0").":".
+  join("\t",map { schemestring_oneline $_ } @ARGV)
+  ."\n";
 
-#warn "START";
-$socket->send(@ARGV ?
-	      "trigger: ".join("\t",map { schemestring_oneline $_ } @ARGV)."\n"
-	      :
-	      "trigger\n")
-  or do {
-      #warn "DED";  ach kommt EH nicht hierhin? throws exception schon selber???
-      die "send: $!";
-      };
+$socket->send($msg)
+  or die "send: $!"; # ah doesn't get here, socket->send already throws exceptions?
+
 my $result= <$socket>;
-if ($result ne "ok\n") {
-    die "$myname: did not get an ok from the server, but: $result";
+chomp $result;
+
+#warn "result='$result'";
+
+if ($opt_wait) {
+    if (my ($exitvalue)= $result=~ /^exitvalue: *(.*)/s) {
+	die "bug" if $exitvalue < 0;
+	my $exitcode= $exitvalue >> 8;
+	my $signal= $exitvalue & 127;
+	if ($signal) {
+	    die "exited from signal $signal";
+	} else {
+	    exit $exitcode
+	}
+    } else {
+	die "$myname: did get unexpected result: '$result'\n";
+    }
 }
+else {
+    $result=~ /(signalled|exitvalue|pid)/
+      or die "$myname: did not get an ok from the server, but: '$result'\n";
+}
+
 $socket->close
   or die "close: $!";
 
