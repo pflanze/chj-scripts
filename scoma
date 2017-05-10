@@ -7,7 +7,9 @@ set -eu
 
 usage () {
     echo "$0 [ -m message ]"
-    echo " add all, metadata save, commit and push to origin"
+    echo "  add all, metadata save, commit and push."
+    echo "  Note: set up push upstream so that 'git push'"
+    echo "  without arguments works."
     exit 1
 }
 
@@ -43,7 +45,7 @@ git add -f .METADATA-v2
 if eval "git commit -a $options"; then
 
     if [ ! -f .git/scoma-no-push ]; then
-	git push origin master
+	git push
     fi
 
 fi
