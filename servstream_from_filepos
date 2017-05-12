@@ -6,7 +6,7 @@ if [ -z "$PORT" ]; then
 fi
 
 
-if [ $# -ne 2 -o "H$1" == "H-h" ]; then
+if [[ $# -ne 2 || $1 = "-h" ]]; then
     echo "Usage: $0 filename bytes|percent%|XhYmZs"
     cat <<EOF
   Bitte filename angeben des files das tail'ed und served werden soll, 
@@ -43,7 +43,7 @@ END
 perl -we '
     open F,$ARGV[0] or die "$ARGV[0]: $!"; 
     $pos= $ARGV[1]; 
-    if ($pos=~ /(\d+(?:\.\d*)?) *\%/) {  # na, schön wäre noch wenn die genaue position, möglichst in minuten, im songtitel geschickt würde.
+    if ($pos=~ /(\d+(?:\.\d*)?) *\%/) {  # na, schÃ¶n wÃ¤re noch wenn die genaue position, mÃ¶glichst in minuten, im songtitel geschickt wÃ¼rde.
 	$p=$1;
 	$l=(stat $ARGV[0])[7];
 	$pos= $l*$p/100;

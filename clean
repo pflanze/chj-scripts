@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ $# -gt 1 -o "$1" == "--help" -o "$1" == "-h" ]; then
+if [[ $# -gt 1 || $1 = "--help" || $1 = "-h" ]]; then
     {
-	echo "`basename $0` [ directory ]"
+	echo "`basename "$0"` [ directory ]"
 	echo "  Cleans the given directory or . from *~ files. (moves to trash)"
     } >&2
     exit 1

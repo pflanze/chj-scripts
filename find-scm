@@ -2,7 +2,7 @@
 
 # cj Tue, 07 Mar 2006 13:59:10 +0100 / Thu, 23 Nov 2006 13:58:43 +0100
 
-if [ $# -lt 2 -o "$1" = "-h" -o "$1" = "--help" ]; then  #well die letzteren checks kann ich mir nun sparn da 2 args req..
+if [[ $# -lt 2 || $1 = "-h" || $1 = "--help" ]]; then
     echo "usage: $0 dir pattern"
     exit
 fi

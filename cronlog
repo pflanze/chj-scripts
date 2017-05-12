@@ -46,10 +46,10 @@ exitcode=${pstatus[0]}
 teecode=${pstatus[1]}
 logcode=${pstatus[2]}
 
-if [ $logcode != 0 ]; then
+if [ "$logcode" != 0 ]; then
     echo "== log-timestamp exited with code $logcode =="
 fi
-if [ $teecode != 0 ]; then
+if [ "$teecode" != 0 ]; then
     echo "== tee exited with code $teecode =="
 fi
 if ! is_ok "$exitcode"; then
@@ -59,4 +59,4 @@ fi
 
 rm "$tmpf"
 
-exit $exitcode
+exit "$exitcode"

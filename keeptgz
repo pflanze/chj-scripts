@@ -2,8 +2,9 @@
 
 # cj Fri, 11 Mar 2005 22:39:29 +0100
 
-if [ $# -ne 1 -o "Q$1" == "Q--help" -o "Q$1" == "Q-h" ]; then
+if [[ $# -ne 1 || $1 = "--help" || $1 = "-h" ]]; then
     echo "$0 file_or_folder"
+    # shellcheck disable=SC2016
     echo '  does a   tar czf file_or_folder-`date_`.tgz file_or_folder'
     exit 1
 fi

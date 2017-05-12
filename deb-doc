@@ -8,6 +8,8 @@ if [ $# -ne 1 ]; then
 fi
 
 package="$1"
+# shellcheck disable=SC2001
+# : See if you can use ${variable//search/replace} instead.
 packagename=`echo "$package"|sed s/:.*//`
 
 links /usr/share/doc/"$packagename"/

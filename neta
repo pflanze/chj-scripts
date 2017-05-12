@@ -54,8 +54,9 @@ store () {
 
 restore () {
     # ignoring "$@"
-    local IFS=`echo -e '\t'`
-    while read onoff u; do
+    local IFS
+    IFS=`echo -e '\t'`
+    while read -r onoff u; do
 	net-access "$u" "$onoff" || true
     done < "$store_path"
 }
@@ -73,10 +74,10 @@ docmd () {
     local cmd="$1"
     shift
     if [ -n "${1-}" ]; then
-	$cmd "$@"
+	"$cmd" "$@"
     else
 	IFS=$'\n' read -rd '' -a users < <(filter-stripcomments < "$etcpath") || true
-	$cmd ${users[@]}
+	"$cmd" "${users[@]}"
     fi
 }
 
@@ -92,7 +93,7 @@ case "$onoff" in
 
     # shells are soooo crap
     IFS=$'\n' read -rd '' -a atmp < <(printfield 2 < "$store_path") || true
-    store ${atmp[@]}
+    store "${atmp[@]}"
 
     restore
     mv -f "$store_tmp_path" "$store_path" || true

@@ -18,4 +18,4 @@ fi
 
 find "$dir" \! -name .git -prune -a -type f |perl -wne 'my $l=$_; chomp; print $l unless (s/_\.c$// or s/\.c$//) && -e "$_.scm"'|csort
 
-# dass ./lib/_gambc.c noch gefunden wird ist weil dafür wirklich kein scm file existiert.
+# That ./lib/_gambc.c is still found is because there's really no scm file for it

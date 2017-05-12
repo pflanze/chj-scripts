@@ -35,7 +35,7 @@ mycpp () {
 }
 
 
-if [ -f "$infile" -a -f "$outfile" ]; then
+if [ -f "$infile" ] && [ -f "$outfile" ]; then
 
     case "$1" in
 	start)

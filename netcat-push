@@ -4,7 +4,7 @@
 
 set -eu
 
-if [ $# -ne 2 -o "${1-}" = "-h" -o "${1-}" = "--help" ]; then
+if [[ $# -ne 2 || $1 = "-h" || $1 = "--help" ]]; then
     echo "usage: $0 server port"
     exit 1
 fi

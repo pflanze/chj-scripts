@@ -15,11 +15,11 @@ gpatchid() {
 }
 
 if [ $# -eq 0 ]; then
-    while IFS='' read id; do
+    while IFS='' read -r id; do
 	gpatchid "$id"
     done
 else
-    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    if [[ $1 = "-h" || $1 = "--help" ]]; then
 	usage
     else
 	for id in "$@"; do

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -gt 1 -o "$1" == "-h" -o "$1" == "--help" ]; then
+if [[ $# -gt 1 || $1 = "-h" || $1 = "--help" ]]; then
 	echo "usage: $0 [ interface ]"
 	echo "  down and up the interface or eth0 if none given"
 	exit 1

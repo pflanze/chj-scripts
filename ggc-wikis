@@ -3,6 +3,7 @@
 set -euo pipefail
 IFS=
 
+# shellcheck disable=SC2088
 wikis='~/*/*wiki/.git'
 
 # ggc from chj-bin is better (reorders arguments, too)

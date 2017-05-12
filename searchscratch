@@ -7,7 +7,7 @@ if [ "$1" = '-N' ]; then
     shift
     shift
 else
-    if [ "$1" = '-h' -o "$1" = '--help' ]; then
+    if [[ $1 = '-h' || $1 = '--help' ]]; then
 	echo "$0 [ -N n ] egrep-arguments"
 	echo " searches for the given egrep arguments in the last n (default $numberdefault) files in"
 	echo " your ~/scratch directory"
@@ -29,6 +29,7 @@ if [ "X$1" = 'X-L' ]; then
     do_only_list=1
     shift
     if [ $# -gt 0 ]; then
+	# shellcheck disable=SC2145
 	echo "error: no arguments after -L allowed, got: $@"
 	exit 1
     fi
@@ -40,7 +41,9 @@ else
     grepcmd=egrep
 fi
 
-cd ~/scratch
+cd ~/scratch || exit 1
+# shellcheck disable=SC2010
+#  just assuming I don't create files with newlines.
 ls -rt |grep -v '[~]'|tail -"$number"| {
     if test "$do_only_list"; then  #funny, anything (?) nonemptystring works as true value, even -e or some such. reallymagic or so.
 	#perl -wne 'print "~/scratch/$_"'|cat  #cat for speed on lombi--how does one switchperl to completelybuffered???todo.

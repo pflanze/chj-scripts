@@ -6,7 +6,7 @@ if [ "$1" = '-N' ]; then
     shift
     #args=
 else
-    if [ "$1" = '-h' -o "$1" = '--help' ]; then
+    if [[ $1 = '-h' || $1 = '--help' ]]; then
 	echo "$0 [ -N n ] egrep-arguments"
 	echo "  searches for the given egrep arguments in the last n (default 100) files in your scratch directory"
 	exit;
@@ -25,5 +25,7 @@ fi
 #dir=`shift`
 dir="$1"
 shift
-cd "$dir" #that's the whole diff to searchscratch
-ls -rt |grep -v '[~]'|tail -"$number"|tr '\n' '\0'|xargs -0 $grepcmd "$@"
+cd "$dir" || exit 1 #that's the whole diff to searchscratch
+# shellcheck disable=SC2010
+# XX what does this do, should delete whole script perhaps?
+ls -rt | grep -v '[~]' | tail -"$number" | tr '\n' '\0' | xargs -0 $grepcmd "$@"

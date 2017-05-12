@@ -16,7 +16,7 @@ usage () {
 if [ $# -eq 0 ]; then
     options="-m ."
 elif [ $# -eq 2 ]; then
-    if [ "$1" = "-m" -o "$1" = "-c" ]; then
+    if [[ $1 = "-m" || "$1" = "-c" ]]; then
 	options="$1 $(printf '%q' "$2")"
     else
 	usage

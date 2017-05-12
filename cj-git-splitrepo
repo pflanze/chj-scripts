@@ -3,6 +3,8 @@
 set -eu
 
 error () {
+    # "$@" shows the same thing but .. should use something that quotes instead.
+    # shellcheck disable=SC2145
     echo "$0: $@" >&2
     exit 1
 }

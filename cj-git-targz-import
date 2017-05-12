@@ -25,15 +25,17 @@ mkdir "$TMPDIR"
 cd "$TMPDIR"
 cj-git-init
 
-ls -rt ../*"$SUFFIX" | while read f; do
-    rm -rf *
+# XX Use find instead of ls to better handle non-alphanumeric filenames.
+# shellcheck disable=SC2012
+ls -rt ../*"$SUFFIX" | while read -r f; do
+    rm -rf ./*
     tar xf "$f"  # relies on tar finding out decompression scheme by itself
     if [ 1 = "${MOVE_OUT_OF_SUBDIR-}" ]; then
-	dir=`ls -d *`
+	dir=`ls -d ./*`
 	mv -i "$dir"/* .
 	rmdir "$dir"  # assumes there are not dot files
     elif [ 2 = "${MOVE_OUT_OF_SUBDIR-}" ]; then
-	dir=`ls -d *`
+	dir=`ls -d ./*`
 	mv -i "$dir"/* .
 	rm -rf "$dir"  # assumes dot files are unimportant
     fi

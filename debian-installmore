@@ -13,7 +13,7 @@ gitclone () {
 }
 
 echo "Install my preferred stuff on a fresh Debian install. Hit enter to start.."
-read foo
+read -r
 
 set -x
 

@@ -1,26 +1,20 @@
 #!/bin/bash
 
-#word=shift
-# TA wie geht das scho wieder  MANNNN shell suck
 word="$1"
 shift
 
-if [ -z "$word" -o $# -eq 0 ]; then
+if [ -z "$word" ] || [ $# -eq 0 ]; then
     echo "usage: $0 word dir"
     echo "  greps all .pm files for the occurence of the given \w+,"
     echo "  ignoring lines beginning with whitespace and the #."
-    echo "  (-> ~ungefähr bloss)"
+    echo "  (-> only about)"
     exit 1
 fi
 
-
-#find "$dir" -name "*.pm" -print0 | xargs -0 grep -F "$word"|perl -wne  'print if not( /\.pm:\s*#/) and /\b'"$word"/'
-# ach GAGL perl -wne ist einfach scheisse
-
-find "$@" -name "*.pm" -print0 | xargs -0 grep -F "$word"|perl -we 'while (<STDIN>) { print if not( /\.pm:\s*#/) and /\b\Q$ARGV[0]\E\b/ }' -- "$word"
-
-
-
-
-
+find "$@" -name "*.pm" -print0 \
+    | xargs -0 grep -F "$word" \
+    | perl -we '
+while (<STDIN>) { 
+    print if not( /\.pm:\s*#/) and /\b\Q$ARGV[0]\E\b/ 
+}' -- "$word"
 

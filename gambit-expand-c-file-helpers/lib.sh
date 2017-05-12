@@ -1,3 +1,4 @@
+#!/bin/bash
 set -eu
 
 if [ $# -ne 1 ]; then
@@ -6,13 +7,15 @@ if [ $# -ne 1 ]; then
 fi
 
 # shadow gcc:
-export ORIG_GCC=$(which gcc)
+export ORIG_GCC
+ORIG_GCC=$(which gcc)
 PATH=/opt/chj/bin/gambit-expand-c-file-helpers:"$PATH"
 
 
 outfile="$1"_expanded.c
 
-# hmm a couple hardcoded stuff:
+
+# hmm some hardcoded stuff:
 
 export GSC_CC_O_GAMBCDIR_BIN=${GSC_CC_O_GAMBCDIR_BIN-/usr/local/Gambit-C/current/bin/gsc}
 export GSC_CC_O_GAMBCDIR_INCLUDE=${GSC_CC_O_GAMBCDIR_INCLUDE-/usr/local/Gambit-C/current/include/}

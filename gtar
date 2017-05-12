@@ -25,12 +25,12 @@ fi
 base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz)[^/]*$}{}s; print'`
 
 produce () {
-    local bn=`basename "$base"`
+    local bn
+    bn=`basename "$base"`
     git archive --format=tar --prefix="$bn"/ "$id"
     # ^yeah, don't forget the / ..
 }
 
-compress=''
 if echo "$outpath" | grep -q 'gz$'; then
     produce | gzip > "$outpath"
 elif echo "$outpath" | egrep -q '\.xz$'; then

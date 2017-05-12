@@ -12,7 +12,7 @@ usage() {
 
 if [ $# -lt 1 ]; then
     usage
-elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+elif [[ $1 = "-h" || $1 = "--help" ]]; then
     usage
 fi
 
@@ -31,7 +31,7 @@ elif [ "$1" = "--" ]; then
 fi
 
 if [ ! "${PORT-}" ]; then
-    PORT=$((14123+$UID))
+    PORT=$((14123 + UID))
 fi
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -ne 1 -o "$1" == "-h" -o "$1" == "--help" ]; then
+if [[ $# -ne 1 || "$1" == "-h" || "$1" == "--help" ]]; then
 	echo "usage: $0 remotemachine"
 	echo "  uses ssh and date command to *push* the date of the"
 	echo "  local machine to remotemachine."

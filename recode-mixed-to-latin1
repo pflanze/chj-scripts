@@ -19,7 +19,7 @@ tmpout=$(tempfile -d "$(dirname "$file")")
 
 
 {
-    while IFS="" read line; do
+    while IFS="" read -r line; do
 	if echo "$line"| iconv --from utf8 --to latin1 > "$tmp"; then
 	    cat "$tmp"
 	else

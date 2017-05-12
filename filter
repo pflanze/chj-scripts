@@ -12,7 +12,7 @@ usage () {
 }
 
 if [ $# -ge 1 ]; then
-    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    if [[ $1 = "-h" || $1 = "--help" ]]; then
 	usage
     fi
 else
@@ -20,7 +20,7 @@ else
 fi
 
 
-while read line; do
+while read -r line; do
     #if "$@" "$(echo "$line")"; then
     # line seems to already have been chomped
     if "$@" "$line"; then

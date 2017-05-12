@@ -12,10 +12,10 @@ usage () {
     exit 1
 }
 
-if [ $# -lt 1 -o $# -gt 2 ]; then
+if [[ $# -lt 1 || $# -gt 2 ]]; then
     usage
 fi
-if [ "$1" = "-h" -o "$1" = "--help" ]; then
+if [[ $1 = "-h" || $1 = "--help" ]]; then
     usage
 fi
 

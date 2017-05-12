@@ -2,5 +2,5 @@
 
 set -eu
 
-IFS='' read item
+IFS='' read -r item
 "$@" "$item"

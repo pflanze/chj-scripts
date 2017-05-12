@@ -11,12 +11,12 @@ usage () {
     exit 1
 }
 
-if [ $# -eq 1 -o $# -eq 2 ]; then
-    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+if [ $# -eq 1 ] || [ $# -eq 2 ]; then
+    if [[ $1 = "-h" || $1 = "--help" ]]; then
 	usage
     else
 	if [ $# -eq 2 ]; then
-	    if [ "$1" = "-" ]; then
+	    if [[ $1 = "-" ]]; then
 		user=$(user-or-home2user "$2")
 		sux - "$user" term
 	    else

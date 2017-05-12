@@ -14,8 +14,10 @@ fi
 
 md () {
     local path="$1"
-    local outdir="`dirname "$path"`";
-    local outpath="$outdir/`basename "$path" .md`${HTMLSUFFIX-.xhtml}"
+    local outdir
+    outdir="`dirname "$path"`";
+    local outpath
+    outpath="$outdir/`basename "$path" .md`${HTMLSUFFIX-.xhtml}"
     local customstyles=""
     if [ -s "${CSSINCLUDE-}" ]; then
 	customstyles=`cat "$CSSINCLUDE"`

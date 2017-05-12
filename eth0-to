@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -ne 1 -o "$1" == "--help" -o "$1" == "-h" ]; then
+if [[ $# -ne 1 || $1 = "--help" || $1 = "-h" ]]; then
 	echo "usage: $0 where"
 	echo "  where 'where' is anything that whereami accepts."
 	exit

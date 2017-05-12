@@ -14,7 +14,7 @@ usage () {
 
 if [ $# -lt 1 ]; then
     usage
-elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+elif [[ $1 = "-h" || $1 = "--help" ]]; then
     usage
 fi
 

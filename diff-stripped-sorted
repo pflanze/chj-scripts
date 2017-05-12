@@ -28,9 +28,13 @@ file2="$2"
 tmp1="$(tempfile --suffix "$(echo "$file1"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
 tmp2="$(tempfile --suffix "$(echo "$file2"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
 
-trap "rm -f '$tmp1' '$tmp2'" 0  # programexit
+trap 'rm -f "$tmp1" "$tmp2"' 0  # programexit
 
 trans() {
+    # shellcheck disable=SC2086
+    # : Double quote to prevent globbing and word splitting.
+    # (Reason is that I might want to pass multiple of them? But, I
+    # don't control IFS. But, caller should. Thus OK?)
     filter-stripcomments $STRIPOPT < "$1" | csort > "$2"
 }
 

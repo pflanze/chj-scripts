@@ -6,11 +6,11 @@ if [ -z "$PORT" ]; then
 fi
 
 
-if [ $# -ne 1 -o "H$1" == "H-h" ]; then
+if [[ $# -ne 1 || $1 = "-h" ]]; then
     echo "bitte filename angeben des files das tail'ed und served werden soll"
-    # gopf cat nöd echo
+    # gopf cat nÃ¶d echo
     cat <<EOF
-Das ist ein quickhack eines streaming servers, der für das servieren eines files von beginn weg ist.
+Das ist ein quickhack eines streaming servers, der fÃ¼r das servieren eines files von beginn weg ist.
 EOF
     exit 1
 fi
