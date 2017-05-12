@@ -18,11 +18,11 @@ startaddr=23
 endaddr=255
 iptrunk=192.168.66
 ip=$iptrunk.$hostaddr
-network=$iptrunk.0
+#network=$iptrunk.0
 netmask=255.255.255.0
 
 # configure interface
-ifconfig $if $ip netmask $netmask up
+ifconfig "$if" "$ip" netmask "$netmask" up
 
 dhcprange=$iptrunk.$startaddr,$iptrunk.$endaddr
 
@@ -39,7 +39,7 @@ fi
 # idea in general, but works for me(tm))
 killall dnsmasq || true
 
-dnsmasq -u dnsmasq -i $if --dhcp-range=$dhcprange
+dnsmasq -u dnsmasq -i "$if" --dhcp-range="$dhcprange"
 
 set +x
 echo Ok.
