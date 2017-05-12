@@ -1,23 +1,15 @@
 #!/bin/bash
 
 if test -n "$1" -a "$1" != "-h" -a "$1" != "--help"; then
-	if test "$1" = "-Z"; then
-		display -window root "$1"
-	else
-		#if test "$1" = "-z"; then
-		#else # Test first -> nee vergiss es doch.
-			convert -geometry 1024x768! "$1" - | display -window root -
-			
-			#convert -antialias nee gar nich nötig!
-			# ah ps. "-scale geometry" gäb es ja auch !! ? !! nunkommtmanschonnichztrechtdrausausdenregelndiesermenschen
-		#fi
-	fi
+    if test "$1" = "-Z"; then
+	display -window root "$1"
+    else
+	convert -geometry 1024x768! "$1" - | display -window root -
+	
+    fi
 else
-	echo `basename "$0"`" [-Z] someimagefile" 
-	echo "  Puts file onto X root window"
-	echo "  (Nun es gäb glaub auch simpleres prg aber egal)"
-	echo "  Es kann auch zoomen auf 1024*768 und tut dies defaultmässig auch"
-	echo "  sobald ein bild nicht diese Grösse hat. Mit -Z kann das Zoomen"
-	echo "  abgeschaltet werden (tile instead)."
+    echo "$(basename "$0") [-Z] someimagefile" 
+    echo "  Puts file onto X root window"
+    echo "  It zooms to 1024*768 by default, -Z to turn off."
 fi
 
