@@ -511,7 +511,9 @@ sub stat_possiblyhires {
 	require Time::HiRes; # (that's not slow, right?)
 	Time::HiRes::stat(@_ ? @_ : $_)
     } else {
-	stat(@_ ? @_ : $_)
+	@_==1 ? stat($_[0])
+	    : @_==0 ? stat($_)
+	    : die "bug";
     }
 }
 
@@ -520,7 +522,9 @@ sub lstat_possiblyhires {
 	require Chj::Linux::HiRes;
 	Chj::Linux::HiRes::lstat(@_ ? @_ : $_)
     } else {
-	lstat(@_ ? @_ : $_)
+	@_==1 ? lstat($_[0])
+	    : @_==0 ? lstat($_)
+	    : die "bug";
     }
 }
 
