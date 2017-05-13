@@ -1,0 +1,121 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 dirpath wanted-freespace-bytes [keep-bytes]"
+    echo "  Unlinks the oldest files from dirpath until wanted-freespace-bytes"
+    echo "  is available on the partition holding the directory."
+    echo "  If keep-bytes is given, files holding collectively up to this many"
+    echo "  bytes are not deleted even if wanted-freespace-bytes cannot be "
+    echo "  satisfied."
+    exit 1
+}
+
+if [[ $# -lt 2 || $# -gt 3 || $1 = "-h" || $1 = "--help" ]]; then
+    usage
+fi
+
+dirpath=$1
+wantedspace=$2
+keepbytes=${3-0}
+
+DEBUG () {
+    if [[ ${DEBUG-} != "" ]]; then
+	echo "$@" >&2
+    fi
+}
+
+fs_available () {
+    local path="$1"
+    LANG=C df --block-size=1 -- "$path" | perl -we '
+@l= <STDIN>;
+@l or exit 1; # df error
+@l==2 or die "bug1";
+($h,$v)=@l;
+$h=~ /^(?:\S+\s+){3}Available\b/ or die "bug2: $h";
+$v=~ /^(?:\S+\s+){3}(\d+)\s/ or die "bug3: $v";
+print "$1\n" or die $!
+'
+}
+
+file_used () {
+    local path="$1"
+    du -s --bytes -- "$path" | perl -we '
+@l= <STDIN>;
+@l or exit 1; # df error
+@l==1 or die "bug4";
+($v)=@l;
+$v=~ /^(\d+)\s/ or die "bug5: $v";
+print "$1\n" or die $!
+'
+}
+
+
+dir_files () {
+    test -d "$1"
+    local t
+    t=`tempfile`
+    find "$1" -type f -print0 |»0 ls -rt > "$t"
+    echo "$t"
+}
+
+first () {
+    head -1 -- "$1"
+}
+
+rest () {
+    tail --lines=+2 -- "$1" || {
+	# be insensitive to SIGPIPE (XX Linux specific error code)
+	if [[ $? != 141 ]]; then
+	    echo "tail failure" >&2
+	    false
+	fi
+    }
+}
+
+files_use_more_than () {
+    local bytes="$1"
+    (
+	local tot
+	tot=0
+	local u
+	while read -r file; do
+	    DEBUG "checking $file"
+	    u=`file_used "$file"`
+	    (( tot+= u ))
+	    if [[ $tot -gt $bytes ]]; then
+		echo yes
+		exit 0
+	    fi
+	done
+	echo no
+    )
+}
+
+redo () {
+    local avail
+    avail=`fs_available "$dirpath"`
+
+    if [[ $avail -lt $wantedspace ]]; then
+	local files
+	files=`dir_files "$dirpath"`
+	local keptOK
+	keptOK=`rest "$files" | files_use_more_than "$keepbytes"`
+
+	if [[ $keptOK = yes ]]; then
+	    # can actually delete some
+	    f=`first "$files"`
+	    DEBUG "deleting '$f'"
+	    if [[ ${DRY_RUN-} = "" ]]; then
+		rm -- "$f"
+	    fi
+	    redo  # tail call, please
+	fi
+    fi
+}
+
+redo
+
+DEBUG "OK."
