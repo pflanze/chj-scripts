@@ -3,6 +3,8 @@
 set -euo pipefail
 IFS=
 
+maxdeletions=20
+
 usage () {
     echo "usage: $0 dirpath wanted-freespace-bytes [keep-bytes]"
     echo "  Unlinks the oldest files from dirpath until wanted-freespace-bytes"
@@ -10,6 +12,7 @@ usage () {
     echo "  If keep-bytes is given, files holding collectively up to this many"
     echo "  bytes are not deleted even if wanted-freespace-bytes cannot be "
     echo "  satisfied."
+    echo "  A maximum number of $maxdeletions files are deleted in one call."
     exit 1
 }
 
@@ -95,27 +98,33 @@ files_use_more_than () {
 }
 
 redo () {
-    local avail
-    avail=`fs_available "$dirpath"`
+    local numdeletions
+    numdeletions="$1"
+    DEBUG "numdeletions=$numdeletions"
+    
+    if [[ $numdeletions -lt $maxdeletions ]]; then
+	local avail
+	avail=`fs_available "$dirpath"`
 
-    if [[ $avail -lt $wantedspace ]]; then
-	local files
-	files=`dir_files "$dirpath"`
-	local keptOK
-	keptOK=`rest "$files" | files_use_more_than "$keepbytes"`
+	if [[ $avail -lt $wantedspace ]]; then
+	    local files
+	    files=`dir_files "$dirpath"`
+	    local keptOK
+	    keptOK=`rest "$files" | files_use_more_than "$keepbytes"`
 
-	if [[ $keptOK = yes ]]; then
-	    # can actually delete some
-	    f=`first "$files"`
-	    DEBUG "deleting '$f'"
-	    if [[ ${DRY_RUN-} = "" ]]; then
-		rm -- "$f"
+	    if [[ $keptOK = yes ]]; then
+		# can actually delete some
+		f=`first "$files"`
+		DEBUG "deleting '$f'"
+		if [[ ${DRY_RUN-} = "" ]]; then
+		    rm -- "$f"
+		fi
+		redo $(( numdeletions + 1 ))
 	    fi
-	    redo  # tail call, please
 	fi
     fi
 }
 
-redo
+redo 0
 
 DEBUG "OK."
