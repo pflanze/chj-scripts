@@ -66,20 +66,20 @@ exit (@_ ? 1 : 0);
 	 ." ["
 	 .join(", ",
 	       map {
-		   my $method=$_;
+		   my ($method,$desc)=@$_;
 		   if (my $v= $s->$method) {
-		       "$method: $v"
+		       "$desc: $v"
 		   } else {
 		       ()
 		   }
-	       } qw(release_date
-		    num_packages_binary
-		    num_packages_source
-		    num_developers
-		    securitysupport_termination_date
-		   )
+	       }
+	       [release_date=> "released"],
+	       [num_packages_binary=> "binpackages"],
+	       [num_packages_source=> "sourcepackages"],
+	       [num_developers=> "developers"],
+	       [securitysupport_termination_date=> "secsupport<"]
 	      )
-	."]")
+	 ."]")
     }
     end Class::Array;
     # for CHJ::Release_with_key:
@@ -176,7 +176,7 @@ our $releases=
    ["wheezy", "7.17"],
    ["wheezy", "7.18"],
 
-   ["jessie", "8.0", "2015-04-25", ">43000", "20000..20100", undef, "2020-04 (next 5 years)"],
+   ["jessie", "8.0", "2015-04-25", ">43000", "20000..20100", undef, "2020-04 (5y)"],
    ["jessie", "8.1", "2015-06-06"],
    ["jessie", "8.2", "2015-09-05"],
    ["jessie", "8.3", "2016-01-23"],
