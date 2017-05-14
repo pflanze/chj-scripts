@@ -18,8 +18,9 @@ sub usage {
   release date if it's a stable release.
 
   Options:
-  --list    list all known releases instead of picking the one from
-            $file or the versionstring argument
+  --la       list all known releases instead of picking the one from
+             $file or the versionstring argument
+  -l|--list  like --la but only show name / number / release_date
 
   (Christian Jaeger <$email>)
 ";
@@ -304,6 +305,7 @@ sub parseversion {
 }
 
 sub list_releases {
+    my ($show_short)=@_;
     my $maxlen=0;
     for my $r (@$releases) {
 	my $len= length ($r->name);
@@ -311,8 +313,13 @@ sub list_releases {
     }
     for my $r (@$releases) {
 	next if $r->isa("CHJ::Release::Alias") or $r->name eq "?";
-	print $r->fullinfo ($maxlen),"\n"
-	  or die $!;
+	if ($show_short) {
+	    print $r->as_string ($maxlen)," ",$r->release_date // "","\n"
+	      or die $!;
+	} else {
+	    print $r->fullinfo ($maxlen),"\n"
+	      or die $!;
+	}
     }
 }
 
@@ -320,8 +327,12 @@ use Getopt::Long;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "list"=> sub {
+	   "la"=> sub {
 	       list_releases();
+	       exit;
+	   },
+	   "l|list"=> sub {
+	       list_releases(1);
 	       exit;
 	   },
 	   ) or exit 1;
