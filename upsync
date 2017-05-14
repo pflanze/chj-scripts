@@ -1,14 +1,29 @@
 #!/usr/bin/perl -w
+sub myeval { eval $_[0] } # avoid lexical capture
 
-# Mit Okt 17 12:10:04 MEST 2007
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+# Copyright 2007-2017 by Christian Jaeger, published under the same
+# terms as Perl 5.
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
+
+use Chj::xpipe;
+use Storable qw(fd_retrieve store_fd);
+use Chj::xperlfunc ":all";
+#use Chj::ruse;
+use Chj::Backtrace;#
+use Chj::Unix::ShellRPC::UpsyncWithSSH;
+use Chj::xopendir;
+use Chj::FP::Memoize 'memoize_1ary';
+use Chj::singlequote;
+use Digest::MD5;
+use Chj::xopen 'xopen_read';
+use Chj::FP::lazy;
+
 
 our $sleeptime=1;#
 $|++;
 
-use Chj::xperlfunc ":all";
 sub _mkplaymp3 {
     my ($path)=@_;
     sub {
@@ -79,7 +94,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
         if (defined $1) {
             push @ignore_expr, $1
         } else {
-            push @ignore_expr, $ARGV[++$i] // usage "missing argument for '$_' option";
+            push @ignore_expr, $ARGV[++$i]
+	      // usage "missing argument for '$_' option";
         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
@@ -89,25 +105,21 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args == 3;
 
-#usage "don't give both --dry and --continuous" if ($opt_dryrun and $opt_continuous); well why not? !.
-
 
 our ($basedir,$filespec_code,$targetbase)=@args;
 
-use Chj::singlequote;
-
-sub sub_from_spec ( $ ) {
+sub sub_from_spec ($) {
     my ($string)=@_;
-    my $s= eval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$string.' }';
+    my $s= myeval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$string.' }';
     if (ref $@ or $@) {
 	my $str= "$@"; chomp $str;
 	die "filespec ".singlequote($filespec_code).": $str ";
     }
     $s
 }
-#^-auch ein older.oldie.dy.
 
-our $filespec_pred= sub_from_spec ($filespec_code);
+
+our $filespec_pred= sub_from_spec $filespec_code;
 our @ignore= map { sub_from_spec $_ } @ignore_expr;
 
 sub ignore {
@@ -120,43 +132,41 @@ sub ignore {
     0
 }
 
-use Chj::ruse;#
-use Chj::Backtrace;#
-use Chj::Unix::ShellRPC::UpsyncWithSSH;
-use Chj::xopendir;
-use Chj::FP::Memoize 'memoize_1ary';
-use Chj::singlequote;
-use Digest::MD5;
-use Chj::xopen 'xopen_read';
-use Chj::FP::lazy;
 
 sub File_md5 ( $ ) {
     my ($path)=@_;
     my $f= xopen_read ($path);
     my $ctx = Digest::MD5->new;
     $ctx->addfile($f)
-      or die $!; ##does this error checking work?
-    $ctx->hexdigest; #could also use binary, as long as I don't check remote side and don't print it's value:
+      or die $!; # does this error checking work?
+    $ctx->hexdigest;
+    # could also use binary, as long as I don't check remote side and
+    # don't print it's value:
     #$ctx->digest
 }
 
-our $rem= Chj::Unix::ShellRPC::UpsyncWithSSH->new_parse_location($targetbase);
+our $rem=
+  Chj::Unix::ShellRPC::UpsyncWithSSH->new_parse_location($targetbase);
+
 $rem->do_connect_and_chdir; #should it do this automatically ?
 
 *memo_warn_nonfile_path= memoize_1ary sub {
     my ($itempath)=@_;
     warn "$myname: ignoring non-file item ".singlequote ($itempath)."\n";
 };
+
 *memo_warn_couldnotstat= memoize_1ary sub {
     my ($itempath)=@_;
     warn "$myname: could not stat ".singlequote($itempath).": $!\n";
 };
+
 
 our (
      $synchfilecontents,
      $synchfiledelete,
      $synchfilemd5,
     );
+
 if ($opt_dryrun) {
     $synchfilecontents= sub {
 	my ($path_from_base)=@_;
@@ -172,7 +182,8 @@ if ($opt_dryrun) {
 	if ($verbose) {
 	    print "synching file ".singlequote($path_from_base)."\n";
 	}
-	$rem->upload_file_path_with_permissions($basedir."/".$path_from_base, $path_from_base);
+	$rem->upload_file_path_with_permissions
+	  ($basedir."/".$path_from_base, $path_from_base);
     };
     $synchfiledelete= sub {
 	my ($path_from_base)=@_;
@@ -182,10 +193,12 @@ if ($opt_dryrun) {
 	$rem->remote_unlink($path_from_base);
     };
 }
+
 $synchfilemd5= sub {
     my ($path_from_base)=@_;
     if ($verbose) {
-	print "getting md5 of remote file ".singlequote($path_from_base)."\n";#well only in debug mode ?ç
+	print "getting md5 of remote file ".singlequote($path_from_base)."\n";
+	#well only in debug mode ?
     }
     $rem->remote_md5sum($path_from_base);
 };
@@ -212,7 +225,7 @@ sub scan_base ( $ $ ) {
 
     my $scandir; $scandir= sub {
 	my ($path_from_base)=@_;
-	my $path= $basedir."/".$path_from_base; ##eine uri function nehmen dafür ? nö? oder wie? .. disalloven  well how would come.
+	my $path= $basedir."/".$path_from_base;
 	my $d=xopendir($path);
 	while (defined (my $item= $d->xnread)) {
 	    my $itempath_from_base= $path_from_base."/".$item;
@@ -221,7 +234,6 @@ sub scan_base ( $ $ ) {
 		  if $verbose>1;
 	    } else {
 		my $itempath= $basedir."/".$itempath_from_base;
-		#my $st= xstat $itempath; # eben, ev xlstat ? ah und X
 		if (my $st= $Stat->($itempath)) {
 
 		    my $check_synchit= sub {
@@ -229,28 +241,30 @@ sub scan_base ( $ $ ) {
 			my $newmd5= File_md5 ($itempath);
 			if ($maybe_oldmd5) {
 			    if ($newmd5 eq $maybe_oldmd5) {
-				# do nothing  -- even if mtimes differ (is ok for me currently; and synching of metadata would /should  have to happen separately anyway)
+				# do nothing -- even if mtimes differ
 			    } else {
 				Force ($checkprintthunk);
 				&$synchfilecontents ($itempath_from_base);
 			    }
 			} else {
 			    Force ($checkprintthunk);
-			    # only actually synch it if it's not already the same remotely:
+			    # only actually sync it if it's not
+			    # already the same remotely:
 			    my $maybe_remotemd5= eval {
 				&$synchfilemd5 ($itempath_from_base);
 			    };
-			    ###check kind of error?
-			    if ($maybe_remotemd5 and ($maybe_remotemd5 eq $newmd5)) {
-				print "content of file ".singlequote ($itempath_from_base)." is already the same\n" if $verbose;
+			    # XX check kind of error?
+			    if ($maybe_remotemd5 and
+				($maybe_remotemd5 eq $newmd5)) {
+				print "content of file ".
+				  singlequote ($itempath_from_base).
+				    " is already the same\n"
+				      if $verbose;
 			    } else {
 				&$synchfilecontents ($itempath_from_base);
 			    }
 			}
 			$$synched{$itempath_from_base}=[$st,$newmd5];
-		    };
-		    my $not_synch= sub {#still have to copy over the "currently live files" data.
-			$$synched{$itempath_from_base}= $$lastsynched{$itempath_from_base};
 		    };
 
 		    if ($st->is_dir) {
@@ -260,13 +274,22 @@ sub scan_base ( $ $ ) {
 			    # already done or not ?.
 			    if (my $old= $$lastsynched{$itempath_from_base}) {
 				my ($oldst,$oldmd5)=@$old;
-				if ($oldst->equal_content($st)) { # equal_content is enough; equal() would also check permissions."ah". And those I don't sync right now.
-				    # if mtime is very near, then check the md5 again (against races)
-				    if ((my $timediff= time - $st->mtime) < 2) {
+				if ($oldst->equal_content($st)) {
+				    # equal_content is enough; equal()
+				    # would also check
+				    # permissions. And those we don't
+				    # sync currently.  If mtime is
+				    # very near, then check the md5
+				    # again (against races)
+				    if ((my $timediff= time - $st->mtime)
+					< 2) {
 					&$check_synchit ($oldmd5);
 				    } else {
-					# do nothing--well, do this:
-					&$not_synch;
+					# do nothing--well, still have
+					# to copy over the "currently
+					# live files" data.
+					$$synched{$itempath_from_base}=
+					  $$lastsynched{$itempath_from_base};
 				    }
 				} else {
 				    &$check_synchit ($oldmd5)
@@ -278,9 +301,6 @@ sub scan_base ( $ $ ) {
 		    } else {
 			memo_warn_nonfile_path ($itempath);
 		    }
-		    #undef $check_synchit;
-		    #undef $not_synch;
-		    # don't help. 'interestingly'. perl 5.6.1 is just broken, but i still don't see why those don't help. It must be extremely broken.
 		} else {
 		    memo_warn_couldnotstat ($itempath);
 		}
@@ -288,8 +308,11 @@ sub scan_base ( $ $ ) {
 	}
     };
 
-    &$scandir("."); #schreg, "" geht nid weil "/pfade" für remote futch, aber ?.  schlecht weil  . wirklich cwd meint normalerweise   wirrlich oder rechtfertigt ?
-    undef $scandir; #ok der *ist* notwendig (wenn recursive referenz actually contained in the closure) und *hilft* aber auch.
+    &$scandir(".");
+    # "" does not work because "/paths" for remote would be wrong, but
+    # "." really means CWD usually, ?...
+
+    undef $scandir;
 
     # which files have been deleted?
     for my $key (keys %$lastsynched) {
@@ -308,24 +331,33 @@ sub scan_base ( $ $ ) {
 if ($opt_continuous) {
     local our $lastsynched={};
     while (1) {
-	use Chj::xpipe; use Storable qw(fd_retrieve store_fd);
 	my ($read,$write)=xpipe;
 	if (my $pid= xfork) {
 	    $write->xclose;
-	    print "parent waiting for child to send data and exit..\n" if $DEBUG;
+	    print "parent waiting for child to send data and exit..\n"
+	      if $DEBUG;
 	    $lastsynched= fd_retrieve($read)
 	      or die "fd_retrieve: ?: $!";
-	    print "parent got child data..\n" if $DEBUG;
+	    print "parent got child data..\n"
+	      if $DEBUG;
 	    xxwait;
-	    print "parent got child status ok.\n" if $DEBUG;
+	    print "parent got child status ok.\n"
+	      if $DEBUG;
 	} else {
 	    $read->xclose;
-	    for (1..600) { # after so many iterations it will have leaked about 3MB.
-		my $checkprintthunk= Delay { print "at ".localtime().":\n" if ($verbose or $opt_dryrun) };##ç is $opt_dryrun ok herr owr sould i ad id above alredy?
+	    for (1..600) {
+		# after so many iterations it will have leaked about
+		# 3MB. (XX do recent perls not leak anymore,
+		# removable?)
+		my $checkprintthunk= Delay {
+		    print "at ".localtime().":\n"
+		      if ($verbose or $opt_dryrun);
+		};
 		$lastsynched= scan_base($lastsynched, $checkprintthunk);
 		sleep $sleeptime;
 	    }
-	    store_fd($lastsynched,$write) or die "store_fd: ?: $!";
+	    store_fd($lastsynched,$write)
+	      or die "store_fd: ?: $!";
 	    exit 0;
 	}
     }
