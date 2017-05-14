@@ -327,31 +327,30 @@ sub list_releases {
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_la;
+our $opt_list;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   "la"=> sub {
-	       list_releases();
-	       exit;
-	   },
-	   "l|list"=> sub {
-	       list_releases(1);
-	       exit;
-	   },
+	   "la"=> \$opt_la,
+	   "l|list"=> \$opt_list,
 	   ) or exit 1;
 usage if @ARGV > 1;
 
-print do {
-    if (@ARGV) {
-	parseversion ($ARGV[0])
-    } else {
-	parseversion (xCatfile $file)
-    }
-}->fullinfo,"\n";
+
+if ($opt_list) {
+    list_releases(1);
+} elsif ($opt_la) {
+    list_releases(0);
+} else {
+    print do {
+	if (@ARGV) {
+	    parseversion ($ARGV[0])
+	} else {
+	    parseversion (xCatfile $file)
+	}
+    }->fullinfo,"\n";
+}
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
 
-__END__
-
-novo:~# cat /etc/debian_version
-lenny/sid
