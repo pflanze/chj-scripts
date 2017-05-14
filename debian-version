@@ -49,12 +49,20 @@ exit (@_ ? 1 : 0);
     }
     sub as_string {
 	my $s=shift;
+	my ($maybe_max_name_length)=@_;
 	# should this give 'sid'? instead of lenny, for the name? OPEN
-	"$$s[Name] (".($$s[Number]||"unknown release number").")"
+	my $name= $s->name;
+	my $len= length($name);
+	my $pad= $maybe_max_name_length ? do {
+	    my $rem= $maybe_max_name_length - $len;
+	    $rem > 0 ? " "x$rem : ""
+	} : "";
+	"$name$pad (".($$s[Number]||"unknown release number").")"
     }
     sub fullinfo {
 	my $s=shift;
-	($s->as_string
+	my ($max_name_length)=@_;
+	($s->as_string($max_name_length)
 	 ." ["
 	 .join(", ",
 	       map {
@@ -296,9 +304,14 @@ sub parseversion {
 }
 
 sub list_releases {
+    my $maxlen=0;
+    for my $r (@$releases) {
+	my $len= length ($r->name);
+	$maxlen=$len if $len > $maxlen;
+    }
     for my $r (@$releases) {
 	next if $r->isa("CHJ::Release::Alias") or $r->name eq "?";
-	print $r->fullinfo,"\n"
+	print $r->fullinfo ($maxlen),"\n"
 	  or die $!;
     }
 }
