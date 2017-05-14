@@ -37,26 +37,44 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname basedir 'filespec as perl expr' targetbase
+    print "$myname basedir targetbase
 
-  scan basedir and it's subdirs periodically, files which match
-  filespec (a perl expression acting on \$path_from_base or \$path or
-  \$_, which are all the path from basedir, or \$filename for just the
-  file name) and have changed are copied to the target (an ssh url).
-
-  NOTE: the filespec is not used for directories. Only --ignore also
-  treats directories!
+  Scan basedir and its subdirectories (periodically if -c is given),
+  files (that match the given --include and --exclude expressions and)
+  have changed are copied to the target, which is an scp (or rsync?) 
+  alike location string.
 
   Options:
+
+  --include 'perl expr'
+
+        A perl expression that sees the variables \$path_from_base,
+        \$path an \$_ being all set to the path from the basedir, as
+        well as \$filename which is set to just the file name.
+
+        The expression should return true for files that should be
+        synchronized (default: always true); The values returned by
+        the expression given with the --exclude option overrides this
+        if true.
+
+        NOTE 1: this option can only be given once.
+
+        NOTE 2: this expression is not called for directories. Only
+        --exclude also treats directories!
+
+  --exclude 'perl expr'
+
+        exclude dir and file paths for which the given expression
+        returns true. Can be given multiple times.  Filenames matching
+        \".git\" or end in '~' are (currently) always excluded anyway.
+
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
                     disappear locally (only when they were observed to appear
                     during the same program run before).
+
   --dry|--dry-run   only show which files would be synched.
-  --ignore 'perl expr'
-                    ignore dir and file paths matching spec. Can be
-                    given multiple times. By default, ignores
-                    filenames matching \".git\" or end in '~' already.
+
   --sound           play sounds upon uploads/deletes
 
   (Christian Jaeger <$email>)
@@ -70,9 +88,11 @@ our $opt_dryrun;
 our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
 our $verbose=0;
-our @ignore_expr= '$filename eq ".git" or $filename=~ /~$/';
-# ^ add a --no-ignore option to clear these?
+our $opt_include;
+our @exclude_expr= '$filename eq ".git" or $filename=~ /~$/';
+# ^ add a --no-exclude option to clear these?
 our $opt_sound;
+
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -90,11 +110,18 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_dryrun=1;
     } elsif (/^--?sound$/) {
 	$opt_sound=1;
-    } elsif (/^--?i(?:gnore(?:=(.*))?)?$/) {
+    } elsif (/^--?i(?:nclude(?:=(.*))?)?$/) {
         if (defined $1) {
-            push @ignore_expr, $1
+	    $opt_include=$1;
         } else {
-            push @ignore_expr, $ARGV[++$i]
+	    $opt_include= $ARGV[++$i]
+	      // usage "missing argument for '$_' option";
+        }
+    } elsif (/^--?e(?:xclude(?:=(.*))?)?$/) {
+        if (defined $1) {
+            push @exclude_expr, $1
+        } else {
+            push @exclude_expr, $ARGV[++$i]
 	      // usage "missing argument for '$_' option";
         }
     } elsif (/^-./) {
@@ -103,29 +130,29 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args == 3;
+usage unless @args == 2;
 
+our ($basedir, $targetbase)=@args;
 
-our ($basedir,$filespec_code,$targetbase)=@args;
 
 sub sub_from_spec ($) {
-    my ($string)=@_;
-    my $s= myeval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$string.' }';
+    my ($expr)=@_;
+    my $s= myeval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$expr.' }';
     if (ref $@ or $@) {
 	my $str= "$@"; chomp $str;
-	die "filespec ".singlequote($filespec_code).": $str ";
+	die "filespec ".singlequote($expr).": $str ";
     }
     $s
 }
 
+my $include_expr= $opt_include // "1";
+our $include_pred= sub_from_spec $include_expr;
+our @exclude= map { sub_from_spec $_ } @exclude_expr;
 
-our $filespec_pred= sub_from_spec $filespec_code;
-our @ignore= map { sub_from_spec $_ } @ignore_expr;
-
-sub ignore {
+sub exclude {
     my ($itempath_from_base)=@_;
-    for my $ignore (@ignore) {
-	if (&$ignore ($itempath_from_base)) {
+    for my $exclude (@exclude) {
+	if (&$exclude ($itempath_from_base)) {
 	    return 1
 	}
     }
@@ -229,7 +256,7 @@ sub scan_base ( $ $ ) {
 	my $d=xopendir($path);
 	while (defined (my $item= $d->xnread)) {
 	    my $itempath_from_base= $path_from_base."/".$item;
-	    if (ignore($itempath_from_base)) {
+	    if (exclude($itempath_from_base)) {
 		print "ignoring '$itempath_from_base'\n"
 		  if $verbose>1;
 	    } else {
@@ -270,7 +297,7 @@ sub scan_base ( $ $ ) {
 		    if ($st->is_dir) {
 			&$scandir ($itempath_from_base);
 		    } elsif ($st->is_file) {
-			if (&$filespec_pred ($itempath_from_base)) {
+			if (&$include_pred ($itempath_from_base)) {
 			    # already done or not ?.
 			    if (my $old= $$lastsynched{$itempath_from_base}) {
 				my ($oldst,$oldmd5)=@$old;
