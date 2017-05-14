@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
 
-# Tue Jun 10 18:06:11 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+# Copyright 2008-2017 by Christian Jaeger, published under the same
+# terms as Perl 5.
+
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
