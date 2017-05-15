@@ -21,7 +21,9 @@ sub usage {
 
   Options:
   --la       list all known releases instead of picking the one from
-             $file or the versionstring argument
+             $file or the versionstring argument (but showing
+             an asterisk in front of the line that matches the
+             release of the former)
   -l|--list  like --la but only show name / number / release_date
 
   (Christian Jaeger <$email>)
@@ -307,21 +309,27 @@ sub parseversion {
 }
 
 sub list_releases {
-    my ($show_short)=@_;
+    my ($show_short,$vers)=@_;
+
     my $maxlen=0;
     for my $r (@$releases) {
 	my $len= length ($r->name);
 	$maxlen=$len if $len > $maxlen;
     }
+
+    my $vers_name= $vers->release->name; # or $vers->as_string, which is better?
+
     for my $r (@$releases) {
 	next if $r->isa("CHJ::Release::Alias") or $r->name eq "?";
-	if ($show_short) {
-	    print $r->as_string ($maxlen)," ",$r->release_date // "","\n"
-	      or die $!;
-	} else {
-	    print $r->fullinfo ($maxlen),"\n"
-	      or die $!;
-	}
+	my $rest=
+	  ($show_short) ?
+	    $r->as_string ($maxlen)." ".($r->release_date // "")
+	      :
+		$r->fullinfo ($maxlen);
+	my $prefix=
+	  ($r->name eq $vers_name) ? "* " : "  ";
+	print $prefix, $rest, "\n"
+	  or die $!;
     }
 }
 
@@ -337,20 +345,19 @@ GetOptions("verbose"=> \$verbose,
 usage if @ARGV > 1;
 
 
+our $vers=
+  (@ARGV) ?
+  parseversion ($ARGV[0])
+  :
+  parseversion (xCatfile $file);
+
 if ($opt_list) {
-    list_releases(1);
+    list_releases(1,$vers);
 } elsif ($opt_la) {
-    list_releases(0);
+    list_releases(0,$vers);
 } else {
-    print do {
-	if (@ARGV) {
-	    parseversion ($ARGV[0])
-	} else {
-	    parseversion (xCatfile $file)
-	}
-    }->fullinfo,"\n";
+    print $vers->fullinfo,"\n";
 }
 
-#use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
 
