@@ -308,9 +308,9 @@ sub start {
 				    })) {
 	print STDERR ("daemon running as sid $pid",
 		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
-	  unless ($opt_quiet or $opt_start);
+	  unless ($opt_quiet or $opt_start or $opt_restart);
 	my $maybe_exitcode;
-	unless ($opt_bg or $opt_start) {
+	unless ($opt_bg or $opt_start or $opt_restart) {
 	    wait;
 	    if ($?) {
 		do {
