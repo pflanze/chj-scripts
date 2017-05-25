@@ -1,5 +1,5 @@
 #!/bin/bash
 
 for f in "$@"; do
-    git cat-file -p "$f"
+    git cat-file -p "$(echo "$f" | sed 's/\.\.\.$//')"
 done
