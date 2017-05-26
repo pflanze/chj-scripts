@@ -1,11 +1,16 @@
 #!/usr/bin/perl -w
 
-# Tue May 27 22:45:05 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
 use POSIX qw(setsid);
+
+# HACK to fix encoding so that international keyboard input works (*sigh*)
+if ($ENV{LANG} eq "C") {
+    # XX probably not working if locale not generated? Well, sucks.
+    $ENV{LANG}="de_CH.UTF-8";
+}
 
 my $font= $ENV{RXVT_UNICODE_FONT} || "Inconsolata";
 my $fontsize= $ENV{RXVT_UNICODE_FONTSIZE} || 18;
