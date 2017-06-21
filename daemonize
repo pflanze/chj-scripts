@@ -165,11 +165,15 @@ sub usage {
   already (hm, todo: should probably offer a way to override this?).
   You can wait at the shell for the daemon/job to finish, or can stop
   the 'waiter' (which doesn't stop the daemon/job itself). You can
-  stop a running daemon/job by adding the --stop option.
+  stop a running daemon/job by adding the --stop option. Also the
+  other usual sys-V init options are supported so it can be used for
+  that purpose.
 
-  Options:
+ Options:
+
   (all of them must be listed before the cmd, multiple short options
    may be given together)
+
   -b|--bg     do not wait for the daemon to terminate
   --start     same as --bg but don't print pid
   -s|--stop|-k|--kill
@@ -202,21 +206,15 @@ sub usage {
               inputs like cwd.)
   --          terminate option processing
 
-  Note: the pid file (and the output if nohup.out is not used)-- ehr?.
-  for this run will be stored in the directory
+ Notes:
+
+  The pid file for this run will be stored in the directory
    '$runbase'
   you should never have a need to look at it.
 
-  Todo:
-  - rundir cleanup function only removing those dirs
-    for which no job is running anymore
-  - option to start a second/third.. invocation of the same job?
-  - to be usable for special users: use another dir than ~/.daemonize-run/
-
-  Bugs?:
-  - does not make the current directory or other environmental
-    parameters part of the input of the function to find the process
-    group for --stop/--STOP/--CONT options. Should it?
+  Does not make the current directory or other environmental
+  parameters part of the input of the function to find the process
+  group for --stop/--STOP/--CONT options.
 
   (Christian Jaeger <$email>)
 ";
@@ -225,6 +223,9 @@ sub usage {
 
 usage $usage if defined $usage;
 
+#  Todo?:
+#  - rundir cleanup function only removing those dirs
+#    for which no job is running anymore
 
 (xmkdir $basedir, 0700) unless -d $basedir;
 if (-d $runbase) {
