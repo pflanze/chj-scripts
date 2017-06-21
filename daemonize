@@ -161,8 +161,10 @@ unless ($usage){ # no defined: only avoid if an *error* parsing the
 
 sub usage {
     my ($maybe_usage)=@_;
-    print STDERR "$maybe_usage\n" if $maybe_usage;
-    print "$myname [options] cmd arguments
+    if ($maybe_usage) {
+	print STDERR "$myname: $maybe_usage\nRun $myname --help for more information.\n";
+    } else {
+	print "$myname [options] cmd arguments
 
   Better than 'nohup' (it is immune to other signals too), better than
   'batch' (it's quicker for you to notice what's happening), and also
@@ -223,6 +225,7 @@ sub usage {
 
   (Christian Jaeger <$email>)
 ";
+    }
     exit @_ ? 1 : 0;
 }
 
