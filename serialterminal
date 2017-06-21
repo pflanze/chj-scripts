@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 [ ttyUSB0 [ 115200 [x|h|n]]]"
+    echo "  Takes device, baudrate, flow control options (defaults shown)."
+    exit 1
+}
+
+devname=ttyUSB0
+baudrate=115200
+flow=n
+
+if [ $# = 1 ]; then
+    if [[ $1 = -h || $1 = --help ]]; then
+	usage
+    fi
+    devname="$1"
+elif [ $# = 2 ]; then
+    devname="$1"
+    baudrate="$2"
+elif [ $# = 0 ]; then
+    true
+else
+    usage
+fi
+
+
+if echo "$devname"|grep -q / ; then
+    dev="$devname"
+else
+    dev="/dev/$devname"
+fi
+
+
+exec picocom -b "$baudrate" --flow "$flow" "$dev"
