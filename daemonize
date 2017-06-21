@@ -58,10 +58,15 @@ ARG:{
 		    $opt_start=1;
 		} elsif ($1 eq 'quiet') {
 		    $opt_quiet=1;
-		} elsif ($1 eq 'nice') {
-		    $opt_nice=1;
+		} elsif ($1 =~ /^nice(?:=(\d+)|(.*))?$/) {
+		    if (defined $2) {
+			$usage= "invalid value for --nice";
+			last ARG;
+		    } else {
+			$opt_nice= $1 // 5;
+		    }
 		} elsif ($1 eq 'no-nice') {
-		    $opt_nice=0;
+		    undef $opt_nice;
 		} elsif ($1 eq 'no-ask') {
 		    $opt_noask=1;
 		} elsif ($1 eq 'signal') {
@@ -117,7 +122,7 @@ ARG:{
 		} elsif ($1 eq 'q') {
 		    $opt_quiet=1;
 		} elsif ($o eq 'N') {
-		    $opt_nice=0;
+		    undef $opt_nice;
 		} elsif ($o eq 'h') {
 		    $usage="";
 		    #last ARG; nope
@@ -190,7 +195,7 @@ sub usage {
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
   --CONT|--cont  send SIGCONT
   --maxwait N  change default of $maxwait sec to wait before sending SIGKILL
-  --nice      lower priority by 5
+  --nice[=n]  lower priority by n (or 5 by default)
   -N|--no-nice  do not lower priority (new default)
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
@@ -335,9 +340,9 @@ sub start {
 	}
 	exit ($maybe_exitcode // 0);
     } else {
-	if ($opt_nice) {
+	if (defined $opt_nice) {
 	    require POSIX;
-	    POSIX::nice (5);
+	    POSIX::nice ($opt_nice);
 	}
 	xexec @ARGV;
     }
