@@ -34,5 +34,6 @@ else
     dev="/dev/$devname"
 fi
 
+settitle "$(basename "$0")" "$@" || true
 
 exec picocom -b "$baudrate" --flow "$flow" "$dev"
