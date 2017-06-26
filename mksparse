@@ -117,6 +117,7 @@ for (@files) {
 	}
 	$f->xsyswrite("\0"x$lastbytes);
     } else {
+	# XX why not just use ftruncate(1) or even truncate(1)?
 	sysseek $f, $sizebytes-1, 0
 	  or die "$myname: sysseek on $_: $!\n";
 	$f->xsyswrite("\0");
