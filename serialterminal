@@ -36,4 +36,4 @@ fi
 
 settitle "$(basename "$0")" "$@" || true
 
-exec picocom -b "$baudrate" --flow "$flow" "$dev"
+exec picocom --escape '' -b "$baudrate" --flow "$flow" "$dev"
