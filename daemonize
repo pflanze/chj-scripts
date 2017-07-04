@@ -235,18 +235,21 @@ usage $usage if defined $usage;
 #  - rundir cleanup function only removing those dirs
 #    for which no job is running anymore
 
-(xmkdir $basedir, 0700) unless -d $basedir;
-if (-d $runbase) {
-    utime time,time,$runbase  # for future cleaner, to ignore too new
-                              # directories (though runfile check
-                              # should be done anyway too)
-} else {
-    xmkdir $runbase,0700;
-    my $f= xtmpfile($runbase."/cmdline");
-    $f->xprint ($_,"\0") for @ARGV;
-    $f->xclose;
-    $f->xputback(0444);
+sub prep_basedir {
+    if (-d $runbase) {
+	utime time,time,$runbase  # for future cleaner, to ignore too new
+				  # directories (though runfile check
+				  # should be done anyway too)
+    } else {
+	(xmkdir $basedir, 0700) unless -d $basedir;
+	xmkdir $runbase,0700;
+	my $f= xtmpfile($runbase."/cmdline");
+	$f->xprint ($_,"\0") for @ARGV;
+	$f->xclose;
+	$f->xputback(0444);
+    }
 }
+
 my $runfile= "$runbase/run";
 
 sub is_running {
@@ -289,6 +292,7 @@ sub STOP_or_CONT {
 }
 
 sub start {
+    prep_basedir;
     my $daemonizer= Chj::Unix::Daemonizer->default->clone;
     $daemonizer->set_runpath($runfile);
     my $output;
