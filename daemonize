@@ -10,7 +10,8 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 use Chj::Unix::Daemonizer;
-use Chj::xsysopen qw(xsysopen_append);
+use Chj::xsysopen qw(xsysopen_append xsysopen_read);
+use Chj::xopendir;# ":all"; there's no :all
 use Digest::MD5 "md5_hex";
 use Chj::xperlfunc;
 use Chj::Util::AskYN;
@@ -35,6 +36,7 @@ our $opt_no_error_if_running;
 our $signal=15; # SIGTERM
 our ($opt_STOP, $opt_CONT);
 our $opt_hash_input;
+our $opt_list;
 
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
@@ -48,6 +50,8 @@ ARG:{
 		    $opt_restart=1;
 		} elsif ($1 eq 'status') {
 		    $opt_status=1;
+		} elsif ($1 eq 'list') {
+		    $opt_list=1;
 		} elsif ($1 eq 'STOP') {
 		    $opt_STOP=1;
 		} elsif ($1 eq 'CONT' or $1 eq 'cont') {
@@ -141,7 +145,12 @@ unless ($usage){ # no defined: only avoid if an *error* parsing the
 	my $hash= md5_hex( defined ($opt_hash_input) ? $opt_hash_input
 			   : join "\0",@ARGV );
 	$runbase= "$basedir/$hash";
+    } elsif ($opt_list) {
+	# OK.
     } else {
+	# state that there is no usage error [OMG] -- no wait, state
+	# that there *is* a usage error, but no particular message for
+	# it
 	$usage="" # if not already set to "" anyway
     }
 }
@@ -193,6 +202,9 @@ sub usage {
               then start it again
   --status
               prints 'running' if running, 'off' if not.
+
+  --list      show all running daemons
+
   --signal N  use signal N instead of default $signal
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
   --CONT|--cont  send SIGCONT
@@ -249,6 +261,55 @@ sub prep_basedir {
 	$f->xputback(0444);
     }
 }
+
+sub basedir_listing {
+    if (-d $basedir) {
+	my $d= xopendir $basedir;
+	my @l;
+	while (defined (my $item= $d->xnread)) {
+	    push @l, $item
+	}
+	$d->xclose;
+	\@l
+    } else {
+	[]
+    }
+}
+
+sub list_daemons {
+    # running ones only, right?
+
+    require Chj::singlequote;
+
+    my $l= basedir_listing;
+    my $ds= [
+	     map {
+		 my $rundir= "$basedir/$_";
+		 my $res;
+		 eval {
+		     if (Chj::Unix::DaemonRunfile->new("$rundir/run")->is_running) {
+			 my @cmd= split /\0/, xsysopen_read("$rundir/cmdline")->xcontent;
+			 $res=[
+			       $rundir.": ".
+			       join(" ",
+				    map {Chj::singlequote::singlequote_sh_lenient($_)}
+				    @cmd)];
+		     } else {
+			 $res=[];
+		     }
+		 } || do {
+		     warn "error: $@";
+		     $res=[];
+		 };
+		 @$res
+	     } @$l
+	    ];
+    for (@$ds) {
+	print "$_\n"
+	  or die $!
+    }
+}
+
 
 my $runfile= "$runbase/run";
 
@@ -388,6 +449,8 @@ if ($opt_stop) {
     };
     print "$stat\n"
       or die $!;
+} elsif ($opt_list) {
+    list_daemons;
 } else {
     start;
 }
