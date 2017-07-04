@@ -18,7 +18,8 @@ Chj::singlequote
 package Chj::singlequote;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(singlequote);
-@EXPORT_OK=qw(singlequote_sh singlequote_many many);
+@EXPORT_OK=qw(singlequote_sh singlequote_sh_lenient
+	      singlequote_many many);
 # importing 'many' is probably not a good idea (depreciated)
 %EXPORT_TAGS=(all=>[qw(singlequote singlequote_sh singlequote_many)]);
 
@@ -42,6 +43,21 @@ sub singlequote_sh($ ;$ ) {
 	defined($alternative)? $alternative:"undef"
     }
 }
+
+sub singlequote_sh_lenient($ ;$ ) {
+    my ($str,$alternative)=@_;
+    if (defined $str) {
+	if ($str=~ /^[\w\/.\@+:=-]+\z/s) {
+	    $str
+	} else {
+	    $str=~ s/\'/'\\\''/sg;
+	    "'$str'"
+	}
+    } else {
+	defined($alternative)? $alternative:"undef"
+    }
+}
+
 
 *Chj::singlequote= \&singlequote;
 *Chj::singlequote_sh= \&singlequote_sh;
