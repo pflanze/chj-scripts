@@ -78,7 +78,7 @@ sub paths {
     my $extract= sub {
 	my @pathpairs;
 	my $comstr= join("", @$commit);
-	while ($comstr=~ /\n:$mode $mode $hashellipsis $hashellipsis (A|D|M|[RC]\d{1,3})\t([^\n]+)/sg) {
+	while ($comstr=~ /\n:$mode $mode $hashellipsis $hashellipsis (T|A|D|M|[RC]\d{1,3})\t([^\n]+)/sg) {
 	    push @pathpairs, [$1,$2];
 	}
 	@pathpairs or die "missing paths in commit: '$comstr'";
