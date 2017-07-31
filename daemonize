@@ -38,28 +38,45 @@ our ($opt_STOP, $opt_CONT);
 our $opt_hash_input;
 our $opt_list;
 
+my @actions= qw(stop kill start restart status STOP CONT cont);
+my %is_action= map{$_=>1} @actions;
+
+sub parse_action {
+    my ($a)= @_;
+    if ($a eq 'stop' or $a eq 'kill') {
+	$opt_stop=1;
+    } elsif ($a eq 'start') {
+	$opt_start=1;
+    } elsif ($a eq 'restart') {
+	$opt_restart=1;
+    } elsif ($a eq 'status') {
+	$opt_status=1;
+    } elsif ($a eq 'STOP') {
+	$opt_STOP=1;
+    } elsif ($a eq 'CONT' or $a eq 'cont') {
+	$opt_CONT=1;
+    } else {
+	die "$myname: invalid action '$a' (valid: @actions)\n";
+    }
+}
+
+
 ARG:{
     while (@ARGV and $ARGV[0]=~ /^-(.*)/s) {
 	my $opt=$1;
 	shift @ARGV;
 	if ($opt=~ /^-(.*)/s) {
 	    if (length $1) {
-		if ($1 eq 'stop' or $1 eq 'kill') {
-		    $opt_stop=1;
-		} elsif ($1 eq 'restart') {
-		    $opt_restart=1;
-		} elsif ($1 eq 'status') {
-		    $opt_status=1;
+		if ($is_action{$1}) {
+		    parse_action($1);
+		} elsif ($1 eq 'action') {
+		    my $v= $ARGV[0];
+		    defined $v or die "$myname: expecting value after --action\n";
+		    parse_action($v);
 		} elsif ($1 eq 'list') {
 		    $opt_list=1;
-		} elsif ($1 eq 'STOP') {
-		    $opt_STOP=1;
-		} elsif ($1 eq 'CONT' or $1 eq 'cont') {
-		    $opt_CONT=1;
 		} elsif ($1 eq 'bg') {
 		    $opt_bg=1;
-		} elsif ($1 eq 'start') {
-		    $opt_start=1;
 		} elsif ($1 eq 'quiet') {
 		    $opt_quiet=1;
 		} elsif ($1 =~ /^nice(?:=(\d+)|(.*))?$/) {
@@ -208,6 +225,14 @@ sub usage {
   --signal N  use signal N instead of default $signal
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
   --CONT|--cont  send SIGCONT
+
+  --action <actionname>
+              where <actionname> is one of:
+                @actions
+              These correspond to the option with the same name. The
+              reason --action exists is to be able to pass through
+              sysv script action names safely.
+
   --maxwait N  change default of $maxwait sec to wait before sending SIGKILL
   --nice[=n]  lower priority by n (or 5 by default)
   -N|--no-nice  do not lower priority (new default)
