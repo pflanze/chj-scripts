@@ -23,9 +23,9 @@ if [[ "$flavour" = "xemacs" ]]; then
 
 elif [[ "$flavour" = "emacs" ]]; then
     if [[ -n ${DISPLAY-} ]]; then
-	r emacsclient -c --alternate-editor="${EMACS_ALTERNATE_EDITOR-}" -- "$@" > >(sed 's/Waiting for Emacs\.\.\.//' | grep -v '^$') 2>&1 
+	r emacsclient -c --alternate-editor="${EMACS_ALTERNATE_EDITOR-}" "$@" > >(sed 's/Waiting for Emacs\.\.\.//' | grep -v '^$') 2>&1 
     else
-	exec r "${EMACS_ALTERNATE_EDITOR-emacs}" -- "$@"
+	exec r "${EMACS_ALTERNATE_EDITOR-emacs}" "$@"
     fi
 
 else
