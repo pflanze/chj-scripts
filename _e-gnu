@@ -64,8 +64,8 @@ if (my $daemonizerpid= xfork) {
     } else {
 	$streamr->xclose;
 	$sigw->xclose;
-	$streamw->xdup2(0);
 	$streamw->xdup2(1);
+	$streamw->xdup2(2);
 	$streamw->xclose;
 	xexec "emacsclient",
 	    "-c",
