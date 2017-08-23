@@ -38,43 +38,39 @@ if (my $daemonizerpid= xfork) {
     }
 } else {
     $sigr->xclose;
-    if (xfork) {
+    setsid; # prevent signals from crossing over (stop ctl-c)
+    my ($streamr,$streamw)= xpipe;
+    if (my $pid= xfork) {
+	$streamw->xclose;
+	{
+	    #my $buf;
+	    #while (xsysread $streamr,$buf,1) {
+	    #    print $buf;
+	    #}
+
+	    # It appears that emacsclient does buffering if it
+	    # sees stdout/err not to be connected to a
+	    # terminal. And it doesn't have an option, so,
+	    # sigh. Well, makes filtering easier.
+	    while (<$streamr>) {
+		s/^Waiting for Emacs\.\.\.//;
+		print $_ unless /^$/;
+	    }
+	}
+	xwaitpid $pid;
+	$sigw->xprint("$?");
+	$sigw->xclose;
 	exit 0;
     } else {
-	setsid; # prevent signals from crossing over (stop ctl-c)
-	my ($streamr,$streamw)= xpipe;
-	if (my $pid= xfork) {
-	    $streamw->xclose;
-	    {
-		#my $buf;
-		#while (xsysread $streamr,$buf,1) {
-		#    print $buf;
-		#}
-
-		# It appears that emacsclient does buffering if it
-		# sees stdout/err not to be connected to a
-		# terminal. And it doesn't have an option, so,
-		# sigh. Well, makes filtering easier.
-		while (<$streamr>) {
-		    s/^Waiting for Emacs\.\.\.//;
-		    print $_ unless /^$/;
-		}
-	    }
-	    xwaitpid $pid;
-	    $sigw->xprint("$?");
-	    $sigw->xclose;
-	    exit 0;
-	} else {
-	    $streamr->xclose;
-	    $sigw->xclose;
-	    $streamw->xdup2(0);
-	    $streamw->xdup2(1);
-	    $streamw->xclose;
-	    xexec "emacsclient",
-		"-c",
-		"--alternate-editor=$alternate_editor",
-		@ARGV;
-	}
+	$streamr->xclose;
+	$sigw->xclose;
+	$streamw->xdup2(0);
+	$streamw->xdup2(1);
+	$streamw->xclose;
+	xexec "emacsclient",
+	    "-c",
+	    "--alternate-editor=$alternate_editor",
+	    @ARGV;
     }
 }
 
