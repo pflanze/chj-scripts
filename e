@@ -23,7 +23,7 @@ if [[ "$flavour" = "xemacs" ]]; then
 
 elif [[ "$flavour" = "emacs" ]]; then
     if [[ -n ${DISPLAY-} ]]; then
-	r _e-gnu "$@"
+	exec r _e-gnu "$@"
     else
 	exec r "${EMACS_ALTERNATE_EDITOR-emacs}" "$@"
     fi
