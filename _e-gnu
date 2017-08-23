@@ -10,6 +10,7 @@ use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xperlfunc;
 use Chj::xpipe;
+use Chj::xsysopen;
 use POSIX qw(setsid);
 
 # Protect emacscratch from ctl-c (and other signals?), but still wait
@@ -43,19 +44,31 @@ if (my $daemonizerpid= xfork) {
     if (my $pid= xfork) {
 	$streamw->xclose;
 	{
+	    # path OK?
+	    my $log= xsysopen "$ENV{HOME}/._e-gnu.log", O_CREAT|O_WRONLY|O_APPEND,
+		0600;
+
 	    #my $buf;
 	    #while (xsysread $streamr,$buf,1) {
 	    #    print $buf;
 	    #}
 
-	    # It appears that emacsclient does buffering if it
-	    # sees stdout/err not to be connected to a
-	    # terminal. And it doesn't have an option, so,
-	    # sigh. Well, makes filtering easier.
+	    # It appears that emacsclient does buffering if it sees
+	    # stdout/err not to be connected to a terminal. And it
+	    # doesn't have an option, so, sigh. Well, makes filtering
+	    # easier.
+
+	    my $z=0;
 	    while (<$streamr>) {
 		s/^Waiting for Emacs\.\.\.//;
-		print $_ unless /^$/;
+		unless (/^$/) {
+		    $z++;
+		    print $_;
+		    $log->syswrite(localtime()."  ".$_);
+		}
 	    }
+	    # print $log "Wrote $z messages.\n";
+	    $log->close;
 	}
 	xwaitpid $pid;
 	$sigw->xprint("$?");
