@@ -126,7 +126,7 @@ sub singlequote_sh($ ;$ ) {
 # be quoted
 sub possibly_singlequote_sh ($) {
     my ($str)=@_;
-    if ($str=~ m{^[\w/.-]+\z}) {
+    if ($str=~ m{^[\w/=:@.-]+\z}) {
 	$str
     } else {
 	singlequote_sh $str
