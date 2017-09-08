@@ -292,7 +292,7 @@ sub list_daemons {
 			 $res=[
 			       $rundir.": ".
 			       join(" ",
-				    map {Chj::singlequote::singlequote_sh_lenient($_)}
+				    map {Chj::singlequote::possibly_singlequote_sh($_)}
 				    @cmd)];
 		     } else {
 			 $res=[];
