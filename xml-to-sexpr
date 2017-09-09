@@ -11,18 +11,24 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [ files ]
 
-  If files are given, they are converted to suffix .scm (.xml suffix is stripped first).
+  If files are given (and --stdout option is not given), they are
+  converted to suffix .scm (.xml suffix is stripped first).
 
   If none are given, reads stdin then outputs to stdout.
 
-  WARNING: DOCTYPE declaration is stripped from input when using
-  stdin, but not from files, which will make it parse files SLOWLY if
-  they contain such decls with remote uris.
+  WARNING: DOCTYPE declaration is stripped from input when using stdin
+  or the --stdout option, but not from files otherwise, which will
+  make it parse files SLOWLY if they contain such decls with remote
+  uris.
 
   Options:
-  --expand-entities
-       Replaces &nbsp; with &#160; in the input before feeding to the parser.
-       Only works when reading stdin.
+
+    --expand-entities
+	 Replaces &nbsp; with &#160; in the input before feeding to the parser.
+	 Only works when outputting to stdout.
+
+    --stdout
+	 Print to stdout even if input file(s) is(/are) given
 
   (Christian Jaeger <$email>)
 ";
@@ -33,7 +39,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_loaddtd=0;
-our ($opt_expand_entities);
+our ($opt_expand_entities, $opt_stdout);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -45,6 +51,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--expand-entities$/) {
 	$opt_expand_entities=1;
+    } elsif (/^--stdout$/) {
+	$opt_stdout=1;
     } elsif (/^--?loaddtd$/) {
 	$opt_loaddtd=1;
 	warn "UNFINISHED, loaddtd is ignored";# since "we" didn't find out how to do it with XML::LibXML (#axkit-dahut)
@@ -60,39 +68,59 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-#usage unless @args;
+
 
 use Chj::Transform::Xml2Sexpr qw(file_xml_to_sexpr
 				 string_xml_to_sexpr
 				 port_xml_to_sexpr);
 
-if (@args) {
-    die "can't process --expand-entities with file arguments"
-      if $opt_expand_entities;
-    file_xml_to_sexpr $_ for @args;
-} else {
-    # SUCH a HACK. but how otherwise solve this?
-    my $str= do {
-	local $/;
-	<STDIN>
-    };
-    close STDIN
-      or die "closing stdin: $!";
-    $str=~ s{(<\!DOCTYPE\b[^>]*>)}
-      {
-	  my $str=$1;
-	  my $n= $str=~ tr/\n/\n/;
-	  "\n"x$n
-      }se;
+
+sub process_stringref {
+    my ($strref)=@_;
+    $$strref=~ s{(<\!DOCTYPE\b[^>]*>)}
+	  {
+	      my $str=$1;
+	      my $n= $str=~ tr/\n/\n/;
+	      "\n"x$n
+	  }se;
 
     # But, the nice side of the above is that now we can also just do
     # this as a preprocessing step:
     if ($opt_expand_entities) {
-	$str=~ s/&nbsp;/&#160;/g
+	$$strref=~ s/&nbsp;/&#160;/g
     }
 
     #warn "did read it in '$str'";
     #local $XML::LibXML::skipDTD = 1; doesn't help
-    string_xml_to_sexpr $str
+    string_xml_to_sexpr $$strref
+}
+
+
+if (@args and !$opt_expand_entities and !$opt_stdout) {
+    file_xml_to_sexpr $_ for @args;
+} else {
+    if (@args) {
+	$opt_stdout
+	    or die "can only use --expand-entities when also using --stdout";
+
+	require Chj::xopen;
+	
+	for my $path (@args) {
+	    my $f=Chj::xopen::xopen_read ($path);
+	    my $strref= $f->xcontentref;
+	    $f->xclose;
+	    process_stringref $strref;
+	}
+    } else {
+	# Hack
+	my $str= do {
+	    local $/;
+	    <STDIN>
+	};
+	close STDIN
+	    or die "closing stdin: $!";
+
+	process_stringref (\$str);
+    }
 }
 

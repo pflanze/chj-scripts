@@ -1,6 +1,9 @@
 #!/bin/sh
 
 # requires: the Debian r5rs-doc package
-
-#links /usr/share/doc/r5rs-doc/r5rs/index.html
-info r5rs
+if [ -e /usr/share/doc/r5rs-doc/r5rs/index.html ]; then
+    #links /usr/share/doc/r5rs-doc/r5rs/index.html
+    info r5rs
+else
+    $BROWSER http://www.schemers.org/Documents/Standards/R5RS/HTML/
+fi
