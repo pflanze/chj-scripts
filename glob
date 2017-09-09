@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+# Sat Sep  9 13:01:31 BST 2017
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname match-expression
+
+  Prints all matches for the given expression
+
+
+  Options:
+   -z  null-terminate records instead of via newline
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_z;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "z"=> \$opt_z,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+my ($expr)= @ARGV;
+
+for (glob $expr) {
+    # sick, perldoc says possibly empty, but what I see is that '*'
+    # *does* look at existing files but the non-match is not
+    # empty. So, check again:
+    if (lstat $_) {
+	print $_, ($opt_z ? "\0" : "\n")
+	  or die "print to stdout: $!";
+    }
+}
+
