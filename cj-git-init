@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# cj {Wed Jan 16 17:08:00 2008}
-# wrapper to add i18n latin1 mode to the git config file
-
 set -eu
 
 usage () {
@@ -40,9 +37,6 @@ else
 fi
 
 if [ -d ".git" ]; then
-    if ! locale| grep -q UTF-8; then
-	git config i18n.commitencoding latin1
-    fi
     if [ ! -f ".gitignore" ]; then
 	cat >> .gitignore <<EOF
 *~
