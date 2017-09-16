@@ -54,6 +54,19 @@ our $conv=
 	(gal=> $f,
 	 gallon=> $f)
     },
+    knot=> sub {
+	# unit of speed equal to one nautical mile (1.852 km) per
+	# hour, approximately 1.15078 mph
+
+	# a vessel travelling at 1 knot along a meridian travels
+	# approximately one minute of geographic latitude in one hour.
+	
+	# Worldwide, the knot is used in meteorology, and in maritime
+	# and air navigation
+	
+	my ($knot)=@_;
+	"$knot knots = ".($knot * 1.852). " km/h"
+    },
    }->{$myname}
   or die "unknown name '$myname'";
 
