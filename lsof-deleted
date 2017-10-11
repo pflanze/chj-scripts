@@ -17,7 +17,7 @@ sub usage {
 
   The aim is to find programs that have object files open that have
   been replaced by a package upgrade. For this reason, ignores
-  /tmp|dev|var/ and a couple other uninteresting paths.
+  /(tmp|dev|var|run)/ and a couple other uninteresting paths.
 
   (It is more precisely filtering lsof output, but otherwise doing the
   same as 'lsof |grep DEL' (but there is code to alternatively do our
@@ -106,9 +106,10 @@ sub process_entry {
       if $verbose;
     if ($$ignore{$path}
 	or $path=~ m{^/SYSV[0-9a-f]{8}\z}
-	or $path=~ m{^/(?:tmp|dev|var|proc|run/shm)/}
+	or $path=~ m{^/(?:tmp|dev|var|proc|run)/}
 	or $path=~ m|/\.galeon/mozilla/|
 	or $path=~ m{^/home/\w+/\.(config|cache)/dconf/user$}
+	or $path=~ m{^/memfd:}
        ) {
 	# suppress
     } else {
