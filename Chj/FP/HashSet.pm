@@ -18,6 +18,7 @@ Chj::FP::HashSet - set operations for hash tables
  hashset2array hashset_union($A,$B) # -> ["a","b","c","d"]
  hashset2array hashset_intersection($A,$B) # -> ["a","c"]
  hashset2array hashset_difference($A,$B) # -> ["b"]
+ hashset_values($A,$B) # -> "b"
  hashset_subset($B,$A) # -> false
  hashset_subset(+{b=>1},$A) # -> true
  hashset_size($A) # -> 3
@@ -44,6 +45,7 @@ package Chj::FP::HashSet;
 @EXPORT=qw(array2hashset
 	   array2lchashset
 	   hashset2array
+	   hashset_values
 	   hashset_union
 	   hashset_union_defined
 	   hashset_intersection
@@ -80,6 +82,10 @@ sub hashset2array ($) {
     [
      sort values %{$_[0]}
     ]
+}
+
+sub hashset_values ($) {
+    sort values %{$_[0]}
 }
 
 sub hashset_add_hashset_d ($ $) {
