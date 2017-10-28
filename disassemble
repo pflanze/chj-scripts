@@ -1,3 +1,3 @@
 #!/bin/sh
 
-objdump -Mintel -d "$1" | less
+objdump -Mintel -d "$@" | less
