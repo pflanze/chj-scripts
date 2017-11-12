@@ -72,6 +72,7 @@ ARG:{
 		} elsif ($1 eq 'action') {
 		    my $v= $ARGV[0];
 		    defined $v or die "$myname: expecting value after --action\n";
+		    shift @ARGV;
 		    parse_action($v);
 		} elsif ($1 eq 'list') {
 		    $opt_list=1;
