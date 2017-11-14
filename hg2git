@@ -18,5 +18,5 @@ target="$2"
 set -x
 git init "$target"
 cd "$target"
-hg-fast-export --force -r "$source"
+hg-fast-export -r "$source"
 #git reset --hard
