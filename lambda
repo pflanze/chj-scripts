@@ -85,7 +85,10 @@ $prog->xprint("#!/bin/bash\nset -eu; ");
 
 # serialize env:
 for my $var (@env) {
-    $prog->xprint("export $var=".singlequote_sh($ENV{$var}).";");
+    my $v= $ENV{$var};
+    $prog->xprint(defined $v ?
+		  "export $var=".singlequote_sh($v).";"
+		  : "unset $var;");
 }
 
 # take parameters:
@@ -109,6 +112,7 @@ if (defined $maybe_bindings) {
     # do not do anything whatsoever, the code is expected to look at $@ itself then.
 }
 $prog->xprint($code);
+#$prog->xprint("\n");
 $prog->xclose;
 $prog->autoclean(0);
 
