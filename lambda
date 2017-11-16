@@ -20,13 +20,12 @@ sub usage {
   code is the shell (for now?) code to be run.
 
   env is a list of identifiers which are to be preserved -- the set of
-  environment variables to be closed over. (The values are being kept
+  environment variables to be closed over. (The values are kept
   by serializing the dynamic environment upon lambda creation and
-  deserializing it upon lambda calling.)
+  deserializing it upon its call.)
 
   bindings is a list of identifiers into which positional arguments
-  are being stored as environment variables when the lambda is being
-  invoked.
+  are stored as environment variables when the lambda is invoked.
 
   Options:
 #  -p|--perl    code is given in perl --to be done
