@@ -19,10 +19,10 @@ sub usage {
 
   code is the shell (for now?) code to be run.
 
-  env is a list of identifiers which are to be preserved -- the set of
-  environment variables to be closed over. (The values are kept
-  by serializing the dynamic environment upon lambda creation and
-  deserializing it upon its call.)
+  env is a comma or whitespace-separated list of identifiers which are
+  to be preserved--the set of environment variables to be closed
+  over. (The values are kept by serializing the dynamic environment
+  upon lambda creation and deserializing it upon its call.)
 
   bindings is a list of identifiers into which positional arguments
   are stored as environment variables when the lambda is invoked.
@@ -67,7 +67,7 @@ use Chj::singlequote 'singlequote_sh';
 sub Split {
     my ($str)=@_;
     return () unless defined $str;
-    my @v= split /\s+/,$str;
+    my @v= split /(?:\s+|,)/,$str;
     for (@v) {
 	/^\w+\z/ or die "invalid variable name syntax '$_'"
     }
