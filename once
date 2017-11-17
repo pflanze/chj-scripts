@@ -1,0 +1,58 @@
+#!/usr/bin/perl -w
+
+# Fri Nov 17 00:43:51 GMT 2017
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [files]
+
+  Filter stdin to stdout, suppress lines that have been seen previously
+  (i.e. like 'uniq' but does not require the input to be sorted).
+
+  Note: requires 16 B + overhead of RAM for each unique line.
+
+  See also: 'minus'
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_z;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "z"=> \$opt_z,
+	   ) or exit 1;
+#usage if @ARGV;
+
+use Digest::MD5 qw(md5);
+
+my $eol= $opt_z ? "\0" : "\n";
+
+$/= $eol;
+
+my $hashlen=16;
+
+my %seen;
+
+while (<>) {
+    my $k= $_;
+    chomp $k;
+    if (length($k) > $hashlen) {
+	$k= md5 $k;
+    }
+    unless (exists $seen{$k}) {
+	$seen{$k}=undef;
+	print $_ or die $!;
+	(print $eol or die $!)
+	  unless /$eol\z/so;
+    }
+}
+

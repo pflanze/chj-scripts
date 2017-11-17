@@ -17,6 +17,8 @@ sub usage {
   preserves order of lines and line endings in the outputs (but
    strips line endings for comparisons).
 
+  See also: 'once'
+
   Options:
   -i   insensitive comparison
 
