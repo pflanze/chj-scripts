@@ -4,11 +4,10 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
-#use Chj::IO::File;
 use Chj::xopen qw(xopen_read xopen_write);
 
-$0=~ /(.*?)([^\/]+)\z/s or die "?"; 
-my ($mydir, $myname)=($1,$2); 
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print STDERR "$myname file1 file2 [ file2-file1 ]
@@ -40,12 +39,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?i(nsensitive)?$/) {
 	$opt_i=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -55,16 +48,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @args==2 or @args==3;
 
 my ($infile,$minusfile,$minusminusinfile)=@args;
-
-# my $n=0;
-# #my %file1;
-# my @file1;
-# my $in= bless *STDIN{IO},"Chj::IO::File";
-# while(defined(my$line=$in->xreadline)){
-#     my $key=$line; chomp $key;
-#     push @file1,$line;
-#     $file1{$key}=$n++;
-# }
 
 my $minus= xopen_read $minusfile;
 my %minus;
@@ -95,37 +78,16 @@ if (defined $minusminusinfile) {
 my $in= xopen_read $infile;
 while(defined(my$line=$in->xreadline)){
     my $key=$opt_i ? lc($line) : $line; chomp $key;
-    #print $line unless exists $minus{$key};
     if (exists $minus{$key}) {
-	#$minus{$key}++;  nein, sondern umgekehrt counter löschen wenn benutzt.
-	#$minus{$key}=undef; och nein, eher so: damit unten dann in reihenfolge iterieren möglich und kein hashlokup mehr nötig.
 	undef $minus[$minus{$key}] if defined $minusminusinfile;
     } else {
 	print $line;
     }
 }
 
-# was es nicht machen kann ist warnen wenn in minus teil zeilen vorkommen die nicht im input sind.  well ausser ich mach das oben hah noch rein.
-
-
-# for (keys %minus){
-#     if (!$minus{$_}){
-# 	print STDERR $_,"\n";
-#     }
-# }
-
-# well, aber sortiert ist das garantiert nicht mehr. und zeilenenden.
-
 if (defined $minusminusinfile) {
     $minusminusinfile= xopen_write $minusminusinfile;
-#     for (keys %minus){
-# 	if (defined $minus{$_}){
-# 	    $minusminusinfile->xprint($minus[$minus{$_}]);
-# 	}
-#     }
-# grrr, reihenfolge  ich mann
     for (@minus) {
-	#my $key=$_; chomp $key;
 	$minusminusinfile->xprint($_) if defined;
     }
 }
