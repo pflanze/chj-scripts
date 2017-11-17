@@ -74,9 +74,6 @@ use Chj::IO::Command;
 
 use Chj::xperlfunc ':all';
 
-our $out= Chj::IO::Command->new_receiver ("less");
-#our $out= bless *STDOUT{IO}, "Chj::IO::File";#(ah hat sogar xxfinish)
-
 
 our $rely_on_lsof_DEL=1; # whether to rely on DEL reporting.
 
@@ -102,7 +99,7 @@ sub process_entry {
     #return unless ($$f{f} eq "txt"); # ?   well or  whatever. maybe not.
 
     local our $path= $$f{n};
-    $out->xprint ("  checking path: '$path'\n")
+    xprint ("  checking path: '$path'\n")
       if $verbose;
     if ($$ignore{$path}
 	or $path=~ m{^/SYSV[0-9a-f]{8}\z}
@@ -114,14 +111,14 @@ sub process_entry {
 	# suppress
     } else {
 	my $report= sub {
-	    $out->xprint( JustifyLeft(15, $$h{c}),
-			  " ",
-			  JustifyRight(7, $$h{p}),
-			  " ",
-			  JustifyLeft(15, Username($$h{u})),
-			  " ",
-			  $path,
-			  "\n");
+	    xprint( JustifyLeft(15, $$h{c}),
+		    " ",
+		    JustifyRight(7, $$h{p}),
+		    " ",
+		    JustifyLeft(15, Username($$h{u})),
+		    " ",
+		    $path,
+		    "\n");
 	};
 	if ($rely_on_lsof_DEL) {
 	    if ($$f{f} eq "DEL") {
@@ -132,13 +129,13 @@ sub process_entry {
 		my $inode= $$f{i};
 		if ($s->ino == $inode) {
 		    # no report
-		    $out->xprint("$inode is correct\n")
+		    xprint("$inode is correct\n")
 		      if $verbose;
 		} else {
 		    &$report;
 		}
 	    } else {
-		$out->xprint( "process $$h{p}: can't stat '$path': $!\n"); ## assumes $! is still set.
+		xprint( "process $$h{p}: can't stat '$path': $!\n"); ## assumes $! is still set.
 	    }
 	}
     }
@@ -161,7 +158,7 @@ while (<$in>) {
     chomp;
     my $key= substr($_,0,1);
     my $val= substr($_,1);
-    $out->xprint ("key '$key' -> '$val'\n")
+    xprint ("key '$key' -> '$val'\n")
       if $verbose;
     if ($key eq 'p') {
 	if ($$processSet{fileSet}) {
@@ -192,7 +189,6 @@ while (<$in>) {
 }
 
 $in->xxfinish; # yeah gell better than in the shell where this is verschluckt.
-$out->xxfinish;# (well? should we exec less into ourselves? whatever?)
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
