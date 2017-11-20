@@ -1,14 +1,14 @@
 #!/usr/bin/perl -w
 
-# Sat Jun 28 17:29:02 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+# Copyright 2008-2017 Christian Jaeger, MIT license.
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
-our $filebase= "/tmp/$myname";
+our $filebase= ($ENV{HOME} // die "need HOME to be set") . "/.$myname-tmp";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
@@ -19,20 +19,18 @@ sub usage {
 
   code is the shell (for now?) code to be run.
 
-  env is a list of identifiers which are to be preserved -- the set of
-  environment variables to be closed over. (The values are being kept
-  by serializing the dynamic environment upon lambda creation and
-  deserializing it upon lambda calling.)
+  env is a comma or whitespace-separated list of identifiers which are
+  to be preserved--the set of environment variables to be closed
+  over. (The values are kept by serializing the dynamic environment
+  upon lambda creation and deserializing it upon its call.)
 
   bindings is a list of identifiers into which positional arguments
-  are being stored as environment variables when the lambda is being
-  invoked.
+  are stored as environment variables when the lambda is invoked.
 
   Options:
 #  -p|--perl    code is given in perl --to be done
    --filebase pathbase
-                use pathbase instead of /tmp/$myname (a random number
-                is appended directly, without adding a slash between)
+                use pathbase instead of $filebase
 
   (Christian Jaeger <$email>)
 ";
@@ -64,11 +62,15 @@ our ($code,$maybe_env,$maybe_bindings)=@ARGV;
 use Chj::xtmpfile;
 use Chj::xperlfunc;
 use Chj::singlequote 'singlequote_sh';
+use Chj::IO::Command;
+use Chj::xopen qw(xopen_read);
+use Digest::SHA;
+
 
 sub Split {
     my ($str)=@_;
     return () unless defined $str;
-    my @v= split /\s+/,$str;
+    my @v= split /(?:\s+|,)/,$str;
     for (@v) {
 	/^\w+\z/ or die "invalid variable name syntax '$_'"
     }
@@ -78,46 +80,85 @@ sub Split {
 my @env= Split $maybe_env;
 my @bindings= Split $maybe_bindings;
 
-my $prog= xtmpfile $filebase;
-
-# assume shell coding:
-
-$prog->xprint("#!/bin/bash\nset -eu; ");
-
-# serialize env:
-for my $var (@env) {
-    $prog->xprint("export $var=".singlequote_sh($ENV{$var}).";");
+if (! -e $filebase) {
+    xmkdir $filebase, 0700;
 }
 
-# take parameters:
-if (defined $maybe_bindings) {
-    # check for the number of arguments:
-    $prog->xprint('if [ $# -ne '
-		  .@bindings.
-		  ' ]; then echo "$0: wrong number of arguments, expecting '
-		  .@bindings.
-		  ', got $#" >&2; exit 1; fi;'
-		 );
-    my $z=1;
-    for my $var (@bindings) {
-	# here without 'export' clause? or with? hm. nested lambdas expect
-	# to see it?. but it may clobber stuff, and even be unsecure,
-	# hmmmmmmmm.
-	$prog->xprint("export $var=\$$z;");
-	$z++
+my $saltpath= "$filebase/salt";
+my $salt= do {
+    if (-e $saltpath) {
+	xopen_read($saltpath)->xcontent
+    } else {
+	my $c= Chj::IO::Command->new_sender("passwdgen","30");
+	my $salt= $c->xcontent;
+	$c->xxfinish;
+	my $s= xtmpfile $saltpath;
+	$s->xprint($salt);
+	$s->xclose;
+	$s->xputback(0700);
+	$salt
     }
-} else {
-    # do not do anything whatsoever, the code is expected to look at $@ itself then.
-}
-$prog->xprint($code);
-$prog->xclose;
-$prog->autoclean(0);
+};
+chomp $salt;
+$salt=~ /^\w{30,}\z/s or die "invalid salt in '$saltpath'";
 
-my $path= $prog->path;
-xchmod 0700, $path;
+
+my $prog= do {
+    my @prog;
+
+    # assume shell coding:
+    push @prog, ("#!/bin/bash\nset -eu; ");
+
+    # serialize env:
+    for my $var (@env) {
+	my $v= $ENV{$var};
+	push @prog, (defined $v ?
+		     "export $var=".singlequote_sh($v).";"
+		     : "unset $var;");
+    }
+
+    # take parameters:
+    if (defined $maybe_bindings) {
+	# check for the number of arguments:
+	push @prog, ('if [ $# -ne '
+		     .@bindings.
+		     ' ]; then echo "$0: wrong number of arguments, expecting '
+		     .@bindings.
+		     ', got $#" >&2; exit 1; fi;'
+	    );
+	my $z=1;
+	for my $var (@bindings) {
+	    # here without 'export' clause? or with? hm. nested lambdas expect
+	    # to see it?. but it may clobber stuff, and even be unsecure,
+	    # hmmmmmmmm.
+	    push @prog, ("export $var=\$$z;");
+	    $z++
+	}
+    } else {
+	# do not do anything whatsoever, the code is expected to look at $@ itself then.
+    }
+    push @prog, ($code);
+    #push @prog,("\n");
+
+    join("", @prog)
+};
+
+my $hash= do {
+    my $hasher= Digest::SHA->new("SHA-256");
+    $hasher->add($salt);
+    $hasher->add($prog);
+    $hasher->hexdigest
+};
+
+my $path= "$filebase/$hash";
+
+if (! -e $path) {
+    my $o= xtmpfile $path;
+    $o->xprint($prog);
+    $o->xclose;
+    $o->xputback(0755);
+}
 
 print $path,"\n"
   or die "printing path to stdout: $!";
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
