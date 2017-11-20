@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec ls --color=auto -lrt -I '*~' --time-style=long-iso "$@"
+exec ls --color=auto -b -lrt -I '*~' --time-style=long-iso "$@"
