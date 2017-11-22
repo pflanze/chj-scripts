@@ -69,4 +69,32 @@ gw () {
 }
 
 
-eval 'for w in '"$wikis"'; do gw "$w"; done'
+setvar () {
+    varname="$1"
+    val="$2"
+    code=$varname=$(printf '%q'"$val")
+    eval "hash_$code"
+}
+
+seen_set () {
+    key="$1"
+    varname=$(echo "$key" | md5sum | awk '{print $1}')
+    setvar "$varname" 1
+}
+
+seen_ref () {
+    key="$1"
+    varname=$(echo "$key" | md5sum | awk '{print $1}')
+    eval "test \${hash_$varname-0} -eq 1"
+}
+
+
+eval '
+for w in '"$wikis"'; do
+    p=$(readlink -f "$w")
+    if ! seen_ref "$p"; then
+        seen_set "$p"
+        gw "$w";
+    fi
+done
+'
