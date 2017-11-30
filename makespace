@@ -145,7 +145,7 @@ redo () {
 		f=`first "$files"`
 		DEBUG "deleting '$f'"
 		if [[ ${DRY_RUN-} = "" ]]; then
-		    rm -- "$f"
+		    rm -f -- "$f"
 		fi
 		redo $(( numdeletions + 1 ))
 	    fi
