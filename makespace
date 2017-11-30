@@ -7,12 +7,18 @@ maxdeletions=20
 
 usage () {
     echo "usage: $0 dirpath wanted-freespace-bytes [keep-bytes]"
+    echo
     echo "  Unlinks the oldest files from dirpath until wanted-freespace-bytes"
     echo "  is available on the partition holding the directory."
     echo "  If keep-bytes is given, files holding collectively up to this many"
     echo "  bytes are not deleted even if wanted-freespace-bytes cannot be "
     echo "  satisfied."
-    echo "  A maximum number of $maxdeletions files are deleted in one call."
+    echo 
+    echo "  A maximum number of $maxdeletions files are deleted in one call "
+    echo "  (see --maxdeletions)."
+    echo
+    echo "  Options:"
+    echo "    --maxdeletions n    use n instead of $maxdeletions"
     exit 1
 }
 
@@ -23,7 +29,12 @@ args=()
 while [ "${#@}" -gt 0 ]; do
     case "$1" in
 	-h|--help)
-	    usage
+	    usage  # (defaults may already have been changed at that point!)
+	    ;;
+	--maxdeletions)
+	    shift
+	    maxdeletions="$1"
+	    shift
 	    ;;
 	*)
 	    args[${#args[@]}]="$1"
