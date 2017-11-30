@@ -20,9 +20,14 @@ usage () {
     echo "  Options:"
     echo "    --maxdeletions n    Use n instead of $maxdeletions."
     echo "    --tar-rzip-to dir   Instead of deleting files, move them into a"
-    echo "                        rzip'ed tar file in dir."
-    echo "    --tar-tmp tmpdir    Use tmpdir instead of \$(dirname \"\$dirpath\") as"
-    echo "                        the base to temporarily hold the files to be tar'ed."
+    echo "                        rzip'ed tar file in dir. Requires --tar-tmp."
+    echo "    --tar-tmp tmpdir    Base dir to use to temporarily hold the files"
+    echo "                        to be tar'ed."
+    echo "         NOTE: due to the way makespace measures free space,"
+    echo "         the tar feature only works properly when tmpdir"
+    echo "         is on a different file system. If it's on the same"
+    echo "         file system, it will move maxdeletion files even if"
+    echo "         not necessary."
     exit 1
 }
 
@@ -177,7 +182,7 @@ redo () {
 }
 
 if ! [[ $tar_rzip_to = "" ]]; then
-    tmp=$(mktemp -d "${tar_tmp-$(dirname "$dirpath")}/tmp-XXXXXXXXXXXX")
+    tmp=$(mktemp -d "${tar_tmp}/tmp-XXXXXXXXXXXX")
     tartmp=$(readlink -f "$(mktemp "$tar_rzip_to/XXXXXXXXXXXXX.tar")")
     DEBUG "using tmp='$tmp', tartmp='$tartmp'"
 fi
