@@ -16,13 +16,30 @@ usage () {
     exit 1
 }
 
-if [[ $# -lt 2 || $# -gt 3 || $1 = "-h" || $1 = "--help" ]]; then
+
+declare -a args
+args=()
+
+while [ "${#@}" -gt 0 ]; do
+    case "$1" in
+	-h|--help)
+	    usage
+	    ;;
+	*)
+	    args[${#args[@]}]="$1"
+	    shift
+	    ;;
+    esac
+done
+
+if [ "${#args[@]}" -lt 2 ]; then
     usage
 fi
 
-dirpath=$1
-wantedspace=$2
-keepbytes=${3-0}
+dirpath=${args[0]}
+wantedspace=${args[1]}
+keepbytes=${args[2]-0}
+
 
 DEBUG () {
     if [[ ${DEBUG-} != "" ]]; then
