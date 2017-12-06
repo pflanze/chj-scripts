@@ -30,13 +30,17 @@ my ($opt_stop, $opt_start, $opt_bg, $opt_nice, $opt_restart, $opt_status, $opt_n
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
-our $logfile= "nohup.out";
+our $logfile;
 our $opt_quiet;
 our $opt_no_error_if_running;
 our $signal=15; # SIGTERM
 our ($opt_STOP, $opt_CONT);
 our $opt_hash_input;
 our $opt_list;
+our $opt_multilog;
+our $opt_multilog_n= 1000;
+our $opt_multilog_s= 40000;
+
 
 my @actions= qw(stop kill start restart status STOP CONT cont);
 my %is_action= map{$_=>1} @actions;
@@ -120,6 +124,36 @@ ARG:{
 			$usage= "missing argument to --hash-input option";
 			last ARG;
 		    };
+		} elsif ($1 eq "multilog") {
+		    $opt_multilog= $ARGV[0]; shift @ARGV;
+		    unless (defined $opt_multilog) {
+			$usage= "missing argument to --multilog option";
+			last ARG;
+		    }
+		    unless (length $opt_multilog) {
+			$usage= "--multilog requires at least 1 character as an argument";
+			last ARG;
+		    }
+		} elsif ($1 eq "multilog-n") {
+		    $opt_multilog_n= $ARGV[0]; shift @ARGV;
+		    unless (defined $opt_multilog_n) {
+			$usage= "missing argument to --multilog-n option";
+			last ARG;
+		    }
+		    unless ($opt_multilog_n=~ /^\d+\z/ and $opt_multilog_n) {
+			$usage= "--multilog-n only accepts natural numbers";
+			last ARG;
+		    }
+		} elsif ($1 eq "multilog-s") {
+		    $opt_multilog_n= $ARGV[0]; shift @ARGV;
+		    unless (defined $opt_multilog_s) {
+			$usage= "missing argument to --multilog-s option";
+			last ARG;
+		    }
+		    unless ($opt_multilog_s=~ /^\d+\z/ and $opt_multilog_s) {
+			$usage= "--multilog-s only accepts natural numbers";
+			last ARG;
+		    }
 		} elsif ($1 eq 'help') {
 		    $usage="";
 		    #last ARG; nope
@@ -155,6 +189,20 @@ ARG:{
 	    }
 	}
     }
+}
+
+if (defined $opt_multilog) {
+    if (defined $logfile) {
+	if ($logfile=~ m|^/|) {
+	    # leave alone
+	} else {
+	    $logfile= "$opt_multilog/$logfile"
+	}
+    } else {
+	$logfile= "$opt_multilog/nohup.out"
+    }
+} else {
+    $logfile //= "nohup.out";
 }
 
 unless ($usage){ # no defined: only avoid if an *error* parsing the
@@ -237,8 +285,21 @@ sub usage {
   --maxwait N  change default of $maxwait sec to wait before sending SIGKILL
   --nice[=n]  lower priority by n (or 5 by default)
   -N|--no-nice  do not lower priority (new default)
+
   --out file  use file instead of 'nohup.out' for output (is opened in
               append mode)
+
+  --multilog multilogdir
+              pass output through multilog from daemontools, with the given
+              path as the base directory. If this option is given, the
+              argument to --out is interpreted as relative to multilogdir
+              unless it is absolute, and only errors from multilog itself
+              or its invocation are written to it.
+  --multilog-n numfiles
+              use numfiles instead of $opt_multilog_n as -n argument to multilog
+  --multilog-s bytesperfile
+              use bytesperfile instead of $opt_multilog_s as -s argument to multilog
+
   --quiet|-q  be quiet (do not output the pid of the daemon or exit code)
   --no-ask    don't ask whether to show the output at the end (never show it)
   --no-error-if-running|--no-error  do not report an error if the
@@ -400,6 +461,28 @@ sub start {
 	$output= xsysopen_append $path;
 	warn "output to '$path'\n";
     }
+    if (defined $opt_multilog) {
+	require Chj::xpipe;
+	import Chj::xpipe;
+	require Chj::Cwd::realpath;
+	import Chj::Cwd::realpath "xrealpath";
+
+	# multilog requires absolute path
+	my $abslogdir= xrealpath($opt_multilog);
+
+	my ($logr,$logw)= xpipe();
+	if (my $loggerpid= xfork) {
+	    $logr->xclose;
+	} else {
+	    $output->xdup2(1);
+	    $output->xdup2(2);
+	    $logw->xclose;
+	    $logr->xdup2(0);
+	    xexec "multilog", "t", "s$opt_multilog_s", "n$opt_multilog_n",
+	      $abslogdir;
+	}
+	$output= $logw;
+    }
     $daemonizer->set_outputs($output);
 
     if (my $pid= $daemonizer->fork ($opt_no_error_if_running && sub {
@@ -429,7 +512,11 @@ sub start {
 		$maybe_exitcode=0;
 	    }
 	    if (!$opt_noask and maybe_askyn "do you want to look at the output?"){
-		xsystem "less",$output->path;
+		if (defined $opt_multilog) {
+		    xsystem "tai", $opt_multilog;
+		} else {
+		    xsystem "less", $output->path;
+		}
 	    }
 	}
 	exit ($maybe_exitcode // 0);
