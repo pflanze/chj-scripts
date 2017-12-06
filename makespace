@@ -7,22 +7,71 @@ maxdeletions=20
 
 usage () {
     echo "usage: $0 dirpath wanted-freespace-bytes [keep-bytes]"
+    echo
     echo "  Unlinks the oldest files from dirpath until wanted-freespace-bytes"
     echo "  is available on the partition holding the directory."
     echo "  If keep-bytes is given, files holding collectively up to this many"
     echo "  bytes are not deleted even if wanted-freespace-bytes cannot be "
     echo "  satisfied."
-    echo "  A maximum number of $maxdeletions files are deleted in one call."
+    echo 
+    echo "  A maximum number of $maxdeletions files are deleted in one call "
+    echo "  (see --maxdeletions)."
+    echo
+    echo "  Options:"
+    echo "    --maxdeletions n    Use n instead of $maxdeletions."
+    echo "    --tar-rzip-to dir   Instead of deleting files, move them into a"
+    echo "                        rzip'ed tar file in dir. Requires --tar-tmp."
+    echo "    --tar-tmp tmpdir    Base dir to use to temporarily hold the files"
+    echo "                        to be tar'ed."
+    echo "         NOTE: due to the way makespace measures free space,"
+    echo "         the tar feature only works properly when tmpdir"
+    echo "         is on a different file system. If it's on the same"
+    echo "         file system, it will move maxdeletion files even if"
+    echo "         not necessary."
     exit 1
 }
 
-if [[ $# -lt 2 || $# -gt 3 || $1 = "-h" || $1 = "--help" ]]; then
+
+declare -a args
+args=()
+tar_rzip_to=
+unset tar_tmp
+
+while [ "${#@}" -gt 0 ]; do
+    case "$1" in
+	-h|--help)
+	    usage  # (defaults may already have been changed at that point!)
+	    ;;
+	--maxdeletions)
+	    shift
+	    maxdeletions="$1"
+	    shift
+	    ;;
+	--tar-rzip-to)
+	    shift
+	    tar_rzip_to="$1"
+	    shift
+	    ;;
+	--tar-tmp)
+	    shift
+	    tar_tmp="$1"
+	    shift
+	    ;;
+	*)
+	    args[${#args[@]}]="$1"
+	    shift
+	    ;;
+    esac
+done
+
+if [ "${#args[@]}" -lt 2 ]; then
     usage
 fi
 
-dirpath=$1
-wantedspace=$2
-keepbytes=${3-0}
+dirpath=${args[0]}
+wantedspace=${args[1]}
+keepbytes=${args[2]-0}
+
 
 DEBUG () {
     if [[ ${DEBUG-} != "" ]]; then
@@ -97,6 +146,8 @@ files_use_more_than () {
     )
 }
 
+did=0
+
 redo () {
     local numdeletions
     numdeletions="$1"
@@ -117,7 +168,12 @@ redo () {
 		f=`first "$files"`
 		DEBUG "deleting '$f'"
 		if [[ ${DRY_RUN-} = "" ]]; then
-		    rm -- "$f"
+		    if [[ $tar_rzip_to = "" ]]; then
+			rm -f -- "$f"
+		    else
+			did=1
+			mv -- "$f" "$tmp"
+		    fi
 		fi
 		redo $(( numdeletions + 1 ))
 	    fi
@@ -125,6 +181,29 @@ redo () {
     fi
 }
 
+if ! [[ $tar_rzip_to = "" ]]; then
+    tmp=$(mktemp -d "${tar_tmp}/tmp-XXXXXXXXXXXX")
+    tartmp=$(readlink -f "$(mktemp "$tar_rzip_to/XXXXXXXXXXXXX.tar")")
+    DEBUG "using tmp='$tmp', tartmp='$tartmp'"
+fi
+
 redo 0
+
+if ! [[ $tar_rzip_to = "" ]]; then
+    if [[ $did = 1 ]]; then
+	DEBUG "creating '$tartmp'.."
+	(
+	    set -euo pipefail
+	    cd "$tmp"
+	    tar -cf "$tartmp" .
+	)
+	rzip "$tartmp"
+	rm -rf -- "$tmp"
+    else
+	DEBUG "no files to be deleted"
+	rm -- "$tartmp"
+    fi
+fi
+
 
 DEBUG "OK."
