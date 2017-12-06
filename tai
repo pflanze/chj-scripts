@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# = 0 ]; then
     exec tai64nlocal
 elif [ $# = 1 -a -d "$1" ]; then
+    # set -o nullglob # does not work
+    shopt -s nullglob
     tai "$1"/'@'* "$1"/current
 else
     {
