@@ -1,0 +1,270 @@
+#!/usr/bin/perl -w
+
+# Mon Jun  1 14:41:27 EDT 2009
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  expand a couple macros in gambit C code which are making life
+  difficult for etags or ctags-exuberant
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV==0;
+
+sub search_closing_paren {
+    my ($strref,$startpos)=@_;
+    my $lp;
+    $lp= sub {
+	my ($startpos, $level)=@_;
+	if ($level==0) {
+	    $startpos
+	} else {
+	    pos($$strref)=$startpos;
+	    if ($$strref=~ /([()])/gc) {
+		my $c=$1;
+		my $pos=pos($$strref);#+1; #ok?. nope
+		if ($c eq '(') {
+		    @_=($pos, $level+1); goto $lp;
+		} else {
+		    @_=($pos, $level-1); goto $lp;
+		}
+	    } else {
+		die "missing end paren, level at end is $level"
+		  #todo somehow give context,how. give start. and how it looks there, probably.
+	    }
+	}
+    };
+    my $res= &$lp($startpos, 1);
+    undef $lp;
+    $res
+}
+
+sub search_closing_comment {
+    my ($strref,$startpos)=@_;
+    # C comments do not nest
+    pos ($$strref)=$startpos;
+    $$strref=~ m|\*/|gc
+      or die "can't find end of comment";
+    pos ($$strref)
+}
+
+sub search_closing_string {
+    my ($strref,$startpos)=@_;
+    my $lp;
+    $lp= sub {
+	my ($startpos)=@_;
+	pos ($$strref)=$startpos;
+	if ($$strref=~ m|([\\\"])|gc) {
+	    my $c=$1;
+	    my $pos=pos($$strref);
+	    if ($c eq "\\") {
+		@_=($pos+1); goto $lp;
+	    } else {
+		$pos
+	    }
+	} else {
+	    die "can't find end of string";
+	}
+    };
+    my $res= &$lp ($startpos);
+    undef $lp;
+    $res
+}
+
+sub search_closing_define {
+    my ($strref,$startpos)=@_;
+    my $lp;
+    $lp= sub {
+	my ($startpos)=@_;
+	pos ($$strref)=$startpos;
+	if ($$strref=~
+	    m{(
+	      (\") # is this the only case other than end of lines
+                   # that we have to care for? (well, are
+                   # line-spanning strings even supported in C
+                   # nowadays? I think not? But anyway, then it was
+                   # just an expire eh exercise)
+	      |
+	      (\\[ \t]*\n) # not sure whether space or tab is even
+                           # allowed after the \ in macro defs.
+	      |
+	      (\n)
+	     )}xgc
+	   ) {
+	    my ($wholematch,
+		$match_quote,
+		$match_continuedline,
+		$match_end)=
+		  ($1,$2,$3,$4);
+	    my $pos1=pos($$strref);
+	    my $len= length $wholematch;
+	    my $pos0= $pos1-$len;
+	    if ($match_quote) {
+		# COPYPASTE, except for the append stuff, the return value.
+		if ($pos0 > 0 and substr($$strref,$pos0-1,1) eq "'") {
+		    # it's only a '"' char literal in C, skip it
+		    @_=($pos1); goto $lp;
+		} else {
+		    # (pos0 not needed here)
+		    my $newpos= search_closing_string ($strref, $pos1);
+		    @_=($newpos); goto $lp;
+		}
+	    } elsif ($match_continuedline) {
+		@_=($pos1); goto $lp;
+	    } elsif ($match_end) {
+		$pos1
+	    } else {
+		die "???"
+	    }
+	} else {
+	    die "can't find end of #define";
+	}
+    };
+    my $res= &$lp ($startpos);
+    undef $lp;
+    $res
+}
+
+sub search_closing_line {
+    my ($strref,$startpos)=@_;
+    pos ($$strref)=$startpos;
+    $$strref=~ m{(?:\n|\z)}gc
+      or die "???";
+    pos ($$strref)
+}
+
+
+sub append {
+    join("",@_)
+}
+
+sub substring ( $ $ $ ) { # taking endpos instead of length as 3rd parameter
+    my ($str,$start,$end)=@_;
+    substr $str,$start,$end-$start
+}
+
+sub number_of ( $ $ ) {
+    my ($re, $str)=@_;
+    my $n=0;
+    $n++ while $str=~ m/($re)/sg;
+    $n
+}
+
+no warnings 'recursion';
+
+sub transform {
+    my ($strref,$startpos)=@_;
+    pos ($$strref)=$startpos;
+    if ($$strref=~ m{
+		     (
+		     \b(___P)\s*\(
+		     |
+		     \b(___PVOID)\b
+		     |
+		     (\")
+		     |
+		     (/\*)
+		     |
+		     (//)
+		     |
+		     \b(___EXP_FUNC)\s*\(
+		     |
+		     (?:^|\n)\s*\#(define)\b
+		    )
+		 }xgc) {
+	my $len= length $1;
+	my $pos1= pos($$strref);
+	my $pos0= $pos1-$len;
+	# note: we can't capture the submatches by putting the
+	# variables before the match, because the regex operator is in
+	# g mode.
+	my ($match___P,
+	    $match___PVOID,
+	    $match_quote,
+	    $match_ccomment,
+	    $match_cpluspluscomment,
+	    $match___EXP_FUNC,
+ 	    $match_define,
+	   )= ($2,$3,$4,$5,$6,$7,$8);
+	if ($match___P) {
+	    my $end= search_closing_paren ($strref, $pos1);
+	    append(substring ($$strref, $startpos, $pos0),
+		   "(void)",
+		   "\n"x(number_of "\n", substring($$strref,$pos0,$end)),
+		   transform ($strref, $end))
+	} elsif ($match___PVOID) {
+	    my $end= $pos1;
+	    # full copypaste
+	    append(substring ($$strref, $startpos, $pos0),
+		   "(void)",
+		   "\n"x(number_of "\n", substring($$strref,$pos0,$end)),
+		   transform ($strref, $end))
+	} elsif ($match_quote) {
+	    if ($pos0 > 0 and substr($$strref,$pos0-1,1) eq "'") {
+		# it's only a '"' char literal in C, skip it
+		append(substring ($$strref, $startpos, $pos1),
+		       transform ($strref, $pos1))
+	    } else {
+		# (pos0 not needed here)
+		my $newpos= search_closing_string ($strref, $pos1);
+		append(substring ($$strref, $startpos, $newpos),
+		       transform ($strref, $newpos))
+	    }
+	} elsif ($match_ccomment) {
+	    my $newpos= search_closing_comment ($strref, $pos1);
+	    append(substring ($$strref, $startpos, $newpos),
+		   transform ($strref, $newpos))
+	} elsif ($match_cpluspluscomment) {
+	    my $newpos= search_closing_line ($strref, $pos1);
+	    append(substring ($$strref, $startpos, $newpos),
+		   transform ($strref, $newpos))
+	} elsif ($match___EXP_FUNC) {
+	    my $end= search_closing_paren ($strref, $pos1);
+	    # $end is the pos *after* the closing paren
+	    my $between= substring ($$strref, $pos1, $end-1);
+	    warn "between= '$between'";
+	    append(substring ($$strref, $startpos, $pos0),
+		   "\n"x(number_of "\n", substring($$strref,$pos0,$pos1)),
+		   join(" ", split /,/, $between),
+		   transform ($strref, $end))
+	} elsif ($match_define) {
+	    my $end= search_closing_define ($strref, $pos1);
+	    append(substring ($$strref, $startpos, $end),
+		   transform ($strref, $end))
+	      # (todo possible to shorten jump?)
+	} else {
+	    die "???"
+	}
+    } else {
+	substr ($$strref, $startpos)
+    }
+}
+
+
+sub main {
+    local $/;
+    my $cnt= <STDIN>;
+    close STDIN or die $!;
+    print transform (\$cnt, 0)
+      or die $!;
+    close STDOUT
+      or die $!;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+main;
