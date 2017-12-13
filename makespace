@@ -1,0 +1,235 @@
+#!/usr/bin/perl -w
+
+# Wed 13 Dec 15:39:23 GMT 2017
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+my $max_deletions= 100;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dirpath [options]
+
+  Options:
+
+    --quota x
+    --quotum x
+          bring space usage of the contents of dirpath to below x
+          bytes.
+
+    --max-deletions n
+          do not unlink more than n files in one call
+          (default: $max_deletions)
+
+    --smallest-first
+          of all the files with the same mtime, choose the smallest
+          files to satisfy deletion requirements instead of the
+          default policy of deleting the biggest first.
+
+  Number suffixes: any byte based number above can have a 'K', 'Ki',
+  'M', 'Mi', 'G', 'Gi' suffix, and is additionally allowed to end in
+  'B'. (FUTURE: allow '%' instead of 'B'?)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+use Chj::TEST;
+
+my %KMGi=
+    (K=> 1000,
+     Ki=> 1024,
+     M=> 1000000,
+     Mi=> 1024*1024,
+     G=> 1000000000,
+     Gi=> 1024*1024*1024);
+
+sub parse_quotum ($) {
+    my ($str)=@_;
+    my ($x, $KMG, $i, $B)=
+      $str=~ /^(\d+(?:\.\d+)?) *(?:([KMG])(i)?)? *(B)? *\z/
+	or die "parse_quotum: no match for '$str'";
+    my $fact= do {
+	if (defined $KMG) {
+	    $i //="";
+	    $KMGi{"$KMG$i"}
+	      or die "parse_quotum: unknown quantifier '$KMG$i' in: '$str'";
+	} else {
+	    1
+	}
+    };
+    $x * $fact
+}
+
+TEST { parse_quotum "2 B" } 2;
+TEST { parse_quotum "2 KB" } 2000;
+TEST { parse_quotum "2 Ki" } 2048;
+TEST { parse_quotum "2 GB" } 2000000000;
+
+
+{
+    package __makespace__::Item;
+    sub new {
+	my $cl=shift;
+	# name, size, mtime
+	bless [@_], $cl
+    }
+    sub name { $_[0][0] }
+    sub size { $_[0][1] }
+    sub mtime { $_[0][2] }
+}
+
+{
+    package __makespace__::Spacecounter;
+
+    # keep state of files that might need to be removed.
+
+    sub new {
+	my $cl=shift;
+	my $args= {@_};
+	bless +{
+		max_deletions=> $$args{max_deletions},
+		quotum=> $$args{quotum},
+		totbytes=> 0,
+		#newest_mtime=> undef,
+		candidates=> [], # of Item
+	       }, $cl
+    }
+
+    sub add {
+	my ($s, $Item)=@_;
+	my $size= $Item->size;
+	$$s{totbytes} += $size;
+	# actually add all items as candidates
+	push @{$$s{candidates}}, $Item;
+    }
+
+    sub items_to_remove {
+	my ($s)=@_;
+	my $totbytes= $$s{totbytes};
+	my $quotum= $$s{quotum};
+	if ($totbytes <= $quotum) {
+	    []
+	} else {
+	    my @sorted_candidates= sort {
+		(($a->mtime <=> $b->mtime) # oldest first
+		 ||
+		 ($$s{smallest_first} ?
+		  ($a->size <=> $b->size)
+		  :
+		  ($b->size <=> $a->size))
+		 ||
+		 ($a->name cmp $b->name))
+	    } @{$$s{candidates}};
+
+	    my @remove;
+	    my $i=0;
+	    while (($i < @sorted_candidates)
+		   and
+		   ($i < $max_deletions)
+		   and
+		   ($totbytes > $quotum)) {
+		my $Item= $sorted_candidates[$i++];
+		push @remove, $Item;
+		$totbytes-= $Item->size;
+	    }
+	    \@remove
+	}
+    }
+}
+
+{
+    package __makespace__::Scanner;
+    use Chj::xperlfunc ":all";
+    use Chj::xopendir;
+
+    sub new {
+	my $cl=shift;
+	bless
+	  +{
+	    # fields: counter
+	    @_
+	   }, $cl
+    }
+
+    sub scandir {
+	my ($s, $path)=@_;
+	my $d= xopendir $path;
+	while (defined (my $item= $d->xnread)) {
+	    my $path2= "$path/$item";
+	    my $st= xlstat $path2;
+	    if ($st->is_dir) {
+		# NOTE: we do not currently remove empty dirs; should
+		# this maintain dirs once that functionality is
+		# needed?
+		$s->scandir($path2);
+	    } elsif ($st->is_file) {
+		$$s{counter}->add
+		  (__makespace__::Item->new
+		   ($path2, $st->size, $st->mtime));
+	    }
+	}
+	$d->xclose;
+    }
+}
+
+
+
+use Getopt::Long;
+our $verbose=0;
+our $maybe_quotum_bytes;
+our $opt_smallest_first;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "quotum=s"=> sub {
+	       $maybe_quotum_bytes= parse_quotum($_[1])
+	   },
+	   "quota=s"=> sub {
+	       $maybe_quotum_bytes= parse_quotum($_[1])
+	   },
+	   "max-deletions=n"=> \$max_deletions,
+	   "smallest-first"=> \$opt_smallest_first,
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+my ($dirpath)=@ARGV;
+
+
+if (defined $maybe_quotum_bytes) {
+    my $quotum_bytes= $maybe_quotum_bytes;
+
+    my $counter= __makespace__::Spacecounter->new
+      (max_deletions=> $max_deletions,
+       quotum=> $quotum_bytes,
+       smallest_first=> $opt_smallest_first);
+
+    my $scanner= __makespace__::Scanner->new
+      (counter=> $counter);
+
+    $scanner->scandir($dirpath);
+
+    for my $Item (@{$counter->items_to_remove}) {
+	my $path= $Item->name;
+	if ($opt_dry) {
+	    print "$path\n";
+	} else {
+	    unlink $path
+	      or warn "could not unlink '$path': $!";
+	    if ($verbose) {
+		print "unlinked '$path'\n";
+	    }
+	}
+    }
+
+} else {
+    usage "currently only works with --quotum"
+}
+
+#use Chj::Backtrace; use Chj::repl; repl;
