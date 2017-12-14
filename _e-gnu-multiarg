@@ -6,6 +6,15 @@ use Chj::xperlfunc;
 
 my @pid;
 
+my $n= @ARGV;
+if ($n > 8) {
+    require Chj::Util::AskYN;
+    my $yn= Chj::Util::AskYN::maybe_askyn
+	("$0: got $n arguments, do you really want to open so many windows?");
+    exit 1
+	unless $yn;
+}
+
 for (@ARGV) {
     if (my $pid= xfork) {
 	push @pid, $pid
