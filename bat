@@ -96,7 +96,8 @@ sub show_bat_percentage {
     my ($prefix,$field)=@_;
     my $now= &$field("energy_now");
     my $full= &$field("energy_full");
-    printf "$prefix%3.1f\n", 100 * $now / $full;
+    my $capacity= &$field("capacity");
+    printf "$prefix%3.1f\n", 100 * 100 * $now / $full / $capacity;
 }
 
 sub kindnum2field {
