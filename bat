@@ -105,6 +105,14 @@ sub kindnum2field {
       or die "do not have a $kind$num";
     sub {
 	my ($name)=@_;
+
+	# So they decided to rename this file, sigh:
+	if ($name=~ /^energy_/) {
+	    if (! -e "$path/$name") {
+		$name=~ s/^energy/charge/;
+	    }
+	}
+
 	contents("$path/$name");
     }
 }
