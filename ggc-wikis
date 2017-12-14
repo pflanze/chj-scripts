@@ -61,7 +61,7 @@ gw () {
     w=`dirname "$1"`
     (
 	set +e
-	note "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "$COLUMNS"`"
+	note "== $w `perl -we 'print "="x($ARGV[1]-7-length($ARGV[0]))' "$w" "${COLUMNS-80}"`"
 	cd "$w"
 	ggcZ "${searcharguments[@]}" | perhaps_abs "$w"
 	note
