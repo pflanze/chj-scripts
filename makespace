@@ -196,6 +196,7 @@ GetOptions("verbose"=> \$verbose,
 	   "max-deletions=n"=> \$max_deletions,
 	   "smallest-first"=> \$opt_smallest_first,
 	   "dry-run"=> \$opt_dry,
+	   "run-tests"=> sub { Chj::TEST::run_tests "main"; exit },
 	   ) or exit 1;
 usage unless @ARGV;
 
