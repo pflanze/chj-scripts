@@ -89,8 +89,8 @@ sub parse_quotum ($) {
 
 TEST { parse_quotum "2 B" } 2;
 TEST { parse_quotum "2 KB" } 2000;
-TEST { parse_quotum "2 Ki" } 2048;
-TEST { parse_quotum "2 GB" } 2000000000;
+TEST { parse_quotum "2Ki" } 2048;
+TEST { parse_quotum "2 GB " } 2000000000;
 
 
 {
