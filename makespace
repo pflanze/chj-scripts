@@ -46,6 +46,10 @@ sub usage {
           files to satisfy deletion requirements instead of the
           default policy of deleting the biggest first.
 
+    --hires
+          enable reading hi-res timestamps (depends on Inline C and
+          needs a compilation toolchain the first time it's used)
+
   Number suffixes: any byte based number above can have a 'K', 'Ki',
   'M', 'Mi', 'G', 'Gi' suffix, and is additionally allowed to end in
   'B'. (FUTURE: allow '%' instead of 'B'?)
@@ -180,7 +184,7 @@ TEST { parse_quotum "2 GB" } 2000000000;
 	my $d= xopendir $path;
 	while (defined (my $item= $d->xnread)) {
 	    my $path2= "$path/$item";
-	    local $Chj::xperlfunc::time_hires= 1;
+	    local $Chj::xperlfunc::time_hires= 1 if $$s{hires};
 	    my $st= xlstat $path2;
 	    if ($st->is_dir) {
 		# NOTE: we do not currently remove empty dirs; should
@@ -241,6 +245,7 @@ our $verbose=0;
 our $maybe_quotum_bytes;
 our $opt_smallest_first;
 our $opt_dry;
+our $opt_hires=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "quotum=s"=> sub {
@@ -253,6 +258,7 @@ GetOptions("verbose"=> \$verbose,
 	   "check-overhead"=> sub { $check_overhead = 1 },
 	   "no-check-overhead"=> sub { $check_overhead = 0 },
 	   "smallest-first"=> \$opt_smallest_first,
+	   "hires"=> \$opt_hires,
 	   "dry-run"=> \$opt_dry,
 	   "run-tests"=> sub { Chj::TEST::run_tests "main"; exit },
 	   ) or exit 1;
@@ -270,7 +276,7 @@ if (defined $maybe_quotum_bytes) {
        smallest_first=> $opt_smallest_first);
 
     my $scanner= __makespace__::Scanner->new
-      (counter=> $counter);
+      (counter=> $counter, hires=> $opt_hires);
 
     $scanner->scandir($dirpath);
 
