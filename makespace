@@ -204,11 +204,9 @@ TEST { parse_quotum "2 GB" } 2000000000;
 			    # (XX assumes ext4 or similar)
 			    $empty_file_overhead
 			} else {
-			    my $size_used_looks_sane= do {
+			    my $size_used_looks_sane= ($size_used >= $size) && do {
 				if ($size < 50000) {
-				    (($size_used >= $size)
-				     and
-				     (($size_used - $size) < 6000))
+				    (($size_used - $size) < 6000)
 				} else {
 				    # a 50 KB file has ~4000 B of
 				    # overhead (1.08); play it safe.
