@@ -180,6 +180,7 @@ TEST { parse_quotum "2 GB" } 2000000000;
 	my $d= xopendir $path;
 	while (defined (my $item= $d->xnread)) {
 	    my $path2= "$path/$item";
+	    local $Chj::xperlfunc::time_hires= 1;
 	    my $st= xlstat $path2;
 	    if ($st->is_dir) {
 		# NOTE: we do not currently remove empty dirs; should
