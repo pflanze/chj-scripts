@@ -4,9 +4,30 @@ use strict; use warnings FATAL => 'uninitialized';
 
 use Chj::xperlfunc;
 
+my @files=
+  (sub {
+       my @orig_argv= @ARGV;
+       my @pre;
+       while (@ARGV) {
+	   local $_= shift @ARGV;
+	   if ($_ eq "--") {
+	       if (@pre) {
+		   warn "$0: can't currently deal with options, falling back to single call\n";
+		   xexec "_e-gnu", @orig_argv
+	       } else {
+		   # no arguments before "--"
+		   return @ARGV
+	       }
+	   }
+	   push @pre, $_;
+       }
+       @pre
+   })->();
+
+
 my @pid;
 
-my $n= @ARGV;
+my $n= @files;
 if ($n > 8) {
     require Chj::Util::AskYN;
     my $yn= Chj::Util::AskYN::maybe_askyn
@@ -15,7 +36,7 @@ if ($n > 8) {
 	unless $yn;
 }
 
-for (@ARGV) {
+for (@files) {
     if (my $pid= xfork) {
 	push @pid, $pid
     } else {
