@@ -16,6 +16,7 @@ my $empty_file_overhead= 120; # B, on ext4, rough extimate, basically
                               # the dir?)
 
 my $check_overhead= 1;
+my $paranoid=1;
 
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -40,6 +41,15 @@ sub usage {
           on all filesystems) (default)
     --no-check-overhead
           only consider the file size (content length)
+    --paranoid
+          (default.) Check whether the size in blocks as reported by
+          stat looks sensible compared to the size in bytes (the risk
+          is that it gets the blocksize wrong) and die if inconsistent.
+          Note that the check fails for files with holes.
+    --no-paranoid
+          Turn off the paranoid check, i.e. make work with files with
+          holes. This is known to work on (normal) ext3 and ext4
+          filesystems, be careful with other file systems.
 
     --smallest-first
           of all the files with the same mtime, choose the smallest
@@ -174,8 +184,7 @@ TEST { parse_quotum "2 GB " } 2000000000;
 	bless
 	  +{
 	    # fields: counter
-	    @_,
-	    check_overhead_errors=> 0
+	    @_
 	   }, $cl
     }
 
@@ -195,15 +204,13 @@ TEST { parse_quotum "2 GB " } 2000000000;
 	    } elsif ($st->is_file) {
 		my $size= $st->size;
 		my $effective_size= $check_overhead ? do {
-		    if ($$s{check_overhead_errors}) {
-			$size + $empty_file_overhead
+		    my $size_used = $st->blocks * $blocksize;
+		    if ($size == 0) {
+			# check for $size_used == 0 ? or simply trust:
+			# (XX assumes ext4 or similar)
+			$empty_file_overhead
 		    } else {
-			my $size_used = $st->blocks * $blocksize;
-			if ($size == 0) {
-			    # check for $size_used == 0 ? or simply trust:
-			    # (XX assumes ext4 or similar)
-			    $empty_file_overhead
-			} else {
+			if ($paranoid) {
 			    my $size_used_looks_sane= ($size_used >= $size) && do {
 				if ($size < 50000) {
 				    (($size_used - $size) < 6000)
@@ -220,10 +227,10 @@ TEST { parse_quotum "2 GB " } 2000000000;
 				# empty ones
 				$size_used + $empty_file_overhead
 			    } else {
-				warn "$myname: unsanely looking file overhead for '$path', disabling overhead checking\n";
-				$$s{check_overhead_errors}++;
-				$size + $empty_file_overhead
+				die "$myname: unsanely looking file overhead for '$path2'; use --no-paranoid if this is because of a file with holes and you trust the blocksize to really be $blocksize\n";
 			    }
+			} else {
+			    $size_used + $empty_file_overhead
 			}
 		    }
 		} : $size;
@@ -255,6 +262,8 @@ GetOptions("verbose"=> \$verbose,
 	   "max-deletions=n"=> \$max_deletions,
 	   "check-overhead"=> sub { $check_overhead = 1 },
 	   "no-check-overhead"=> sub { $check_overhead = 0 },
+	   "paranoid"=> sub { $paranoid = 1 },
+	   "no-paranoid"=> sub { $paranoid = 0 },
 	   "smallest-first"=> \$opt_smallest_first,
 	   "hires"=> \$opt_hires,
 	   "dry-run"=> \$opt_dry,
