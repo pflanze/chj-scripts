@@ -3,7 +3,7 @@
 # didn't I do this already some time ago? (similarly)
 
 # Wed Nov 13 20:55:47 GMT 2013
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
