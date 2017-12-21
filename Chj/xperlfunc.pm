@@ -641,6 +641,8 @@ sub fstype_for_device_init() {
 	}
 	$t{$s->dev}= $fstype;
     }
+    close $mounts
+	or die $!;
     $fstype_for_device= \%t;
 }
 
