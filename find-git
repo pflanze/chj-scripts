@@ -36,6 +36,10 @@ sub usage {
       don't print the .git element of the paths (i.e. print supposed
       path to working dir)
 
+   --optimize
+   --no-optimize
+      whether to optimize directory traversal using nlink (default: on)
+
    --verbose
       Tell which items are excluded or ignored.
 
@@ -51,6 +55,8 @@ our @exclude_path;
 our @exclude_item;
 our $opt_exclude_tmp;
 our $opt_strip;
+our $opt_optimize= 1;
+
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "exclude=s"=> sub {
@@ -62,6 +68,8 @@ GetOptions("verbose"=> \$verbose,
 	   },
 	   "exclude-tmp"=> \$opt_exclude_tmp,
 	   "strip"=> \$opt_strip,
+	   "optimize" => sub { $opt_optimize= 1 },
+	   "no-optimize" => sub { $opt_optimize= 0 },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV<=1;
@@ -137,18 +145,26 @@ sub scan {
 	    } else {
 		my $s= xlstat $path;
 		if ($item eq ".git") {
-		    if ($s->is_dir or $s->is_symlink) {
+		    if ($s->is_dir) {
 			push @{$$paths_by_dev_ino{$s->dev}{$s->ino}}, $path;
+		    } elsif ($s->is_symlink) {
+			note "ignoring symlinked .git", $path;
 		    } else {
 			note "ignoring non-dir/link .git", $path;
 		    }
 		} else {
 		    if ($s->is_dir) {
-			if ($opt_exclude_tmp and $item eq "tmp") {
+			if ($opt_optimize and $s->has_no_subdirs) {
+			    # no need to enter it, as no .git subdirs
+			    # can be there.
+			} elsif ($opt_exclude_tmp and $item eq "tmp") {
 			    #note "ignoring dir",$path;
 			    push @ignoredtmp, $path;
 			} else {
 			    scan ($paths_by_dev_ino, $path)
+			      # XX pass $s->nlink on so that it can
+			      # stop scanning when the last dir is
+			      # found?
 			}
 		    } else {
 			#note "ignoring non-dir",$path
