@@ -21,7 +21,7 @@ package Chj::schemestring;
 	   parse_schemestring
 	  );
 
-use strict;
+use strict; use warnings FATAL => 'uninitialized';
 
 sub schemestring {
     my ($s)=@_;
