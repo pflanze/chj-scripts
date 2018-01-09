@@ -2,7 +2,7 @@
 # To avoid having to install /usr/bin/chase everywhere
 
 if [ -f /usr/bin/chase ]; then
-	/usr/bin/chase "$@"
+	exec /usr/bin/chase "$@"
 else
 	rv=0
 	for f in "$@"; do
