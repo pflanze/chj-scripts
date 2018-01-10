@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# Mit Feb 15 07:33:06 CET 2006  // copied from filter-files on Wed, 23 Aug 2006 10:37:20 +0200 (tja.)  ---eh dann merk ich dass ich sogar wirklich filter-files gebräucth hätte
-
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
@@ -61,7 +59,6 @@ usage if @args;
 
 use Chj::xperlfunc 'Xlstat';
 
-#while(<>) {#wellll good idea? without having spliced ARGV above?
 while(<STDIN>) {
     chomp;
     if (my $s= Xlstat $_) {
