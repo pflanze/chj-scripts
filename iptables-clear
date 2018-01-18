@@ -1,20 +1,55 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-set -euo pipefail
-IFS=
-# remember, *still* need to quote variables!
+# Thu Jan 18 15:56:21 GMT 2018
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-echo <<EOF | iptables-restore
-*nat
-:PREROUTING ACCEPT [0:0]
-:INPUT ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
-COMMIT
-*filter
-:INPUT ACCEPT [0:0]
-:FORWARD ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-COMMIT
-EOF
+use strict; use warnings FATAL => 'uninitialized';
 
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::xperlfunc;
+
+
+my @spec=
+  (
+   [filter=> [qw(INPUT FORWARD OUTPUT)]],
+   [nat=> [qw(PREROUTING INPUT OUTPUT POSTROUTING)]],
+   [mangle=> [qw(PREROUTING INPUT FORWARD OUTPUT POSTROUTING)]],
+   [raw=> [qw(PREROUTING OUTPUT)]],
+   [security=> [qw(INPUT FORWARD OUTPUT)]],
+  );
+
+sub iptables {
+    print "+ iptables @_\n";
+    xxsystem "iptables", @_;
+}
+
+for (@spec) {
+    my ($table, $chains)= @$_;
+    iptables "-t", $table, "-F";
+    for my $chain (@$chains) {
+	iptables "-t", $table, "-P", $chain, "ACCEPT";
+    }
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
