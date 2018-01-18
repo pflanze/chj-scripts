@@ -39,7 +39,7 @@ my @spec=
 
 sub iptables {
     print "+ iptables @_\n";
-    xxsystem "iptables", @_;
+    xsystem "iptables", @_;
 }
 
 for (@spec) {
