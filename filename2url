@@ -50,7 +50,7 @@ sub unescapeurl {
 }
 
 
-sub unescapeline {
+sub unescapeline__1 {
     my $v=shift;
     $v=~ s{^.*/}{}s;
     $v=~ s{^.* }{}s; # bissel gefährlich?
@@ -67,3 +67,24 @@ sub unescapeline {
     }
     return $proto.unescapeurl $v
 }
+
+# what was the idea behind the above ?
+
+sub unescapeline {
+    my ($str)=@_;
+    if (my ($minuses)= $str=~ m{^https?:(-+)}) {
+	my $n= length $minuses;
+	($n % 2)==0 or die "invalid input, has odd number of '-' after protocol";
+	# although strictly http:/foo urls would be valid, too, or only file: ones ?
+
+	my $multiplicator= $n/2;
+	my $pat= '-'x$multiplicator;
+	$str=~ s|$pat|/|sg;
+	return $str
+    } else {
+	unescapeline__1 $str
+    }
+}
+
+#ah wait war contained in the line sigh well, now it works for those
+#lines starting with https?, ok?
