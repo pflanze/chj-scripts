@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Mit Nov  5 15:41:05 MET 2003
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 use Chj::Parse::Hexdump;
