@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Wed 31 Jan 21:40:47 GMT 2018
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Encode as C string, stdin to stdout. 
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::singlequote "_quote_C";
+
+sub xprint {
+    print STDOUT @_
+	or die "stdout: $!"
+}
+
+
+xprint '"';
+
+while (<STDIN>) {
+    xprint _quote_C($_)
+}
+
+xprint "\"\n";
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
+
