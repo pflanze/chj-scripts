@@ -141,7 +141,7 @@ sub process_entry {
     }
 }
 
-our $in= Chj::IO::Command->new_sender ("lsof", "-F", ##"-0",
+our $in= Chj::IO::Command->new_sender ("lsof", "-n", "-F", ##"-0",
 				       @ARGV);
 
 our $processSet=undef;
