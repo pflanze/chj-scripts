@@ -2,6 +2,7 @@
 
 paths="
  /usr/local/Gambit-C/current/doc/gambit-c.html
+ /usr/local/Gambit-C/doc/gambit-c.html
  $HOME/install/gambc/doc/gambit-c.html
  $HOME/local/doc/gambit-c.html
  /home/rchris/install/gambc/doc/gambit-c.html
