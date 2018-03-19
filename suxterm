@@ -3,7 +3,7 @@
 set -eu
 
 usage () {
-    echo "usage: $0 [-] user-or-homedir"
+    echo "usage: $0 [-] user-or-homedir [ term-arguments... ]"
     echo " Same(?) as suxterm from the sux package but starts 'term'."
     echo " Also, user-or-homedir is mapped to the user using user-or-home2user."
     echo " The optional '-' argument is ignored (this is just to make "
@@ -11,23 +11,24 @@ usage () {
     exit 1
 }
 
-if [ $# -eq 1 ] || [ $# -eq 2 ]; then
-    if [[ $1 = "-h" || $1 = "--help" ]]; then
-	usage
-    else
-	if [ $# -eq 2 ]; then
-	    if [[ $1 = "-" ]]; then
-		user=$(user-or-home2user "$2")
-		sux - "$user" term
-	    else
-		usage
-	    fi
-	else
-	    user=$(user-or-home2user "$1")
-	    sux - "$user" term
-	fi
-    fi
-else
+if [ $# -lt 1 ]; then
     usage
 fi
+
+if [ "$1" = "-" ]; then
+    shift
+fi
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [[ "$1" = "-h" || "$1" = "--help" ]]; then
+    usage
+fi
+
+user=$(user-or-home2user "$1")
+shift
+
+sux - "$user" term "$@"
 
