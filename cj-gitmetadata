@@ -41,6 +41,9 @@ sub usage {
 
   Options:
 
+   --no-user-group
+       do not record or restore user nor group
+
    --no-mtime / --no-times
        don't restore mtime, only user/group/permissions
 
@@ -59,8 +62,10 @@ use Getopt::Long;
 our $verbose=0;
 our $opt_no_time;
 our $opt_ignore_chown_errors;
+our $opt_no_user_group;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "no-user-group"=> \$opt_no_user_group,
 	   "no-times"=> \$opt_no_time,
 	   "no-mtime"=> \$opt_no_time,
 	   "ignore-chown-errors"=> \$opt_ignore_chown_errors,
@@ -145,9 +150,9 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 {
     package CHJ::Metadata;
     use POSIX 'EPERM';
-    our @statfields;
+    our @ct_statfields;
     BEGIN {
-	@statfields=
+	@ct_statfields=
 	  (
 	   #'atime', no good, because some filesystems are not mounted noatime
 	   'mtime',
@@ -163,8 +168,13 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
       -publica=>
 	(
 	 'path',
-	 @statfields,
+	 @ct_statfields,
 	);
+    our @statfields=
+      $opt_no_user_group
+      ? @ct_statfields[0,1,2]
+      : @ct_statfields[0,1,2,3,4];
+
     sub new_from_stat {
 	my $cl=shift;
 	my ($path,$stat)=@_;
@@ -208,7 +218,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	   }
 	   split /\t/, $str
 	  );
-	@v == 5
+	@v == @statfields
 	  or die "new_from_string: invalid number of fields in '$str'";
 	# pairing how?...
 	$$s[Path]= $path;
@@ -234,27 +244,30 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		    xutime $stat->atime,$s->mtime, $$s[Path];
 		}
 	    }
-	    if (($stat->uid != $s->xuid)
-		or
-		($stat->gid != $s->xgid)
-		or
-		($stat->permissions != $s->permissions)) {
-		# make it safe: first disable all access, then set owner, then set perms.
-		xchmod 0, $$s[Path];
-		eval {
-		    $! = 0;
-		    xchown $s->xuid, $s->xgid, $s->path;
-		    1
-		} || do {
-		    if ($! == EPERM
-			and $opt_ignore_chown_errors
-			and not $stat->permissions_s) {
-			# silently go on
-		    } else {
-			die $@
-		    }
-		};
-		xchmod $$s[Permissions], $$s[Path];
+	    unless ($opt_no_user_group) {
+		if (($stat->uid != $s->xuid)
+		    or
+		    ($stat->gid != $s->xgid)
+		    or
+		    ($stat->permissions != $s->permissions)) {
+		    # make it safe: first disable all access, then
+		    # set owner, then set perms.
+		    xchmod 0, $$s[Path];
+		    eval {
+			$! = 0;
+			xchown $s->xuid, $s->xgid, $s->path;
+			1
+		    } || do {
+			if ($! == EPERM
+			    and $opt_ignore_chown_errors
+			    and not $stat->permissions_s) {
+			    # silently go on
+			} else {
+			    die $@
+			}
+		    };
+		    xchmod $$s[Permissions], $$s[Path];
+		}
 	    }
 	} else {
 	    die "changed type: ".$stat->type." vs ".$s->type;
