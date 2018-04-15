@@ -36,7 +36,11 @@ set -x
 
 git add .
 
-cj-gitmetadata save
+if [ -f .git/scoma-no-user-group ]; then
+    cj-gitmetadata save --no-user-group
+else
+    cj-gitmetadata save
+fi
 
 # make sure eventual new metadata is added, too:
 # need -f because on novo I have * in .gitignore

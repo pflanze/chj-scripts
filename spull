@@ -7,7 +7,11 @@ if git status |grep '^nothing to commit' -q; then
 
     git pull || true
 
-    cj-gitmetadata restore
+    if [ -f .git/scoma-no-user-group ]; then
+	cj-gitmetadata restore --no-user-group
+    else
+	cj-gitmetadata restore
+    fi
 
 else
 
