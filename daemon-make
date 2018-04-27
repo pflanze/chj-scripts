@@ -2,9 +2,9 @@
 
 if [[ $# -ge 1 && $1 = --stop ]]; then
     shift
-    LANG=C daemonize --stop time make "$@"
+    LANG=C daemonize --stop bash -c 'time make "$@"' "$@"
 else
     mvnumber nohup.out
     ulimit -S -v unlimited
-    LANG=C daemonize --nice=10 time make "$@"
+    LANG=C daemonize --nice=10 bash -c 'time make "$@"' "$@"
 fi
