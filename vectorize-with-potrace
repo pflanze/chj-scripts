@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 file(s)"
+    echo "  from .png or whatever to .svg"
+    exit 1
+}
+
+
+doit () {
+    local path="$1"
+    local bn=`basename "$path"`
+    local tmp=`tempdir`
+    local pnm="$tmp/"a.pnm
+    set -x
+    convert "$path" "$pnm"
+    potrace -t 10 -O 4 -s -o "$bn".svg "$pnm"
+    #rm -rf "$tmp"
+    set +x
+    #  will you ever bite me?^
+}
+
+for f in "$@"; do
+    doit "$f"
+done
+
