@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# cj Thu,  6 Mar 2003 09:12:02 +0100
 # Unlike original zless which calls zmore, do not print filenames
 # which are going to be displayed.
-# code lent eh borrowed from
-# original zmore:
+
+# code borrowed from original zmore:
+
 # Copyright (C) 2001 Free Software Foundation
 # Copyright (C) 1992, 1993 Jean-loup Gailly
 
