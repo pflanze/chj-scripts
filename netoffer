@@ -2,11 +2,17 @@
 
 set -eu
 
+myname=`basename "$0"`
+
 usage() {
-    echo "$0 [-z|-Z] files_to_offer"
+    echo "usage: $myname [-z|-Z] files_to_offer"
+    echo
     echo "  offer files, encrypted"
     echo "  -z  use gzip compression instead of lzop"
     echo "  -Z  don't use compression"
+    echo
+    echo "  Also see \`netreceive\`."
+    echo
     exit 1
 }
 
