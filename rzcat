@@ -68,5 +68,8 @@ if ! test -e "$uncompressedfile"; then
 
 fi
 
+# Tried my own 0cat here, using splice and sendfile, but those
+# apparently don't help less get the file size in advance
+
 cat "$uncompressedfile"
 
