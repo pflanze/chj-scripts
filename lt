@@ -2,4 +2,15 @@
 
 set -euo pipefail
 
-l --color=always "$@" | tail -20
+# How to find out if *output* is going to a tty or not (--color=auto
+# can't work as I need to pass it to a pipe for tail'ing)? `tty` is
+# looking at input only. Forever. Don't remember if/where I ever
+# solved it. Here's one attempt (well, taken from Chj::Unix::User):
+pid="$$"
+if readlink /proc/"$pid"/fd/1 | grep -q pipe; then
+    color=no
+else
+    color=always
+fi
+
+l --color="$color" "$@" | tail -20

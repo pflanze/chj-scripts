@@ -1,3 +1,22 @@
 #!/bin/bash
 
-xrandr --output LVDS1 --auto
+set -eu
+
+mons="LVDS1 LVDS-1"
+
+selectmon () {
+    local output=`xrandr`
+    for mon in $mons; do
+	if echo "$output" | egrep -q '\b'"$mon"'\b'; then
+	    echo "$mon"
+	    return 0
+	fi
+    done
+    echo "Could not find any of these monitors in xrandr output: $mons" >&2
+    return 1
+}
+
+mon=`selectmon`
+
+xrandr --output "$mon" --auto
+
