@@ -23,19 +23,50 @@ if [ $# -ne 1 ]; then
     usage
 fi
 
+file="$1"
 
-tmpdir=`tempdir`
+sum=$(sha256sum < "$file" | printfield 1)
 
-tmp="$tmpdir/f"
 
-cleanup () {
-    rm "$tmp"
-    rmdir "$tmpdir"
+rzcat_shared_tmpdir_link=~/.rzcat-tmpdir
+
+alloc_tmpdir () {
+    tmpdir=$(tempdir)
+    rm -f "$rzcat_shared_tmpdir_link"
+    ln -s "$tmpdir" "$rzcat_shared_tmpdir_link"
 }
 
-trap cleanup EXIT
+if tmpdir=$(readlink "$rzcat_shared_tmpdir_link"); then
+    if ! test -d "$tmpdir"; then
+	alloc_tmpdir
+    fi
+else
+    alloc_tmpdir
+fi
 
-rzip -k -d -o "$tmp" -- "$1"
+uncompressedfile="$tmpdir/$sum"
+tmp="$uncompressedfile.tmp$$"
 
-cat "$tmp"
+if ! test -e "$uncompressedfile"; then
+
+    # cleanup
+    setsid perl -w -MPOSIX -e '
+	for (@ARGV) {
+	    m{^/} or die "path is not absolute: $_";
+	}
+	chdir("/");
+	POSIX::close($_) for (0..1000);
+	sleep(30*60); # keep cache files around that many seconds
+	# warnings suppressed anyway via the closure of filehandles above
+	unlink $_ for @ARGV;
+    ' "$tmp" "$uncompressedfile" &
+
+    # uncompress
+    rm -f "$tmp"
+    rzip -k -d -o "$tmp" -- "$file"
+    mv -f -- "$tmp" "$uncompressedfile"
+
+fi
+
+cat "$uncompressedfile"
 
