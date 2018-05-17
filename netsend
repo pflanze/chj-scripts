@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+myname=`basename "$0"`
+
+usage() {
+    echo "$myname files-to-transmit.."
+    echo "  Read \`netreceive --help\`."
+    exit 1
+}
+
+if [[ $# -lt 1 || $1 = "-h" || $1 = "--help" ]]; then
+    usage
+fi
+
+echo "Please paste the line that says 'NETSEND' from netreceive's output:"
+
+# "NETSEND ki53twvt4gg2jg2rrpptmqidpss63jnicru9djd -l 192.168.2.42 15123"
+
+IFS=" " read token pass zz ip port
+
+if ! [ "$token" = NETSEND ]; then
+    echo "$myname: error: did not get a line that starts with NETSEND."
+    exit 1
+fi
+
+##echo "token=$token, pass=$pass, zz=$zz, ip=$ip, port=$port"
+
+if [ "$zz" = "-z" ]; then
+    z="-z "
+elif [ "$zz" = "-Z" ]; then
+    z=""
+elif [ "$zz" = "-l" ]; then
+    z="--lzop"
+else
+    echo "$myname: error: did get unknown flag '$zz' instead of -z|-Z|-l."
+fi
+
+
+# XX does allow to pass further options to tar, right? Which is okay? 
+# But for UID transmission stuff, would have to pass these on other
+# end as well, no?
+
+echo "$pass" | {
+    {
+	tar c "$z" --sparse -f - "$@" \
+	| gpg -z0 -c --batch --force-mdc --passphrase-fd 9 \
+	| netcat-push "$ip" "$port" 
+    } 9<&0 </dev/null
+}
+
