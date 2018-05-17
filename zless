@@ -61,7 +61,7 @@ case $less_version in
 *) use_input_pipe_on_stdin='';;
 esac
 
-LESSOPEN="|${use_input_pipe_on_stdin}gzip -cdfq -- %s"
+LESSOPEN="|${use_input_pipe_on_stdin}_lessopen %s"
 export LESSOPEN
 
 exec less "$@"

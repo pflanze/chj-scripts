@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+if [ $# -ne 1 ]; then
+    echo "_lessopen called with other than 1 argument, fix zless!" >&2
+    exit 1
+fi
+
+file="$1"
+
+if echo "$file" | egrep -q '\.rz$'; then
+    rzcat -- "$file"
+else
+    gzip -cdfq -- "$file"
+fi
