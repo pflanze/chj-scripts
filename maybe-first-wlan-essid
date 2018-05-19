@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# Sat May 19 20:15:35 BST 2018
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::IO::Command;
+
+my $c= do {
+    my $c = Chj::IO::Command->new_combinedsender("iwconfig");
+    my $cnt= $c->xcontent;
+    $c->xxfinish;
+    $cnt
+};
+
+if ($c=~ /^(\w+)[^\n]*ESSID:"(.*?)"/m) {
+    print $2,"\n" or die $!;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
