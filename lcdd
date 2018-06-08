@@ -8,6 +8,6 @@
 
 export DISPLAY=${DISPLAY-:0.0}
 
-xrandr --output LVDS-1 --crtc 0 --brightness 100 --auto
+xrandr --output LVDS-1 --crtc 0 --brightness 1 --auto
 sleep 2
-xrandr --output LVDS-1 --crtc 1 --brightness 100 --auto
+xrandr --output LVDS-1 --crtc 1 --brightness 1 --auto
