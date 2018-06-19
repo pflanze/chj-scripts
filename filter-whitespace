@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
-# Don Aug  7 16:25:32 MEST 2003
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+# Don Aug  7 16:25:32 MEST 2003, copyright Christian Jaeger, MIT License
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -18,7 +18,6 @@ exit @_ ? 1 : 0;
 }
 
 my @args;
-my $DEBUG=0;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -26,23 +25,19 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif ($_ eq '--') {
     	push @args, @ARGV[$i+1..$#ARGV];
     	last;
-    } elsif (/^--?d(ebug)?$/) {
-	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
     	push @args, $_
     }
 }
+
 usage if @args;
 
-while(<STDIN>){
+while (<STDIN>) {
     next if /^\s*\z/s or /^\s*\#/;
-    print;
+    print or die "STDOUT: $!";
 }
+
+close STDIN or die $!;
+close STDOUT or die $!;
