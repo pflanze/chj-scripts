@@ -9,6 +9,6 @@ echo "$md"
 # shellcheck disable=SC2086
 #  since $BROWSER is meant to split
 echo "$md" \
-    | perl -wne 'm/^(\w+)/ or die "no match for: $_"; print "http://www.google.com/search?ie=UTF8&q=$1\n"' \
+    | perl -wne 'm/^(\w+)/ or die "no match for: $_"; print "http://www.google.com/search?ie=UTF8&q=%22$1%22\n"' \
     | myxargs ${BROWSER-local-webbrowser}
 
