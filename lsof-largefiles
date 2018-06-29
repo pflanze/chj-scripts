@@ -122,7 +122,8 @@ for (@{Sort_table $files, $cmp_size_lastentry}) {
     $out->xprintln($size, " ", $path);
     for (@$size_and_process__records) {
 	my ($size,$process)=@$_;
-	$out->xprintln("  ", join(" ",@$process{'p','L','c'}));
+	$out->xprintln("  ", join(" ",map { defined $_ ? $_ : "(undef)" }
+				  @$process{'p','L','c'}));
     }
 }
 
