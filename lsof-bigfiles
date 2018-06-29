@@ -30,7 +30,7 @@ usage if @ARGV;
 use Data::Dumper;
 use Chj::callcc2;
 use Chj::Parse::Lsof 'readlsof';
-use Chj::xperlfunc 'xprintln';
+use Chj::IO::Command;
 use Chj::CallccLib 'xref';
 use Chj::Util qw(Sort_table On $noop);
 
@@ -110,19 +110,23 @@ our $cmp_size_lastentry=
      },
      sub {
 	 my ($a_,$b_)=@_;
-	 $a_ <=> $b_
+	 $b_ <=> $a_
      });
+
+my $out= Chj::IO::Command->new_receiver("less");
 
 for (@{Sort_table $files, $cmp_size_lastentry}) {
     #warn "got ".Dumper($_);
     my ($path, $size_and_process__records)=@$_;
     my $size= $$size_and_process__records[-1][0];
-    xprintln $size," ",$path;
+    $out->xprintln($size, " ", $path);
     for (@$size_and_process__records) {
 	my ($size,$process)=@$_;
-	xprintln "  ",join(" ",@$process{'p','L','c'});
+	$out->xprintln("  ", join(" ",@$process{'p','L','c'}));
     }
 }
+
+$out->xfinish;
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
