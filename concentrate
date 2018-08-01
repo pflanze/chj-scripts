@@ -1,1 +1,6 @@
-../hosts-in/bin/concentrate
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+exec /opt/chj/hosts-in/bin/concentrate "$@"
