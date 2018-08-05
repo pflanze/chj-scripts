@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# for dell laptop, try to recover when screen doesn't come back after
+# going to hibernate with HDMI still plugged in. Still don't
+# understand what's really going on. Will need a combination of
+# `xfce4-display-settings -m` and `xfce4-display-settings` playing
+# around to re-enable HDMI afterwards. Pain.
+
+export DISPLAY=${DISPLAY-:0.0}
+
+xrandr --output LVDS-1 --crtc 0 --brightness 1 --auto
+sleep 2
+xrandr --output LVDS-1 --crtc 1 --brightness 1 --auto

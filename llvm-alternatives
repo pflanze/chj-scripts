@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+function usage {
+    echo "usage: $0"
+    echo "  Creates symlinks in ~/bin/ that point to llvm-...-\$version,"
+    echo "  where \$version is figured out from the ones installed."
+    echo "  Probably Debian specific."
+    false
+}
+
+if [ $# -ne 0 ]; then usage; fi
+if [ "$1" = "-h" -o "$1" = "--help" ]; then usage; fi
+
+#llvm-config-6.0 etc.
+
+#aha is meant just to use PATH, right? !
+
+# # l {/usr/bin,/usr/local/bin}/llvm-config-*
+# ls: cannot access '/usr/local/bin/llvm-config-*': No such file or directory
+# lrwxrwxrwx 1 root root 31 2018-03-12 17:58 /usr/bin/llvm-config-6.0 -> ../lib/llvm-6.0/bin/llvm-config
+
+echo "no, just set PATH to include /usr/lib/llvm-6.0/bin or similar"
+false
+
