@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+ulimit -S -v unlimited
+
+exec "$@"
