@@ -4,6 +4,39 @@
 
 use strict;
 
+my $opt_fg=0;
+
+if (@ARGV>=1) {
+    if ($ARGV[0]=~ /^--?h(elp)?$/) {
+	die "Open an urxvt terminal nicely. Usage:
+
+Open in the current directory:
+
+  term
+
+Open in another directory (relative paths are resolved by bash (based
+on \$PWD), not the kernel):
+
+  term dir
+
+To prevent term from daemonizing (i.e. forking as a child (returning
+immediately) and running setsid):
+
+  term --fg {other args}
+
+If the first argument starts with a dash then it is (together with all
+other arguments) passed to urxvt--e.g.:
+
+  term -e cmd args..
+
+";
+    } elsif ($ARGV[0]=~ /^--?f(g)?$/) {
+	$opt_fg=1;
+	shift @ARGV;
+    }
+}
+
+
 use POSIX qw(setsid);
 
 # HACK to fix encoding so that international keyboard input works (*sigh*)
@@ -21,13 +54,7 @@ $fontsize=~ /^\d+$/s
   or die "invalid fontsize format: $fontsize";
 
 
-my $pid=fork;
-defined
-  $pid or die "fork: $!";
-if ($pid) {
-    exit 0;#well. bugg.buti dontcarenow
-} else {
-    setsid or die $!;
+sub runterminal {
 
     # setting to xterm seems to work? whereas without it
     #  (older) debian (without urxvt installed) usually gives
@@ -71,4 +98,18 @@ if ($pid) {
     }
 }
 
+
+if ($opt_fg) {
+    runterminal
+} else {
+    my $pid=fork;
+    defined
+      $pid or die "fork: $!";
+    if ($pid) {
+	exit 0;#well. bugg.buti dontcarenow
+    } else {
+	setsid or die $!;
+	runterminal
+    }
+}
 
