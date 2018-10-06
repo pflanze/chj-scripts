@@ -5,9 +5,10 @@ IFS=
 
 help () {
     echo "usage: "
-    echo "  $0 -a  -- update all git remotes"
-    echo "  $0 foo..  -- update given git remotes"
-    echo "  $0  -- update git remote if only a single one"
+    echo "  gru -a  -- update all git remotes"
+    echo "  gru foo..  -- update given git remotes"
+    echo "  gru    -- update git remote if only a single one exists, "
+    echo "            or the contents of \$git-dir/gru-default if exists."
     exit 1
 }
 
@@ -18,9 +19,16 @@ if [ $# -eq 0 ]; then
 	set -x
 	git remote update "$remotes"
     else
-	echo "More than one remote, please specify which ones:"
-	echo "  $(echo "$remotes" | perl -wne 's/\n$/ /s; print')"
-	exit 1
+	defaultfile="$(git rev-parse --git-dir)/gru-default"
+	if [ -e "$defaultfile" ]; then
+	    remote=$(cat "$defaultfile")
+	    set -x
+	    git remote update "$remote"
+	else
+	    echo "More than one remote, please specify which ones via arguments or $defaultfile:"
+	    echo "  $(echo "$remotes" | perl -wne 's/\n$/ /s; print')"
+	    exit 1
+	fi
     fi
 elif [ $# -eq 1 -a "$1" == "-a" ]; then
     set -x
