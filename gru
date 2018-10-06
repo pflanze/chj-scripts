@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+help () {
+    echo "usage: "
+    echo "  $0 -a  -- update all git remotes"
+    echo "  $0 foo..  -- update given git remotes"
+    echo "  $0  -- update git remote if only a single one"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    remotes=$(git remote)
+    remoteslen=$(echo "$remotes" | wc -l)
+    if [ "$remoteslen" -eq 1 ]; then
+	set -x
+	git remote update "$remotes"
+    else
+	echo "More than one remote, please specify which ones:"
+	echo "  $(echo "$remotes" | perl -wne 's/\n$/ /s; print')"
+	exit 1
+    fi
+elif [ $# -eq 1 -a "$1" == "-a" ]; then
+    set -x
+    git remote update
+elif [ $# -eq 1 -a "$1" == "-h" ]; then
+    help
+elif [ $# -eq 1 -a "$1" == "--help" ]; then
+    help
+else
+    set -x
+    git remote update "$@"
+fi
