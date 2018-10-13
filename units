@@ -67,6 +67,20 @@ our $conv=
 	my ($knot)=@_;
 	"$knot knots = ".($knot * 1.852). " km/h"
     },
+    pound=> sub {
+	my ($pound)=@_;
+	# https://en.wikipedia.org/wiki/Pound_(mass)#Avoirdupois_pound
+	# well, is this the right one? for ounces, yes, but otherwise?
+	# Really, krst.
+	"$pound Avoirdupois pounds = about ".($pound * 0.454)." kg"
+    },
+    ounce=> sub {
+	my ($ounce)=@_;
+	# The common avoirdupois ounce (approximately 28.3 g) is 1/16
+	# of a common avoirdupois pound; this is the United States
+	# customary and British imperial ounce.
+	"$ounce ounces = about ".($ounce * 0.454 / 12)." kg"
+    },
    }->{$myname}
   or die "unknown name '$myname'";
 
