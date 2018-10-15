@@ -170,7 +170,6 @@ unless ($opt_no_mount) {
 	      "tmpfs",$target;
 	}
 	# else: newer distro (jessie) that doesn't have that dir anymore.
-	# EHR, how would this ever be called though, if -l must have failed?
     } else {
 	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
 	  "tmpfs","$chrootbase/dev/shm";
