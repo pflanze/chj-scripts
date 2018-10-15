@@ -169,7 +169,7 @@ unless ($opt_no_mount) {
 	    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
 	      "tmpfs",$target;
 	}
-	# else: newer distroy (jessie) that doesn't have that dir anymore.
+	# else: newer distro (jessie) that doesn't have that dir anymore.
 	# EHR, how would this ever be called though, if -l must have failed?
     } else {
 	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=1777',
