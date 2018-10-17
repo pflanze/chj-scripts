@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for f in "$@"; do
+    xdg-open "$f" &
+done

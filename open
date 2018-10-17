@@ -1,4 +1,4 @@
 #!/bin/bash
 
-daemonize --bg --quiet --no-nice xdg-open "$@"
+daemonize --bg --quiet --no-nice _open "$@"
 
