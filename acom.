@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -eu
+
+if [[ $# = 0 ]]; then
+
+    a .
+    com -m . .
+
+else
+    echo "usage: $0"
+    exit 1
+fi
