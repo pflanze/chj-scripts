@@ -74,12 +74,16 @@ our $conv=
 	# Really, krst.
 	"$pound Avoirdupois pounds = about ".($pound * 0.454)." kg"
     },
-    ounce=> sub {
-	my ($ounce)=@_;
-	# The common avoirdupois ounce (approximately 28.3 g) is 1/16
-	# of a common avoirdupois pound; this is the United States
-	# customary and British imperial ounce.
-	"$ounce ounces = about ".($ounce * 0.454 / 12)." kg"
+    do {
+	my $ounce= sub {
+	    my ($ounce)=@_;
+	    # The common avoirdupois ounce (approximately 28.3 g) is 1/16
+	    # of a common avoirdupois pound; this is the United States
+	    # customary and British imperial ounce.
+	    "$ounce ounces = about ".($ounce * 0.454 / 12)." kg"
+	};
+	(ounce=> $ounce,
+	 "oz."=> $ounce)
     },
    }->{$myname}
   or die "unknown name '$myname'";
