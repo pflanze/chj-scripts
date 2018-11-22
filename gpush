@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+help () {
+    echo "usage: "
+    echo "  gpush remote(s)"
+    echo
+    echo "  Pushes the currently active branch to all the remotes,"
+    echo "  prepending the local hostname and underscore to the branch"
+    echo "  name on the remote side."
+    echo
+    echo "  Meant for pushing to repositories with working directories,"
+    echo "  which is my most common usage nowadays. Might extend to work"
+    echo "  with proper remotes, too, for safety?"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    help
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    help
+fi
+
+
+hn=`hostname`
+br=`cj-git-current-branch`
+
+gpush () {
+    # heh odd, turn this on here, how will it behave in the for loop? 
+    # Accept it?
+    set -x
+
+    git push "$1" "$br:${hn}_$br"
+}
+
+for rem in "$@"; do
+    gpush "$rem"
+done
