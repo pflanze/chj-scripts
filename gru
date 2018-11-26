@@ -25,7 +25,9 @@ if [ $# -eq 0 ]; then
 	    set -x
 	    git remote update "$remote"
 	else
-	    echo "More than one remote, please specify which ones via arguments or $defaultfile :"
+	    echo "More than one remote, please specify the ones to use via"
+	    echo "arguments or $defaultfile :"
+	    echo
 	    echo "  $(echo "$remotes" | perl -wne 's/\n$/ /s; print')"
 	    exit 1
 	fi
