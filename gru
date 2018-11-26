@@ -6,10 +6,15 @@ IFS=
 help () {
     echo "usage: "
     echo "  gru -a  -- update all git remotes"
+    echo "  gru -l  -- list all git remotes"
     echo "  gru foo..  -- update given git remotes"
     echo "  gru    -- update git remote if only a single one exists, "
     echo "            or the contents of \$git-dir/gru-default if exists."
     exit 1
+}
+
+to_one_line () {
+    echo "$1" | perl -wne 's/\n$/ /s; print'
 }
 
 if [ $# -eq 0 ]; then
@@ -28,13 +33,16 @@ if [ $# -eq 0 ]; then
 	    echo "More than one remote, please specify the ones to use via"
 	    echo "arguments or $defaultfile :"
 	    echo
-	    echo "  $(echo "$remotes" | perl -wne 's/\n$/ /s; print')"
+	    echo "  $(to_one_line "$remotes")"
 	    exit 1
 	fi
     fi
 elif [ $# -eq 1 -a "$1" == "-a" ]; then
     set -x
     git remote update
+elif [ $# -eq 1 -a "$1" == "-l" ]; then
+    remotes=$(git remote)
+    echo "$(to_one_line "$remotes")"
 elif [ $# -eq 1 -a "$1" == "-h" ]; then
     help
 elif [ $# -eq 1 -a "$1" == "--help" ]; then
