@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: iwscan interfacename"
+    echo
+    echo "  run wlan-start if interface is not available."
+    echo "  up the interface."
+    echo "  run iwlist \$interfacename scan"
+    exit 1
+}
+
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h"  -o "$1" = "--help" ]; then
+    usage
+fi
+
+iface="$1"
+
+configureit_etc() {
+    ifconfig "$iface" up
+    iwlist "$iface" scan
+    ifconfig "$iface" down
+}
+
+if out=`iwconfig "$iface" 2>&1`; then
+    out2=`ifconfig "$iface"`
+    if echo "$out2" | egrep '^[\t ]*UP' -q; then
+	set -x
+	wlan-reset
+    else
+	set -x
+    fi
+    configureit_etc
+else
+    set -x
+    wlan-start
+    configureit_etc
+fi
