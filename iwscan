@@ -25,17 +25,15 @@ iface="$1"
 
 configureit_etc() {
     ifconfig "$iface" up
-    iwlist "$iface" scan
+    out=`iwlist "$iface" scan`
     ifconfig "$iface" down
+    echo "$out" | _iwscan "$iface"
 }
 
 if out=`iwconfig "$iface" 2>&1`; then
     out2=`ifconfig "$iface"`
     if echo "$out2" | egrep '^[\t ]*UP' -q; then
-	set -x
 	wlan-reset
-    else
-	set -x
     fi
     configureit_etc
 else

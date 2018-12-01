@@ -1,0 +1,171 @@
+#!/usr/bin/perl -w
+
+use strict; use warnings FATAL => 'uninitialized';
+
+use Chj::Backtrace;
+
+my $current_iface;
+my %ifaces;
+my $current_iface_record;
+
+my $current_cell_no;
+#my $current_cell_record;
+my $last_fieldname;
+
+sub finish_iface_for {
+    my ($iface)=@_;
+    if (defined $current_iface_record) {
+	exists $ifaces{$current_iface}
+	  and die "multiple records for '$current_iface'";
+	$ifaces{$current_iface}= $current_iface_record;
+	undef $current_iface_record;
+    }
+    $current_iface= $iface;
+    $last_fieldname= undef;
+}
+
+sub finish_cell_for {
+    my ($cellno)=@_;
+    #exits $current_iface_record{$current_cell_no}
+    #  and die "multiple cells of no '$current_cell_no' for iface '$current_iface'";
+    #$current_iface_record{$current_cell_no}=  ah nothing
+    $current_cell_no= $cellno
+}
+
+sub addfield {
+    my ($k, $v)=@_;
+    push @{$$current_iface_record{$current_cell_no}{$k}}, $v;
+    $last_fieldname= $k;
+}
+
+sub addtolastfield {
+    my ($v)=@_;
+    $$current_iface_record{$current_cell_no}{$last_fieldname}[-1].= "\n".$v;
+}
+
+
+sub dofield {
+    my ($str)=@_;
+    if (my ($r)= $str=~ m/^\s+(.*)/s) {
+	# string-append, not push, k ?
+	addtolastfield($r);
+    } elsif (my ($qual)= $str=~ /^Quality=(.*)/s) {
+	# horrible format really?
+	addfield("Quality", $qual);
+    } elsif (my ($k, $v)= $str=~ /^(.*?):\s*(.*)/s) {
+	addfield($k, $v);
+    } else {
+	die "invalid format of field descr: '$str'";
+    }
+}
+
+while (<STDIN>) {
+    chomp;
+    if (/^(\w+)/) {
+	finish_iface_for($1);
+    } elsif (my ($r)= /^ {10}(.*)/s) {
+	if (my ($r1)= $r=~ /^Cell\s+(.*)/s) {
+	    if (my ($num, $r2)= $r1=~ /^(\d+) - (.+)/) {
+		finish_cell_for($num);
+		dofield($r2);
+	    } else {
+		die "no Cell match on: '$r1'";
+	    }
+	} elsif (my ($r1b)= $r=~ /^ {10}(.*)/s) {
+	    dofield($r1b);
+	} else {
+	    die "wrong whitespace amount at start of '$r'";
+	}
+    } elsif ($_ eq '') {
+	# aha, another end of iface indicator? only allow there? sigh
+	# how to do the logic for it now, Really just want a parser
+	# combinator library something.
+    } else {
+	die "no match on: '$_'";
+    }
+}
+
+finish_cell_for(undef);
+finish_iface_for(undef);
+
+#use Data::Dumper; $Data::Dumper::Sortkeys=1; print Dumper (\%ifaces);
+
+@ARGV==1 or die "need 1 arg";
+my ($iface)= @ARGV;
+
+my $records= $ifaces{$iface}
+  or die "no data for iface '$iface'";
+
+# o god, turn hash around into collection (well 'list') of
+# records-with-nums. Oh well and need methods now.
+{
+    package IWSCAN::Record;
+    sub new {
+	my ($class, $num, $bucket)=@_;
+	bless [$num, $bucket], $class
+    }
+    sub thefield {
+	my ($s, $k)=@_;
+	my $vals= $$s[1]{$k}
+	  or die "no such field '$k'";
+	@$vals==1 or die "field '$k' has more than 1 values";
+	$$vals[0]
+    }
+    sub qualityNum {
+	my $s=shift;
+	my $q= $s->thefield("Quality");
+	my ($l,$h)= $q=~ m|^(\d+)/(\d+) | or die "nomatch on '$q'";
+	$l/$h
+    }
+    sub quality {
+	my $s=shift;
+	my $q= $s->thefield("Quality");
+	my ($l,$h)= $q=~ m|^(\d+)/(\d+) | or die "nomatch on '$q'";
+	"$l/$h"
+    }
+    sub address {
+	my $s=shift;
+	$s->thefield("Address")
+    }
+    sub frequency {
+	my $s=shift;
+	$s->thefield("Frequency")
+    }
+    sub eSSID {
+	my $s=shift;
+	$s->thefield("ESSID")
+    }
+}
+
+my @records;
+for my $num (sort keys %$records) {
+    push @records, new IWSCAN::Record ($num, $$records{$num});
+}
+
+# so we can sort them
+@records= sort {
+    ($b->qualityNum <=> $a->qualityNum)
+      || ($b->eSSID cmp $a->eSSID)
+} @records;
+
+#use Data::Dumper; $Data::Dumper::Sortkeys=1; print Dumper (@records);
+
+sub printcols {
+    print join("\t", @_), "\n" or die $!;
+}
+
+my @cols= qw(Quality Address Frequency ESSID);
+my %colmorewidth=(
+		  Quality=> 0,
+		  Address=> 10,
+		  Frequency=> 10,
+		  ESSID=> 0,
+		 );
+printcols map { $_.(" "x$colmorewidth{$_}) } @cols;
+for my $r (@records) {
+    printcols map {
+	my $methodname= lcfirst($_);
+	$r->$methodname
+    } @cols;
+}
+
