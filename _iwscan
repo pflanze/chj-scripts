@@ -135,6 +135,10 @@ my $records= $ifaces{$iface}
 	my $s=shift;
 	$s->thefield("ESSID")
     }
+    sub encryption_key {
+	my $s=shift;
+	$s->thefield("Encryption key")
+    }
 }
 
 my @records;
@@ -154,17 +158,19 @@ sub printcols {
     print join("\t", @_), "\n" or die $!;
 }
 
-my @cols= qw(Quality Address Frequency ESSID);
+my @cols= ('Quality', 'Address', 'Frequency', 'Encryption key', 'ESSID');
 my %colmorewidth=(
-		  Quality=> 0,
-		  Address=> 10,
-		  Frequency=> 10,
-		  ESSID=> 0,
+		  Quality=> 'Quality',
+		  Address=> 'Address          ',
+		  Frequency=> 'Frequency          ',
+		  'Encryption key'=> 'Enc',
+		  ESSID=> 'ESSID',
 		 );
-printcols map { $_.(" "x$colmorewidth{$_}) } @cols;
+printcols map { $colmorewidth{$_} } @cols;
 for my $r (@records) {
     printcols map {
 	my $methodname= lcfirst($_);
+	$methodname=~ s/ /_/sg;
 	$r->$methodname
     } @cols;
 }
