@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
+# Bash is stupid. Can't dereference an empty array while also using
+# set -eu, so don't do that then.
 IFS=
 
 push () { var="$1"; eval "${var}[\${#${var}[@]}]=\"\$2\""; }
@@ -37,12 +39,10 @@ br=`cj-git-current-branch`
 
 declare -a remotes
 declare -a opts
-opts_has_values=0
 
 for v in "$@"; do
     if echo "$v" | egrep -q '^-'; then
 	push opts "$v"
-	opts_has_values=1
     else
 	push remotes "$v"
     fi
@@ -53,13 +53,7 @@ gpush () {
     # Accept it?
     set -x
 
-    # Bash is shit. Can't dereference an empty array while also using
-    # set -eu.
-    if [ "$opts_has_values" = 1 ]; then
-	git push "${opts[@]}" "$1" "$br:${hn}_$br"
-    else
-	git push "$1" "$br:${hn}_$br"
-    fi
+    git push "${opts[@]}" "$1" "$br:${hn}_$br"
 }
 
 for remote in "${remotes[@]}"; do
