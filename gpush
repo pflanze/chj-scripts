@@ -14,6 +14,9 @@ help () {
     echo "  Meant for pushing to repositories with working directories,"
     echo "  which is my most common usage nowadays. Might extend to work"
     echo "  with proper remotes, too, for safety?"
+    echo
+    echo "  Remotes in the repo in the current directory:"
+    echo "  `git remote | tr '\n' ' '`"
     exit 1
 }
 
