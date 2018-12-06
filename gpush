@@ -3,9 +3,11 @@
 set -euo pipefail
 IFS=
 
+push () { var="$1"; eval "${var}[\${#${var}[@]}]=\"\$2\""; }
+
 help () {
     echo "usage: "
-    echo "  gpush remote(s)"
+    echo "  gpush [options] remote(s) [options]"
     echo
     echo "  Pushes the currently active branch to all the remotes,"
     echo "  prepending the local hostname and underscore to the branch"
@@ -32,14 +34,35 @@ fi
 hn=`hostname`
 br=`cj-git-current-branch`
 
+
+declare -a remotes
+declare -a opts
+opts_has_values=0
+
+for v in "$@"; do
+    if echo "$v" | egrep -q '^-'; then
+	push opts "$v"
+	opts_has_values=1
+    else
+	push remotes "$v"
+    fi
+done
+
 gpush () {
     # heh odd, turn this on here, how will it behave in the for loop? 
     # Accept it?
     set -x
 
-    git push "$1" "$br:${hn}_$br"
+    # Bash is shit. Can't dereference an empty array while also using
+    # set -eu.
+    if [ "$opts_has_values" = 1 ]; then
+	git push "${opts[@]}" "$1" "$br:${hn}_$br"
+    else
+	git push "$1" "$br:${hn}_$br"
+    fi
 }
 
-for rem in "$@"; do
-    gpush "$rem"
+for remote in "${remotes[@]}"; do
+    gpush "$remote"
 done
+
