@@ -7,7 +7,7 @@
 # load repl with most of the more interesting functional-perl packages
 # loaded
 
-repl=$(dirname "$0")/repl
+repl=/opt/functional-perl/bin/repl
 
 $repl \
  -t \
