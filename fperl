@@ -10,6 +10,7 @@
 repl=/opt/functional-perl/bin/repl
 
 $repl \
+ --name fperl \
  -t \
  -M Chj::ruse \
  -M FP::TransparentLazy \
