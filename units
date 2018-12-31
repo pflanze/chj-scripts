@@ -23,6 +23,11 @@ usage if $first eq "-h" or $first eq "--help";
 
 utf8::decode($myname);
 
+sub feet2m($) {
+    my ($v)=@_;
+    ($v * 0.3048)
+}
+
 our $conv=
   +{
     "°C"=> sub {
@@ -35,7 +40,12 @@ our $conv=
     },
     "feet"=> sub {
 	my ($v)=@_;
-	($v * 0.3048)." m, ".($v * 12). " in"
+	feet2m($v)." m, ".($v * 12). " in"
+    },
+    "miles"=> sub {
+	my ($v)=@_;
+	my $feet= $v * 5280;
+	feet2m($feet)." m, $feet feet"
     },
     do {
 	my $f= sub {
