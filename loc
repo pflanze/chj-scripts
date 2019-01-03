@@ -226,7 +226,16 @@ while (<LOC>) {
 }
 
 close LOC
-  or die "close: $!";
+    or do {
+	if ($!) {
+	    die "close: $!"
+	}
+	if ($? == 256) {
+	    #ok
+	} else {
+	    die "loc ended with status $?"
+	}
+    };
 
 
 if ($folders) {
