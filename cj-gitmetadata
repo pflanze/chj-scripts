@@ -84,6 +84,14 @@ use Chj::xperlfunc ':all';
 use Chj::xopen qw(perhaps_open_read xopen_write);
 use POSIX qw(ENOENT);
 
+
+# not fast, but 'easy'
+sub xsymlink_set_mtime ($$) {
+    my ($path, $time)=@_;
+    xxsystem("touch", "--no-dereference", "-d", localtime($time)."",
+	     "--", $path);
+}
+
 sub xContent ( $ ; $) {
     my ($path, $maybe)= @_;
     if (my $f= perhaps_open_read $path) {
@@ -238,7 +246,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	    if ($stat->mtime != $s->mtime
 		and not $opt_no_time) {
 		if ($stat->is_link) {
-		    warn "note: don't know how to set mtime of symlink '".$s->path."'\n";
+		    main::xsymlink_set_mtime($s->path, $s->mtime);
 		} else {
 		    # (keep old atime)
 		    xutime $stat->atime,$s->mtime, $$s[Path];
