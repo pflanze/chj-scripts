@@ -3,16 +3,20 @@
 set -euo pipefail
 IFS=
 
-elastfile () {
+lf () {
     local dir="$1"
-    e "`lastfile --fullpath "$dir"`"
+    lastfile --fullpath "$dir"
 }
 
 if [ $# = 0 ]; then
-    elastfile .
+    e "`lf .`"
 else
+    declare -A a
+
     for d in "$@"; do
-	elastfile "$d"
+	a[${#a[@]}]="`lf "$d"`"
     done
+
+    e "${a[@]}"
 fi
 
