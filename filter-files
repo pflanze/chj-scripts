@@ -23,6 +23,8 @@ sub usage {
 
   options:
   -l   instead of filtering for files, filter for symlinks
+    -e   filter existing files (looks at target of symlinks)
+    -ne  filter non-existing files (looks at target of symlinks)
   -x   filter executables (NOTE: symlinks are *not* allowed)
   -v   reverse operation: suppress files (or symlinks or executables)
        and nothing else (except nonexisting ones as said above)
@@ -36,6 +38,8 @@ my @args;
 my $DEBUG=0;
 my $opt_v;
 our $opt_l;
+our $opt_e;
+our $opt_ne;
 our $opt_x;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -50,6 +54,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_v=1;
     } elsif (/^--?l$/) {
 	$opt_l=1;
+    } elsif (/^--?e$/) {
+	$opt_e=1;
+    } elsif (/^--?ne$/) {
+	$opt_ne=1;
     } elsif (/^--?x$/) {
 	$opt_x=1;
     } elsif (/^-./) {
@@ -65,13 +73,23 @@ use Chj::xperlfunc 'Xlstat';
 usage "both -l and -x given, not supported"
   if $opt_l && $opt_x;
 
-our $is= $opt_l ? sub{$_[0]->is_link} :
-  $opt_x ? sub{$_[0]->is_executable(0)} : sub{$_[0]->is_file};
+usage "error: both -e and -ne given"
+  if $opt_e && $opt_ne;
+
+usage "error: -e and -ne are only valid with -l"
+  if (($opt_e || $opt_ne) && ! $opt_l);
+
+our $is=
+  ($opt_l ? ($opt_e ? sub {$_[0]->is_link and -e $_[1]} :
+	     $opt_ne ? sub {$_[0]->is_link and not -e $_[1]} :
+	     sub {$_[0]->is_link}) :
+   $opt_x ? sub {$_[0]->is_executable(0)} :
+   sub {$_[0]->is_file});
 
 while(<STDIN>) {
     chomp;
     if (my $s= Xlstat $_) {
-	my $isfile= $s->$is;
+	my $isfile= &$is($s, $_);
 	print "$_\n" or die "$myname: printing to stdout: $!"
 	  if ($isfile and !$opt_v) or (!$isfile and $opt_v); #xor bou
     }

@@ -26,10 +26,15 @@ else
 fi
 
 
-gdir=`git rev-parse --git-dir`
-if [ "$gdir" != ".git" ]; then
-    echo "not in root of git working directory, aborting"
-    exit 1
+a=`git rev-parse --show-toplevel`
+b=`pwd -P`
+if [ "$a" != "$b" ]; then
+    a=$(chase "$a")
+    b=$(chase "$b")
+    if [ "$a" != "$b" ]; then
+	echo "not in root of git working directory, aborting"
+	exit 1
+    fi
 fi
 
 set -x
