@@ -15,42 +15,8 @@ fi
 source="$(chase "$1")"
 target="$2"
 
-in_source_hg () {
-    (
-	set -eu
-	cd "$source"
-	exec hg "$@"
-    )
-}
-
-hg_branch=`tempfile`
-in_source_hg branch > "$hg_branch"
-
-hg_branches=`tempfile`
-in_source_hg branches | printfield 1 > "$hg_branches"
-
-hg_all_branches=`tempfile`
-cat "$hg_branches" "$hg_branch" | csort | uniq > "$hg_all_branches"
-
-hg_all_branches_except_current=`tempfile`
-minus "$hg_all_branches" "$hg_branch" > "$hg_all_branches_except_current"
-
 set -x
 git init "$target"
-
-in_target_port () {
-    (
-	set -eu
-	cd "$target"
-	exec hg-fast-export -r "$source"
-    )
-}
-
-in_target_port
-
-cat "$hg_all_branches_except_current" | while read other; do
-    in_source_hg update "$other"
-    in_target_port
-done
-
+cd "$target"
+hg-fast-export -r "$source"
 #git reset --hard
