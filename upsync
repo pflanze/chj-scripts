@@ -66,7 +66,7 @@ sub usage {
 
         exclude dir and file paths for which the given expression
         returns true. Can be given multiple times.  Filenames matching
-        \".git\" or end in '~' are (currently) always excluded anyway.
+        \".git\" or ending in '~' are always excluded anyway.
 
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
