@@ -58,7 +58,8 @@ sub scheme {
 sub is_valid {
     my $s=shift;
     my (@accepted_schemes)=@_;
-    if (my $lcscheme= lc($s->scheme)) {
+    my $scheme= $s->scheme;
+    if (defined $scheme and (my $lcscheme= lc($s->scheme))) {
 	for (@accepted_schemes) {
 	    return $s->is_valid_in_scheme($lcscheme) if ($lcscheme eq lc($_));
 	}
