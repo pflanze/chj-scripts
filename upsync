@@ -252,6 +252,7 @@ sub scan_base ( $ $ ) {
 
     my $scandir; $scandir= sub {
 	my ($path_from_base)=@_;
+	print "scanning '$path_from_base'\n" if $DEBUG;
 	my $path= $basedir."/".$path_from_base;
 	my $d=xopendir($path);
 	while (defined (my $item= $d->xnread)) {
@@ -373,12 +374,14 @@ if ($opt_continuous) {
 	} else {
 	    $read->xclose;
 	    for (1..600) {
+		print "child: iteration $_\n"
+		  if $DEBUG;
 		# after so many iterations it will have leaked about
 		# 3MB. (XX do recent perls not leak anymore,
 		# removable?)
 		my $checkprintthunk= Delay {
 		    print "at ".localtime().":\n"
-		      if ($verbose or $opt_dryrun);
+		      if ($verbose or $opt_dryrun or $DEBUG);
 		};
 		$lastsynched= scan_base($lastsynched, $checkprintthunk);
 		sleep $sleeptime;
