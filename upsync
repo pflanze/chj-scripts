@@ -24,6 +24,8 @@ use Chj::FP::lazy;
 our $sleeptime=1;#
 $|++;
 
+our $emacstmp_re= qr/^#tmp#\d+$/;
+
 sub _mkplaymp3 {
     my ($path)=@_;
     sub {
@@ -66,7 +68,7 @@ sub usage {
 
         exclude dir and file paths for which the given expression
         returns true. Can be given multiple times.  Filenames matching
-        \".git\" or ending in '~' are always excluded anyway.
+        \".git\", $emacstmp_re, or ending in '~' are always excluded anyway.
 
   -c|--continuous   keep watching the hierarchy and sync files again if they
                     changed. Additionally, remove files on the target if they
@@ -89,7 +91,8 @@ our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
 our $verbose=0;
 our $opt_include;
-our @exclude_expr= '$filename eq ".git" or $filename=~ /~$/';
+our @exclude_expr= ('$filename eq ".git" or $filename=~ /~$/',
+		    'our $emacstmp_re; $filename=~ /$emacstmp_re/');
 # ^ add a --no-exclude option to clear these?
 our $opt_sound;
 
