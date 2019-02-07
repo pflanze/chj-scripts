@@ -137,7 +137,7 @@ our ($basedir, $targetbase)=@args;
 
 sub sub_from_spec ($) {
     my ($expr)=@_;
-    my $s= myeval 'sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$expr.' }';
+    my $s= myeval 'use strict; sub { my($path_from_base)=@_; local $_=$path_from_base; my $filename= basename $_; my $path=$path_from_base; '.$expr.' }';
     if (ref $@ or $@) {
 	my $str= "$@"; chomp $str;
 	die "filespec ".singlequote($expr).": $str ";
