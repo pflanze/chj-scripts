@@ -75,10 +75,43 @@ usage unless @args==1 or $killdirpath;
 
 my ($ip)=@args;
 
-sub print_lost ($$) {
-    my ($n, $t)= @_;
-    print "lost packet $n which was expected at about ".localtime($t)."\n";
+use Text::CSV;
+my $csv= Text::CSV->new({sep_char=> ",",
+			 eol=> "\n"});
+#open $fh, ">:encoding(utf8)", "new.csv" or die "new.csv: $!";
+my $fh= *STDOUT{IO};
+sub print_csv ($$$) {
+    $csv->print($fh, [@_]);
 }
+
+sub print_lost_title () {
+    print_csv("lost packet",
+	      "which was expected at",
+	      "message");
+}
+
+# XX time passing argument inconsistency
+
+sub print_lost ($$;$) {
+    my ($n, $t, $maybe_msg)= @_;
+    print_csv($n,
+	      "".localtime($t),
+	      (defined $maybe_msg ? $maybe_msg : ""));
+}
+
+sub print_lost_start($) {
+    my ($firstline)= @_;
+    print_lost_title;
+    print_lost(undef, time, "start: $firstline");
+}
+
+sub print_lost_end($) {
+    my ($str)= @_;
+    print_csv(undef,
+	      "".localtime(),
+	      $str);
+}
+
 
 sub suchluecken {
 
@@ -94,24 +127,24 @@ sub suchluecken {
     $SIG{INT}=$SIG{TERM}= $SIG{ALRM}=$SIG{HUP}= sub {
 	#warn "signal";
 	#print "user stop.\n";
-	print "stop because of SIG@_\n";
+	print_lost_end("stop because of SIG@_");
 	for (sort { $a <=> $b } keys %notyetseenno) {
 	    my $t= $notyetseenno{$_};
 	    print_lost($_, $t);
 	}
 	#warn "eh?"; hängt bei sigalrm. aha, wohl will destructor von command ein wait machen vielleicht? todo schauen.
 	kill 9,$cmd->pid;
-	print "$myname ended at ".localtime()."\n";
+	print_lost_end("stopped");
 	exit;
     };
 
     alarm 10;
 
-    print "$myname started at ".localtime()."\n";
     {
 	my $firstline= <$cmd>;
 	$firstline=~ s/^PING /pinging: / or die "strange reply, terminating: $firstline";
-	print $firstline;
+	chomp $firstline;
+	print_lost_start($firstline);
     }
 
     my $starttime=time;
@@ -145,7 +178,7 @@ sub suchluecken {
 	    # nachzügler
 	    #	undef $notyetseenno{$newseenno};
 	    if ($newseenno <= $nimmererwartet) {
-		print "nachzügler $newseenno doch noch gekommen.\n";
+		print_lost($newseenno, $time, "arrived late");
 	    }
 	}
 	# aufräum.
@@ -194,7 +227,7 @@ if ($dirpath) {
 		wait;
 	    } else {
 		my $logname= localtime(); $logname=~ tr/ /_/; $logname=~ s/://sg;
-		my $logfile= "$dirpath/$logname.log";
+		my $logfile= "$dirpath/$logname.csv";
 		open STDOUT, ">>$logfile" or die "error creating/opening '$logfile': $!";
 		open STDERR,">&STDOUT" or die "dup: $!";
 		suchluecken;
