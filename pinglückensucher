@@ -75,6 +75,10 @@ usage unless @args==1 or $killdirpath;
 
 my ($ip)=@args;
 
+sub print_lost ($$) {
+    my ($n, $t)= @_;
+    print "lost packet $n which was expected at about ".localtime($t)."\n";
+}
 
 sub suchluecken {
 
@@ -93,7 +97,7 @@ sub suchluecken {
 	print "stop because of SIG@_\n";
 	for (sort { $a <=> $b } keys %notyetseenno) {
 	    my $t= $notyetseenno{$_};
-	    print "lost packet $_ which was expected at about ".localtime($t)."\n";
+	    print_lost($_, $t);
 	}
 	#warn "eh?"; hängt bei sigalrm. aha, wohl will destructor von command ein wait machen vielleicht? todo schauen.
 	kill 9,$cmd->pid;
@@ -150,7 +154,7 @@ sub suchluecken {
 	    do{$nimmererwartet=$_; last} if ($biggestseenno - $_)<10; # auf die letzten soviele pakete warten.
     #	if (my $t= $notyetseenno{$_}) {
 	    my $t= $notyetseenno{$_};
-		print "lost packet $_ which was expected at about ".localtime($t)."\n";
+	    print_lost($_, $t);
     #	}
 	    delete $notyetseenno{$_};
 	}
