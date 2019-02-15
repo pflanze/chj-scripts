@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+
+# Fri 15 Feb 22:51:30 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "usage: $myname [options] src... target
+
+  Runs
+
+     cp -a --parents [options] -- src... target
+     rm -f -- src...
+
+  Options:
+    --         terminate option processing
+    --help     help
+    --dry-run  don't act
+    -...       other options passed to cp (only options without argument
+               accepted for now)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+my @options;
+our $opt_dry;
+our $verbose;
+my @paths;
+
+for (my $i=0; $i< @ARGV; $i++) {
+    $_= $ARGV[$i];
+    if ($_ eq "--") {
+        $i++;
+        # copy rest
+        push @paths, @ARGV[$i..$#ARGV];
+        last;
+    }
+    if (/^--?(.+)/s) {
+        if (! length $1) {
+            usage "stdin and stdout pointless";
+        }
+        my $a= $1;
+        if ($a=~ /^dry(-run)?$/) {
+            $opt_dry= 1
+        } elsif ($a=~ /^v(erbose)?$/) {
+            $verbose= 1
+        } elsif ($a=~ /^h(elp)?$/) {
+            usage;
+        } else {
+            push @options, $_;
+        }
+    } else {
+        push @paths, $_
+    }
+}
+
+unless (@paths) {
+    usage "missing arguments";
+}
+
+#my (@src, $target)= @paths;
+# nope. D'oh, Perl.
+my @src= @paths;
+my $target= pop @src;
+
+# empty src is allowed (it's a nop)
+
+#use Chj::Backtrace; use Chj::repl; repl;
+#__END__
+
+use Chj::xperlfunc ":all";
+use Chj::singlequote "singlequote_sh";
+
+my $doprefix= $opt_dry ? "would run " : "+ ";
+sub Do {
+    if ($opt_dry or $verbose) {
+        print $doprefix, join(" ", map {singlequote_sh $_} @_), "\n";
+    }
+    if (! $opt_dry) {
+        xxsystem @_;
+    }
+}
+
+Do "cp", "-a", "--parents", @options, "--", @src, $target;
+Do "rm", "-f", "--", @src;
+

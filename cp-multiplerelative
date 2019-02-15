@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+echo "use cp --parents, or cp-parents or mv-parents; aborting" >&2
+
+false
