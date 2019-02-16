@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+
+usage () {
+    echo "$0 path"
+    echo "  every line individually, if iconv errors, use original line"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+file="$1"
+
+tmp=`tempfile`
+tmpout=$(tempfile -d "$(dirname "$file")")
+
+
+{
+    while IFS="" read -r line; do
+	if echo "$line"| iconv --from utf8 --to latin1 > "$tmp"; then
+	    echo "$line"
+	else
+	    echo "$line" | iconv --from latin1 --to utf8
+	fi
+    done
+} < "$file" > "$tmpout"
+
+cp-perms "$file" "$tmpout" 
+mv "$tmpout" "$file"
+
+rm "$tmp"
