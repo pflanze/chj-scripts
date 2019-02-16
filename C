@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Tue May  4 07:00:03 EDT 2010
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -11,9 +11,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname cmd [args] _ [other args [ _ [further args]]]
 
-  shortcut for: lamda 'cmd args \"$1\" other args \"$2\" further args'
+  shortcut for: lamda 'cmd args \"\$1\" other args \"\$2\" further args'
 
-  (Note: currently the _ cannot be parametrized. Sure not safe nor scalable)
+  (Note: currently the _ cannot be parametrized. Surely not safe or
+  scalable.)
 
   (Christian Jaeger <$email>)
 ";
