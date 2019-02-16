@@ -39,7 +39,7 @@ my $n = do {
 $t->xprint('#/bin/sh
 set -eu
 if [ $# -ne '.$n.' ]; then
-    echo "$0 called with wrong number of arguments, expecting '.$n.', got $#"
+    echo "$0 error: got $# arguments, expecting '.$n.'"
     exit 1
 fi
 ');
