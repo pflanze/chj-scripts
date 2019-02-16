@@ -13,9 +13,6 @@ sub usage {
 
   shortcut for: lamda 'cmd args \"\$1\" other args \"\$2\" further args'
 
-  (Note: currently the _ cannot be parametrized. Surely not safe or
-  scalable.)
-
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
