@@ -64,7 +64,7 @@ for (@ARGV) {
        " "
       );
 }
-
+$t->xprintln;
 $t->xclose;
 $t->autoclean(0);
 my $path= $t->path;
