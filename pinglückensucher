@@ -112,10 +112,16 @@ sub print_lost_end($) {
 	      $str);
 }
 
+sub print_error ($) {
+    my ($msg)= @_;
+    print_csv("ERR",
+              "".localtime(),
+              $msg);
+}
 
 sub suchluecken {
 
-    my $cmd= Chj::IO::Command->new_sender("ping", $ip);
+    my $cmd= Chj::IO::Command->new_combinedsender("ping", $ip);
 
     # keep past packets
 
@@ -152,39 +158,42 @@ sub suchluecken {
     alarm 10; # to stop if no returns are coming at all.
     my $alarmoff;
     while (<$cmd>) {
+        chomp;
 	unless ($alarmoff) { alarm 0; $alarmoff=1 };
 	# 64 bytes from 129.132.19.75: icmp_seq=0 ttl=246 time=11.4 ms
-	/^\d+ bytes from \S+: icmp_seq=(\d+)/
-          or die "$myname: strange reply: $_";
-	my $newseenno=$1;
-	my $time=time;
-	if ($newseenno > $biggestseenno) {
-	    if ($newseenno == $biggestseenno+1) {
-		# all ok
-	    } else {
-		for ($biggestseenno+1 .. $newseenno-1) {
-                    # calculate back time
-		    $notyetseenno{$_}= $time - ($newseenno - $_);
-		}
-	    }
-	    $biggestseenno= $newseenno;
-	} else {
-	    # latecomer
-	    if ($newseenno <= $nimmererwartet) {
-		print_lost($newseenno, $time, "arrived late");
-	    }
-	}
-	# clean up
-	for (sort { $a <=> $b } keys %notyetseenno) { # smallest first
-            if (($biggestseenno - $_) < 10) {
-                # wait for the last that many packets
-                $nimmererwartet= $_;
-                last
+	if (/^\d+ bytes from \S+: icmp_seq=(\d+)/) {
+            my $newseenno=$1;
+            my $time=time;
+            if ($newseenno > $biggestseenno) {
+                if ($newseenno == $biggestseenno+1) {
+                    # all ok
+                } else {
+                    for ($biggestseenno+1 .. $newseenno-1) {
+                        # calculate back time
+                        $notyetseenno{$_}= $time - ($newseenno - $_);
+                    }
+                }
+                $biggestseenno= $newseenno;
+            } else {
+                # latecomer
+                if ($newseenno <= $nimmererwartet) {
+                    print_lost($newseenno, $time, "arrived late");
+                }
             }
-	    my $t= $notyetseenno{$_};
-	    print_lost($_, $t);
-	    delete $notyetseenno{$_};
-	}
+            # clean up
+            for (sort { $a <=> $b } keys %notyetseenno) { # smallest first
+                if (($biggestseenno - $_) < 10) {
+                    # wait for the last that many packets
+                    $nimmererwartet= $_;
+                    last
+                }
+                my $t= $notyetseenno{$_};
+                print_lost($_, $t);
+                delete $notyetseenno{$_};
+            }
+        } else {
+            print_error($_);
+        }
     }
 
     # $cmd->xxfinish or ?
