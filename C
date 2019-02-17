@@ -6,7 +6,7 @@
 use strict;
 
 use Chj::xtmpfile;
-use Chj::singlequote 'singlequote_sh';
+use Chj::singlequote qw(possibly_singlequote_sh);
 use Chj::xperlfunc 'xchmod';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -41,12 +41,13 @@ my $n = do {
 
 # also produce the call code twice: here for display, later with '_'
 # replaced by positional argument references
-my $origcode= join(" ", map{singlequote_sh $_} @ARGV);
+my $origcode= join(" ", map{possibly_singlequote_sh $_} @ARGV);
 
 $t->xprint('#/bin/sh
 set -eu
 if [ $# -ne '.$n.' ]; then
-    echo "$0 ("'.singlequote_sh($origcode).'"): got $# arguments, expecting '.$n.'"
+    echo "$0 ("'.possibly_singlequote_sh($origcode).'"): '.
+	   'got $# arguments, expecting '.$n.'"
     exit 1
 fi
 ');
@@ -61,7 +62,7 @@ for (@ARGV) {
 	   if ($_ eq "_") {
 	       '"$'.($i++).'"'
 	   } else {
-	       singlequote_sh $_
+	       possibly_singlequote_sh $_
 	   }
        },
        " "
