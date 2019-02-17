@@ -5,6 +5,10 @@
 
 use strict;
 
+use Chj::xtmpfile;
+use Chj::singlequote 'singlequote_sh';
+use Chj::xperlfunc 'xchmod';
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -21,8 +25,6 @@ exit (@_ ? 1 : 0);
 usage unless @ARGV;
 usage if (@ARGV==1 and ($ARGV[0] eq "-h" or $ARGV[0] eq "--help"));
 
-use Chj::xtmpfile;
-
 my $t= xtmpfile;
 
 # need the number of _ already; so choose to walk @ARGV twice
@@ -36,15 +38,19 @@ my $n = do {
     $n
 };
 
+
+# also produce the call code twice: here for display, later with '_'
+# replaced by positional argument references
+my $origcode= join(" ", map{singlequote_sh $_} @ARGV);
+
 $t->xprint('#/bin/sh
 set -eu
 if [ $# -ne '.$n.' ]; then
-    echo "$0 error: got $# arguments, expecting '.$n.'"
+    echo "$0 ("'.singlequote_sh($origcode).'"): got $# arguments, expecting '.$n.'"
     exit 1
 fi
 ');
 
-use Chj::singlequote 'singlequote_sh';
 #sub Q ($ ) {} # q is taken, as syntax
 #*Q= \&singlequote_sh;
 
@@ -68,7 +74,6 @@ $t->xprintln;
 $t->xclose;
 $t->autoclean(0);
 my $path= $t->path;
-use Chj::xperlfunc;
 xchmod 0700, $path;
 
 print $path, "\n"
