@@ -15,7 +15,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname cmd [args] _ [other args [ _ [further args]]]
 
-  shortcut for: lamda 'cmd args \"\$1\" other args \"\$2\" further args'
+  shortcut for: lambda 'cmd args \"\$1\" other args \"\$2\" further args'
 
   (Christian Jaeger <$email>)
 ";
