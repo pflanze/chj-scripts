@@ -51,11 +51,8 @@ if [ $# -ne '.$n.' ]; then
 fi
 ');
 
-#sub Q ($ ) {} # q is taken, as syntax
-#*Q= \&singlequote_sh;
 
-#$t->xprint (Q ) well don't treat cmd as something different?
-
+# now with '_' replaced with positional argument references:
 my $i=1;
 for (@ARGV) {
     $t->xprint
