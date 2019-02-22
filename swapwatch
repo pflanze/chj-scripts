@@ -1,0 +1,109 @@
+#!/usr/bin/perl -w
+
+# Thu 21 Feb 23:41:31 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+my $max_used_ratio= 0.9;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options]
+
+  Options:
+   -c | --continuous  show xmessage when used_ratio is > $max_used_ratio
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_continuous;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "continuous"=> \$opt_continuous,
+	   ) or exit 1;
+usage if @ARGV;
+
+use Chj::xopen ":all";
+use Chj::FP::ArrayUtil "array_zip2";
+use Chj::FP::Equal "equal";
+use Chj::xperlfunc ":all";
+
+
+my @fn= qw(Filename
+           Type
+           Size
+           Used
+           Priority);
+
+sub sum {
+    my $tot=0;
+    $tot+= $_ for (@_);
+    $tot
+}
+
+sub swapstate {
+    my $f= xopen_read("/proc/swaps");
+    my $titles= $f->xreadline;
+    my $c= $f->xcontent;
+    $f->xclose;
+    chomp $titles;
+    my @fn2= split /\s+/, $titles;
+    equal(\@fn, \@fn2)
+      or die "wrong titles";
+    my @es = map {
+        my @f= /^(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s*$/s
+          or die "no match: '$_'";
+        +{
+            map {
+                my ($k,$v)=@$_;
+                $k=> $v
+            }
+              @{array_zip2 \@fn, \@f}
+          }
+    } split /\n/, $c;
+
+    my $size= sum map { $$_{Size} } @es;
+    my $used= sum map { $$_{Used} } @es;
+    +{
+      swapfiles=> \@es,
+      used=> $used,
+      size=> $size,
+      used_ratio=> $used/$size,
+    }
+}
+
+sub swapstate_used_ratio {
+    swapstate->{used_ratio}
+}
+
+sub swapstate_show {
+    my ($s)=@_;
+    "$$s{used}/$$s{size} = $$s{used_ratio}"
+}
+
+sub xmessage {
+    xsystem "xmessage", @_
+}
+
+if ($opt_continuous) {
+    while (1) {
+        my $s= swapstate;
+        if ($$s{used_ratio} > $max_used_ratio) {
+            xmessage "swap is nearly used up: ".swapstate_show($s)
+        }
+        sleep 5;
+    }
+} else {
+    xprintln swapstate_show(swapstate)
+}
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
