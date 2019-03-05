@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2004-2017 Christian Jaeger, published under the same terms
+# Copyright 2004-2019 Christian Jaeger, published under the same terms
 # as Perl 5
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
@@ -26,7 +26,8 @@ use Chj::xtmpfile;
 use Chj::xhome;
 
 my $usage;
-my ($opt_stop, $opt_start, $opt_bg, $opt_nice, $opt_restart, $opt_status, $opt_noask);
+my ($opt_stop, $opt_start, $opt_bg, $opt_nice, $opt_restart, $opt_status,
+    $opt_noask);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
@@ -75,7 +76,8 @@ ARG:{
 		    parse_action($1);
 		} elsif ($1 eq 'action') {
 		    my $v= $ARGV[0];
-		    defined $v or die "$myname: expecting value after --action\n";
+		    defined $v
+                        or die "$myname: expecting value after --action\n";
 		    shift @ARGV;
 		    parse_action($v);
 		} elsif ($1 eq 'list') {
@@ -205,7 +207,7 @@ if (defined $opt_multilog) {
     $logfile //= "nohup.out";
 }
 
-unless ($usage){ # no defined: only avoid if an *error* parsing the
+unless ($usage) { # no defined: only avoid if an *error* parsing the
                  # arguments has occurred.
     if (@ARGV) {
 	my $hash= md5_hex( defined ($opt_hash_input) ? $opt_hash_input
@@ -364,9 +366,10 @@ sub basedir_listing {
 }
 
 sub list_daemons {
-    # running ones only, right?
+    # only running ones
 
     require Chj::singlequote;
+    'Chj::singlequote'->import('possibly_singlequote_sh');
 
     my $l= basedir_listing;
     my $ds= [
@@ -374,12 +377,16 @@ sub list_daemons {
 		 my $rundir= "$basedir/$_";
 		 my $res;
 		 eval {
-		     if (Chj::Unix::DaemonRunfile->new("$rundir/run")->is_running) {
-			 my @cmd= split /\0/, xsysopen_read("$rundir/cmdline")->xcontent;
+		     if (Chj::Unix::DaemonRunfile
+                         ->new("$rundir/run")->is_running) {
+			 my @cmd= split /\0/,
+                             xsysopen_read("$rundir/cmdline")->xcontent;
 			 $res=[
 			       $rundir.": ".
 			       join(" ",
-				    map {Chj::singlequote::possibly_singlequote_sh($_)}
+				    map {
+                                        possibly_singlequote_sh($_)
+                                    }
 				    @cmd)];
 		     } else {
 			 $res=[];
@@ -485,11 +492,13 @@ sub start {
     }
     $daemonizer->set_outputs($output);
 
-    if (my $pid= $daemonizer->fork ($opt_no_error_if_running && sub {
-					print STDERR "daemon already running\n"
-					  unless $opt_quiet;
-					exit 0
-				    })) {
+    if (my $pid= $daemonizer->fork($opt_no_error_if_running
+                                   &&
+                                   sub {
+                                       print STDERR "daemon already running\n"
+                                         unless $opt_quiet;
+                                       exit 0
+                                   })) {
 	print STDERR ("daemon running as sid $pid",
 		      ($opt_bg ? () : " (you can hit ctl-c now)"),"\n")
 	  unless ($opt_quiet or $opt_start or $opt_restart);
@@ -499,7 +508,8 @@ sub start {
 	    if ($?) {
 		do {
 		    if ($?>255) {
-			print STDERR "daemon exited with return code ".($?>>8)."\n";
+			print STDERR
+                          "daemon exited with return code ".($?>>8)."\n";
 		    } else {
 			print STDERR "daemon exited by signal $?\n";
 		    }
@@ -511,7 +521,8 @@ sub start {
 		  unless ($opt_quiet);
 		$maybe_exitcode=0;
 	    }
-	    if (!$opt_noask and maybe_askyn "do you want to look at the output?"){
+	    if (!$opt_noask and
+                maybe_askyn "do you want to look at the output?"){
 		if (defined $opt_multilog) {
 		    xsystem "tai", $opt_multilog;
 		} else {
@@ -531,7 +542,8 @@ sub start {
 
 {
     my $cnt=0;
-    for ($opt_stop, $opt_start, $opt_bg, $opt_restart, $opt_STOP, $opt_CONT, $opt_status) {
+    for ($opt_stop, $opt_start, $opt_bg, $opt_restart, $opt_STOP,
+         $opt_CONT, $opt_status) {
 	$cnt++ if $_;
     }
     if ($cnt > 1) {
