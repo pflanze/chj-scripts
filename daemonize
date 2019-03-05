@@ -181,6 +181,8 @@ ARG:{
 		    $opt_quiet=1;
 		} elsif ($o eq 'N') {
 		    undef $opt_nice;
+		} elsif ($o eq 'l') {
+		    $opt_list=1;
 		} elsif ($o eq 'h') {
 		    $usage="";
 		    #last ARG; nope
@@ -271,7 +273,7 @@ sub usage {
   --status
               prints 'running' if running, 'off' if not.
 
-  --list      show all running daemons
+  -l|--list      show all running daemons
 
   --signal N  use signal N instead of default $signal
   --STOP      send SIGSTOP (and no SIGKILL afterwards)
