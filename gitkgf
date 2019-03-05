@@ -66,7 +66,7 @@ our $paths= array_uniq( [
 @$paths
   or do {
       require Chj::singlequote;
-      die ("$myname: couldn't find the given paths: "
+      die ("$myname: couldn't find any of the given paths: "
            . Chj::singlequote::singlequote_many(@given_paths)
            . "\n")
   };
