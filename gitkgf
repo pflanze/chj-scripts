@@ -47,6 +47,8 @@ use Chj::Git::Functions 'git_ls_files';
 use Chj::FP::ArrayLib 'array_uniq';
 use Chj::FP::Eq 'string_eq';
 
+my @given_paths= (@ARGV ? @ARGV : ".");
+
 our $paths= array_uniq( [
 			 sort
 			 map {
@@ -58,10 +60,16 @@ our $paths= array_uniq( [
 			     } else {
 				 &$m
 			     }
-			 } (@ARGV ? @ARGV : ".")
+			 } @given_paths
 			],
 			\&string_eq );
-
+@$paths
+  or do {
+      require Chj::singlequote;
+      die ("$myname: couldn't find the given paths: "
+           . Chj::singlequote::singlequote_many(@given_paths)
+           . "\n")
+  };
 
 use Chj::Git::Functions 'xworking_dir';
 use Chj::xperlfunc;
