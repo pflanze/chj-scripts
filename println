@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for v in "$@"; do
+    printf '%s' "$v"
+done
+
+printf '\n'
+
