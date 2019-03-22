@@ -34,18 +34,20 @@ GetOptions("verbose"=> \$verbose,
     use MIME::Parser;
     use Chj::xopen 'xopen_read';
     use Chj::xtmpdir;
-
-    our $tmp= xtmpdir; # not my, for life time control!
-    my $parser = new MIME::Parser;
-    $parser->output_dir("$tmp");
+    use Chj::xopendir;
 
     sub open_path {
 	my ($class, $path)=@_;
+	my $tmp= xtmpdir;
+	my $parser = new MIME::Parser;
+	$parser->output_dir("$tmp");
 	my $fh= xopen_read $path;
 	my $ent= $parser->parse($fh);
 	$fh->xclose;
 	bless {
 	       path=> $path,
+	       tmp=> $tmp,
+	       parser=> $parser, # do we need to retain it?
 	       ent=> $ent,
 	      }, $class
     }
@@ -88,8 +90,12 @@ GetOptions("verbose"=> \$verbose,
 
     sub DESTROY {
 	my ($s)=@_;
-	$$s{ent}->filer->purge
-	  if $$s{ent};
+	my $d= xopendir ($$s{tmp});
+	while (defined (my $item= $d->xnread)) {
+	    my $path= "$$s{tmp}/$item";
+	    unlink $path
+	      or warn "could not unlink '$path': $!";
+	}
     }
 }
 
