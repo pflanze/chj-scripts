@@ -35,8 +35,9 @@ GetOptions("verbose"=> \$verbose,
     use Chj::xopen 'xopen_read';
     use Chj::xtmpdir;
 
-    my $tmp= xtmpdir;
+    our $tmp= xtmpdir; # not my, for life time control!
     my $parser = new MIME::Parser;
+    $parser->output_dir("$tmp");
 
     sub open_path {
 	my ($class, $path)=@_;
@@ -83,6 +84,12 @@ GetOptions("verbose"=> \$verbose,
 	} else {
 	    "(no subject)"
 	}
+    }
+
+    sub DESTROY {
+	my ($s)=@_;
+	$$s{ent}->filer->purge
+	  if $$s{ent};
     }
 }
 
