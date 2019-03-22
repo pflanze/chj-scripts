@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Fri Mar 22 20:21:52 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Show one line summary about the given mail files. I.e. for now from
+  and subject.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+
+{
+    package Msg;
+
+    use MIME::Parser;
+    use Chj::xopen 'xopen_read';
+    use Chj::xtmpdir;
+
+    my $tmp= xtmpdir;
+    my $parser = new MIME::Parser;
+
+    sub open_path {
+	my ($class, $path)=@_;
+	my $fh= xopen_read $path;
+	my $ent= $parser->parse($fh);
+	$fh->xclose;
+	bless {
+	       path=> $path,
+	       ent=> $ent,
+	      }, $class
+    }
+
+    sub maybe_header {
+	my ($s, $name)=@_;
+	my $head= $s->{ent}->head;
+	my @vals= $head->get(lc $name);
+	if (!@vals) {
+	    undef
+	} elsif (@vals > 1) {
+	    warn "more than one '$name' header in '$$s{path}'";
+	    undef
+	} else {
+	    $vals[0]
+	}
+    }
+
+    sub from { # just the email?
+	my ($s)=@_;
+	if (defined (my $v= $s->maybe_header("from"))) {
+	    if (my ($addr)= $v=~ /<(.*?)>/s) {
+		$addr
+	    } else {
+		$v
+	    }
+	} else {
+	    "(no from)"
+	}
+    }
+
+    sub subject { # decoded rg
+	my ($s)=@_;
+	if (defined (my $v= $s->maybe_header("subject"))) {
+	    $v
+	} else {
+	    "(no subject)"
+	}
+    }
+}
+
+
+use Chj::xperlfunc ":all";
+
+sub oneline {
+    my ($str)=@_;
+    chomp $str;
+    $str=~ s/\n/\\n/sg;
+    $str
+}
+
+for my $path (@ARGV) {
+    my $m = Msg->open_path($path);
+    xprintln oneline($m->from), " // ", oneline($m->subject);
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
