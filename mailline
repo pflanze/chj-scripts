@@ -96,9 +96,16 @@ sub oneline {
     $str
 }
 
+#xprintln "COLUMNS=$ENV{COLUMNS}";
+my $cols= $ENV{COLUMNS} or die "missing COLUMNS setting";
+
 for my $path (@ARGV) {
     my $m = Msg->open_path($path);
-    xprintln oneline($m->from), " // ", oneline($m->subject);
+    my $a= oneline($m->from);
+    my $b= oneline($m->subject);
+    my $len= length($a) + length($b);
+    my $miss= max(0, $cols - $len);
+    xprintln $a, ($miss ? (" " x $miss) : " // "), $b;
 }
 
 #use Chj::ruse;
