@@ -125,8 +125,8 @@ for my $path (@ARGV) {
     my $a= oneline($m->from);
     my $b= oneline($m->subject);
     my $len= length($p) + 1 + length($a) + length($b);
-    my $miss= max(0, $cols - $len);
-    xprintln $p, " ", $a, ($miss ? (" " x $miss) : " // "), $b;
+    my $miss= max(1, $cols - $len);
+    xprintln $p, " ", $a, " " x $miss, $b;
 }
 
 #use Chj::ruse;
