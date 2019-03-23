@@ -29,12 +29,16 @@ GetOptions("verbose"=> \$verbose,
 
 
 {
+    # XX should really make part of mailmover available in lib? 
+    # Mailmover::MailHead, even works without MIME::Parser.
     package Msg;
 
     use MIME::Parser;
     use Chj::xopen 'xopen_read';
     use Chj::xtmpdir;
     use Chj::xopendir;
+    use MIME::Words 'decode_mimewords';
+    use Chj::Encode::Permissive 'encode_permissive';
 
     sub open_path {
 	my ($class, $path)=@_;
@@ -79,10 +83,12 @@ GetOptions("verbose"=> \$verbose,
 	}
     }
 
-    sub subject { # decoded rg
-	my ($s)=@_;
+    sub subject { # decoded
+	my ($s, $as_charset)=@_;
 	if (defined (my $v= $s->maybe_header("subject"))) {
-	    $v
+	    join("",
+		 map{ encode_permissive $_->[0],$_->[1],$as_charset }
+		 decode_mimewords($v))
 	} else {
 	    "(no subject)"
 	}
@@ -124,7 +130,7 @@ for my $path (@ARGV) {
     my $m = Msg->open_path($path);
     my $p= filenamepart $path;
     my $a= oneline($m->from);
-    my $b= oneline($m->subject);
+    my $b= oneline($m->subject("utf-8"));
     my $len= length($p) + 1 + length($a) + length($b);
     my $miss= max(1, $cols - $len);
     xprintln $p, " ", $a, " " x $miss, $b;
