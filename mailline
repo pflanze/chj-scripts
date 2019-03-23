@@ -104,8 +104,9 @@ use Chj::xperlfunc ":all";
 
 sub oneline {
     my ($str)=@_;
-    chomp $str;
-    $str=~ s/\n/\\n/sg;
+    $str=~ s/\s+/ /sg;
+    $str=~ s/^\s+//sg;
+    $str=~ s/\s+\z//sg;
     $str
 }
 
