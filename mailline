@@ -4,6 +4,7 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict; use warnings FATAL => 'uninitialized';
+use feature 'unicode_strings';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -87,7 +88,7 @@ GetOptions("verbose"=> \$verbose,
 	my ($s, $as_charset)=@_;
 	if (defined (my $v= $s->maybe_header("subject"))) {
 	    join("",
-		 map{ encode_permissive $_->[0],$_->[1],$as_charset }
+		 map{ encode_permissive $_->[0], $_->[1], $as_charset }
 		 decode_mimewords($v))
 	} else {
 	    "(no subject)"
@@ -126,11 +127,14 @@ sub filenamepart {
 #xprintln "COLUMNS=$ENV{COLUMNS}";
 my $cols= $ENV{COLUMNS} or die "missing COLUMNS setting";
 
+binmode *STDOUT{IO}, ":encoding(utf8)"
+  or die $!;
+
 for my $path (@ARGV) {
     my $m = Msg->open_path($path);
     my $p= filenamepart $path;
     my $a= oneline($m->from);
-    my $b= oneline($m->subject("utf-8"));
+    my $b= oneline($m->subject);
     my $len= length($p) + 1 + length($a) + length($b);
     my $miss= max(1, $cols - $len);
     xprintln $p, " ", $a, " " x $miss, $b;
