@@ -109,16 +109,24 @@ sub oneline {
     $str
 }
 
+sub filenamepart {
+    my ($s)=@_;
+    $s=~ s|.*/||;
+    $s=~ s|\..*||;
+    $s
+}
+
 #xprintln "COLUMNS=$ENV{COLUMNS}";
 my $cols= $ENV{COLUMNS} or die "missing COLUMNS setting";
 
 for my $path (@ARGV) {
     my $m = Msg->open_path($path);
+    my $p= filenamepart $path;
     my $a= oneline($m->from);
     my $b= oneline($m->subject);
-    my $len= length($a) + length($b);
+    my $len= length($p) + 1 + length($a) + length($b);
     my $miss= max(0, $cols - $len);
-    xprintln $a, ($miss ? (" " x $miss) : " // "), $b;
+    xprintln $p, " ", $a, ($miss ? (" " x $miss) : " // "), $b;
 }
 
 #use Chj::ruse;
