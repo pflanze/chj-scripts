@@ -117,6 +117,7 @@ sub oneline {
     $str
 }
 
+# COPY in mailline2list
 sub filenamepart {
     my ($s)=@_;
     $s=~ s|.*/||;
