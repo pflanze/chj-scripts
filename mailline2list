@@ -13,6 +13,9 @@ sub usage {
 
   Map list of mailline lines on stdin to list of filenames on stdout.
 
+  Use e.g. like:  ".'for f in `mailline2list`; do mu "$f"; done'."
+  then copy-paste lines from mailline.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
