@@ -133,13 +133,17 @@ binmode *STDOUT{IO}, ":encoding(utf8)"
 
 for my $path (@ARGV) {
     eval {
-	my $m = Msg->open_path($path);
-	my $p= filenamepart $path;
-	my $a= oneline($m->from);
-	my $b= oneline($m->subject);
-	my $len= length($p) + 1 + length($a) + length($b);
-	my $miss= max(1, $cols - $len);
-	xprintln $p, " ", $a, " " x $miss, $b;
+	if (basename($path) eq "seen") {
+	    xprintln("-"x$cols);
+	} else {
+	    my $m = Msg->open_path($path);
+	    my $p= filenamepart $path;
+	    my $a= oneline($m->from);
+	    my $b= oneline($m->subject);
+	    my $len= length($p) + 1 + length($a) + length($b);
+	    my $miss= max(1, $cols - $len);
+	    xprintln $p, " ", $a, " " x $miss, $b;
+	}
 	1
     } || do {
 	xprint "$@";
