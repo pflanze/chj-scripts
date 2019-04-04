@@ -71,11 +71,21 @@ GetOptions("verbose"=> \$verbose,
 	}
     }
 
-    sub from { # just the email?
+    sub from { # just one string, hacky
 	my ($s)=@_;
 	if (defined (my $v= $s->maybe_header("from"))) {
 	    if (my ($addr)= $v=~ /<(.*?)>/s) {
-		$addr
+		if ($addr eq 'info@meetup.com') {
+		    # HACK: this address is used for too many things,
+		    # so use the name instead
+		    $v=~ s/<(.*?)>//;
+		    $v=~ s/^\s+//s;
+		    $v=~ s/\s+\z//s;
+		    $v=~ s/"//sg;
+		    "M:$v"
+		} else {
+		    $addr
+		}
 	    } else {
 		$v
 	    }
