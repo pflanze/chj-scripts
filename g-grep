@@ -86,8 +86,11 @@ our @preargs;
 our @args;
 
 our @ARGVcopy= @ARGV;
+sub ggrep_cmd {
+    ("git","--no-pager","grep",@_)
+}
 sub ggrep {
-    exec "git","--no-pager","grep",@_
+    exec ggrep_cmd(@_)
       or exit 127;
 }
 sub fail {
@@ -95,6 +98,7 @@ sub fail {
     ggrep @ARGVcopy;
 }
 
+my %options;
 while (@ARGV) {
     my $v=shift @ARGV;
     if ($v eq '--') {
@@ -119,6 +123,9 @@ while (@ARGV) {
 		push @{
 		    $is_preoption{$v} ? \@preargs : \@args
 		}, $v, @optargs;
+                $options{$v}= $options{$v} ?
+                  [@{$options{$v}}, @optargs]
+                  : \@optargs;
 	    } else {
 		if ($v=~ /^-/) {
 		    fail "unknown option '$v'";
@@ -131,9 +138,40 @@ while (@ARGV) {
     }
 }
 
-ggrep @preargs,@args;
+sub ggrep_cmd_args () {
+    ggrep_cmd @preargs, @args;
+}
+
+# XX can't one-letter options be coalesced with git?
+if ($options{"-l"}) {
+    # post-process the output of git grep to undo the string escaping
+    # that it does (really can't be disabled???)
+
+    require Chj::IO::Command;
+
+    binmode *STDOUT{IO}, ":raw"
+      or die $!;
+
+    my $in= Chj::IO::Command->new_sender(ggrep_cmd_args);
+    $in->xbinmode(":raw");
+    local $/ = $options{"-z"} ? "\0" : "\n";
+    while (<$in>) {
+        if (my ($str)= m{^"(.*)"$/?\z}s) {
+            $str=~ s/\\(\\|\d+)/
+              $1 eq "\\" ? $1 : chr(oct $1)
+              /esg;
+            print $str, $/
+              or die $!;
+        } else {
+            print or die $!
+        }
+    }
+    $in->xxfinish;
+
+} else {
+    exec ggrep_cmd_args
+      or exit 127;
+}
 
 
-#use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
-
