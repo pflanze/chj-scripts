@@ -141,6 +141,10 @@ my $cols= $ENV{COLUMNS} or die "missing COLUMNS setting";
 binmode *STDOUT{IO}, ":encoding(utf8)"
   or die $!;
 
+sub ansi_reverse_video {
+    ("\033[7m", @_, "\033[0m")
+}
+
 for my $path (@ARGV) {
     eval {
 	if (basename($path) eq "seen") {
@@ -152,7 +156,7 @@ for my $path (@ARGV) {
 	    my $b= oneline($m->subject);
 	    my $len= length($p) + 1 + length($a) + length($b);
 	    my $miss= max(1, $cols - $len);
-	    xprintln $p, " ", $a, " " x $miss, $b;
+	    xprintln $p, " ", ansi_reverse_video($a), " " x $miss, $b;
 	}
 	1
     } || do {
