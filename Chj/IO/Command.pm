@@ -1,9 +1,11 @@
-# Sun Oct 21 17:47:58 2007  Christian Jaeger, christian at jaeger mine nu
 #
-# Copyright 2007,2008 by Christian Jaeger
-# Published under the same terms as perl itself
+# Copyright (c) 2007-2015 Christian Jaeger, copying@christianjaeger.ch
 #
-# $Id$
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version). See the file COPYING.md that came
+# bundled with this file.
+#
 
 =head1 NAME
 
