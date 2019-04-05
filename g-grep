@@ -166,7 +166,12 @@ if ($options{"-l"}) {
             print or die $!
         }
     }
-    $in->xxfinish;
+    my $rv= $in->xfinish;
+    if (my $signal= ($rv & 255)) {
+	kill $signal, $$;
+    } else {
+	exit $rv >> 8
+    }
 
 } else {
     exec ggrep_cmd_args
