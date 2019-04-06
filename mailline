@@ -147,8 +147,14 @@ sub ansi_reverse_video {
 
 for my $path (@ARGV) {
     eval {
-	if (basename($path) eq "seen") {
+	# handle special file names, so that this works:
+	#  touch looking; ls -rt|tail -30 |» mailline|less -R
+	#  mv -f looking seen
+	my $bn= basename($path);
+	if ($bn eq "seen") {
 	    xprintln("-"x$cols);
+	} elsif ($bn eq "looking") {
+	    # ignore
 	} else {
 	    my $m = Msg->open_path($path);
 	    my $p= filenamepart $path;
