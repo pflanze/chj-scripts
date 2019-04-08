@@ -179,7 +179,8 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 		my $i= int(rand() * $npar); # parens after rand required!
 		push @{$argss[$i]}, pop @args;
 	    }
-	    # (well that's not totally randomized, 'partial sequencing' still observed, wl.)
+	    # (well that's not totally randomized, 'partial
+	    # sequencing' still observed, wl.)
 	    my $subex= sub {
 		my ($args)=@_;
 		my $pid= fork;
@@ -194,7 +195,9 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 		    }
 		}
 	    };
-	    my @ps= map { &$subex ($_||[]) } @argss; # ||[] needed or it will fail with 'Can't use an undefined value as an ARRAY reference'. Perl Perl Perl.
+	    my @ps= map { &$subex ($_||[]) } @argss;
+	    # ||[] needed or it will fail with 'Can't use an undefined
+	    # value as an ARRAY reference'. Perl Perl Perl.
 	    my @ss= map {
 		waitpid ($_, 0) == $_ or die "??";
 		$?
@@ -203,7 +206,8 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 	    for (@ss) {
 		if ($_ != 0) {
 		    require Chj::Unix::exitcode;
-		    warn "$myname: one of the subprocesses returned with ".Chj::Unix::exitcode($_)."\n";
+		    warn "$myname: one of the subprocesses returned with "
+		      .Chj::Unix::exitcode($_)."\n";
 		    $excode=1;
 		}
 	    }
