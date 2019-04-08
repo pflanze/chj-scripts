@@ -30,19 +30,36 @@ use strict;
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
-our $optionspec=
-  +{
-    verbose=> "be verbose",
-    help=> undef,
-    "no-run-if-empty"=> "do not run if stdin doesn't deliver any items",
-    "run-if-empty" => "inverse of --no-run-if-empty",
-    "null|0|z"=> "split stdin on \\0 instead of \\n", #wow that's cool, that | thingie. for here.same way usable.
-    "num-parallel"=> "number of processes to run in parallel, default 1",
-   };
-#^ well sort of dumb idea since ordering will be lost  but  i  do not care now.
+# Specification of options:
+our @optionspec=
+  # [option_names, arity, helptext_or_sub, maybe_subforretrieval]
+  (
+   [verbose=> 0,
+    "be verbose"],
+   [help=> 0,
+    undef],
+   ["no-run-if-empty"=> 0,
+    "do not run if stdin doesn't deliver any items"],
+   ["run-if-empty" => 0,
+    "inverse of --no-run-if-empty", sub {
+	 my ($options)=@_;
+	 sub {
+	     $$options{'no-run-if-empty'}=0
+	 }
+     }],
+   ["null|0|z"=> 0,
+    "split stdin on \\0 instead of \\n"],
+   ["num-parallel"=> 1,
+    sub {
+	my $n = $_[0] // 1;
+	"number of processes to run in parallel, default $n"
+    }]
+  );
 
-sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
+
+
+sub usage ($) {
+    my ($options)= @_;
     print "$myname cmd [static args]
 
   Read stdin and add it's records to the arguments of cmd, and run cmd.
@@ -50,9 +67,15 @@ sub usage {
 
   Options:
 ".join("",
-       map{my ($name,$desc)=@$_;
-	   $desc ? "  --$name  $desc\n" : ""}
-       map{my $key=$_; [$key,$$optionspec{$key}]} sort keys %$optionspec
+       map{
+	   my ($name,$desc)= @$_;
+	   $desc ? "  --$name  $desc\n" : ""
+       }
+       map{
+	   my ($key, $arity, $doc, $maybe_retrieval)= @$_;
+	   [$key, ref($doc) ? $doc->($$options{$key}) : $doc]
+       }
+       @optionspec
       )."
 
   (Christian Jaeger <$email>)
@@ -74,54 +97,97 @@ sub Hash_addnew ( $ $ ) {
 }
 
 
-sub MyGetOptions {
-    # only accept options up to the first argument not starting with a dash. or so.
-    # well ugly wegen argtaking options.
-    # well luckily we don't have any of those here.hu.
+sub MyGetOptions ($) {
+    # Read options from ARGV, only up to the first non-option
+    # argument; use optionspec (see description of @optionspec) to
+    # know the arity of options. Returns a hash with key/value for the
+    # options (where the part of the key before the first '|' (if any)
+    # is used as the key), removes those options from @ARGV. Or
+    # returns undef upon error (in which case a message was already
+    # printed by GetOptions which is used underneath).
+    my ($optionspec)= @_;
+
+    my $optionarity= do {
+	my %os;
+	for (@$optionspec) {
+	    my ($key, $arity, $doc, $maybe_retrieval)= @$_;
+	    my @key= split /\|/, $key;
+	    for (@key) {
+		$os{$_}= $arity
+	    }
+	}
+	\%os
+    };
+
     my @argv1;
     while (@ARGV) {
 	my $v= shift @ARGV;
 	if ($v eq "--") {
 	    last;
-	} elsif ($v=~ /^-/) {
+	} elsif (my ($key,$maybe_val)=
+		 $v=~ /^--?(\w[^=]+)(?:=(.*))?\z/s) {
 	    push @argv1, $v;
+	    my $arity= $$optionarity{$key};
+	    if (defined $arity) {
+		for (1..$arity) {
+		    push @argv1, shift @ARGV;
+		}
+	    } else {
+		die "unknown option: $v"; #XX proper message?
+	    }
 	} else {
-	    unshift @ARGV, $v; #'haha'  wl wsm
+	    unshift @ARGV, $v; # hacky
 	    last;
 	}
     }
     my @argv2=@ARGV;
     @ARGV=@argv1;
-    my $res= GetOptions (@_);
+
+    # convert optionspec to something GetOptions understands:
+    my %options;
+    my @getoptargs=
+      map {
+	  my ($key, $arity, $doc, $maybe_retrieval)= @$_;
+	  # save as the first entry in key
+	  my ($optionkey)= $key=~ /^([^|]+)/ or die;
+	  # prepare slot to pass as a reference
+	  $options{$optionkey}= undef;
+	  # value for GetOptions:
+	  my $storage= ($maybe_retrieval ? &$maybe_retrieval(\%options)
+			: \($options{$optionkey}));
+	  # need to indicate arity to GetOptions:
+	  if ($arity==0) {
+	      # noop
+	  } elsif ($arity == 1) {
+	      $key.= "=s"
+	  } else {
+	      die "arity > 1 not supported by GetOptions, right?"
+	  }
+	  ($key, $storage)
+      } @$optionspec;
+
+    my $res= GetOptions(@getoptargs);
+    return undef unless $res;
     die "??" if @ARGV;
     @ARGV=@argv2;
-    $res
+    \%options
 }
 
 #use Chj::Backtrace;
 sub options_and_cmd {
     my ($maybe_optiondefaults)=@_;
+    # optiondefaults are *values* for options, which are overridden by
+    # what's read from ARGV.
     my $optiondefaults= $maybe_optiondefaults || {};
-    # then set all options which haven't already
-    #could possibly use Collection_add from  well actually do it.  well actually doesn't work, assumes key==value and acts as such for adding (hu~wl.y named it so)
-    my $options;
-    $options= #yes memleak, whatever.
-      Hash_addnew
-	($optiondefaults,
-      +{
-	verbose=>0,
-	#"no-run-if-empty"=>0,
-	help=> sub{usage}, # so that the option parser will see that during parsing,k?
-	'run-if-empty'=> sub {
-	    $$options{'no-run-if-empty'}=0
-	},
-	"num-parallel"=> 1,
-       });
-    MyGetOptions($options,
-		 keys %$optionspec)
+
+    my $options1= MyGetOptions(\@optionspec)
       or exit 1;
-    usage unless @ARGV;
-    #($options, [@ARGV]) well. rather?: well or not?
+
+    my $options= Hash_addnew($optiondefaults, $options1);
+
+    usage $options
+      if ($$options{help} or !@ARGV);
+
     [$options, [@ARGV]]
 }
 
