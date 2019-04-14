@@ -1400,20 +1400,18 @@ sub xgetgrnam ( $ ) {
 }
 
 
-# Also see xprint and xprintln methods in Chj::IO::File.
-
-use Chj::BuiltinTypePredicates 'is_filehandle';
+# xprint is already in Chj::IO::File, but don't always want to use the
+# method. No way to specify filehandle optionally with this, though --
+# but that's arguably the core of the difference.
 
 sub xprint {
-    my $fh= is_filehandle ($_[0]) ? shift : *STDOUT{IO};
-    print $fh @_
-      or die "printing to $fh: $!"
+    print @_
+      or die "xprint: $!";
 }
 
 sub xprintln {
-    my $fh= is_filehandle ($_[0]) ? shift : *STDOUT{IO};
-    print $fh @_,"\n"
-      or die "printing to $fh: $!"
+    print @_,"\n"
+      or die "xprintln: $!";
 }
 
 
