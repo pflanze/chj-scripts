@@ -961,8 +961,22 @@ sub fstype_for_device($) {
     }
 }
 
-use FP::Div qw(min max); # min just for the backwards-compatible
-                         # re-export
+# XX forever, should find a permanent place for these
+sub min {
+    my $x=shift;
+    for (@_) {
+	$x= $_ if $_ < $x
+    }
+    $x
+}
+
+sub max {
+    my $x=shift;
+    for (@_) {
+	$x= $_ if $_ > $x
+    }
+    $x
+}
 
 {
     package Chj::xperlfunc::mtimed;
