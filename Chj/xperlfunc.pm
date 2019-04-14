@@ -1,9 +1,11 @@
-# Sat Apr 26 16:42:57 2003  Christian Jaeger, christian at jaeger mine nu
 #
-# Copyright 2003-2014 by Christian Jaeger
-# Published under the same terms as perl itself
+# Copyright (c) 2003-2015 Christian Jaeger, copying@christianjaeger.ch
 #
-# $Id$
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version). See the file COPYING.md that came
+# bundled with this file.
+#
 
 =head1 NAME
 
@@ -18,6 +20,9 @@ Chj::xperlfunc
 
 =head1 DESCRIPTION
 
+Wrappers around core functions that throw exceptions on errors. Plus
+some simple utilities, exported optionally (explicitely or as part of
+the ":all" tag.)
 
 =head1 FUNCTIONS
 
@@ -161,7 +166,7 @@ a previous target. All the same it does the replace atomically.
 Does work with both filehandles and integer strings. Croaks if it's
 neither or there's an error.
 
-=item basename $pathstring [,$suffix]
+=item basename $pathstring [,$suffix(es) [,$insensitive]]
 
 Same as the shell util of the same name, except that it croaks in a
 few cases (when an empty string is given, or when the given suffix
@@ -239,6 +244,7 @@ require Exporter;
 	      xmkdir_p
 	      xlink_p
 	      xgetpwnam
+	      xgetgrnam
 	      caching_getpwnam
 	      caching_getgrnam
 	      xprint
@@ -348,7 +354,7 @@ sub xxsystem {
     (system @_)>=0
       or croak "xxsystem: could not start command '$_[0]': $!";
     $?==0
-      or croak "xxsystem: process terminated with ".exitcode($?);
+      or croak "xxsystem: process '$_[0]' terminated with ".exitcode($?);
 }
 
 sub xsystem_safe {
@@ -537,29 +543,45 @@ our $time_hires=0;
 sub stat_possiblyhires {
     if ($time_hires) {
 	require Time::HiRes; # (that's not slow, right?)
-	Time::HiRes::stat(@_ ? @_ : $_)
+	if (@_) {
+	    @_==1 or die "wrong number of arguments";
+	    Time::HiRes::stat($_[0])
+	} else {
+	    Time::HiRes::stat($_)
+	}
     } else {
-	@_==1 ? stat($_[0])
-	    : @_==0 ? stat($_)
-	    : die "bug";
+	if (@_) {
+	    @_==1 or die "wrong number of arguments";
+	    stat($_[0])
+	} else {
+	    stat($_)
+	}
     }
 }
 
 sub lstat_possiblyhires {
     if ($time_hires) {
 	require Chj::Linux::HiRes;
-	Chj::Linux::HiRes::lstat(@_ ? @_ : $_)
+	if (@_) {
+	    @_==1 or die "wrong number of arguments";
+	    Chj::Linux::HiRes::lstat($_[0])
+	} else {
+	    Chj::Linux::HiRes::lstat($_)
+	}
     } else {
-	@_==1 ? lstat($_[0])
-	    : @_==0 ? lstat($_)
-	    : die "bug";
+	if (@_) {
+	    @_==1 or die "wrong number of arguments";
+	    lstat($_[0])
+	} else {
+	    lstat($_)
+	}
     }
 }
 
 sub xstat {
     my @r;
     @_<=1 or croak "xstat: too many arguments";
-    @r= stat_possiblyhires(@_);
+    @r= stat_possiblyhires(@_ ? @_ : $_);
     @r or croak (@_ ? "xstat: '@_': $!" : "xstat: '$_': $!");
     if (wantarray) {
 	@r
@@ -750,7 +772,6 @@ sub fstype_for_device($) {
     sub setuid { !!(shift->[2] & 04000) }
     # ^ I have no desire to put is_ in front.
     sub setgid { !!(shift->[2] & 02000) }
-    # sticky is simply the lowest of the 3 permissions_s bits:
     sub sticky { !!(shift->[2] & 01000) }
     sub filetype { (shift->[2] & 0170000) >> 12 } # 4*3bits
 
@@ -940,22 +961,8 @@ sub fstype_for_device($) {
     }
 }
 
-# XX forever, should find a permanent place for these
-sub min {
-    my $x=shift;
-    for (@_) {
-	$x= $_ if $_ < $x
-    }
-    $x
-}
-
-sub max {
-    my $x=shift;
-    for (@_) {
-	$x= $_ if $_ > $x
-    }
-    $x
-}
+use FP::Div qw(min max); # min just for the backwards-compatible
+                         # re-export
 
 {
     package Chj::xperlfunc::mtimed;
@@ -1064,7 +1071,7 @@ sub XLmtime ($) {
 
     sub unixtime {
 	my $s=shift;
-	Time::Local::timelocal(@$s)
+	&Time::Local::timelocal(@$s)
     }
 }
 
@@ -1227,9 +1234,10 @@ sub xsysread ( $ $ $ ; $ ) {
 # ^- ok this is silly (is it?) since I've got Chj::IO::File. But that
 # latter one is not yet complete, I'm debugging xreadline atm.
 
+use FP::Show qw(show_many);
 
-sub basename ($ ; $ ) {
-    my ($path,$maybe_suffix)=@_;
+sub basename ($;$$) {
+    my ($path, $maybe_suffixS, $insensitive)=@_;
     my $copy= $path;
     $copy=~ s|.*/||s;
     my $res= do {
@@ -1245,14 +1253,28 @@ sub basename ($ ; $ ) {
 		"/"  # or die? no.
 	    }
 	} else {
-	    croak "basename(".singlequote_many(@_)
-	      ."): cannot get basename from empty string";
+	    croak "basename(".show_many(@_)."): ".
+	      "cannot get basename from empty string";
 	}
     }};
-    if (defined $maybe_suffix and length $maybe_suffix) {
-	$res=~ s/\Q$maybe_suffix\E\z//
-	  or croak "basename (".singlequote_many(@_)
-	    ."): suffix does not match '$res'";
+    if (defined $maybe_suffixS) {
+	if (ref($maybe_suffixS)) {
+	  TRY: {
+		for my $suffix (@$maybe_suffixS) {
+		    ($insensitive ?
+		     $res=~ s/\Q$suffix\E\z//i
+		     : $res=~ s/\Q$suffix\E\z//)
+		      and last TRY;
+		}
+		croak "basename(".show_many(@_)."): ".
+		  "no suffix matches";
+	    }
+	} else {
+	    ($insensitive ? $res=~ s/\Q$maybe_suffixS\E\z//i
+	      : $res=~ s/\Q$maybe_suffixS\E\z//)
+	      or croak "basename(".show_many(@_)."): ".
+		"suffix does not match";
+	}
     }
     $res
 }
@@ -1326,12 +1348,12 @@ sub xlink_p ($ $ ) {
     package Chj::xperlfunc::Getpwnam;
     use Class::Array -fields=>-publica=>
       qw(name passwd uid gid quota comment gcos dir shell expire);
-    sub maybe_get {
+    sub perhaps_get {
 	my $class=shift;
 	my ($user)=@_;
 	my $s= bless [ getpwnam ($user) ], $class;
 	if (@$s) {
-	    $s
+	    wantarray ? @$s : $s
 	} else {
 	    return
 	}
@@ -1340,23 +1362,59 @@ sub xlink_p ($ $ ) {
 }
 sub xgetpwnam ( $ ) {
     my ($user)=@_;
-    Chj::xperlfunc::Getpwnam->maybe_get($user)
-	or croak "xgetpwnam '$user' not in passwd file";
+    if (wantarray) {
+	my @f= Chj::xperlfunc::Getpwnam->perhaps_get($user);
+	@f or croak "xgetpwnam: '$user' not in passwd file";
+	@f
+    } else {
+	Chj::xperlfunc::Getpwnam->perhaps_get($user)
+	    or croak "xgetpwnam: '$user' not in passwd file";
+    }
+}
+
+{
+    package Chj::xperlfunc::Getgrnam;
+    use Class::Array -fields=>-publica=>
+      qw(name passwd gid members);
+    sub perhaps_get {
+	my $class=shift;
+	my ($user)=@_;
+	my $s= bless [ getgrnam ($user) ], $class;
+	if (@$s) {
+	    wantarray ? @$s : $s
+	} else {
+	    return
+	}
+    }
+    end Class::Array;
+}
+sub xgetgrnam ( $ ) {
+    my ($group)=@_;
+    if (wantarray) {
+	my @f= Chj::xperlfunc::Getgrnam->perhaps_get($group);
+	@f or croak "xgetgrnam: '$group' not in group file";
+	@f
+    } else {
+	Chj::xperlfunc::Getgrnam->perhaps_get($group)
+	    or croak "xgetgrnam: '$group' not in group file";
+    }
 }
 
 
-# xprint is already in Chj::IO::File, but don't always want to use the
-# method. No way to specify filehandle optionally with this, though --
-# but that's arguably the core of the difference.
+# Also see xprint and xprintln methods in Chj::IO::File.
+
+use Chj::BuiltinTypePredicates 'is_filehandle';
 
 sub xprint {
-    print @_
-      or die "xprint: $!";
+    my $fh= is_filehandle ($_[0]) ? shift : *STDOUT{IO};
+    print $fh @_
+      or die "printing to $fh: $!"
 }
 
 sub xprintln {
-    print @_,"\n"
-      or die "xprintln: $!";
+    my $fh= is_filehandle ($_[0]) ? shift : *STDOUT{IO};
+    print $fh @_,"\n"
+      or die "printing to $fh: $!"
 }
 
 
