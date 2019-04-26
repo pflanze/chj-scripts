@@ -15,6 +15,11 @@ sub usage {
   Show one line summary about the given mail files. I.e. for now from
   and subject.
 
+  Run e.g. as:
+
+   ls -rt | tail -30 |» mailline | less -RS; touch looking
+   mv -f looking seen
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
