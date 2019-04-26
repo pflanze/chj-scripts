@@ -154,7 +154,7 @@ for my $path (@ARGV) {
 	if ($bn eq "seen") {
 	    xprintln("-"x$cols);
 	} elsif ($bn eq "looking") {
-	    # ignore
+	    xprintln("."x$cols);
 	} else {
 	    my $m = Msg->open_path($path);
 	    my $p= filenamepart $path;
