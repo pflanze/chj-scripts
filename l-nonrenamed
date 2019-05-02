@@ -1,0 +1,38 @@
+#!/usr/bin/perl -w
+
+# Don Mai 14 17:08:17 BST 2015
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+our @files=
+  (glob ("???_?????????????????????[0-9]"),
+   glob ("???_??????????????????????[0-9]"));
+
+if (@files) {
+    exec "l", "--", @files
+      or exit 127; #forever which exit code?
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
