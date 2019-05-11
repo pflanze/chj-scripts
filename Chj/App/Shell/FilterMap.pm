@@ -31,14 +31,25 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 
-our $description=
-  { "filter"=> "If the cmd exits with a true value, the input record is written to stdout.",
-    "map"=> "The output of the command is written as an output record to stdout." };
+our $descriptions=
+  +{
+    map=> "If cmd exits successfully, its output is written as an
+  output record to stdout, otherwise $myname immediately exits with error.",
+
+    filtermap=> "If cmd exits successfully, its output is written as an
+  output record to stdout, otherwise dropped.",
+
+    filter=> "If cmd exits successfully, the input record is written as an
+  output record to stdout, otherwise dropped."
+   };
 
 sub Main { #only to be called once!! (GetOptions)
-    my ($name)=@_;
-    my $description= $$description{$name}
-      or die "?? '$name'";
+    @_==0 or die;
+    my $description= $$descriptions{$myname}
+      or die "command was called via invalid name";
+    my $others= join(", ", grep {
+        $_ ne $myname
+    } sort keys %$descriptions);
     my $usage= sub {
 	print STDERR map{"$_\n"} @_ if @_;
 	print "$myname [--] cmd [args] '<>' [args]
@@ -50,6 +61,8 @@ sub Main { #only to be called once!! (GetOptions)
   $description
 
   Currently 'records' means 'lines'.
+
+  Also see: $others
 
   (Christian Jaeger <$email>)
 ";
@@ -92,23 +105,36 @@ sub Main { #only to be called once!! (GetOptions)
     while (<STDIN>) {
 	chomp;
 	$cmd[$pos]=$_;
-	if ($name eq "map") {
+	if ($myname eq "map" or $myname eq "filtermap") {
 	    # since we care about the record separator being output always
 	    # correctly, we filter the output ourselves:
 	    my $s= Chj::IO::Command->new_sender(@cmd);
 	    $cmd[$pos]=undef; $_=undef; # save memory.
 	    my $out= $s->xcontentref;
-	    $s->xxfinish;
-	    chomp $$out;
-	    print $$out,$recordsep
-	      or die "$myname: error writing to stdout: $!\n";
-	} else { # filter
+            if ($myname eq "map") {
+                $s->xxfinish;
+                chomp $$out;
+                print $$out, $recordsep
+                  or die "$myname: error writing to stdout: $!\n";
+            } elsif ($myname eq "filtermap") {
+                my $rv= $s->xfinish;
+                if ($rv == 0) {
+                    chomp $$out;
+                    print $$out, $recordsep
+                      or die "$myname: error writing to stdout: $!\n";
+                }
+            } else {
+                die "bug"
+            }
+	} elsif ($myname eq "filter") {
 	    my $rv= xsystem(@cmd);
-	    if ($rv==0) {
-		print $_,$recordsep
+	    if ($rv == 0) {
+		print $_, $recordsep
 		  or die "$myname: error writing to stdout: $!\n";
 	    }
-	}
+	} else {
+            die "bug"
+        }
     }
 
 }
