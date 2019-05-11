@@ -47,7 +47,3 @@ my @rest= map {s/\|/ | /sg ? do{push @multi;""} : "$_ "} split /[\s,]+/,$a;
 print STDERR map {"$_\n"} @multi if @multi;
 print @rest;
 
-__END__
-bug-buddy gnome-control-center libeel2-2 eog gconf-editor gnome-applets gnome-panel gnome-session gnome-system-monitor gnome-terminal gnome2-user-guide gnome-utils libgail-gnome0 libgnomeprintui-0 libgtkhtml2-0 libgtop2 librsvg2-2 libwnck4 libzvt2  scrollkeeper yelp gnome-media gedit file-roller system-tray-applet
-
-  aptinstall -t unstable bug-buddy gnome-control-center libeel2-2 eog gconf-editor gnome-applets gnome-panel gnome-session gnome-system-monitor gnome-terminal gnome2-user-guide gnome-utils libgail-gnome0  libgtkhtml2-0 libgtop2 librsvg2-2 libwnck4 libzvt2  scrollkeeper yelp gnome-media file-roller system-tray-applet
