@@ -102,41 +102,36 @@ sub Main { #only to be called once!! (GetOptions)
     local $/= $recordsep;
     #^- already prepare for changes.
 
-    while (<STDIN>) {
-	chomp;
-	$cmd[$pos]=$_;
-	if ($myname eq "map" or $myname eq "filtermap") {
-	    # since we care about the record separator being output always
-	    # correctly, we filter the output ourselves:
-	    my $s= Chj::IO::Command->new_sender(@cmd);
-	    $cmd[$pos]=undef; $_=undef; # save memory.
-	    my $out= $s->xcontentref;
-            if ($myname eq "map") {
-                $s->xxfinish;
-                chomp $$out;
-                print $$out, $recordsep
-                  or die "$myname: error writing to stdout: $!\n";
-            } elsif ($myname eq "filtermap") {
-                my $rv= $s->xfinish;
-                if ($rv == 0) {
+    while (defined (my $inputvalue= <STDIN>)) {
+	chomp $inputvalue;
+	$cmd[$pos]= $inputvalue;
+
+        # since we care about the record separator being output always
+        # correctly, we filter the output ourselves (including
+        # suppressing output from the command run by filter):
+        my $s= Chj::IO::Command->new_sender(@cmd);
+        my $out= $s->xcontentref;
+        if ($myname eq "map") {
+            $s->xxfinish;
+            chomp $$out;
+            print $$out, $recordsep
+              or die "$myname: error writing to stdout: $!\n";
+        } else {
+            my $rv= $s->xfinish;
+            if ($rv == 0) {
+                if ($myname eq "filtermap") {
                     chomp $$out;
                     print $$out, $recordsep
                       or die "$myname: error writing to stdout: $!\n";
+                } elsif ($myname eq "filter") {
+                    print $inputvalue, $recordsep
+                      or die "$myname: error writing to stdout: $!\n";
+                }  else {
+                    die "bug"
                 }
-            } else {
-                die "bug"
             }
-	} elsif ($myname eq "filter") {
-	    my $rv= xsystem(@cmd);
-	    if ($rv == 0) {
-		print $_, $recordsep
-		  or die "$myname: error writing to stdout: $!\n";
-	    }
-	} else {
-            die "bug"
         }
     }
-
 }
 #use Chj::ruse;use Chj::Backtrace; use Chj::repl; repl;
 
