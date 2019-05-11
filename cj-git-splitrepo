@@ -29,7 +29,7 @@ shift
 keeps="`tempfile`"
 
 filterkeeps () {
-    filter-whitespace|filter-trimspace
+    filter-whitespace|map-trimspace
 }
 
 if test $# -gt 0; then
