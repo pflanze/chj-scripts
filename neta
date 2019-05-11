@@ -76,7 +76,7 @@ docmd () {
     if [ -n "${1-}" ]; then
 	"$cmd" "$@"
     else
-	IFS=$'\n' read -rd '' -a users < <(filter-stripcomments < "$etcpath") || true
+	IFS=$'\n' read -rd '' -a users < <(stripcomments < "$etcpath") || true
 	"$cmd" "${users[@]}"
     fi
 }

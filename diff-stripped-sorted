@@ -16,9 +16,9 @@ fi
 if [ $# -ne 2 ]; then
     echo "$0 [option] file1 file2"
     echo "  does tkdiff if DISPLAY is set, or diff -u otherwise, on the"
-    echo "  contents piped through sort and filter-stripcomments"
+    echo "  contents piped through sort and stripcomments"
     echo "  If 3 arguments are given, the *first* is considered to be an"
-    echo "  option to filter-stripcomments."
+    echo "  option to stripcomments."
     exit 1
 fi
 
@@ -35,7 +35,7 @@ trans() {
     # : Double quote to prevent globbing and word splitting.
     # (Reason is that I might want to pass multiple of them? But, I
     # don't control IFS. But, caller should. Thus OK?)
-    filter-stripcomments $STRIPOPT < "$1" | csort > "$2"
+    stripcomments $STRIPOPT < "$1" | csort > "$2"
 }
 
 trans "$file1" "$tmp1"
