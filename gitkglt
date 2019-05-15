@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# show all local branches as well as all tags
+
+exec gitkgl --tags "$@"
+
