@@ -1,3 +1,8 @@
 #!/bin/bash
 
-rlwrap »» g-cherry-pick
+
+if [ $# -gt 0 ]; then
+    g-cherry-pick "$@"
+else
+    rlwrap »» g-cherry-pick
+fi
