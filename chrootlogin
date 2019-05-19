@@ -160,8 +160,10 @@ unless ($opt_no_mount) {
 	mount "--bind", "/dev/pts", "$chrootbase/dev/pts";
     }
 
-    mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
-      "tmpfs","$chrootbase/lib/init/rw";
+    if (-d "$chrootbase/lib/init/rw") {
+	mount_if_not_already qw(-t tmpfs -o), 'nosuid,relatime,mode=755',
+	    "tmpfs","$chrootbase/lib/init/rw";
+    }
 
     if (-l "$chrootbase/dev/shm") {
 	if (my ($target)= perhaps_PathExpand_all("/dev/shm", $chrootbase)) {

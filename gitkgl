@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# show all local branches
+
+git branch | sed 's/^\** *//' |» gitkg "$@"
+
