@@ -34,6 +34,18 @@ sub new {
     $s
 }
 
+sub fullname {
+    my $s=shift;
+    $s->name
+}
+
+sub basename {
+    my $s=shift;
+    my $str= $s->name;
+    $str=~ s|.*/||;
+    $str
+}
+
 #hm override name to stip 'remotes/' ?
 
 
