@@ -18,7 +18,7 @@ branchname="$1"
 
 if echo "$branchname" | grep -q /; then
     bn=$(basename "$branchname")
-    git checkout -b "$bn" -- "$branchname"
+    git checkout -b "$bn" "$branchname"
 else
-    git checkout -- "$branchname"
+    git checkout "$branchname"
 fi
