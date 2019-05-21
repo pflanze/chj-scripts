@@ -476,10 +476,18 @@ sub git_branches { # "git branch" 'but' returns 'list'
     my @res;
     while (<$in>) {
 	chomp;
-	my ($selected, $name)=  /^(\*\s+)?\s*(\S+)$/
-	  or die "invalid line '$_'";
-	# now what to do with it, some object [with stringify overload?]?
-	push @res, Chj::Git::Branch->new($selected, $name);
+	if (my ($selected, $name)=  /^(\*\s+)?\s*(\S+)$/) {
+	    # now what to do with it, some object [with stringify overload?]?
+	    push @res, Chj::Git::Branch->new($selected, $name);
+	} else {
+	    if (my ($selected, $from, $to)=
+		 /^(\*\s+)?\s*(\S+)\s+->\s+(\S+)$/) {
+		# only used for e.g. '  remotes/origin/HEAD -> origin/master'?
+		# ignore
+	    } else {
+		die "invalid line '$_'";
+	    }
+	}
     }
     $in->xxfinish;
     @res
