@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 maybefullyqualifiedbranchname"
+    echo "  checks out given branch if not containing a slash;"
+    echo "  creates and checks out branch if containing a slash."
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+branchname="$1"
+
+if echo "$branchname" | grep -q /; then
+    bn=$(basename "$branchname")
+    set -x
+    git checkout -b "$bn" "$branchname" || {
+	git checkout "$bn"
+	git merge "$branchname"
+    }
+else
+    set -x
+    git checkout "$branchname"
+fi
