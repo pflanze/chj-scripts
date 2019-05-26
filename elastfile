@@ -1,22 +1,3 @@
 #!/bin/bash
 
-set -euo pipefail
-IFS=
-
-lf () {
-    local dir="$1"
-    lastfile --fullpath "$dir"
-}
-
-if [ $# = 0 ]; then
-    e "`lf .`"
-else
-    declare -A a
-
-    for d in "$@"; do
-	a[${#a[@]}]="`lf "$d"`"
-    done
-
-    e "${a[@]}"
-fi
-
+exec xlastfile e "$@"
