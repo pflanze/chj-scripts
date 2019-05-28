@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+cachedir=~/.memoize-cache
+
+usage () {
+    echo "usage: $0 cmd [ args ]"
+    echo "  Reads all of stdin, looks it up in cache at $cachedir,"
+    echo "  if found prints the cached output, otherwise run cmd with"
+    echo "  args and tee's the output to the cache, too."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+input=$(tempfile)
+cat > "$input"
+
+hashwithsplit=$(sha256sum "$input" | perl -wne 's/\s+.*//; s{(..)}{$1/}; print')
+
+cachefile="$cachedir/$hashwithsplit"
+
+if [ ! -e "$cachefile" ]; then
+    cachedir=$(dirname "$cachefile")
+    if [ ! -d "$cachedir" ]; then
+	private mkdir -p "$cachedir"
+    fi
+    tmp="$cachefile".tmp$$
+    # XX periodically clean those up
+    "$@" < "$input" > "$tmp"
+    mv "$tmp" "$cachefile"
+fi
+
+cat "$cachefile"
