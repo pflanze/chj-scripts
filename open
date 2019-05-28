@@ -4,5 +4,5 @@ set -euo pipefail
 IFS=
 
 for f in "$@"; do
-    _open "$f" &
+    _open "$f"
 done
