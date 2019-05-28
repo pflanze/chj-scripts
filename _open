@@ -3,8 +3,13 @@
 set -euo pipefail
 IFS=
 
+if [ $# -ne 1 ]; then
+    echo "_open must be called with 1 argument" >&2
+    exit 1
+fi
+
 name=$(basename "$0")
-cmd=_open
+cmd=xdg-open
 
 HASH=$(perl -we 'print join("\0",@ARGV) or die $!' "$(pwd)" "$cmd" "$@" | sha1sum | printfield 1)
 # have to use separate logdir for every instance or there will be lock failures. Meh.
