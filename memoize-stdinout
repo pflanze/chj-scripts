@@ -24,7 +24,7 @@ fi
 input=$(tempfile)
 cat > "$input"
 
-hashwithsplit=$(sha256sum "$input" | perl -wne 's/\s+.*//; s{(..)}{$1/}; print')
+hashwithsplit=$(sha256sum "$input" | sed 's/\s.*//; s/../\0\//')
 
 cachefile="$cachedir/$hashwithsplit"
 
