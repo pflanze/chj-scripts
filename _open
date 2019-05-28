@@ -3,6 +3,11 @@
 set -euo pipefail
 IFS=
 
-for f in "$@"; do
-    xdg-open "$f" &
-done
+name=$(basename "$0")
+cmd=_open
+
+HASH=$(perl -we 'print join("\0",@ARGV) or die $!' "$(pwd)" "$cmd" "$@" | sha1sum | printfield 1)
+# have to use separate logdir for every instance or there will be lock failures. Meh.
+LOGDIR=~/log/"$name"-"$HASH"
+private mkdir -p "$LOGDIR"
+exec r daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" "$cmd" "$@"
