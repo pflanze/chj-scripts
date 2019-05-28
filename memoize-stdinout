@@ -39,4 +39,6 @@ if [ ! -e "$cachefile" ]; then
     mv "$tmp" "$cachefile"
 fi
 
+rm "$input"
+
 cat "$cachefile"
