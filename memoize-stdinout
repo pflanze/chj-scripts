@@ -24,8 +24,8 @@ fi
 input=$(tempfile)
 cat > "$input"
 
-hashwithsplit=$(sha256sum "$input" | sed 's/\s.*//; s/../\0\//')
-
+hash=$(sha256sum "$input")
+hashwithsplit="${hash:0:2}/${hash:2:62}"
 cachefile="$cachedir/$hashwithsplit"
 
 if [ ! -e "$cachefile" ]; then
