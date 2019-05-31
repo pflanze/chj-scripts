@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 suffix-without-dot"
+    echo "  \`git ls-files\` filtered by the files with end in the given suffix."
+    exit 1
+}
+
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+export SUFFIX="$1"
+
+gls | perl -wne 'print if /\.\Q$ENV{SUFFIX}\E$/o'
+
