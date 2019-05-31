@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 cmd [ args ]" >&2
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+
+cmd="$1"
+shift
+
+name="$(basename "$0")-$cmd"
+
+# CWD should be part of the key (since args could be CWD relative); $$
+# should not, OK?
+HASH=$(perl -we 'print join("\0",@ARGV) or die $!' "$(pwd)" "$cmd" "$@" | sha1sum | printfield 1)
+
+# have to use separate logdir for every instance or there will be lock failures. Meh.
+LOGDIR=~/log/"$name"-"$HASH"
+
+private mkdir -p "$LOGDIR"
+
+exec r daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" "$cmd" "$@"
+
