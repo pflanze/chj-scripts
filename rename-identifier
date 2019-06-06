@@ -9,10 +9,10 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname fromname toname
+    print "$myname fromname toname [paths..]
   rename all occurrences of the string fromname, with requirement for
   word boundaries at the start and end of the string, to tostring in
-  all files listed by git ls-files.
+  all files listed by git ls-files, or the given paths if any.
 
   Options:
     --scm  require Scheme symbol boundaries instead of word boundaries
@@ -30,15 +30,20 @@ GetOptions("verbose"=> \$verbose,
 	   "scm"=> \$opt_scm,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV==2;
+usage unless @ARGV>=2;
 
 use Chj::Git::Functions qw(git_ls_files);
 use Chj::xperlfunc;
 
-($ENV{FROMSTR}, $ENV{TOSTR})= @ARGV;
+my @perhaps_paths;
+($ENV{FROMSTR}, $ENV{TOSTR}, @perhaps_paths)= @ARGV;
 
 my $scmboundary=
   '\s|[()"`\'\[\]\|]';
+
+my @paths=
+    @perhaps_paths ? @perhaps_paths
+    : grep { not -l $_ } git_ls_files;
 
 xexec "mysed",
   ($opt_scm ?
@@ -46,7 +51,7 @@ xexec "mysed",
     .'/$ENV{TOSTR}/sg')
    :
    ('s/\b\Q$ENV{FROMSTR}\E\b/$ENV{TOSTR}/sg')),
-  grep { not -l $_ } git_ls_files;
+  @paths;
 
 
 #use Chj::ruse;
