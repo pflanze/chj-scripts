@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# also see grevert
 
 if [ $# -gt 0 ]; then
     g-cherry-pick "$@"

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# also see gpick
+
+if [ $# -gt 0 ]; then
+    g-revert "$@"
+else
+    rlwrap »» g-revert
+fi
