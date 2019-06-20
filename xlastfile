@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "xlastfile proc [args]"
+    echo "  Call proc with args passed through \`lastfile --fullpath\`."
+    echo "  Without args, call proc with \`lastfile --fullpath .\`."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+proc="$1"
+shift
+
+lf () {
+    local dir="$1"
+    lastfile --fullpath "$dir"
+}
+
+if [ $# = 0 ]; then
+    "$proc" "$(lf .)"
+else
+    declare -A a
+    a=()
+
+    for d in "$@"; do
+	a[${#a[@]}]="$(lf "$d")"
+    done
+
+    "$proc" "${a[@]}"
+fi
+
