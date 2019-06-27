@@ -8,7 +8,7 @@ Chj::Serial::Sexpr
 
 =head1 SYNOPSIS
 
-  use Chj::Serial::Sexpr 'xprint_to_sexpr_line';
+  use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line);
 
   xprint_to_sexpr_line((bless *STDOUT{IO},"Chj::IO::File"),
      ["heelo", 233.4, 0.3, "0.4", undef, {foo=> 1, bar=> 0}, *STDIN{IO}]);
@@ -32,6 +32,7 @@ package Chj::Serial::Sexpr;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw();
 @EXPORT_OK=qw(xprint_to_sexpr_line
+              xprintln_to_sexpr_line
 	      xprint_to_sexpr_line_with_sharing);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
@@ -233,6 +234,12 @@ sub xprint_to_sexpr_line_ {
 	}
     };
     &$rec ($rec, $v);
+}
+
+sub xprintln_to_sexpr_line {
+    my ($out, )=@_;
+    xprint_to_sexpr_line(@_);
+    $out->xprintln;
 }
 
 1
