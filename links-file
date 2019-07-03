@@ -2,12 +2,11 @@
 
 set -euo pipefail
 IFS=
-# remember, *still* need to quote variables!
 
 for f in "$@"; do
     if echo "$f"|grep -q /; then
-	links "$f"
+	links-local "$f"
     else
-	links ./"$f"
+	links-local ./"$f"
     fi
 done

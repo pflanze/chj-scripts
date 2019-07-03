@@ -1,3 +1,3 @@
 #!/bin/sh
 settitle 'mysqldoc'
-exec links /usr/share/doc/mysql-doc/manual_Reference.html
+exec links-local /usr/share/doc/mysql-doc/manual_Reference.html

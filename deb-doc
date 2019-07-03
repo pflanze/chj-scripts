@@ -12,4 +12,4 @@ package="$1"
 # : See if you can use ${variable//search/replace} instead.
 packagename=`echo "$package"|sed s/:.*//`
 
-links /usr/share/doc/"$packagename"/
+links-local /usr/share/doc/"$packagename"/

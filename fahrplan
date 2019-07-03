@@ -1,2 +1,2 @@
 #!/bin/sh
-exec links http://www.sbb.ch/pv/index_d.htm
+exec links-local http://www.sbb.ch/pv/index_d.htm
