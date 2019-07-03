@@ -1,2 +1,0 @@
-#!/bin/sh
-exec links-local http://www.sbb.ch/pv/index_d.htm
