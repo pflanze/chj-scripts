@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+links -no-connect -socks-proxy 'foo@127.0.0.3:999' -https-proxy 127.0.0.3:998 -ftp-proxy 127.0.0.3:997 -http-proxy 127.0.0.3:996 "$@"
+
