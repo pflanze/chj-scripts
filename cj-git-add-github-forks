@@ -1,0 +1,54 @@
+#!/usr/bin/perl -w
+
+# Mon 15 Jul 07:02:23 BST 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Feed the copy-paste of the forks list from Github (in the given
+  files or) on stdin, will remote add them to the repository this is
+  run from.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage if @ARGV;
+
+use Chj::xperlfunc;
+
+my @forks;
+while (<>) {
+    chomp;
+    if (my ($nick1,$nick2,$repo)= /^\@(\S+)\s+(\S+)\s*\/\s*(\S+)\s*$/s) {
+        $nick1 eq $nick2
+          or die "line has two non-identical nicks: '$_'";
+        push @forks, [$nick2, $repo];
+    } else {
+        warn "ignoring non-matching line: '$_'";
+    }
+}
+
+warn "Got ".@forks." fork declarations, adding them ...\n";
+
+for (@forks) {
+    my ($nick,$repo)= @$_;
+    xxsystem "git", "remote", "add", "${nick}_$repo", "https://github.com/$nick/$repo";
+}
+
+warn "Done.\n";
+
