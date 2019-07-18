@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0"
+    echo "  \`git ls-files\` distilled down to suffix statistics"
+    exit 1
+}
+
+
+if [ $# -ne 0 ]; then
+    usage
+fi
+
+gls | perl -wne '
+chomp;
+if (m{([^/]+)\.([^.]+)$}) {
+    $suffix{$2}++
+       unless $1 eq "my";
+}
+END {
+    for (sort { $suffix{$a} <=> $suffix{$b} or $a cmp $b } keys %suffix) {
+        print "$suffix{$_}\t$_\n"
+    }
+}
+'
+
