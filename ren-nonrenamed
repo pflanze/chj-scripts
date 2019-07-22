@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+showren () {
+    less -- "$1"
+    ren -- "$1"
+}
+
+nonrenamed | ls2list | tac | while read path; do
+    showren "$path"
+done
+
