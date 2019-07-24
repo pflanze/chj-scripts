@@ -1,0 +1,87 @@
+#!/usr/bin/perl -w
+
+# Wed 24 Jul 08:37:09 BST 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname timedesc
+
+  Uses Perl's https://metacpan.org/pod/Time::ParseDate to parse
+  timedesc, which can be a duration or a point in time, and sleeps
+  till then. Prints the end time to STDERR unless --quiet is given.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_quiet;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "quiet"=> \$opt_quiet,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+my ($str)= @ARGV;
+
+use Time::ParseDate;
+use Time::HiRes qw(time sleep);
+
+my %short2long=
+  (s=> "seconds",
+   m=> "minutes",
+   h=> "hours",
+   d=> "days",
+   y=> "years");
+
+sub parseFuture ($$) {
+    my ($orig, $now)= @_;
+    my $s= $orig;
+    # Time::ParseDate does not support 's' etc, thus pre-process
+    $s=~ s{(\b|\d)([smhdy])(\b|\d)}{
+        $1 . ($short2long{$2} // die "bug") . $3
+    }ge;
+    my ($maybe_t, $err)=
+      parsedate($s,
+                WHOLE=> 1, PREFER_FUTURE=> 1, VALIDATE=> 1, UK=>1,
+                NOW=> $now);
+    defined $maybe_t
+      or die "parseFuture('$orig'): $err";
+    if ($maybe_t < $now) {
+        die "parseFuture('$orig'): time (".localtime($maybe_t)
+          ." is past now (".localtime ($now).")";
+    }
+    $maybe_t
+}
+
+sub sleepUntil ($) {
+    my ($t)=@_;
+    while (1) {
+        my $now= time;
+        my $d= $t-$now;
+        if ($d <= 0) {
+            return
+        }
+        #warn "sleep $d"; ah, perl already handles interrupted sleep calls?
+        # well, would have to try with a signal handler.
+        sleep $d
+    }
+}
+
+
+my $t= parseFuture $str, time;
+
+warn "$myname: sleeping till $t = ".localtime($t)."\n"
+  unless $opt_quiet;
+
+sleepUntil $t;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
