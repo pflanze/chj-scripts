@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: A [cmd+args..]"
+    echo "  Run \`git add -A\`, then cmd+args if given."
+    exit 0
+}
+
+if [ $# -gt 0 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+        usage
+    fi
+fi
+
+git add -A
+
+if [ $# -gt 0 ]; then
+    exec "$@"
+fi
+
