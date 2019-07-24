@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "with-lastfile proc [args]"
+    echo "  call \`with-lastfile-in . proc [ args ]\`."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+exec with-lastfile-in . "$@"

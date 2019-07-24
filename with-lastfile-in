@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "with-lastfile-in dirpath proc [args]"
+    echo "  Call proc with args and \`lastfile --fullpath \$dirpath\` as "
+    echo "  additional last argument."
+    echo "  Also see: xlastfile, with-lastfile"
+    exit 1
+}
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+dirpath="$1"
+shift
+
+dirpath2=$(lastfile --fullpath "$dirpath")
+
+exec "$@" "$dirpath2"

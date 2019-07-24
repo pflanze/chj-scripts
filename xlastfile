@@ -4,9 +4,10 @@ set -euo pipefail
 IFS=
 
 usage () {
-    echo "xlastfile proc [args]"
-    echo "  Call proc with args passed through \`lastfile --fullpath\`."
-    echo "  Without args, call proc with \`lastfile --fullpath .\`."
+    echo "xlastfile proc [dirpaths]"
+    echo "  Call proc with dirpaths passed through \`lastfile --fullpath\`."
+    echo "  Without dirpaths, call proc with \`lastfile --fullpath .\`."
+    echo "  Also see: with-lastfile"
     exit 1
 }
 
@@ -27,7 +28,7 @@ lf () {
 }
 
 if [ $# = 0 ]; then
-    "$proc" "$(lf .)"
+    exec "$proc" "$(lf .)"
 else
     declare -A a
     a=()
@@ -36,6 +37,6 @@ else
 	a[${#a[@]}]="$(lf "$d")"
     done
 
-    "$proc" "${a[@]}"
+    exec "$proc" "${a[@]}"
 fi
 
