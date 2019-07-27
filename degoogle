@@ -50,7 +50,8 @@ sub decode_print {
 sub degoogle {
     my ($str)=@_;
     my $encurl;
-    if (($encurl)= $str=~ m/(?:url\?|&)q=([^&].*?)(?:\&|$)/) {
+    if (($encurl)= $str=~ m/(?:(?:url|redirect)\?|&)q=([^&].*?)(?:\&|$)/) {
+        # redirect is for youtube
 	decode_print $encurl;
     } elsif (($encurl)= $str=~ m/(?:url\?|&)url=([^&].*?)(?:\&|$)/) {
 	decode_print $encurl;
