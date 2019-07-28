@@ -65,7 +65,6 @@ our $treat_fd= $show_f;
 readlsof ["-n"], sub {
     my ($rec)= @_;
     my $t= $$rec{t};
-    my $f= $$rec{f};
     if ($t eq 'CHR'
 	or $t eq 'DIR'
 	or $t eq 'unix'
@@ -75,11 +74,15 @@ readlsof ["-n"], sub {
 	or $t eq 'IPv4'
 	or $t eq 'IPv6'
 	or $t eq 'pack' # 'n' => 'type=SOCK_PACKET', in process 'dhclient'
+        or $t eq 'netlink'
+        or $t eq 'a_inode' # [eventpoll], [signalfd], inotify, [timerfd],
+                           # in systemd, dbus-daemon and ModemManager processes
        ) {
 	# ignore
     } elsif ($t eq 'REG') {
 	# fd numbers used if not special kind.
 	# (well. makes sense.)
+        my $f= $$rec{f};
 	if ($f=~ /^\d+\z/s) {
 	    &$treat_fd($rec);
 	} else {
@@ -88,19 +91,15 @@ readlsof ["-n"], sub {
 	    &$treat($rec);
 	}
     } elsif ($t eq 'unknown') {
+        my $f= $$rec{f};
 	if ($f eq 'txt' and $$rec{n} =~ m|^/proc/|) {
 	    # ignore
 	} else {
 	    die "unknown: ".Dumper($rec)." ";
 	}
-    } elsif ($t eq 'netlink') {
-	# ignore, ok?
-    } elsif ($t eq 'a_inode') {
-	# ignore, ok?
-        # [eventpoll], [signalfd], inotify, [timerfd],
-        # in systemd, dbus-daemon and ModemManager processes
     } else {
 	die "unknown file type '$t' in: ".Dumper($rec)." ";
+        # add new types to ignore at the top, near 'CHR'!
     }
 };
 
