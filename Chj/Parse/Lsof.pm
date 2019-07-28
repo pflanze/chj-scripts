@@ -40,6 +40,8 @@ use strict;
 
 use Chj::IO::Command;
 
+# reads lsof output, calls $put_f for every record that has been read
+# ("SAX (callback) alike", well, simply, "streaming", whatever).
 sub readlsof {
     my ($opts, $put_f)=@_; #, $put_p
 
