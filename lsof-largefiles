@@ -95,6 +95,10 @@ readlsof ["-n"], sub {
 	}
     } elsif ($t eq 'netlink') {
 	# ignore, ok?
+    } elsif ($t eq 'a_inode') {
+	# ignore, ok?
+        # [eventpoll], [signalfd], inotify, [timerfd],
+        # in systemd, dbus-daemon and ModemManager processes
     } else {
 	die "unknown file type '$t' in: ".Dumper($rec)." ";
     }
