@@ -86,9 +86,17 @@ readlsof ["-n"], sub {
 	if ($f=~ /^\d+\z/s) {
 	    &$treat_fd($rec);
 	} else {
-	    my $treat= $$treat_f_type{$f}
-	      or die "unknown value '$f' for field 'f'";
-	    &$treat($rec);
+            if ($$rec{n}=~ m{^(?:/usr)?/lib/.*?[^/]\.(so|jar|ja)\b}) {
+                # why, oh why, are those now REG files not, well,
+                # dunno what it was? Anyway we've got some *large* .so
+                # files nowadays, so, ignore them to see what's
+                # relevant, OK? XX should probably rather simply
+                # ignore files that are opened read-only.
+            } else {
+                my $treat= $$treat_f_type{$f}
+                or die "unknown value '$f' for field 'f'";
+                &$treat($rec);
+            }
 	}
     } elsif ($t eq 'unknown') {
         my $f= $$rec{f};
