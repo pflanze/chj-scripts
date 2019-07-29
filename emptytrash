@@ -150,16 +150,16 @@ SETCMODE
 }
 
 # -- main --------------------------------------------------
-if (@ARGV and ($ARGV[0]=~ /^--?h(elp)?$/ or not $ARGV[0]=~ /^-([cCmM])((?:\d+\.)?\d*)$/) or @ARGV>1) {
-	die "$name [-Cdays|-Mdays] [-t]
+if (@ARGV and ($ARGV[0]=~ /^--?h(elp)?$/ or not $ARGV[0]=~ /^-([cm])((?:\d+\.)?\d*)$/) or @ARGV>1) {
+	die "$name [-c\$days|-m\$days] [-t]
   Empty your trash can ($trash), but only
   deleting 'old' items. 
   There are two modes: 
-    -Cdays  Delete all top level items (folders/files) that
-            were added to the trash more than 'days' ago. 
-            (looks at inode change time)
-    -Mdays  Delete recursively all individual files/folders 
-            that are older than 'days' (modification time).
+    -c\$days  Delete all top level items (folders/files) that
+             were added to the trash more than 'days' ago. 
+             (looks at inode change time)
+    -m\$days  Delete recursively all individual files/folders 
+             that are older than 'days' (modification time).
   Flags are case insensitive, days may contain '.'.
   The default is '-c15' (in case you give '-m', -m30 is assumed).
   Additionally you may give -t for testing only (no items will
