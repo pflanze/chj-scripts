@@ -1,14 +1,14 @@
 #!/usr/bin/perl -w
 
 sub BEGIN {
-	for my $i (0..$#ARGV) {
-		if (lc($ARGV[$i]) eq '-t') {
-			eval "sub DEBUG {1}";
-			splice @ARGV, $i,1;
-			return;
-		} 
-	}
-	eval "sub DEBUG {0}";
+    for my $i (0..$#ARGV) {
+        if (lc($ARGV[$i]) eq '-t') {
+            eval "sub DEBUG {1}";
+            splice @ARGV, $i,1;
+            return;
+        }
+    }
+    eval "sub DEBUG {0}";
 }
 
 

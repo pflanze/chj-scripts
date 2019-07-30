@@ -94,7 +94,7 @@ my $cmd=shift @args;
 
 use Chj::xperlfunc;
 use Chj::Shelllike::touch_r;
-use Chj::Trash 'trash';
+use Chj::App::Trash 'trash';
 use Chj::xtmpfile;
 use Chj::xpiped ':all';
 use Chj::xopen qw(xopen_read xopen_write);
