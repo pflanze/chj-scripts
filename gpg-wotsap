@@ -5,31 +5,18 @@
 
 use strict;
 
-use Chj::IO::Command;
-use Chj::Chomp;
-sub Maybe_which ( $ ) {
-    my ($progname)=@_;
-    my $in= Chj::IO::Command->new_sender ("which",$progname);
-    my $cnt= $in->xcontent;
-    my $res=$in->xfinish;
-    if ($res==0) {
-	Chomp ($cnt)
-    } else {
-	undef
-    }
-}
-
+use Chj::which "maybe_which";
 
 # ============== local variant ===============================
 
 our $maybe_wotsap=
-  Maybe_which ("wotsap");
+  maybe_which ("wotsap");
 
 our $maybe_displaytool=
   (
-   Maybe_which ("eog")
+   maybe_which ("eog")
    or
-   Maybe_which ("display")
+   maybe_which ("display")
   );
 
 
@@ -45,18 +32,18 @@ sub open_key_locally {
 
 our $maybe_browser=
   (
-   Maybe_which ("chromium-$ENV{USER}sbx")
+   maybe_which ("chromium-$ENV{USER}sbx")
    or
-   Maybe_which ("galeon-$ENV{USER}sbx")
+   maybe_which ("galeon-$ENV{USER}sbx")
    or
-   Maybe_which ("chromium-browser")
+   maybe_which ("chromium-browser")
    or
-   Maybe_which ("galeon")
+   maybe_which ("galeon")
    or
    #well, I haven't tested those..:
-   Maybe_which ("firefox")
+   maybe_which ("firefox")
    or
-   Maybe_which ("mozilla")
+   maybe_which ("mozilla")
   );
 
 sub Keyid32bithex ( $ ) {
