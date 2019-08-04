@@ -78,9 +78,9 @@ sub runterminal {
 		       }
 		       ("urxvt",
 			"-fn", "xft:$font:pixelsize=$fontsize",
-			("-tn", "xterm",
-			 ($> == 0 ? ("-bg", "#ffd8d8") : ()),
-			 @args)));
+			"-tn", "xterm",
+                        ($> == 0 ? ("-bg", "#ffd8d8") : ()),
+                        @args));
 	my $script= join("\n",@scriptlines);
 	exec "/bin/bash", "-c", $script
 	  or exit 127;
