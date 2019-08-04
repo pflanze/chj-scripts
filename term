@@ -1,14 +1,17 @@
 #!/usr/bin/perl -w
 
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+my $myname= "term";
 
 use strict;
 
 my $opt_fg=0;
+my @perhaps_agent;
 
-if (@ARGV>=1) {
-    if ($ARGV[0]=~ /^--?h(elp)?$/) {
-	die "Open an urxvt terminal nicely. Usage:
+LP: {
+    if (@ARGV>=1) {
+        if ($ARGV[0]=~ /^--?h(elp)?$/) {
+            die "Open an urxvt terminal nicely. Usage:
 
 Open in the current directory:
 
@@ -24,15 +27,27 @@ immediately) and running setsid):
 
   term --fg {other args}
 
+If '--agent' is given as the first argument then the second argument
+is taken to be an executable run with the terminal command (including
+arguments) as its arguments.
+
 If the first argument starts with a dash then it is (together with all
 other arguments) passed to urxvt--e.g.:
 
   term -e cmd args..
 
 ";
-    } elsif ($ARGV[0]=~ /^--?f(g)?$/) {
-	$opt_fg=1;
-	shift @ARGV;
+        } elsif ($ARGV[0] eq '--agent') {
+            push @perhaps_agent,
+              ($ARGV[1] // die "$myname: --agent given but no further argument");
+            shift @ARGV;
+            shift @ARGV;
+            redo LP;
+        } elsif ($ARGV[0]=~ /^--?f(g)?$/) {
+            $opt_fg=1;
+            shift @ARGV;
+            redo LP;
+        }
     }
 }
 
@@ -76,7 +91,8 @@ sub runterminal {
 		       map {
 			   singlequote_sh $_
 		       }
-		       ("urxvt",
+		       (@perhaps_agent,
+                        "urxvt",
 			"-fn", "xft:$font:pixelsize=$fontsize",
 			"-tn", "xterm",
                         ($> == 0 ? ("-bg", "#ffd8d8") : ()),
@@ -91,7 +107,7 @@ sub runterminal {
 	#just make sure options won't do wrong:
 	and not $ARGV[0]=~ /^-/
        ) {
-	&$chdir ($ARGV[0]);
+	&$chdir($ARGV[0]);
 	&$run();
     } else {
 	&$run(@ARGV)

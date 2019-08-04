@@ -32,7 +32,7 @@ shift
 
 
 if AGENT=$(which ssh-agent); then
-    sux - "$user" "$AGENT" term "$@"
+    sux - "$user" term --agent "$AGENT" "$@"
 else
     sux - "$user" term "$@"
 fi
