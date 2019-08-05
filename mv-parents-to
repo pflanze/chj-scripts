@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+to="$1"
+shift
+
+exec mv-parents --to "$to" "$@"
