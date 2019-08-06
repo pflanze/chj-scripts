@@ -4,7 +4,7 @@ set -euo pipefail
 IFS=
 
 usage () {
-    echo "usage: $0 suffix-without-dot"
+    echo "usage: $0 suffix-without-dot-regex"
     echo "  \`git ls-files\` filtered by the files with end in the given suffix."
     exit 1
 }
@@ -20,5 +20,5 @@ fi
 
 export SUFFIX="$1"
 
-gls | perl -wne 'print if /\.\Q$ENV{SUFFIX}\E$/o'
+gls | perl -wne 'print if /\.(?:$ENV{SUFFIX})$/o'
 
