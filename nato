@@ -15,6 +15,10 @@ sub usage {
 
   Read from stdin if no arguments given.
 
+  Options:
+
+    --practise|--training    practising mode with random strings.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -22,12 +26,16 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
-#our $opt_dry;
+our $opt_practise;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "practise"=> \$opt_practise,
+	   "training"=> \$opt_practise,
 	   ) or exit 1;
-#usage unless @ARGV;
+
+
+usage "--practise doesn't take any arguments"
+  if $opt_practise && @ARGV;
 
 our $tbl=
   +{
@@ -62,15 +70,18 @@ our $tbl=
 
 sub say ($) {
     my ($str)=@_;
+    my @out; my $print= sub {
+        push @out, @_
+    };
     my $pos=0;
     while ($str=~ m/(.)(.|$)/sgc) {
 	# ALWAYS forget: can't take those from above since that would
 	# break /c (get all in one huge list I guess)
 	my ($c,$next)=($1,$2);
 	if (defined (my $word= $$tbl{lc $c})) {
-	    print "$word ";
+	    &$print("$word ");
 	} else {
-	    print
+	    &$print
 	      (do {
 		  if ($c eq ".") {
 		      if ($next and $next=~ /\S/) {
@@ -88,14 +99,69 @@ sub say ($) {
 	}
 	pos($str)= ++$pos;
     }
-    print "\n";
+    &$print("\n");
+    join("", @out)
 }
 
-if (@ARGV) {
-    say $_ for @ARGV
+sub randomint ($) {
+    int rand $_[0]
+}
+
+sub randomstr {
+    my $all= "ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789.";
+    my $alllen= length $all;
+    my $len= 1 + randomint 10;
+    my @o;
+    for (1..$len) {
+        push @o, substr $all, randomint($alllen), 1
+    }
+    join("", @o)
+}
+
+sub getans {
+    require Chj::IO::Command;
+    my $s= Chj::IO::Command->new_sender('rlwrap', 'bash', '-c', 'set -eu; read FOO; echo "$FOO"');
+    my $ans= $s->xcontent;
+    $s->xfinish;
+    chomp $ans;
+    $ans
+}
+
+sub cleanup {
+    my ($s)=@_;
+    $s=~ s/\s+/ /sg;
+    $s=~ s/^\s+//;
+    $s=~ s/\s+\z//;
+    lc $s
+}
+
+if ($opt_practise) {
+    print "If you hit enter without entering anything, I will show the response.\n";
+    while (1) {
+        my $str= randomstr;
+        print "What is the NATO translation of: $str\n";
+        my $tra= say $str;
+      LP: {
+            my $ans= getans;
+            if (not length $ans) {
+                print "OK, it is: $tra\n";
+            } else {
+                if (cleanup ($tra) eq cleanup ($ans)) {
+                    print "Correct.\n"
+                } else {
+                    print "Incorrect. Try again.\n";
+                    redo LP;
+                }
+            }
+        }
+    }
 } else {
-    while (<>) {
-	say $_
+    if (@ARGV) {
+        print say $_ for @ARGV
+    } else {
+        while (<>) {
+            print say $_
+        }
     }
 }
 
