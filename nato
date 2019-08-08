@@ -161,6 +161,8 @@ if ($opt_training or $opt_practise) {
             my $ans= getans;
             if (not length $ans) {
                 print "OK, it is: $tra\n";
+                print "Please repeat.\n";
+                redo LP;
             } else {
                 if (cleanup ($tra) eq cleanup ($ans)) {
                     print "Correct.\n"
