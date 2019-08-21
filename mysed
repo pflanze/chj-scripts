@@ -17,8 +17,7 @@ sub usage {
     print "$name s/../../sigo -l < filelist\n";
     print "  Applies perl regex to all given files; moves old versions of the modified\n";
     print "  files to the trash can (if possible).\n";
-    print "  Other options: (to be given after the code argument, too, \n";
-    print "                 *but before* the above-mentioned options!)\n";
+    print "  Other options: (to be given *before* the above-mentioned options!)\n";
     print "    --keep-time    keep the modification time of the file\n";
     print "                   (if it's a symlink, hmmmm currently get the mtime of the\n";
     print "                   pointed-at file and apply it to the new file which replaces\n";
@@ -29,7 +28,7 @@ sub usage {
 }
 
 
-my $regex=shift or usage;
+my $regex;
 my $mode;
 # f=filelist in @ARGV,
 # -=filelist on stdin,
@@ -80,10 +79,17 @@ OPTPARSE: {
 	shift;
 	$mode='f';
     } else {
-	$mode='f';
+        if (defined $regex) {
+            $mode='f';
+        } else {
+            $regex= $_;
+            shift;
+            redo OPTPARSE;
+        }
     }
 }
 
+defined $regex or usage;
 
 eval "sub doreg { $regex }; 1"
   or die "could not eval regex: $@";
