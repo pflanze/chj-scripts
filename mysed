@@ -88,7 +88,8 @@ OPTPARSE: {
 eval "sub doreg { $regex }; 1"
   or die "could not eval regex: $@";
 
-use Chj::App::Trash;
+require Chj::App::Trash
+    unless $opt_no_trash;
 
 our $trash= do {
     if ($opt_no_trash) {
