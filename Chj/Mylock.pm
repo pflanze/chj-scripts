@@ -10,8 +10,22 @@ Chj::Mylock
 
 =head1 SYNOPSIS
 
+# when needing a private lock:
+#my $l= new_mylock;
+# Whereas when needing a shared lock, shared by path:
+#my $l= $the_shared_path;
+
+xmylock $l;
+# do stuff
+xmyunlock $l;
+
 =head1 DESCRIPTION
 
+Someone had told me in the early 2000's that flock wasn't
+reliable. Then in 2013(?) I had a reproducible case where flock wasn't
+reliable (on Linux). So I gave up and in and went with lock files (like
+everybody else?). Hey, at least it only links a pre-existing file,
+somewhat less overhead?
 
 =cut
 
