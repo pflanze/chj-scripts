@@ -39,7 +39,7 @@ package Chj::Mylock;
 use strict; use warnings FATAL => 'uninitialized';
 use Chj::xopen 'xopen_write';
 use Chj::xtmpdir;
-use POSIX qw(ENOENT);
+use POSIX qw(EEXIST);
 
 our $dir=xtmpdir;
 $dir->autoclean(2);
@@ -61,11 +61,13 @@ sub xmylock {
     my $sleeptime= 200/2e9;
     while (1) {
 	return if link $p, "$p.locked";
-        if ($! == ENOENT) {
+        if ($! == EEXIST) {
+            $sleeptime*= 1.05;
+            #$|=1; print ".";
+            sleep $sleeptime;
+        } else {
             die "xmylock('$p'): $!"
         }
-	$sleeptime*= 1.05;
-	sleep $sleeptime;
     }
 }
 
