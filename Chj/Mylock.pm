@@ -15,8 +15,22 @@ Chj::Mylock
 # Whereas when needing a shared lock, shared by path:
 #my $l= $the_shared_path;
 
-xmylock $l;
+xmylock $l; # waits indefinitely to get the lock
+
+# Stop and throw an exception after 10 seconds of waiting; will not
+# release the lock:
+#xmylock $l, 10;
+
+# After 10 seconds of waiting, claim the lock; don't use if there is a
+# possibility for suspended processes, or if the program can't cope with
+# half-done work by an interrupted program!
+#xmylock $l, 10, 1;
+# xmylock returns 0 when getting the lock normally, 1 when claimed
+# after a timeout.
+
+
 # do stuff
+
 xmyunlock $l;
 
 =head1 DESCRIPTION
@@ -39,6 +53,7 @@ package Chj::Mylock;
 use strict; use warnings FATAL => 'uninitialized';
 use Chj::xopen 'xopen_write';
 use Chj::xtmpdir;
+use Time::HiRes qw(sleep time);
 use POSIX qw(EEXIST);
 
 our $dir=xtmpdir;
@@ -54,14 +69,33 @@ sub new_mylock {
     $p
 }
 
-use Time::HiRes 'sleep';
+
+our $warn_claims= 1;
 
 sub xmylock {
-    my ($p)=@_;
+    my ($p, $maybe_timeout, $do_claim_after_timeout)=@_;
     my $sleeptime= 200/2e9;
+    my $t0;
     while (1) {
-	return if link $p, "$p.locked";
+	return 0 if link $p, "$p.locked";
         if ($! == EEXIST) {
+            if (defined $maybe_timeout) {
+                if (! defined $t0) {
+                    $t0= time;
+                }
+                my $t= time;
+                if (($t-$t0) > $maybe_timeout) {
+                    if ($do_claim_after_timeout) {
+                        if ($warn_claims) {
+                            require Carp;
+                            Carp::carp("xmylock('$p'): claimed lock after $maybe_timeout seconds");
+                        }
+                        return 1;
+                    }
+                    die "xmylock('$p', $maybe_timeout): timed out waiting for lock to be freed";
+                }
+            }
+            
             $sleeptime*= 1.05;
             #$|=1; print ".";
             sleep $sleeptime;
