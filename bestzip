@@ -37,6 +37,8 @@ usage unless @args;
 
 
 use Chj::xperlfunc;
+use Chj::which qw(maybe_which);
+
 
 sub tryzip {
     my ($cmdPlus,$infile)=@_;
@@ -44,24 +46,43 @@ sub tryzip {
     [ $outfile, xstat($outfile)->size ]
 }
 
-our @cmdPlus=
-  (
-   sub {
-       my ($infile)=@_;
-       xxsystem "bzip2","-k",$infile;
-       $infile.".bz2"
-   },
+our @possiblecommands=
+  (# program name (dependency), and proc
+   [bzip2=> sub {
+        my ($infile)=@_;
+        xxsystem "bzip2","-k",$infile;
+        $infile.".bz2"
+    }],
+   [rzip=> sub {
+        my ($infile)=@_;
+        xxsystem "rzip","-k",$infile;
+        $infile.".rz"
+    }],
    # the following must be LAST now because it unlinks the original file!:
-   sub {
-       my ($infile)=@_;
-       xxsystem "gzip","--best",$infile;
-       $infile.".gz"
-   },
+   [gzip=> sub {
+        my ($infile)=@_;
+        xxsystem "gzip","--best",$infile;
+        $infile.".gz"
+    }],
   );
+
+our @cmdPlus= grep {
+    my $name_proc= $_;
+    my $name= $$name_proc[0];
+    if (maybe_which $name) {
+        1
+    } else {
+        warn "$myname: note: dependency '$name' is not installed, not running it.\n";
+        0
+    }
+} @possiblecommands;
+
 
 for my $file (@args) {
     local our @out= map {
-	tryzip $_,$file
+        my ($name, $proc)= @$_;
+        #warn "trying $name..\n";
+	tryzip $proc, $file
     } @cmdPlus;
     # find the smallest
     @out= sort { $$a[1] <=> $$b[1] } @out;
