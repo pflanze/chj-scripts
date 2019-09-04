@@ -242,7 +242,8 @@ our $was_claimed;
 sub with_mylock (&$;$$) {
     my ($thunk, $l, $timeout, $do_claim_after_timeout)= @_;
     my $wantarray= wantarray;
-    local $was_claimed= xmylock $l, $timeout, $do_claim_after_timeout;
+    my $claimed= xmylock $l, $timeout, $do_claim_after_timeout;
+    local $was_claimed= $claimed;
     my @res;
     my $is_OK= eval {
         if ($wantarray) {
@@ -253,7 +254,7 @@ sub with_mylock (&$;$$) {
         1
     };
     my $e= $@;
-    xmyunlock $l, $was_claimed;
+    xmyunlock $l, $claimed;
     die $e
         if ! $is_OK;
     $wantarray ? @res : $res[0]
