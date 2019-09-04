@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use strict; use warnings FATAL => 'uninitialized';
+
 sub BEGIN {
     for my $i (0..$#ARGV) {
         if (lc($ARGV[$i]) eq '-t') {
@@ -10,105 +12,54 @@ sub BEGIN {
     }
     eval "sub DEBUG {0}";
 }
-
-
 my $name= 'emptytrash';
-my $trash;
-if ($ENV{TRASHCAN}) {
-	$trash= $ENV{TRASHCAN}
-} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
-	$trash=$ENV{HOME}."/Desktop/Trash/";
-} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
-	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
-} elsif (-e $ENV{HOME}."/.trash/") {
-    $trash=$ENV{HOME}."/.trash/";
-} elsif (-e $ENV{HOME}."/.Trash/") {
-    $trash=$ENV{HOME}."/.Trash/";
-} else {
-	die "Couldn't find your trash can!";
-}
+
+
+
+use Chj::App::Trash;
+
+my $trash= Chj::App::Trash->new->trashdir;
 
 
 my $NOW= time;
-my $DAYS; # will be set
+my $DAYS;
 
+if (@ARGV
+    and ($ARGV[0]=~ /^--?h(elp)?$/
+         or not $ARGV[0]=~ /^-c((?:\d+\.)?\d*)$/)
+    or @ARGV>1) {
 
-# -- m mode: --------------------------------------------------
+    die "$name [-c\$days] [-t]
+  Empty your trash can ($trash), but only deleting 'old' items.
 
-sub workondir {
-    # returns a list of a) true if empty and successfully deleted, b)
-    # num of deleted items
-    my ($dir,$dontremove)=@_;
-    print "work on dir '$dir'..\n" if DEBUG;
-    my $dirIsOld= isOld($dir); # get this BEFORE acting on content..
-    if (opendir D, $dir) {
-        my @Items= readdir D;
-        close D;
-        my $isemptyanddeleted=1;
-        my $numdel=0;
-        for my $item (@Items) {
-            next if $item eq '.' or $item eq '..'; # !!!
-            if (-d "$dir/$item") {
-                my ($e,$n)=workondir("$dir/$item");
-                $isemptyanddeleted=0 if not $e;
-                $numdel+=$n;
-            } elsif (isOld("$dir/$item")) {
-                unless (DEBUG) {
-                    (unlink "$dir/$item" and ++$numdel)
-                      or warn "Could not delete file '$dir/$item': $!\n";
-                }
-            } else { # don't delete it
-                $isemptyanddeleted=0;
-            }
-        }
+    -c\$days  Delete all top level items (folders/files) that
+             were added to the trash more than 'days' ago. 
+             (looks at inode change time).
+             \$days may contain '.'. The default is 15.
 
-        if ($isemptyanddeleted and !$dontremove and $dirIsOld) {
-            unless (DEBUG) {
-                (rmdir $dir and ++$numdel)
-                  or do {
-                      $isemptyanddeleted=0;
-                      warn "Could not delete directory '$dir': $!\n"
-                  };
-            }
-        }
-        ($isemptyanddeleted,$numdel);
-    } else {
-        warn "Could not open directory '$dir': $!\n";
-        (0,0);
-    }
-}
+     -t      testing only (no items will be deleted).
+";
 
-sub isOld {
-    # calculates age in days like -M, but unlike -M, it takes the age
-    # of links and not their targets
-    my $item=shift;
-    if (my $mtime=(lstat($item))[9]) {
-        my $days= ($NOW - $mtime) / (60*60*24);
-        if (DEBUG) {
-            print $days > $DAYS ? 'OLD':'   ';
-            print "  Item '$item' is $days days old\n" 
-        }
-        $days > $DAYS
-    } else {
-        warn "Could not stat '$item': $!\n";
-        undef;
-    }
-}
+} else {
+    $DAYS= $1;
+    $DAYS= 15
+      unless defined($DAYS) and length($DAYS)>0;
 
-sub run_m {
-    print "Running M-Mode..\n" if DEBUG;
-    my $numdel= (workondir ($trash,1))[1];
-    print "Deleted $numdel items from $trash\n";
+    print"DAYS=$DAYS\n" if DEBUG;
+
+    run_c();
 }
 
 
-# -- c mode: --------------------------------------------------
 
 sub rm_rf ($) {
     my ($path)= @_;
-    if (fork) {
-        wait;
-        !$?
+    my $pid= fork;
+    defined $pid or die "fork: $!";
+    if ($pid) {
+        waitpid $pid, 0
+          or die "waitpid: $!";
+        not $?
     } else {
         if (DEBUG) {
             #print"removing '$path'\n";
@@ -121,14 +72,12 @@ sub rm_rf ($) {
 
 
 sub run_c {
-    print "Running C-Mode..\n" if DEBUG;
-
     my $numdel=0;
     if (opendir D, $trash) {
-        my @Items= readdir D;
+        my @items= readdir D;
         close D;
-        for my $item (@Items) {
-            next if $item eq '.' or $item eq '..'; # !!!
+        for my $item (@items) {
+            next if $item eq '.' or $item eq '..';
 
             # determine inode change time
             if (my $ctime= (lstat("$trash/$item"))[10]) {
@@ -138,53 +87,17 @@ sub run_c {
                     print "  Item '$item' is $days days old\n";
                 }
                 if ($days > $DAYS) {
-                    rm_rf("$trash/$item") and ++$numdel;
+                    rm_rf("$trash/$item")
+                      and ++$numdel;
                 }
             } else {
                 warn "Could not stat '$trash/$item': $!\n";
                 undef;
             }
         }
-	print "Deleted $numdel top-level items from $trash\n";
+        print "Deleted $numdel top-level items from $trash\n";
     } else {
         warn "Could not open trash directory '$trash': $!\n";
-    }
-}
-
-
-# -- main --------------------------------------------------
-
-if (@ARGV
-    and ($ARGV[0]=~ /^--?h(elp)?$/
-         or not $ARGV[0]=~ /^-([cm])((?:\d+\.)?\d*)$/)
-    or @ARGV>1) {
-    die "$name [-c\$days|-m\$days] [-t]
-  Empty your trash can ($trash), but only
-  deleting 'old' items. 
-  There are two modes: 
-    -c\$days  Delete all top level items (folders/files) that
-             were added to the trash more than 'days' ago. 
-             (looks at inode change time)
-    -m\$days  Delete recursively all individual files/folders 
-             that are older than 'days' (modification time).
-  Flags are case insensitive, days may contain '.'.
-  The default is '-c15' (in case you give '-m', -m30 is assumed).
-  Additionally you may give -t for testing only (no items will
-  be deleted).
-";
-} else {
-    my $mode;
-    ($mode,$DAYS)=(lc($1||""),$2);
-    $mode='c' unless $mode;
-    $DAYS= ($mode eq 'c' ? 15 : 30)
-      unless defined($DAYS) and length($DAYS)>0;
-
-    print"DAYS=$DAYS\n" if DEBUG;
-
-    if ($mode eq 'c') {
-        run_c
-    } else {
-        run_m
     }
 }
 
