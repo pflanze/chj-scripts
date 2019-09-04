@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use strict; use warnings FATAL => 'uninitialized';
+
 sub BEGIN {
     for my $i (0..$#ARGV) {
         if (lc($ARGV[$i]) eq '-t') {
@@ -10,23 +12,13 @@ sub BEGIN {
     }
     eval "sub DEBUG {0}";
 }
-
-
 my $name= 'emptytrash';
-my $trash;
-if ($ENV{TRASHCAN}) {
-    $trash= $ENV{TRASHCAN}
-} elsif (-e $ENV{HOME}."/Desktop/Trash/") {
-    $trash=$ENV{HOME}."/Desktop/Trash/";
-} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
-    $trash=$ENV{HOME}."/Desktop/Mülleimer/";
-} elsif (-e $ENV{HOME}."/.trash/") {
-    $trash=$ENV{HOME}."/.trash/";
-} elsif (-e $ENV{HOME}."/.Trash/") {
-    $trash=$ENV{HOME}."/.Trash/";
-} else {
-    die "Couldn't find your trash can!";
-}
+
+
+
+use Chj::App::Trash;
+
+my $trash= Chj::App::Trash->new->trashdir;
 
 
 my $NOW= time;
