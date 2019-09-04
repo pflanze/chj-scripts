@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Wed  4 Sep 06:47:39 BST 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [git ls-files options]
+
+  Show parent directories of files checked into the current Git
+  repository (and selected by the given git ls-files options).
+  Includes parent directories of checked-in subrepositories.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+
+Getopt::Long::Configure("pass_through");
+my $opt_z;
+GetOptions(
+           "help"=> sub{usage},
+           "z"=> \$opt_z,
+          ) or exit 1;
+
+
+use Chj::Git::Functions qw(git_ls_files);
+use Chj::FP::HashSet;
+use Chj::xperlfunc qw(xprint);
+
+my $dirs= hashset2array array2hashset [map {
+    die "didn't expect absolute paths"
+      if /^\//;
+    if (m{^(.*)/}) {
+        $1
+    } else {
+        "."
+    }
+} git_ls_files (@ARGV)];
+
+my $sep = $opt_z ? "\0" : "\n";
+
+for (sort @$dirs) {
+    xprint $_, $sep
+}
+
+
