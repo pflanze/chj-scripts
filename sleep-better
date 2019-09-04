@@ -11,9 +11,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname timedesc
 
-  Uses Perl's https://metacpan.org/pod/Time::ParseDate to parse
-  timedesc, which can be a duration or a point in time, and sleeps
-  till then. Prints the end time to STDERR unless --quiet is given.
+  Uses Perl's https://metacpan.org/pod/Time::ParseDate plus custom
+  features (s, m, h, d, y shortcuts for seconds, minutes, .. years) to
+  parse timedesc, which can be a duration or a point in time, and
+  sleeps till then. Prints the end time to STDERR unless --quiet is
+  given.
 
   (Christian Jaeger <$email>)
 ";
