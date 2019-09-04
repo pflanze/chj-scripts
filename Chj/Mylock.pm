@@ -187,7 +187,9 @@ sub xmylock {
                         } else {
                             die "BUG";
                         }
-                        # Retry getting $p normally:
+                        # Retry getting $p normally, but inform via
+                        # return value that we didn't get it
+                        # immediately, or that we did claim it (case 2, XX??):
                         {
                             my $res= xmylock
                                 ($p, $maybe_timeout, $do_claim_after_timeout,
