@@ -1,4 +1,4 @@
-# Copyright 2012 by Christian Jaeger
+# Copyright 2012-2019 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 
@@ -13,7 +13,7 @@ Chj::Serial::Sexpr
   xprint_to_sexpr_line((bless *STDOUT{IO},"Chj::IO::File"),
      ["heelo", 233.4, 0.3, "0.4", undef, {foo=> 1, bar=> 0}, *STDIN{IO}]);
   print "\n";
-  # => (list "heelo" 233.4 0.3 0.4 #f (alist ("bar" . 0) ("foo" . 1)) (error "unknown kind of reference" "IO::Handle"))
+  # => (list "heelo" 233.4 0.3 0.4 #f (table (item "bar" 0) (item "foo" 1)) (error "unknown kind of reference" "IO::Handle"))
 
   # or use xprint_to_sexpr_line_with_sharing for data structures with
   # repeated references (or cycles):
@@ -24,6 +24,10 @@ Chj::Serial::Sexpr
 
 =head1 DESCRIPTION
 
+=head1 BUGS
+
+Should be offering lowlevel s-expr printing separately, and then
+implement the functionality here on top of that.
 
 =cut
 
