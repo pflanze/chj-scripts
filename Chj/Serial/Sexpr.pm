@@ -8,7 +8,7 @@ Chj::Serial::Sexpr
 
 =head1 SYNOPSIS
 
-  use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line sexpr_list sexpr_symbol);
+  use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line sexpr_list sexpr_symbol L S);
   use Chj::xopen qw(glob_to_fh);
 
   my $out= glob_to_fh *STDOUT;
@@ -19,6 +19,9 @@ Chj::Serial::Sexpr
   # To output bare lists, and symbols:
   xprintln_to_sexpr_line($out, sexpr_list (sexpr_symbol("def"), sexpr_symbol("x y"), "y"));
   # => (def |x y| "y")
+
+  # Or, using L and S short hands:
+  xprintln_to_sexpr_line($out, L(S"def", S"x y", "y"));
 
   # use xprint_to_sexpr_line_with_sharing for data structures with
   # repeated references (or cycles):
@@ -45,7 +48,7 @@ package Chj::Serial::Sexpr;
 @EXPORT_OK=qw(xprint_to_sexpr_line
               xprintln_to_sexpr_line
               xprint_to_sexpr_line_with_sharing
-              sexpr_list sexpr_symbol);
+              sexpr_list sexpr_symbol L S);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -79,9 +82,19 @@ sub sexpr_symbol ($) {
     bless \$str, "Chj::Serial::Sexpr::Symbol"
 }
 
+sub S ($) {
+    goto \&sexpr_symbol
+}
+
 sub sexpr_list {
     bless [@_], "Chj::Serial::Sexpr::List"
 }
+
+#sub L ($) {
+#    bless $_[0], "Chj::Serial::Sexpr::List"
+#}
+#no, just proxy, too:
+*L= \&sexpr_list;
 
 
 sub dispatch ($$$$$$$$$$) {
