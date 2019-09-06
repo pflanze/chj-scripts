@@ -8,7 +8,7 @@ Chj::Serial::Sexpr
 
 =head1 SYNOPSIS
 
-  use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line);
+  use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line sexpr_list sexpr_symbol);
   use Chj::xopen qw(glob_to_fh);
 
   my $out= glob_to_fh *STDOUT;
@@ -16,7 +16,11 @@ Chj::Serial::Sexpr
   xprintln_to_sexpr_line($out, ["heelo", 233.4, 0.3, "0.4", undef, {foo=> 1, bar=> 0}, *STDIN{IO}]);
   # => (list "heelo" 233.4 0.3 0.4 #f (table (item "bar" 0) (item "foo" 1)) (error "unknown kind of reference" "IO::Handle"))
 
-  # or use xprint_to_sexpr_line_with_sharing for data structures with
+  # To output bare lists, and symbols:
+  xprintln_to_sexpr_line($out, sexpr_list (sexpr_symbol("def"), sexpr_symbol("x y"), "y"));
+  # => (def |x y| "y")
+
+  # use xprint_to_sexpr_line_with_sharing for data structures with
   # repeated references (or cycles):
 
   my $ones= [ 1, undef]; $$ones[1]=$ones;
@@ -29,7 +33,8 @@ Chj::Serial::Sexpr
 =head1 BUGS
 
 Should be offering lowlevel s-expr printing separately, and then
-implement the functionality here on top of that.
+implement the functionality here on top of that. The current mix seems
+evil.
 
 =cut
 
@@ -39,7 +44,8 @@ package Chj::Serial::Sexpr;
 @EXPORT=qw();
 @EXPORT_OK=qw(xprint_to_sexpr_line
               xprintln_to_sexpr_line
-	      xprint_to_sexpr_line_with_sharing);
+              xprint_to_sexpr_line_with_sharing
+              sexpr_list sexpr_symbol);
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
@@ -65,9 +71,23 @@ sub keyword_or_symbol_to_printstring {
     }
 }
 
-sub dispatch {
+sub sexpr_symbol ($) {
+    # oh can't bless \($_[0]) if the argument is a literal !  Also,
+    # stringification needed anyway before blessing, yes! Need to make
+    # a copy in any case.
+    my ($str)= @_;
+    bless \$str, "Chj::Serial::Sexpr::Symbol"
+}
+
+sub sexpr_list {
+    bless [@_], "Chj::Serial::Sexpr::List"
+}
+
+
+sub dispatch ($$$$$$$$$$) {
     my ($v,
 	$do_array, $do_hash, $do_object, $do_number, $do_string, $do_undef,
+        $do_symbol, $do_list,
 	$do_type_error)= @_;
     if (defined $v) {
 	if (my $t= ref $v) {
@@ -77,6 +97,12 @@ sub dispatch {
 	    elsif ($t eq "HASH") {
 		&$do_hash
 	    }
+            elsif ($t eq "Chj::Serial::Sexpr::Symbol") {
+                &$do_symbol
+            }
+            elsif ($t eq "Chj::Serial::Sexpr::List") {
+                &$do_list
+            }
 	    else {
 		if (UNIVERSAL::isa($v, "HASH")
 		    and
@@ -121,16 +147,17 @@ sub refcounts {
 		}
 	    }
 	};
+        my $ARRAY= sub {
+            # ARRAY
+            if (not &$addv) {
+                for my $v (@$v) {
+                    &$add ($add, $v);
+                }
+            }
+        };
 	dispatch
 	  ($v,
-	   sub {
-	       # ARRAY
-	       if (not &$addv) {
-		   for my $v (@$v) {
-		       &$add ($add, $v);
-		   }
-	       }
-	   },
+	   $ARRAY,
 	   $HASH, # HASH
 	   $HASH, # hash based objects with _serialize_classname method
 	   sub {
@@ -140,6 +167,10 @@ sub refcounts {
 	   }, sub {
 	       # undef
 	   }, sub {
+               # symbol
+	   },
+           $ARRAY, # list
+           sub {
 	       # unknown
 	   });
     };
@@ -216,6 +247,20 @@ sub xprint_to_sexpr_line_ {
 		# (The only way to output #f ? or output #!unspecified or something?)
 		$out->xprint("#f");
 	    }, sub {
+                # symbol
+                $out->xprint(keyword_or_symbol_to_printstring ($$v));
+	    }, sub {
+                # list
+                # copy-paste of ARRAY except not printing 'list'
+		$out->xprint("(");
+                my $first= 1;
+		for my $v (@$v) {
+		    $out->xprint(" ") unless $first;
+                    $first= 0;
+		    &$rec ($rec, $v);
+		}
+		$out->xprint(")");
+            }, sub {
 		my ($t)=@_;
 		$out->xprint("(error ",
 			     schemestring_oneline("unknown reference type"),
