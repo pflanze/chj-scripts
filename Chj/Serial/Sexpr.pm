@@ -9,16 +9,18 @@ Chj::Serial::Sexpr
 =head1 SYNOPSIS
 
   use Chj::Serial::Sexpr qw(xprint_to_sexpr_line xprintln_to_sexpr_line);
+  use Chj::xopen qw(glob_to_fh);
 
-  xprint_to_sexpr_line((bless *STDOUT{IO},"Chj::IO::File"),
-     ["heelo", 233.4, 0.3, "0.4", undef, {foo=> 1, bar=> 0}, *STDIN{IO}]);
-  print "\n";
+  my $out= glob_to_fh *STDOUT;
+
+  xprintln_to_sexpr_line($out, ["heelo", 233.4, 0.3, "0.4", undef, {foo=> 1, bar=> 0}, *STDIN{IO}]);
   # => (list "heelo" 233.4 0.3 0.4 #f (table (item "bar" 0) (item "foo" 1)) (error "unknown kind of reference" "IO::Handle"))
 
   # or use xprint_to_sexpr_line_with_sharing for data structures with
   # repeated references (or cycles):
+
   my $ones= [ 1, undef]; $$ones[1]=$ones;
-  xprint_to_sexpr_line_with_sharing ((bless *STDOUT{IO},"Chj::IO::File"), $ones); print "\n";
+  xprintln_to_sexpr_line_with_sharing ($out, $ones);
   # => (named 1 (list 1 (ref 1)))
 
 
