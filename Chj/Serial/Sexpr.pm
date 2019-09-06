@@ -56,7 +56,7 @@ use strict;
 sub valid_keyword_or_symbol {
     my ($str)=@_;
     # what goes without escaping for Scheme
-    $str=~ /^[_a-zA-Z-][\w+-]*\z/
+    $str=~ /^[_a-zA-Z*\/-][\w*\/+-]*\z/
 }
 
 sub keyword_or_symbol_to_printstring {
