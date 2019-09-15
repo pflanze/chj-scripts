@@ -41,14 +41,18 @@ our $opt_list;
 our $opt_multilog;
 our $opt_multilog_n= 1000;
 our $opt_multilog_s= 40000;
+our $opt_shorthelp;
 
-
-my @actions= qw(stop kill start restart status STOP CONT cont);
+my @actions= qw(help --help -h stop kill start restart status STOP CONT cont);
 my %is_action= map{$_=>1} @actions;
 
 sub parse_action {
     my ($a)= @_;
-    if ($a eq 'stop' or $a eq 'kill') {
+    if ($a eq 'help' or
+        $a eq '--help' or
+        $a eq '-h') {
+        $opt_shorthelp= 1;
+    } elsif ($a eq 'stop' or $a eq 'kill') {
 	$opt_stop=1;
     } elsif ($a eq 'start') {
 	$opt_start=1;
@@ -540,6 +544,11 @@ sub start {
 	}
 	xexec @ARGV;
     }
+}
+
+
+if ($opt_shorthelp) {
+    usage "the following actions are valid: @actions"
 }
 
 {
