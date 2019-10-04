@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Son Jun 17 00:38:23 CEST 2007
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -27,12 +27,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -43,63 +37,55 @@ usage unless @args;
 
 
 use Chj::xperlfunc;
+use Chj::which qw(maybe_which);
+
 
 sub tryzip {
     my ($cmdPlus,$infile)=@_;
-    #my ($cmd,$outfile)= $cmdPlus->($infile);
-    #xxsystem @$cmd;
     my $outfile= $cmdPlus->($infile);
     [ $outfile, xstat($outfile)->size ]
 }
 
-our @cmdPlus=
-  (
-   sub {
-       my ($infile)=@_;
-       #["bzip2","-k",$infile]
-       xxsystem "bzip2","-k",$infile;
-       $infile.".bz2"
-   },
+our @possiblecommands=
+  (# program name (dependency), and proc
+   [bzip2=> sub {
+        my ($infile)=@_;
+        xxsystem "bzip2","-k",$infile;
+        $infile.".bz2"
+    }],
+   [rzip=> sub {
+        my ($infile)=@_;
+        xxsystem "rzip","-k",$infile;
+        $infile.".rz"
+    }],
    # the following must be LAST now because it unlinks the original file!:
-   sub {
-       my ($infile)=@_;
-       #["gzip","--best","-c",$infile] #  grrr.  gibt kein -k. muss stdout dann umleiten. ergo, hm, hab ich das nid mal gemacht. ausführ exec kommandos in perl.
-       #----AH aber wenn ichs als letztes mach ist das auch egal.!
-       #aber haben eh schon auf xxsystem gestellt. so bi it.
-       xxsystem "gzip","--best",$infile;
-       $infile.".gz"
-#        #scsh wirklich mal studieren wohl.
-#        my $outfile= $infile.".gz";
-#        my $st= xstat $infile;###TO DO: how to handle symlinks?   and hardlinks?. check for those first?
-#        # do not check if exists.
-#        my $t= xtmpfile $outfile;
-#        if (xfork) {
-# 	   xwait;
-# 	   #hm und now?  perms, times.  und nein, kein putback. "aha", muss übernehmen von anderm pfad. hoho.
-# 	   #aber zuerst mal richtigen ort tun.
-# 	   #ah modus kann gleich der richtige sein--ehr,wellnein wenn schon exists: muss eh neu gesetzt werden.
-# 	   $t->xputback (0);
-# 	   my $tpath= $t->path;
-# 	   xutime $st->atime, $st->mtime, $tpath;
-# 	   chown $st->uid, $st->gid, $tpath ;######klar nid xchown. aber was wenn nid geht  how perms hm   isch es nid eh unsafe das gzip und so? to do
-# 	   #also chmod kein setuid einfach aha eh  hm.
-# 	   #mensch alles nur wegen idiotic.  hmm  was wenn einfach zippen lassen?  als letzhtes!
-# 	   !!!!!
-#        } else {
-# 	   $t->xdup2(1);
-# 	   xexec "gzip","--best","-c",$infile
-#        }
-#        $t->path;
-   },
+   [gzip=> sub {
+        my ($infile)=@_;
+        xxsystem "gzip","--best",$infile;
+        $infile.".gz"
+    }],
   );
+
+our @cmdPlus= grep {
+    my $name_proc= $_;
+    my $name= $$name_proc[0];
+    if (maybe_which $name) {
+        1
+    } else {
+        warn "$myname: note: dependency '$name' is not installed, not running it.\n";
+        0
+    }
+} @possiblecommands;
+
 
 for my $file (@args) {
     local our @out= map {
-	tryzip $_,$file
+        my ($name, $proc)= @$_;
+        #warn "trying $name..\n";
+	tryzip $proc, $file
     } @cmdPlus;
     # find the smallest
     @out= sort { $$a[1] <=> $$b[1] } @out;
-    #use Chj::repl;repl;
     my $keep= shift @out;
     # unlink the rest:
     xunlink $$_[0] for @out;

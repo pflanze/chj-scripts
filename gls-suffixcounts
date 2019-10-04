@@ -4,17 +4,19 @@ set -euo pipefail
 IFS=
 
 usage () {
-    echo "usage: $0"
+    echo "usage: $0 [gls-options]"
     echo "  \`git ls-files\` distilled down to suffix statistics"
     exit 1
 }
 
 
-if [ $# -ne 0 ]; then
-    usage
+if [ $# -gt 0 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+        usage
+    fi
 fi
 
-gls | perl -wne '
+gls "$@"| perl -wne '
 chomp;
 if (m{([^/]+)\.([^.]+)$}) {
     $suffix{$2}++

@@ -134,9 +134,12 @@ sub randomstr ($) {
     join("", @o)
 }
 
-sub getans {
+sub getans($) {
+    my ($histname)=@_;
+    my $histpath= "$ENV{HOME}/.nato_${histname}_history";
     require Chj::IO::Command;
-    my $s= Chj::IO::Command->new_sender('rlwrap', 'bash', '-c', 'set -eu; read FOO; echo "$FOO"');
+    my $s= Chj::IO::Command->new_sender('rlwrap', '--history-filename', $histpath,
+                                        'bash', '-c', 'set -eu; read FOO; echo "$FOO"');
     my $ans= $s->xcontent;
     $s->xfinish;
     chomp $ans;
@@ -158,7 +161,7 @@ if ($opt_training or $opt_practise) {
         print "What is the NATO translation of: $str\n";
         my $tra= say $str;
       LP: {
-            my $ans= getans;
+            my $ans= getans "training";
             if (not length $ans) {
                 print "OK, it is: $tra\n";
                 print "Please repeat.\n";
@@ -177,8 +180,8 @@ if ($opt_training or $opt_practise) {
     if (@ARGV) {
         print say $_ for @ARGV
     } else {
-        while (<>) {
-            print say $_
+        while (length(my $lin= getans "normal")) {
+            print say $lin
         }
     }
 }

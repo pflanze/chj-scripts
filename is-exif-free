@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for f in "$@"; do
+    out=$(exif -- "$f" 2>&1 || true)
+    if echo "$out" | egrep -q 'does not seem to contain EXIF data'; then
+        true
+    else
+        if echo "$out" | egrep -q 'EXIF tags in|Manufacturer|Model'; then
+            exit 2
+        else
+            echo "$out" >&2
+            exit 1
+        fi
+    fi
+done
+

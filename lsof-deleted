@@ -4,3 +4,5 @@ set -euo pipefail
 IFS=
 
 _lsof-deleted "$@" | once | less
+
+# Was once really needed? Can't replicate duplication case right now.

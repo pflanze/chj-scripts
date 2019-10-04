@@ -27,6 +27,10 @@ sub feet2m($) {
     my ($v)=@_;
     ($v * 0.3048)
 }
+sub m2feet($) { # lol
+    my ($v)=@_;
+    ($v / 0.3048)
+}
 
 our $conv=
   +{
@@ -43,9 +47,15 @@ our $conv=
 	feet2m($v)." m, ".($v * 12). " in"
     },
     "miles"=> sub {
-	my ($v)=@_;
-	my $feet= $v * 5280;
+	my ($miles)=@_;
+	my $feet= $miles * 5280;
 	feet2m($feet)." m, $feet feet"
+    },
+    "km"=> sub {
+        my ($km)=@_;
+        my $feet= m2feet($km*1000);
+        my $miles= $feet / 5280;
+        "$miles miles"
     },
     do {
 	my $f= sub {

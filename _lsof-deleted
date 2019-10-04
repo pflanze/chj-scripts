@@ -107,6 +107,7 @@ sub process_entry {
 	or $path=~ m|/\.galeon/mozilla/|
 	or $path=~ m{^/home/\w+/\.(config|cache)/dconf/user$}
 	or $path=~ m{^/memfd:}
+	or $path=~ m{^/usr/share/.*\.cache$}
        ) {
 	# suppress
     } else {
