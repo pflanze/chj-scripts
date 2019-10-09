@@ -61,7 +61,7 @@ fi
 
 ip=`publicip -f`
 
-pass=`passwdgen 24`
+pass=`passwdgen 32`
 
 {
     echo "--Run \`netsend  files-you-want-to-transmit..\` on the other host,"
