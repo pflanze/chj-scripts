@@ -5,6 +5,8 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
+# evil COPY in random-digit-string
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
