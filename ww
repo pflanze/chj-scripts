@@ -16,21 +16,24 @@ df_colorize () {
 }
 
 
-uptime
+{
+    uptime
 
-echo
+    echo
 
-who | printfield 1 | csort | uniq -c
+    who | printfield 1 | csort | uniq -c
 
-echo
+    echo
 
-free
+    free
 
-echo
+    echo
 
-df | gr -v '^(/dev/loop|udev|tmpfs)' | df_colorize
+    df | gr -v '^(/dev/loop|udev|tmpfs)' | df_colorize
 
-echo
+    echo
 
-df | gr '^(udev|tmpfs)' | df_colorize
+    df | gr '^(udev|tmpfs)' | df_colorize
+
+} | less -S
 
