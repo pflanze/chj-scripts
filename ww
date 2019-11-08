@@ -16,8 +16,11 @@ df_colorize () {
 }
 
 
-
 uptime
+
+echo
+
+who | printfield 1 | csort | uniq -c
 
 echo
 
