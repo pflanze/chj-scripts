@@ -22,9 +22,12 @@ Chj::Random::Formatted
 package Chj::Random::Formatted;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(
-	      random_hex_string
-	      random_passwd_string
-	     );
+                 random_hex_string
+                 random_u32
+                 random_i32
+                 random_passwd_string
+            );
+%EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
 use strict;
 
@@ -35,6 +38,17 @@ sub random_hex_string ($) {
     my $bin= &seed;
     unpack('H*',$bin)
 }
+
+sub random_u32 () {
+    my $bin= seed(4);
+    unpack('L*', $bin)
+}
+
+sub random_i32 () {
+    my $bin= seed(4);
+    unpack('l*', $bin)
+}
+
 
 our @chars= ("a".."k","m","n","p".."z","2".."9"); # 32 chars
 sub _binary2text {
