@@ -10,3 +10,7 @@ echo
 
 df | gr -v '^(/dev/loop|udev|tmpfs)'
 
+echo
+
+df | gr '^(udev|tmpfs)'
+
