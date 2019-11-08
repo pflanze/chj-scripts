@@ -25,6 +25,9 @@ package Chj::Random::Formatted;
                  random_hex_string
                  random_u32
                  random_i32
+                 random_digit
+                 random_digits
+                 random_digit_string
                  random_passwd_string
             );
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
@@ -47,6 +50,32 @@ sub random_u32 () {
 sub random_i32 () {
     my $bin= seed(4);
     unpack('l*', $bin)
+}
+
+sub random_digit() {
+  LP: {
+        my $n= ord(seed(1)) & 15;
+        if ($n < 10) {
+            return $n
+        } else {
+            redo LP;
+        }
+    }
+}
+
+sub random_digits($) {
+    my ($n)= @_;
+    wantarray or die "can only be used in list context";
+    my @digits;
+    for (1..$n) {
+        push @digits, random_digit
+    }
+    @digits
+}
+
+sub random_digit_string($) {
+    my ($len)= @_;
+    join("", random_digits $len)
 }
 
 
