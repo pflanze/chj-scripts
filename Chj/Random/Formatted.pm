@@ -25,6 +25,9 @@ package Chj::Random::Formatted;
                  random_hex_string
                  random_u32
                  random_i32
+                 random_boolean
+                 make_random_u8_to
+                 random_u8_to
                  random_digit
                  random_digits
                  random_digit_string
@@ -52,16 +55,43 @@ sub random_i32 () {
     unpack('l*', $bin)
 }
 
-sub random_digit() {
-  LP: {
-        my $n= ord(seed(1)) & 15;
-        if ($n < 10) {
-            return $n
-        } else {
-            redo LP;
+sub random_boolean() {
+    ord(seed(1)) & 1
+}
+
+sub bits {
+    my ($n)= @_;
+    my $l= 0;
+    while ($n) {
+        $n >>= 1;
+        $l++
+    }
+    $l
+}
+
+sub make_random_u8_to($) {
+    my ($to)= @_; # inclusive
+    ($to > 0 and $to <= 256)
+      or die "random_u8_to: argument must be integer 1..256";
+    my $mask= (1 << bits($to)) - 1;
+    sub () {
+      LP: {
+            my $n= ord(seed(1)) & $mask;
+            if ($n < $to) {
+                return $n
+            } else {
+                redo LP;
+            }
         }
     }
 }
+
+sub random_u8_to ($) {
+    make_random_u8_to($_[0])->()
+}
+
+sub random_digit();
+*random_digit= make_random_u8_to 10;
 
 sub random_digits($) {
     my ($n)= @_;
