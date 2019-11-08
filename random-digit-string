@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+# Fri  8 Nov 01:49:47 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname len
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+my ($len) = @ARGV;
+$len=~ /^\d+\z/ or usage "not a decimal number: '$len'";
+
+use Chj::xperlfunc 'xprintln';
+use Chj::Random::Formatted 'random_digit_string';
+
+xprintln random_digit_string $len;
+
