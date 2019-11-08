@@ -1,5 +1,22 @@
 #!/bin/sh
 
+df_colorize () {
+    perl -wne '
+         our $ESC; BEGIN { $ESC= chr(27) }
+         s{(\s)(\d+)(%[^\n]*)}{
+                my ($w,$percent,$rest)= ($1,$2,$3);
+                if ($percent >= 95) {
+                      $w.$ESC."[31m".$percent.$rest.$ESC."[0m"
+                } else {
+                      $w.$percent.$rest
+                }
+         }e;
+         print or die
+    '
+}
+
+
+
 uptime
 
 echo
@@ -8,9 +25,9 @@ free
 
 echo
 
-df | gr -v '^(/dev/loop|udev|tmpfs)'
+df | gr -v '^(/dev/loop|udev|tmpfs)' | df_colorize
 
 echo
 
-df | gr '^(udev|tmpfs)'
+df | gr '^(udev|tmpfs)' | df_colorize
 
