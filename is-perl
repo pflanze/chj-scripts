@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+
+# Wed 13 Nov 03:53:34 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s)
+
+  Exits with success if all the given files are perl source code
+  files / scripts (either modules or executables)
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+sub fh_looks_perlish {
+    0 # don't go there, OK?
+}
+
+my $perl_re= qr(perl(?:5(?:\.\d+.*)?)?);
+
+sub is_perl_exe {
+    my ($path)=@_;
+    open my $in, "<", $path
+      or die "'$path': $!";
+    my $head= <$in>;
+    defined $head or die "'$path': $!";
+    if (my ($exe, $rest)= $head=~ m!^#\!(\S+)\s+(.*)!s) {
+        ($exe =~ m!(^|/)$perl_re\z!s
+         or
+         $rest=~ m!(^|\S+/)$perl_re(?:\s|\z)!s)
+    } else {
+        fh_looks_perlish $in
+    }
+}
+
+sub is_perl_module {
+    my ($path)=@_;
+    scalar $path=~ m!\w\.pm\z!s
+}
+
+
+sub is_perl {
+    my ($path)=@_;
+    is_perl_module $path or is_perl_exe $path
+}
+
+for (@ARGV) {
+    is_perl $_ or exit 1;
+}
+exit 0;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
