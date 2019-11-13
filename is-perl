@@ -34,7 +34,7 @@ sub fh_looks_perlish {
 
 my $perl_re= qr(perl(?:5(?:\.\d+.*)?)?);
 
-sub is_perl_exe {
+sub is_perl_exe_shebang {
     my ($path)=@_;
     open my $in, "<", $path
       or die "'$path': $!";
@@ -45,15 +45,31 @@ sub is_perl_exe {
          or
          $rest=~ m!(^|\S+/)$perl_re(?:\s|\z)!s)
     } else {
-        fh_looks_perlish $in
+        0
     }
 }
 
-sub is_perl_module {
+sub is_perl_module_path {
     my ($path)=@_;
     scalar $path=~ m!\w\.pm\z!s
 }
 
+sub is_perl_script_path {
+    my ($path)=@_;
+    $path=~ m!\w\.pl\z!s
+        or $path=~ m!(?:^|/)Makefile.PL\z!si
+}
+
+
+sub is_perl_module {
+    my ($path)=@_;
+    is_perl_module_path $path
+}
+
+sub is_perl_exe {
+    my ($path)=@_;
+    is_perl_script_path $path or is_perl_exe_shebang $path
+}
 
 sub is_perl {
     my ($path)=@_;
