@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "Usage: $0 command [ arguments ]"
+    echo "  Runs command with given arguments, piping its stdout and stderr"
+    echo "  to less."
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+if [ "$1" == "-h" -o "$1" == "--help" ]; then
+    usage
+fi
+
+
+"$@" 2>&1 | less
