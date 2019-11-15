@@ -9,11 +9,18 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [git ls-files options]
+    print "$myname [options] [-- git ls-files options]
 
   Show parent directories of files checked into the current Git
   repository (and selected by the given git ls-files options).
   Includes parent directories of checked-in subrepositories.
+
+  Options:
+
+    --path regex   only show folders whose paths match this Perl
+                   regex
+    --name regex   only show folders whose names match this Perl
+                   regex
 
   (Christian Jaeger <$email>)
 ";
@@ -24,9 +31,13 @@ use Getopt::Long;
 
 Getopt::Long::Configure("pass_through");
 my $opt_z;
+my $opt_path;
+my $opt_name;
 GetOptions(
            "help"=> sub{usage},
            "z"=> \$opt_z,
+           "path=s"=> \$opt_path,
+           "name=s"=> \$opt_name,
           ) or exit 1;
 
 
@@ -46,8 +57,34 @@ my $dirs= hashset2array array2hashset [map {
 
 my $sep = $opt_z ? "\0" : "\n";
 
+my $match= sub {
+    1
+};
+
+if ($opt_path) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and
+        $path=~ /$opt_path/
+    };
+}
+
+if ($opt_name) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and do {
+            $path=~ s|^.*/||s;
+            $path=~ /$opt_name/
+        }
+    };
+}
+
 for (sort @$dirs) {
-    xprint $_, $sep
+    if (&$match ($_)) {
+        xprint $_, $sep
+    }
 }
 
 
