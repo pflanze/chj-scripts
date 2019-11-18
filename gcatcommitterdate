@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 [commit]"
+    echo "  show localtime of committer time of the given commit,"
+    echo "  or HEAD if none given."
+    exit 1
+}
+
+commit=${1-HEAD}
+
+if [ "$commit" = "-h" -o "$commit" = "--help" ]; then
+    usage
+fi
+
+gcat "$commit" | grep ^committer | \
+    perl -wne 'm|> (\d{8,12}) | or die; print localtime($1)."\n"'
+
