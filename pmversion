@@ -55,6 +55,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 usage unless @modules;
 
+my $errs=0;
+
 for my $module (@modules) {
     my $pathy = $module;
     $pathy=~ s/::/\//sg;
@@ -75,13 +77,17 @@ for my $module (@modules) {
 	    if (defined (my $v= ${$module."::VERSION"})) {
 		print "VERSION $v\n";
 	    } else {
-		print "no version information available\n";
+		print STDERR "$module: no version information available\n";
+                $errs++;
 	    }
 	}
     } else {
-        print "$module: $@\n";
+        print STDERR "$module: $@\n";
+        $errs++;
     }
 }
+
+exit ($errs ? 1 : 0);
 
 # could run VERSION as a method?:
 #    perl -MModule::Name -le 'print Module::Name->VERSION';
