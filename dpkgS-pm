@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for modulename in "$@"; do
+    if path=$(pmversion -p "$modulename"); then
+        dpkgS "$path"
+    fi
+done
