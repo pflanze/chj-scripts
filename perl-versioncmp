@@ -1,0 +1,45 @@
+#!/usr/bin/perl -w
+
+# Fri 22 Nov 20:08:23 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname a b
+
+  Compare the two versions using Perl's version module, report
+  one of lt, gt, eq.
+
+  Exit code is 0 in all of those three cases.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+
+my ($a, $b)= map {
+    version->new($_)
+} @ARGV;
+
+my $cmp= (($a < $b) ? "lt" :
+          ($a > $b) ? "gt" :
+          ($a == $b) ? "eq" :
+          die "bug");
+
+print "$cmp\n"
+    or die "print: $!";
+
