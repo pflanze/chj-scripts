@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# Fri 22 Nov 21:26:50 GMT 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+# didn't / don't I have this already   ?
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd [args]
+
+  Split stdin (on lines by default), and call cmd with args and the
+  split parts as additional arguments.
+
+  Options:
+
+    -z  split input on \\0
+    -s  split on whitespace
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my ($opt_z, $opt_s);
+while (@ARGV) {
+     if ($ARGV[0] eq "-z") {
+         $opt_z=1;
+         shift;
+     } elsif ($ARGV[0] eq "-s") {
+         $opt_s=1;
+         shift
+     } elsif ($ARGV[0]=~ /^--?h(elp)?$/) {
+         usage
+     } else {
+         last
+     }
+}
+
+usage unless @ARGV;
+usage "both -s and -z given" if ($opt_s and $opt_z);
+
+my @cmd= @ARGV;
+
+my @moreargs= do {
+    if ($opt_z) {
+        local $/ = "\0";
+        <STDIN>
+    } elsif ($opt_s) {
+        local $/;
+        my $cnt= <STDIN>;
+        split /\s+/, $cnt
+    } else {
+        <STDIN>
+    }
+};
+
+exec(@cmd, @moreargs)
+    or exit 127;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
