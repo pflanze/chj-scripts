@@ -28,8 +28,11 @@ GetOptions("verbose"=> \$verbose,
 # from scratch because straceopens didn't work anymore, something.
 
 while (<>) {
-    if (my ($path)= m/^(?:\d+\s+)?
-		      open\(\"(.*?)\",/x) {
+    if (my ($path)= m/
+        ^(?:\d+\s+)?
+        (?: open\( | openat\( \s*\w+\s*,\s* )
+        \"(.*?)\",
+        /x) {
 	$path=~ s/\\"/"/sg;
 	# other stuff?
 	print $path, "\n"
