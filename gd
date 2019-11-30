@@ -11,7 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [-i] name-regex
 
-  Wrapper around gls-dirs, see docs there
+  Find directories used by items in the current Git repository.
+
+  (Wrapper around gfind, see docs there.)
 
   (Christian Jaeger <$email>)
 ";
@@ -31,8 +33,5 @@ usage unless @ARGV == 1;
 
 my ($regex)= @ARGV;
 
-if ($opt_i) {
-    $regex= "(?^i:$regex)"
-}
+exec "gfind", ($opt_i ? "-i" : ()), "--name", $regex, "--dirs";
 
-exec "gls-dirs", "--name", $regex;

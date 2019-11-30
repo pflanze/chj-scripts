@@ -1,0 +1,126 @@
+#!/usr/bin/perl -w
+
+# Wed  4 Sep 06:47:39 BST 2019
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] [-- git ls-files options]
+
+  Without options, shows the list of all paths in the current Git
+  repository including their parent directories (unlike \`gls\` also
+  shows the directories). The options are for filtering which paths to
+  show.
+
+  Options:
+
+    --files        only show files and symlinks
+    --dirs         only show dirs
+    --path regex   only show items whose paths match this Perl
+                   regex
+    --name regex   only show items whose names match this Perl
+                   regex
+    -i | --insensitive  change regexen to be case insensitive
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+
+Getopt::Long::Configure("pass_through");
+my $opt_z;
+my $opt_files;
+my $opt_dirs;
+my $opt_path;
+my $opt_name;
+my $opt_i;
+GetOptions(
+           "help"=> sub{usage},
+           "z"=> \$opt_z,
+           "files"=> \$opt_files,
+           "dirs"=> \$opt_dirs,
+           "path=s"=> \$opt_path,
+           "name=s"=> \$opt_name,
+           "insensitive"=> \$opt_i,
+          ) or exit 1;
+
+
+use Chj::Git::Functions qw(git_ls_files);
+use Chj::FP::HashSet;
+use Chj::xperlfunc qw(xprint);
+
+my %items=
+    (
+     ("."=> 'd'),
+     map {
+         die "didn't expect absolute paths"
+             if /^\//;
+         my @p= split /\//;
+         my $fullitem= $_;
+         pop @p;
+         my @out= [ $fullitem=> 'i' ];
+         while (@p) {
+             push @out, [ join("/", @p)=> "d" ];
+             pop @p;
+         }
+         map { @$_ } @out
+     } git_ls_files @ARGV
+    );
+
+my $sep = $opt_z ? "\0" : "\n";
+
+my $match= sub {
+    1
+};
+
+if ($opt_files) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and
+            $items{$path} eq 'i'
+    };
+}
+
+if ($opt_dirs) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and
+            $items{$path} eq 'd'
+    };
+}
+
+if ($opt_path) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and
+            ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
+    };
+}
+
+if ($opt_name) {
+    my $oldmatch= $match;
+    $match= sub {
+        my ($path)= @_;
+        &$oldmatch($path) and do {
+            $path=~ s|^.*/||s;
+            ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
+        }
+    };
+}
+
+for (sort keys %items) {
+    if (&$match ($_)) {
+        xprint $_, $sep
+    }
+}
+
+
