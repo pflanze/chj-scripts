@@ -1,0 +1,38 @@
+#!/usr/bin/env perl
+
+# Copyright (c) 2019 Christian Jaeger, copying@christianjaeger.ch
+# This is free software. See the file COPYING.md that came bundled
+# with this file.
+
+use strict; use warnings; use warnings FATAL => 'uninitialized';
+
+sub usage {
+    print "usage: $0 host type
+";
+    exit 1;
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+           "help"=> sub{usage},
+           ) or exit 1;
+usage unless @ARGV==2;
+
+my ($host, $type)=@ARGV;
+
+use Net::DNS::Resolver::Recurse;       #  libnet-dns-perl
+
+
+my $resolver = new Net::DNS::Resolver::Recurse();
+$resolver->debug(1);
+
+#$resolver->hints('198.41.0.4');     # A.ROOT-SERVER.NET.
+# This method specifies a list of the IP addresses of nameservers to
+# be used to discover the addresses of the root nameservers.
+# If no hints are passed, the priming query is directed to nameservers
+# drawn from a built-in list of IP addresses.
+
+
+$resolver->send( $host, $type );
+
