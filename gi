@@ -11,8 +11,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [-i] name-regex
 
-  Find items (files, links, subrepos?, but not parent dirs) in the
-  current Git repository.
+  Find items in the current Git repository, including parent directory
+  paths of them, whose name matches the given regex.
 
   (Wrapper around gfind, see docs there.)
 
@@ -34,5 +34,5 @@ usage unless @ARGV == 1;
 
 my ($regex)= @ARGV;
 
-exec "gfind", ($opt_i ? "-i" : ()), "--name", $regex, "--files";
+exec "gfind", ($opt_i ? "-i" : ()), "--name", $regex;
 
