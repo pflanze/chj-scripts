@@ -1,19 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 
-# Copyright (c) 2015-2019 Christian Jaeger, copying@christianjaeger.ch
-# This is free software. See the file COPYING.md that came bundled
-# with this file.
+declare -a args
+args=("$@")
 
-# load repl with most of the more interesting functional-perl packages
-# loaded
+try () {
+    if [ -x "$1" ]; then
+        exec "$1" "${args[@]}"
+    fi
+}
 
-repl=/opt/functional-perl/bin/repl
+try /opt/functional-perl/bin/fperl
+try /usr/local/bin/fperl
 
-exec $repl \
-    --name fperl \
-    -t \
-    -m Method::Signatures \
-    -m Function::Parameters=:strict \
-    -m Sub::Call::Tail \
-    -M FunctionalPerl=:all \
-    "$@"
+echo "could not find fperl, have you installed the functional-perl.org project?" >&2
+exit 127
+
