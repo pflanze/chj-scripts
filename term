@@ -98,6 +98,8 @@ sub runterminal {
                         ($> == 0 ? ("-bg", "#ffd8d8") : ()),
                         @args));
         my $script= join("\n",@scriptlines);
+        warn "script='$script'"
+            if $ENV{TERM_DEBUG};
         exec "/bin/bash", "-c", $script
           or exit 127;
     };
