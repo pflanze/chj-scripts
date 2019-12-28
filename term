@@ -20,7 +20,7 @@ Open in the current directory:
 Open in another directory (relative paths are resolved by bash (based
 on \$PWD), not the kernel):
 
-  term dir
+  term dir {terminal args}
 
 To prevent term from daemonizing (i.e. forking as a child (returning
 immediately) and running setsid):
@@ -103,14 +103,15 @@ sub runterminal {
         exec "/bin/bash", "-c", $script
           or exit 127;
     };
-    if (@ARGV==1
+    if (@ARGV>=1 and
         # and stat $ARGV[0]
         #and  regex? but relative paths. no way.
         #just make sure options won't do wrong:
-        and not $ARGV[0]=~ /^-/
+        not $ARGV[0]=~ /^-/
        ) {
         &$chdir($ARGV[0]);
-        &$run();
+        shift @ARGV;
+        &$run(@ARGV);
     } else {
         &$run(@ARGV)
     }
