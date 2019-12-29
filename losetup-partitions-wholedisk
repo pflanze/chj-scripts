@@ -13,11 +13,14 @@ EOF
 }
 
 if [ $# -eq 1 ]; then
-    if [[ $1 = "-h" || $1 = "--help" ]]; then
+    arg=$1
+    if [[ "$arg" = "-h" || "$arg" = "--help" ]]; then
         usage
     else
-	kpartx -av "$1"
-	echo "Ok. Look for them in /dev/mapper/ ! Afterwards, run: kpartx -d $1"
+        path=$(chase "$arg")
+	kpartx -av "$path"
+	echo "Ok. Look for them in /dev/mapper/ ! Afterwards, run:"
+        echo "  kpartx -d $(printf '%q' "$path")"
     fi
 else
     usage
