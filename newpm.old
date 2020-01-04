@@ -136,7 +136,7 @@ $baseclassdefs
 #sub DESTROY {
 #    my \$s=shift;
 #    local ($@,$!,$?);
-#    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    # ç remove if not used
 #    \$s->SUPER::DESTROY; # or rather NEXT::
 #}
 
