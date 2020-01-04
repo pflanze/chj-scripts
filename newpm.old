@@ -7,6 +7,7 @@ BEGIN {
     require 'newperl.pl';
 }
 
+use Chj::xtmpfile;
 
 
 sub usage {
@@ -103,9 +104,9 @@ use Class::Array -fields=>
 		}
 	    }
 	}
-	if (open OUT,">$path") {
-	    my $copy= copy();
-	    print OUT <<"END" or warn "Fehler beim Schreiben: $!";
+        my $out= xtmpfile $path;
+        my $copy= copy();
+        $out->xprint(<<"END");
 $copy
 #
 
@@ -146,11 +147,9 @@ END
 # Könnte noch  use vars qw{$VERSION};  und  $VERSION = '0.00'; reintun. Aber naja?
 # oder müsste ich eh BEGIN { $DBI::VERSION= "..." } machen?
 
-	    close OUT;
-	    push @paths,$path;
-	} else {
-	    warn "Konnte Datei '$path' nicht öffnen: $!\n";
-	}
+        $out->xclose;
+        $out->xputback(0666 & ~umask);
+        push @paths,$path;
     }
 }
 
