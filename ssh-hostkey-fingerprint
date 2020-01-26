@@ -39,3 +39,5 @@ do
     fi
 done
 
+
+echo "That's all."
