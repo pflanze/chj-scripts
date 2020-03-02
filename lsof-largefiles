@@ -73,6 +73,7 @@ readlsof ["-n"], sub {
 	or $t eq 'FIFO'
 	or $t eq 'IPv4'
 	or $t eq 'IPv6'
+	or $t eq 'raw6'
 	or $t eq 'pack' # 'n' => 'type=SOCK_PACKET', in process 'dhclient'
         or $t eq 'netlink'
         or $t eq 'a_inode' # [eventpoll], [signalfd], inotify, [timerfd],
