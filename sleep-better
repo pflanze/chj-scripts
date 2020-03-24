@@ -41,7 +41,10 @@ my %short2long=
    m=> "minutes",
    h=> "hours",
    d=> "days",
-   y=> "years");
+   y=> "years",
+   "'"=> "minutes",
+   "''"=> "seconds",
+  );
 
 sub parseFuture ($$;$);
 sub parseFuture ($$;$){
@@ -67,6 +70,9 @@ sub parseFuture ($$;$){
             # Time::ParseDate does not support 's' etc, thus pre-process
             $s=~ s{(\b|\d)([smhdy])(\b|\d)}{
                 $1 . ($short2long{$2} // die "bug") . $3
+            }ge;
+            $s=~ s{(\'+)}{
+                ($short2long{$1} // die "bug")
             }ge;
             my ($maybe_t, $err)=
               parsedate($s,
