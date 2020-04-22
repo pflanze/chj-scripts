@@ -1,0 +1,3 @@
+#!/bin/bash
+
+recode-latin1-to-utf8 --from UTF-16 "$@"
