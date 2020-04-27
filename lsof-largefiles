@@ -21,9 +21,9 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
+           "help"=> sub{usage},
+           #"dry-run"=> \$opt_dry,
+           ) or exit 1;
 usage if @ARGV;
 
 
@@ -41,9 +41,9 @@ our $show_f= sub {
     #print Dumper($rec);
     #push @{$$files{ $$rec{n} }}, $rec;
     callcc sub {
-	my ($exit)=@_;
-	my $entry= [ xref($rec,'s',$exit), xref($rec,'_p',$exit) ];
-	push @{$$files{ $$rec{n} }}, $entry;
+        my ($exit)=@_;
+        my $entry= [ xref($rec,'s',$exit), xref($rec,'_p',$exit) ];
+        push @{$$files{ $$rec{n} }}, $entry;
     };
 };
 
@@ -66,27 +66,27 @@ readlsof ["-n"], sub {
     my ($rec)= @_;
     my $t= $$rec{t};
     if ($t eq 'CHR'
-	or $t eq 'DIR'
-	or $t eq 'unix'
-	or $t eq 'sock'
-	or $t eq '0000' # 'n' => 'anon_inode',  in process 'udevd'
-	or $t eq 'FIFO'
-	or $t eq 'IPv4'
-	or $t eq 'IPv6'
-	or $t eq 'raw6'
-	or $t eq 'pack' # 'n' => 'type=SOCK_PACKET', in process 'dhclient'
+        or $t eq 'DIR'
+        or $t eq 'unix'
+        or $t eq 'sock'
+        or $t eq '0000' # 'n' => 'anon_inode',  in process 'udevd'
+        or $t eq 'FIFO'
+        or $t eq 'IPv4'
+        or $t eq 'IPv6'
+        or $t eq 'raw6'
+        or $t eq 'pack' # 'n' => 'type=SOCK_PACKET', in process 'dhclient'
         or $t eq 'netlink'
         or $t eq 'a_inode' # [eventpoll], [signalfd], inotify, [timerfd],
                            # in systemd, dbus-daemon and ModemManager processes
        ) {
-	# ignore
+        # ignore
     } elsif ($t eq 'REG') {
-	# fd numbers used if not special kind.
-	# (well. makes sense.)
+        # fd numbers used if not special kind.
+        # (well. makes sense.)
         my $f= $$rec{f};
-	if ($f=~ /^\d+\z/s) {
-	    &$treat_fd($rec);
-	} else {
+        if ($f=~ /^\d+\z/s) {
+            &$treat_fd($rec);
+        } else {
             if ($$rec{n}=~ m{^(?:/usr)?/lib/.*?[^/]\.(so|jar|ja)\b}) {
                 # why, oh why, are those now REG files not, well,
                 # dunno what it was? Anyway we've got some *large* .so
@@ -95,18 +95,18 @@ readlsof ["-n"], sub {
                 # ignore files that are opened read-only.
             } else {
                 my $treat= $$treat_f_type{$f}
-                or die "unknown value '$f' for field 'f'";
+                  or die "unknown value '$f' for field 'f'";
                 &$treat($rec);
             }
-	}
+        }
     } elsif ($t eq 'unknown') {
-	if ($$rec{f} eq 'txt' and $$rec{n} =~ m|^/proc/|) {
-	    # ignore
-	} else {
-	    die "unknown: ".Dumper($rec)." ";
-	}
+        if ($$rec{f} eq 'txt' and $$rec{n} =~ m|^/proc/|) {
+            # ignore
+        } else {
+            die "unknown: ".Dumper($rec)." ";
+        }
     } else {
-	die "unknown file type '$t' in: ".Dumper($rec)." ";
+        die "unknown file type '$t' in: ".Dumper($rec)." ";
         # add new types to ignore at the top, near 'CHR'!
     }
 };
@@ -115,13 +115,13 @@ readlsof ["-n"], sub {
 # sort by size in last entry of each path:
 our $cmp_size_lastentry=
   On(sub {
-	 my ($ab)=@_;
-	 # last entry, first field
-	 $$ab[-1][0]
+         my ($ab)=@_;
+         # last entry, first field
+         $$ab[-1][0]
      },
      sub {
-	 my ($a_,$b_)=@_;
-	 $b_ <=> $a_
+         my ($a_,$b_)=@_;
+         $b_ <=> $a_
      });
 
 my $out= Chj::IO::Command->new_receiver("less");
@@ -132,9 +132,9 @@ for (@{Sort_table $files, $cmp_size_lastentry}) {
     my $size= $$size_and_process__records[-1][0];
     $out->xprintln($size, " ", $path);
     for (@$size_and_process__records) {
-	my ($size,$process)=@$_;
-	$out->xprintln("  ", join(" ",map { defined $_ ? $_ : "(undef)" }
-				  @$process{'p','L','c'}));
+        my ($size,$process)=@$_;
+        $out->xprintln("  ", join(" ",map { defined $_ ? $_ : "(undef)" }
+                                  @$process{'p','L','c'}));
     }
 }
 
