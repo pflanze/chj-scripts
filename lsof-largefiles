@@ -100,8 +100,7 @@ readlsof ["-n"], sub {
             }
 	}
     } elsif ($t eq 'unknown') {
-        my $f= $$rec{f};
-	if ($f eq 'txt' and $$rec{n} =~ m|^/proc/|) {
+	if ($$rec{f} eq 'txt' and $$rec{n} =~ m|^/proc/|) {
 	    # ignore
 	} else {
 	    die "unknown: ".Dumper($rec)." ";
