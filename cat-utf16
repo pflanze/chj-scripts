@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for f in "$@"; do
+    iconv --from UTF-16 --to UTF-8 < "$f"
+done
+
