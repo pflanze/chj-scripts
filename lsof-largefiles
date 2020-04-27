@@ -103,7 +103,7 @@ readlsof ["-n"], sub {
         if ($$rec{f} eq 'txt' and $$rec{n} =~ m|^/proc/|) {
             # ignore
         } else {
-            die "unknown: ".Dumper($rec)." ";
+            warn "unknown: ".Dumper($rec)." ";
         }
     } else {
         die "unknown file type '$t' in: ".Dumper($rec)." ";
