@@ -33,6 +33,9 @@ use Chj::Parse::Lsof 'readlsof';
 use Chj::IO::Command;
 use Chj::CallccLib 'xref';
 use Chj::Util qw(Sort_table On $noop);
+use Chj::xopen qw(xopen_read);
+use Fcntl qw(O_RDWR);
+
 
 our $files; # those we are interested in; path => size
 
@@ -60,7 +63,38 @@ our $treat_f_type=
     txt=> $noop, # too small, or constant anyway, not interesting
    };
 
-our $treat_fd= $show_f;
+sub rec_fd_writable {
+    my ($rec)= @_;
+    # $rec must be t=> 'REG' (regular) file that's open on a file
+    # handle ($$rec{$f} is ^\d+$). Return whether the file handle is
+    # opened for writing. Returns undef if there was an error trying
+    # to detect this (which was reported as a warning).
+    my ($fd)= $$rec{f}=~ /^(\d+)\z/ or die "not an fd";
+    my $_p= $$rec{_p};
+    my ($pid)= $$_p{p}=~ /^(\d+)\z/ or die "bug";
+    my $res;
+    eval {
+        my $cnt= xopen_read("/proc/$pid/fdinfo/$fd")->xcontent;
+        my ($flags)= $cnt=~ /(?:^|\n)flags:\s*(\d+)(?:\n|\z)/
+            or die "missing flags field in: '$cnt'";
+        $res= $flags & O_RDWR; # XX correct? is 2, but, ?
+        1
+    } || do {
+        warn "rec_fd_writable: $@";
+    };
+    $res
+}
+
+sub treat_fd {
+    my ($rec)= @_;
+    # A regular file that's open on a file handle; sadly even ELF
+    # executables are landing up here. Check whether the file is
+    # writable by the process, since if it isn't, we're not interested
+    # (as it can't be growing, then, and we're only interested in
+    # large files to find out what files might be using up increasing
+    # amounts of disk space)
+    &$show_f($rec) if rec_fd_writable($rec)
+}
 
 readlsof ["-n"], sub {
     my ($rec)= @_;
@@ -85,14 +119,19 @@ readlsof ["-n"], sub {
         # (well. makes sense.)
         my $f= $$rec{f};
         if ($f=~ /^\d+\z/s) {
-            &$treat_fd($rec);
+            treat_fd($rec);
         } else {
             if ($$rec{n}=~ m{^(?:/usr)?(?:/local)?/lib/.*?[^/]\.(so|jar|ja)\b}) {
                 # why, oh why, are those now REG files not, well,
                 # dunno what it was? Anyway we've got some *large* .so
                 # files nowadays, so, ignore them to see what's
                 # relevant, OK? XX should probably rather simply
-                # ignore files that are opened read-only.
+                # ignore files that are opened read-only. Can't use
+                # rec_fd_writable here, though, since $f is not an
+                # fd--and, so, actually, there is no "opened
+                # read-only" to check for (writing via mmap could
+                # still be in use, though, right?, not easy to
+                # check, right?)
             } else {
                 my $treat= $$treat_f_type{$f}
                   or die "unknown value '$f' for field 'f'";
