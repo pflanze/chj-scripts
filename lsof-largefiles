@@ -27,6 +27,7 @@ GetOptions("verbose"=> \$verbose,
 usage if @ARGV;
 
 
+#use lib "/opt/functional-perl/lib/"; use FP::Repl;
 use Data::Dumper;
 use Chj::callcc2;
 use Chj::Parse::Lsof 'readlsof';
@@ -43,6 +44,7 @@ our $show_f= sub {
     my ($rec)=@_;
     #print Dumper($rec);
     #push @{$$files{ $$rec{n} }}, $rec;
+    #repl if $$rec{n} eq "/usr/lib/chromium/chromium";
     callcc sub {
         my ($exit)=@_;
         my $entry= [ xref($rec,'s',$exit), xref($rec,'_p',$exit) ];
