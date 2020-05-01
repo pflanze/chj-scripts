@@ -3,7 +3,14 @@
 set -euo pipefail
 IFS=
 
-for f in "$@"; do
-    iconv --from UTF-16 --to UTF-8 < "$f"
-done
+recode() {
+    iconv --from UTF-16 --to UTF-8
+}
 
+if [ $# -gt 0 ]; then
+    for f in "$@"; do
+        recode < "$f"
+    done
+else
+    recode
+fi
