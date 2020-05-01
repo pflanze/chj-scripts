@@ -1,3 +1,3 @@
 #!/bin/bash
 
-recode-latin1-to-utf8 --from UTF-16 --reverse "$@"
+recode-latin1-utf8 --from UTF-16 --reverse "$@"
