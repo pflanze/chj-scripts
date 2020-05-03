@@ -57,7 +57,7 @@ sub maybe_trunc ( $ ) {
     my ($str)=@_;
     # scratch files
 
-    # XXX localized date strings are a pain; or, how to match a
+    # XX localized date strings are a pain; or, how to match a
     # unicode "wordy" character?
     if ($str=~ /^\(?([\wäöüéè]{26,27})[-\)~]/) {
 	$1
