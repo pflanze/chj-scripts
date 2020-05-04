@@ -71,53 +71,91 @@ TEST { maybe_trunc '(Fre_Mär_20_184758_CET_2015-secupgrades~' }
 'Fre_Mär_20_184758_CET_2015';
 
 
-our %truncatedargs=
-  map {
-      if (defined (my $trunc= maybe_trunc $_)) {
-	  ($trunc => 1)
-      } else {
-	  ()
-      }
-  } keys %existingargs;
-
 # (which arguments should be removed?)
 
 our @tildefiles= grep { /.~\z/s } keys %existingargs;
 
-our %suppresstilde=
-  (map {
-      /^(.+)~$/s or die "??";
-      my $k=$_;
-      my $tildeless=$1;
-      $k=> do {
-	  if ($existingargs{$tildeless}) {
-	      debug "FOUND existingfile arg '$tildeless', so yep suppress '$k'";
-	      1
-	  } else {
-	      debug "nonexisting arg '$k'";
-	      if (defined (my $trunc= maybe_trunc $k)) {
-		  debug "examine '$trunc'";
-		  if ($truncatedargs{$trunc}) {
-		      debug "FOUND trunc '$trunc', so yep suppress '$k'";
-		      1
-		  } else {
-		      0
-		  }
-	      } else {
-		  0
-	      }
-	  }
-      }
-  } @tildefiles);
+
+our %sizes; # sizes to cut down to (in additional to maybe_trunc
+            # value) for checking truncatedtildes
+
+sub tilde_trunc {
+    my ($path, $do_register)= @_;
+    if (defined (my $trunc= maybe_trunc $path)) {
+        $trunc
+    } else {
+        # For files that don't fit maybe_trunc, record the sizes, so
+        # that those can be tried separately (don't want to build up
+        # a trie):
+        my $str= substr $path, 0, -1;
+        # sooo ugly
+        $sizes{length($str)}++
+            if $do_register;
+        $str
+    }
+}
+
+our %truncatedtildes= # mix of maybe_trunc strings and full path except for "~"
+    map {
+        tilde_trunc($_,1) => 1
+    } @tildefiles;
+
+my @sizes= reverse sort keys %sizes;
+
+
+# Now, go through the non-tilde files and see which ones match a tilde
+# one, if it does, mark it here, so we can then ignore those:
+
+my %suppresstilde; # trunc of those ~ files which have a trunc-able
+                   # non-~ file
+
+sub tstsetfound { # returns if found
+    my ($t)=@_;
+    debug "tstsetfound: '$t'";
+    if ($truncatedtildes{$t}) {
+        debug "  found!";
+        $suppresstilde{$t}++;
+        1
+    } else {
+        debug "  not found";
+        0
+    }
+}
+
+for my $k (keys %existingargs) {
+    debug  "CHECKING: '$k'";
+    next if $k=~ /.~\z/s;
+    # non-~ file:
+    #my $trunc= tilde_trunc($k."~");  oh  no  no go. have to treat cases differently
+    if (defined (my $t= maybe_trunc $k."~")) {
+        debug "C: '$t'";
+        tstsetfound $t
+    } else {
+        tstsetfound $k;
+        for my $siz (@sizes) {
+            tstsetfound(substr $k,0,$siz)
+                and last;
+        }
+    }
+}
 
 
 our @fixedargs=
-  grep {
-      not $suppresstilde{$_}
+    grep {
+        if (/.~\z/s) {
+            my $t= tilde_trunc($_, 0);
+            not $suppresstilde{$t}
+        } else {
+            # always keep
+            1
+        }
   } @ARGV;
 
 #use Chj::singlequote ':all';
 #print singlequote_many(@fixedargs)."\n";
+
+
+#use lib "/opt/functional-perl/lib"; use FP::Repl::AutoTrap; use FP::Repl; repl;
 
 exec ($cmd, @fixedargs)
   or exit 127; # did I remember the correct code ?
