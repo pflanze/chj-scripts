@@ -98,7 +98,7 @@ use Chj::App::Trash 'trash';
 use Chj::xtmpfile;
 use Chj::xpiped ':all';
 use Chj::xopen qw(xopen_read xopen_write);
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode qw(exitcode);
 
 my $call_=sub { # returns exit code from command
     my ($path, $maybe_newpath, $maybe_newfh)=@_;
