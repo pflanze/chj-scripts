@@ -1,6 +1,6 @@
 # Mon Sep 24 20:16:11 2007  Christian Jaeger, christian at jaeger mine nu
 # 
-# Copyright 2007 by Christian Jaeger
+# Copyright 2007-2020 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -39,7 +39,7 @@ use strict;
 use Chj::xperlfunc 'xfork','xwaitpid','xexec';
 #use Chj::xperlfunc ':all';
 #use Chj::repl;
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode qw(exitcode);
 use POSIX 'dup2';
 use Chj::singlequote ":all";
 

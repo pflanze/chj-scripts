@@ -1,6 +1,6 @@
 # Thu Dec  2 03:18:22 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
 # 
-# Copyright 2004 by Christian Jaeger
+# Copyright 2004-2020 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -15,7 +15,7 @@ Chj::status
 
 =head1 NOTE
 
-Use L<Chj::Unix::exitcode> instead now, ok?
+Use L<Chj::Unix::Exitcode> instead now, ok?
 
 =cut
 

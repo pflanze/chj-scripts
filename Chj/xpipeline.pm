@@ -1,6 +1,6 @@
 # Sun Aug  1 15:15:38 2004  Christian Jaeger, christian.jaeger@ethlife.ethz.ch
 # 
-# Copyright 2004 by Christian Jaeger
+# Copyright 2004-2020 by Christian Jaeger
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -56,7 +56,7 @@ sub xreceiverpipeline_with_out_to{
 }
 
 
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode qw(exitcode);
 
 sub xxpipeline {
     if (@_>=2) {

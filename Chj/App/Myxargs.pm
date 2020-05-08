@@ -1,5 +1,5 @@
 #
-# Copyright 2009 by Christian Jaeger, christian at jaeger mine nu
+# Copyright 2009-2020 by Christian Jaeger, christian at jaeger mine nu
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -271,9 +271,9 @@ sub myxargs { # global inputs (free variables.eben. und autodetect?..) : STDIN
 	    my $excode=0;
 	    for (@ss) {
 		if ($_ != 0) {
-		    require Chj::Unix::exitcode;
+		    require Chj::Unix::Exitcode;
 		    warn "$myname: one of the subprocesses returned with "
-		      .Chj::Unix::exitcode($_)."\n";
+		      .Chj::Unix::Exitcode::exitcode($_)."\n";
 		    $excode=1;
 		}
 	    }

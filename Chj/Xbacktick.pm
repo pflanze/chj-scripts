@@ -1,5 +1,5 @@
 #
-# Copyright 2008 by Christian Jaeger, christian at jaeger mine nu
+# Copyright 2008-2020 by Christian Jaeger, christian at jaeger mine nu
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -19,7 +19,7 @@ Chj::Xbacktick
 =head1 DESCRIPTION
 
 ugly, ucfirst named stuff. That *does* $? checking (and using
-Chj::Unix::exitcode for the exception message).
+Chj::Unix::Exitcode for the exception message).
 
 Well dunno yet how to specify non-shell thingie in the 1 argument
 case. doh. todo.
