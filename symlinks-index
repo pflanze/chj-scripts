@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+# Tue 12 May 14:17:43 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dirpath
+
+  On startup creates an in-memory index of the symlinks contained in
+  \$dirpath, then reads target-paths from stdin and writes the
+  source-paths that link to the target-path to stdout. The end of an
+  answer group is indicated by an empty string written to stdout.
+  By default, entries are terminated by newline characters.
+
+  Options:
+
+   -z   use the null byte as record terminator for writing.
+   -0   use the null byte as record terminator for reading and writing.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+my $EOL= "\n";
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "z" => sub { $EOL= "\0" },
+	   "0" => sub { $EOL= "\0"; $/ = "\0" },
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+use Chj::xopendir;
+use Chj::xperlfunc qw(xlstat xreadlink xprint);
+use IO::Handle;
+
+sub xprinteol {
+    xprint @_, $EOL
+}
+
+sub xflush {
+    *STDOUT{IO}->flush or die "flush: $!";
+}
+
+
+my %target; # => [ source ]
+
+for (@ARGV) {
+    my $d= xopendir $_;
+    while (defined (my $item= $d->xnread)) {
+        my $s= xlstat "$_/$item";
+        if ($s->is_symlink) {
+            push @{$target{xreadlink "$_/$item"}}, $item
+        }
+    }
+}
+
+while (<STDIN>) {
+    chomp;
+    if (my $items= $target{$_}) {
+        for my $item (@$items) {
+            xprinteol $item;
+        }
+    }
+    xprinteol;
+    xflush;
+}
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
