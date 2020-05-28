@@ -95,13 +95,6 @@ if ($opt_c and @cmd) {
 }
 
 
-# XXX: this is a *BAD* way to implement passing @cmd, but I don't know how
-# else to do it currently:
-use Chj::singlequote 'singlequote_sh';
-if (@cmd) {
-    $opt_c = join(" ",map { singlequote_sh $_ } @cmd);
-}
-
 use Chj::xperlfunc;
 use Chj::xopen 'xopen_read';
 use Chj::xtmpfile;
@@ -255,6 +248,13 @@ if ($opt_builtin) {
 	exit 127; # correct code?
     }
 } else {
+    # XXX: this is a *BAD* way to implement passing @cmd, but I don't know how
+    # else to do it currently:
+    use Chj::singlequote 'singlequote_sh';
+    if (@cmd) {
+        $opt_c = join(" ",map { singlequote_sh $_ } @cmd);
+    }
+
     xexec "chroot", $chrootbase, "su", "-", $user,
       ($opt_c ? ("-c", $opt_c) : ());
 }
