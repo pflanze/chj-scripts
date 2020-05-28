@@ -97,9 +97,11 @@ if ($opt_c and @cmd) {
 
 use Chj::xperlfunc;
 use Chj::xopen 'xopen_read';
+use Chj::Chomp; # fun, 'Chomp' is also in Chj::String, whatever
 use Chj::xtmpfile;
 use Chj::xtmpdir;
 use Chj::IO::Command;
+use Chj::xpipe;
 
 my $maybe_display= $ENV{DISPLAY};
 my $X= ($opt_X and $maybe_display);
@@ -214,6 +216,28 @@ if ($X) {
     }
 }
 
+
+my $hostname= do {
+    my ($r,$w)= xpipe;
+    if (xfork) {
+        $w->xclose;
+        my $hn= Chomp($r->xreadline);
+        $r->xclose;
+        xxwait;
+        $hn
+    } else {
+        $r->xclose;
+        xchroot $chrootbase;
+        $w->xprint(Chomp(xopen_read("/etc/hostname")->xreadline), "\n");
+        $w->xclose;
+        exit(0);
+    }
+};
+
+$ENV{HOSTNAME}=$hostname; # but is ignored by bash, $HOSTNAME is magical
+$ENV{CHJHOSTNAME}=$hostname;
+
+
 if ($opt_builtin) {
     # Partial COPY from $X variant above!
     # But don't trust the chroot
@@ -252,7 +276,10 @@ if ($opt_builtin) {
     # else to do it currently:
     use Chj::singlequote 'singlequote_sh';
     if (@cmd) {
-        $opt_c = join(" ",map { singlequote_sh $_ } @cmd);
+        # "chroot" command or something deletes $CHJHOSTNAME, so set
+        # it in guest context:
+        my $envguest= "CHJHOSTNAME=".singlequote_sh($ENV{CHJHOSTNAME});
+        $opt_c = $envguest." ".join(" ",map { singlequote_sh $_ } @cmd);
     }
 
     xexec "chroot", $chrootbase, "su", "-", $user,
