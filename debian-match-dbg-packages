@@ -32,7 +32,7 @@ use Data::Dumper;
 ##hmm should use something better than this?
 {
     package CHJADHOC::Apt::Packagedata;
-    use Chj::Unix::exitcode ();
+    use Chj::Unix::Exitcode;
     #sub apt_package_data ( $ ) {
     sub fetch {
 	my $class=shift;
@@ -90,7 +90,7 @@ use Data::Dumper;
 	      ) #and warn "ignoring pipe err"
 	     )
 	    # 141 is the exit code it seems to return in this case
-	  or die "command exited with an error (".Chj::Unix::exitcode($rv).")";
+	  or die "command exited with an error (".Chj::Unix::Exitcode::exitcode($rv).")";
 	bless $data, $class
     }
     sub maybe_get_valuesref {

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+iconv --from UTF-16 --to UTF-8 # "$@"
+

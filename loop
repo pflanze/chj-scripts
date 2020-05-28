@@ -87,7 +87,7 @@ usage unless @$command;
 
 use Time::HiRes 'time','sleep';
 use Chj::xperlfunc;
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode 'exitcode';
 
 our $call= $opt_shell ? sub {
     xsystem_safe $shell, $shell_execute_flag, @_;

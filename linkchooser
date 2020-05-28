@@ -17,9 +17,8 @@ $myname filenamewithoutsuffix_suffix
   to \"\$filenamewithoutsuffix\$suffix\".
   If the 3rd argument is given, the symlink is switched to the
   other target than the current.
-  If only 1 argument is given, it is checked for an underscore,
-  and then split just before that underscore. If no underscore
-  is found, a minus is searched.
+  If only 1 argument is given, it is checked for the last underscore
+  or minus or possibly dot, and then split at that position.
 
   Options
    -f|--force  unlink target even if it's not a symlink
@@ -64,11 +63,13 @@ sub absolutize($$) {  ## could be much better: check for symlinks in paths in fi
 sub split__without_suffix {
     my ($path)=@_;
     my ($tmp,$suffix);
-    (0
-     or ($tmp,$suffix)= $path=~ /^(.*\.[^_-]+)([_-].+)$/s
-     or ($tmp,$suffix)= $path=~ /^([^_]+)(_[^_]+)$/s
-     or ($tmp,$suffix)= $path=~ /^([^-]+)(-[^-]+)$/s
-     or return () );
+    # (0
+    #  or ($tmp,$suffix)= $path=~ /^(.*\.[^_-]+)([_-].+)$/s
+    #  or ($tmp,$suffix)= $path=~ /^([^_]+)(_[^_]+)$/s
+    #  or ($tmp,$suffix)= $path=~ /^([^-]+)(-[^-]+)$/s
+    #  or return () );
+    ($tmp,$suffix)= $path=~ /^(.*)([._-].+)$/s
+    or return;
     ($tmp,$suffix)
 }
 
@@ -78,19 +79,22 @@ TEST {[split__without_suffix ""]} []; # whatever
 TEST {[split__without_suffix "-"]} []; # ["","-"]; # whatever
 TEST {[split__without_suffix "_"]} []; # whatever
 TEST {[split__without_suffix "foo"]} [];
-TEST {[split__without_suffix "foo.bar"]} [];
+TEST {[split__without_suffix "foo.bar"]} ["foo", ".bar"];
 TEST {[split__without_suffix "foo-bar"]} ["foo","-bar"];
 TEST {[split__without_suffix "foo_bar"]} ["foo","_bar"];
 TEST {[split__without_suffix "foo-bar_baz"]} ["foo-bar","_baz"];
-TEST {[split__without_suffix "foo_bar-baz"]} ["foo","_bar-baz"];
+TEST {[split__without_suffix "foo_bar-baz"]} ["foo_bar","-baz"];
 
-TEST {[split__without_suffix "foo.conf-bar_baz"]} ["foo.conf","-bar_baz"];
+TEST {[split__without_suffix "foo.conf-bar_baz"]} ["foo.conf-bar","_baz"];
 TEST {[split__without_suffix "foo-bar.conf_baz"]} ["foo-bar.conf","_baz"];
 
-TEST {[split__without_suffix "foo.conf_bar-baz"]} ["foo.conf","_bar-baz"];
+TEST {[split__without_suffix "foo.conf_bar-baz"]} ["foo.conf_bar","-baz"];
 TEST {[split__without_suffix "foo_bar.conf-baz"]} ["foo_bar.conf","-baz"];
 
-#use Chj::repl;repl;
+TEST {[split__without_suffix "foo_bar-conf.1"]} ["foo_bar-conf",".1"];
+
+#use lib "/opt/functional-perl/lib"; use FP::Repl;repl; exit;
+
 
 if ($opt_test) {
     my $rv= Chj::TEST::run_tests;

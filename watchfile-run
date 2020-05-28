@@ -58,7 +58,7 @@ usage unless @args>1;
 
 use Time::HiRes 'sleep';
 use Chj::xperlfunc;# 'xstat';
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode 'exitcode';
 
 our $cmd=shift @args;
 our @files= @args;

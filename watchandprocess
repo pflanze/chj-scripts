@@ -132,7 +132,7 @@ warn "redirstdin=$redirstdin\n" if $DEBUG;
 warn "redirstdout=$redirstdout\n" if $DEBUG;
 
 use Time::HiRes 'sleep';
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode 'exitcode';
 
 while(1){
     my @addtimes= map { (stat $_)[9] or die "$myname: stat '$_': $!\n" } @addfiles;

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+recode() {
+    iconv --from UTF-16 --to UTF-8
+}
+
+if [ $# -gt 0 ]; then
+    for f in "$@"; do
+        recode < "$f"
+    done
+else
+    recode
+fi

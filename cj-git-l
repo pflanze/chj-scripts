@@ -38,7 +38,7 @@ our @maybe_files= @ARGV;
 #hh always a list. but may be nil. hhh. \MYLANG[nil,#f]
 
 use Chj::IO::Command;
-use Chj::Unix::exitcode;
+use Chj::Unix::Exitcode 'exitcode';
 use Chj::Git::Functions 'git_unquote_path';
 
 sub files {
@@ -67,7 +67,7 @@ sub files {
 	  ) #and warn "ignoring pipe err"
 	 )
 	# 141 is the exit code it seems to return in this case
-      or die "git-status exited with an error (".Chj::Unix::exitcode($rv).")";
+      or die "git-status exited with an error (".exitcode($rv).")";
     \%files
 }
 

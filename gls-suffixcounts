@@ -18,7 +18,7 @@ fi
 
 gls "$@"| perl -wne '
 chomp;
-if (m{([^/]+)\.([^.]+)$}) {
+if (m{([^/]+)\.([^.\s\)\"\!\?]+)$}) {
     $suffix{$2}++
        unless $1 eq "my";
 }

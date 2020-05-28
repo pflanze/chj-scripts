@@ -5,6 +5,8 @@
 
 use strict;
 
+my $from_charset= "latin1";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -14,7 +16,8 @@ sub usage {
   Leaves the original back with a ~ appendix.
 
   Options:
-  --reverse   do the other way round, utf-8 to latin1
+  --from charset  instead of $from_charset
+  --reverse     do the other way round, utf-8 to latin1
 
   (Christian Jaeger <$email>)
 ";
@@ -26,6 +29,7 @@ our $verbose=0;
 our $opt_reverse;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "from=s"=> \$from_charset,
 	   "reverse"=>\$opt_reverse,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -42,8 +46,8 @@ sub recode_file ( $ ) {
       ($in,$out,undef,
        "iconv",
        $opt_reverse ?
-       ("--from=utf8", "--to=latin1")
-       : ("--from=latin1", "--to=utf8"));
+       ("--from=utf8", "--to=$from_charset")
+       : ("--from=$from_charset", "--to=utf8"));
     $recode->xxfinish;
     $in->xclose;
     $out->xclose;
