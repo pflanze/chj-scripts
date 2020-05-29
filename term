@@ -62,6 +62,7 @@ if ($ENV{LANG} eq "C") {
 
 my $font= $ENV{RXVT_UNICODE_FONT} || "Inconsolata";
 my $fontsize= $ENV{RXVT_UNICODE_FONTSIZE} || 18;
+# ^ keep in sync with 'rxvt-fontsize'!
 
 $font=~ /^\w[\w ]*\w$/s
   or die "invalid font format: $font";

@@ -6,11 +6,18 @@ IFS=
 
 font=${RXVT_UNICODE_FONT:-Inconsolata}
 #  security? nah ?
+size=${RXVT_UNICODE_FONTSIZE:-18}
+# ^ keep in sync with 'term'!
 
 usage () {
-    echo "usage: $0 n"
-    echo "  sets font size in current rxvt-unicode window to n pixels"
-    echo "  using font $font (RXVT_UNICODE_FONT)"
+    {
+        echo "usage: $0 n|+|-"
+        echo "  sets font size in current rxvt-unicode window to n pixels"
+        echo "  or increase/decrease it from the current size $size (RXVT_UNICODE_FONTSIZE)"
+        echo "  using font $font (RXVT_UNICODE_FONT)"
+    } >&2
+    echo "# NOTE: this script is meant to be run from a bash function of"
+    echo "# the same name which captures and evals its output"
     exit 1
 }
 
@@ -18,8 +25,34 @@ if ! [ $# -eq 1 ]; then
     usage
 fi
 
-if ! echo "$1" | egrep -q '^[0-9]+$'; then
-    usage
-fi
+case "$1" in
+    +)
+        newsize=$(( ( $size * 1070 + 500 ) / 1000))
+        if [ $newsize = $size ]; then
+            size=$(( $size + 1 ))
+        else
+            size=$newsize
+        fi
+        ;;
+    -)
+        newsize=$(( ( $size * 934 + 500 ) / 1000))
+        if [ $newsize = $size ]; then
+            size=$(( $size - 1 ))
+        else
+            size=$newsize
+        fi
+        ;;
+    *)
+        if echo "$1" | egrep -q '^[0-9]+$'; then
+            size="$1"
+        else
+            usage
+        fi
+        ;;
+esac
 
-printf '\e]710;%s\007' "xft:$font:pixelsize=$1"
+echo "size $size" >&2
+echo "export RXVT_UNICODE_FONTSIZE=$size"
+
+printf '\e]710;%s\007' "xft:$font:pixelsize=$size" >&2
+
