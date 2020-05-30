@@ -1,5 +1,5 @@
 #
-# Copyright 2013 by Christian Jaeger, christian at jaeger mine nu
+# Copyright 2013-2020 by Christian Jaeger, christian at jaeger mine nu
 # Published under the same terms as perl itself
 #
 # $Id$
@@ -67,29 +67,37 @@ sub mounts {
 
 {
     package CHJ::Mountinfo;
+    my $fields10= [
+        # '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
+        qw(dunno1 dunno2 dev_major_minor from mountpoint options
+        dunno3 type1 type2 moreoptions)
+        ];
+    my $fields11= [
+        # '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
+        qw(dunno1 dunno2 dev_major_minor from mountpoint options
+        dunno3 dunno4 type1 type2 moreoptions)
+        ];
+    my $release_name_to_fields= +{
+        jessie=> $fields11,
+        stretch=> $fields11,
+        buster=> $fields11, # just assuming
+        bullseye=> $fields11, # just assuming
+    };
     our @fields= do {
-	my @jessie=
-	  qw(dunno1 dunno2 dev_major_minor from mountpoint options
-	     dunno3 dunno4 type1 type2 moreoptions);
-
 	my $v= `cat /etc/debian_version`;
+        # XX why am I checking debian_version when it's just the
+        # *kernel*?
 	my ($maybe_version)= $v =~ /^(\d+)\./;
 	if ($maybe_version) {
 	    if ($maybe_version < 8) {
-		# '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
-		qw(dunno1 dunno2 dev_major_minor from mountpoint options
-		   dunno3 type1 type2 moreoptions)
+                @$fields10
 	    } else {
-		@jessie
+		@$fields11
 	    }
 	} else {
 	    if (my ($release_name)= $v=~ m|^([a-z]{3,})/|) {
-		if ($release_name eq "jessie") {
-		    @jessie
-		} elsif ($release_name eq "stretch") {
-		    # '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
-		    qw(dunno1 dunno2 dev_major_minor from mountpoint options
-		       dunno5 type1 type2 moreoptions)
+		if (my $fields= $$release_name_to_fields{$release_name}) {
+		    @$fields
 		} else {
 		    die "don't know how to handle release '$release_name'";
 		}
@@ -120,7 +128,7 @@ sub mountinfos {
     while (<$f>) {
 	my @f= split " ";
 	@f == @CHJ::Mountinfo::fields
-	  or die "line in $path with different number of fields: '$_'";
+	  or die "line in $path with different number of fields, ".@f." instead of ".@CHJ::Mountinfo::fields.": '$_'";
 	push @m, bless \@f, "CHJ::Mountinfo";
     }
     $f->xclose;
