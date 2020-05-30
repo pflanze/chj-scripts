@@ -67,14 +67,22 @@ sub mounts {
 
 {
     package CHJ::Mountinfo;
+    my $pre_jessie= [
+        # '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
+        qw(dunno1 dunno2 dev_major_minor from mountpoint options
+        dunno3 type1 type2 moreoptions)
+        # 10
+        ];
     my $jessie= [
         qw(dunno1 dunno2 dev_major_minor from mountpoint options
         dunno3 dunno4 type1 type2 moreoptions)
+        # 11
         ];
     my $stretch= [
         # '35 14 0:6 / /sys/kernel/debug rw,relatime shared:21 - debugfs debugfs rw'
         qw(dunno1 dunno2 dev_major_minor from mountpoint options
         dunno5 type1 type2 moreoptions)
+        # 10, ??? when line above has 11
         ];
     my $release_name_to_fields= +{
         jessie=> $jessie,
@@ -89,9 +97,7 @@ sub mounts {
 	my ($maybe_version)= $v =~ /^(\d+)\./;
 	if ($maybe_version) {
 	    if ($maybe_version < 8) {
-		# '14 20 0:13 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw'
-		qw(dunno1 dunno2 dev_major_minor from mountpoint options
-		   dunno3 type1 type2 moreoptions)
+                @$pre_jessie
 	    } else {
 		@$jessie
 	    }
