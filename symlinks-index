@@ -21,6 +21,8 @@ sub usage {
 
    -z   use the null byte as record terminator for writing.
    -0   use the null byte as record terminator for reading and writing.
+   --remove-base base   remove base from the target paths before putting
+                        them into the index (simply substring it (for now))
 
   (Christian Jaeger <$email>)
 ";
@@ -30,11 +32,13 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 my $EOL= "\n";
+my $opt_remove_base;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "z" => sub { $EOL= "\0" },
 	   "0" => sub { $EOL= "\0"; $/ = "\0" },
-	   ) or exit 1;
+	   "remove-base=s" => \$opt_remove_base,
+	  ) or exit 1;
 usage unless @ARGV==1;
 
 use Chj::xopendir;
@@ -57,7 +61,13 @@ for (@ARGV) {
     while (defined (my $item= $d->xnread)) {
         my $s= xlstat "$_/$item";
         if ($s->is_symlink) {
-            push @{$target{xreadlink "$_/$item"}}, $item
+	    my $target= xreadlink "$_/$item";
+	    if ($opt_remove_base) {
+		$target=~ s/^\Q$opt_remove_base//
+		  or die "target does not start with '$opt_remove_base': ".
+		    "'$target'";
+	    }
+            push @{$target{$target}}, $item
         }
     }
 }
