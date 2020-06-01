@@ -53,6 +53,13 @@ sub xflush {
     *STDOUT{IO}->flush or die "flush: $!";
 }
 
+sub cleanup_target {
+    my ($str)=@_;
+    # remove end slash (but only if it's not the '/' dir)
+    $str=~ s|([^/])/+\z|$1|;
+    $str
+}
+
 
 my %target; # => [ source ]
 
@@ -67,6 +74,7 @@ for (@ARGV) {
 		  or die "target does not start with '$opt_remove_base': ".
 		    "'$target'";
 	    }
+	    $target= cleanup_target($target);
             push @{$target{$target}}, $item
         }
     }
@@ -74,6 +82,7 @@ for (@ARGV) {
 
 while (<STDIN>) {
     chomp;
+    $_= cleanup_target($_);
     if (my $items= $target{$_}) {
         for my $item (@$items) {
             xprinteol $item;
