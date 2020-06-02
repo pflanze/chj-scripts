@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+
+# Tue  2 Jun 11:04:46 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname CHROOTBASE username(s)
+
+  Recreate given username(s) in chroot at CHROOTBASE with their own
+  groups of the same name, with both group and user having the same
+  uid and gid as outside the chroot.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+#my @pw= getpwnam $username
+#ah I *did* do this:
+use Chj::Unix::Object::User;
+#use lib "/opt/functional-perl/lib/"; use FP::Repl::Trap; use FP::Repl;
+use Chj::Unix::User;
+use Chj::xperlfunc ":all";
+use Chj::singlequote ":all";
+
+my $chrootbase= shift @ARGV;
+my @username= @ARGV;
+
+sub copy {
+    my ($username)=@_;
+    my $user= Chj::Unix::Object::User->get_by_nam($username)
+      or die "no such user: $username";
+
+    my $cmd= do {
+        my @addgroup= ("addgroup", "--gid", $user->gid, $username);
+        # ^ XX blindly assumes username == groupname, or/also, that
+        # $user->gid is to the group with the same name as $username.
+        my @adduser= ("adduser", "--uid", $user->uid, "--gid", $user->gid,
+                      "--disabled-password", $username);
+        join(";"
+             ,"set -euo pipefail"
+             ,"IFS="
+             ,singlequote_sh_many(@addgroup)
+             ,singlequote_sh_many(@adduser))
+    };
+
+    xxsystem "chrootlogin", $chrootbase, "root", "--", "bash", "-c", $cmd;
+
+    print "Done with '$username'.\n";
+}
+
+copy $_ for @username;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
