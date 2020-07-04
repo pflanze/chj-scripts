@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+# touch all files with the *same* time, unlike touch's default (which
+# uses the time at the time of touching the individual file, not at
+# the start)
+
+t=$(date '+%Y%m%d%H%M.%S')
+
+touch -t "$t" "$@"
