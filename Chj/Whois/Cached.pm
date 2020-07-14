@@ -113,7 +113,7 @@ sub Whois_freechecker ($ ) {
       +{
 	com=> [
 	       sub {
-		   ($_[0]=~ /\nNo match for.*$lcdomain/i
+		   ($_[0]=~ /\bNo match for[^\n]*$lcdomain/i
 		    or
 		    # +-sick: not so sure this is really designating
 		    # truly a free entry.. but assume it is.
