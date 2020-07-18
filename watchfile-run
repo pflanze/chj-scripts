@@ -70,11 +70,16 @@ our @files= @args;
 
 our @stats= map { scalar xstat $_ } @files; #vergiss das scalar nicht ach isch prl shit.
 
+$|++;
+
 sub runit {
     if ($opt_t) {
         print "--".localtime()."-------------------------------------\n";
     }
     xxsystem $cmd;
+    if ($opt_t) {
+        print(("-"x63)."\r");
+    }
 }
 
 runit
