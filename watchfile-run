@@ -76,7 +76,7 @@ sub runit {
     if ($opt_t) {
         print "--".localtime()."-------------------------------------\n";
     }
-    xxsystem $cmd;
+    xsystem $cmd;
     if ($opt_t) {
         print(("-"x63)."\r");
     }
