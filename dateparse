@@ -10,11 +10,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname string
+    print "$myname datestring(s)
 
-  Parse the given date string and show it as localtime on stdout.  If
-  string contains some kind of dash, it will parse both start and end
-  time and show them on separate lines.
+  Parse the given date string(s) and show it/them as unixtime and
+  localtime on stdout.  If string contains some kind of dash, it will
+  parse both start and end time and show them both with a minus
+  inbetween.
 
   (Christian Jaeger <$email>)
 ";
@@ -33,12 +34,21 @@ usage unless @ARGV;
 use Date::Parse;
 use Encode qw(decode_utf8);
 
-sub pt {
+sub pars {
     my ($str)=@_;
     my $t= str2time $str
         or die "invalid format of time string: '$str'";
     my $lt= localtime $t;
-    print "$t  $lt\n"
+    [ $t, $lt ]
+}
+
+sub pt {
+    my @ps= map { pars $_ } @_;
+    my @ts= map { $$_[0] } @ps;
+    my @ls= map { $$_[1] } @ps;
+    my $t = join(" - ", @ts);
+    my $l = join(" - ", @ls);
+    print "$t  $l\n"
         or die "stdout: $!";
 }
 
@@ -58,8 +68,7 @@ sub pr {
         my $t1= "$from $torest";
         my $t2= "$frombegin $to";
         #use FP::Repl; repl;
-        pt $t1;
-        pt $t2;
+        pt $t1, $t2
     } else {
         die "can't handle more than one dash in: '$str'";
     }
