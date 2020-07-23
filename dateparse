@@ -13,9 +13,9 @@ sub usage {
     print "$myname datestring(s)
 
   Parse the given date string(s) and show it/them as unixtime and
-  localtime on stdout.  If string contains some kind of dash, it will
-  parse both start and end time and show them both with a minus
-  inbetween.
+  localtime on stdout.  If string contains some kind of dash or 'to',
+  it will parse both start and end time and show them both with a
+  minus inbetween.
 
   (Christian Jaeger <$email>)
 ";
@@ -54,7 +54,7 @@ sub pt {
 
 sub pr {
     my ($str)= @_;
-    my @p= split /[-—]/, $str;
+    my @p= split /(?:-|—|\b(?:to|bis|à)\b)/, $str;
     if (@p==1) {
         pt $p[0]
     } elsif (@p==2) {
