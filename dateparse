@@ -10,12 +10,12 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname datestring(s)
+    print "$myname [datestring(s)]
 
-  Parse the given date string(s) and show it/them as unixtime and
-  localtime on stdout.  If string contains some kind of dash or 'to',
-  it will parse both start and end time and show them both with a
-  minus inbetween.
+  Parse the given date string(s) (or read all of stdin as one
+  datestring) and show it/them as unixtime and localtime on stdout.
+  If string contains some kind of dash or 'to', it will parse both
+  start and end time and show them both with a minus inbetween.
 
   (Christian Jaeger <$email>)
 ";
@@ -29,7 +29,7 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV;
+#usage unless @ARGV;
 
 use Date::Parse;
 use Encode qw(decode_utf8);
@@ -76,4 +76,13 @@ sub pr {
 
 #pr "2:00 PM — 5:30 PM UTC+00:00"
 
-pr $_ for map { decode_utf8 $_ } @ARGV;
+if (@ARGV) {
+    pr $_ for map { decode_utf8 $_ } @ARGV;
+} else {
+    my $str= do {
+        local $/;
+        <STDIN>
+    };
+    close STDIN or die "stdin: $!";
+    pr decode_utf8 $str;
+}
