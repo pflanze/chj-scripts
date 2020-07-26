@@ -40,7 +40,7 @@ sub european2us {
     # ever use the dot:
     my ($str)= @_;
     if (my ($pre, $day,$mon,$maybe_year, $post)=
-        $str=~ /^(.*?)\b(\d+)\.(\d+)\.(\d+\b)?(.*)\z/s) {
+        $str=~ /^(.*?)\b(\d+)\.(\d+)(?:\.(\d+\b)?)?(.*)\z/s) {
         # *have* to use dots as neither 27/7/ nor 27/7 is accepted by
         # str2time
         my $usdate= "$mon.$day.".($maybe_year //"");
