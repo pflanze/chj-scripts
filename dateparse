@@ -34,10 +34,27 @@ GetOptions("verbose"=> \$verbose,
 use Date::Parse;
 use Encode qw(decode_utf8);
 
+
+sub european2us {
+    # turn European to US date format -- *assuming* that no US dates
+    # ever use the dot:
+    my ($str)= @_;
+    if (my ($pre, $day,$mon,$maybe_year, $post)=
+        $str=~ /^(.*?)\b(\d+)\.(\d+)\.(\d+\b)?(.*)\z/s) {
+        # *have* to use dots as neither 27/7/ nor 27/7 is accepted by
+        # str2time
+        my $usdate= "$mon.$day.".($maybe_year //"");
+        "$pre $usdate ".european2us($post);
+    } else {
+        $str
+    }
+}
+
 sub pars {
     my ($str)=@_;
-    my $t= str2time $str
-        or die "invalid format of time string: '$str'";
+    my $usstr= european2us($str);
+    my $t= str2time $usstr
+        or die "invalid format of time string: '$usstr'";
     my $lt= localtime $t;
     [ $t, $lt ]
 }
