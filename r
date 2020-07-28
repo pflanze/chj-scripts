@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Sat Sep 17 11:56:26 EDT 2011
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 use utf8;
@@ -12,11 +12,18 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname cmd args..
 
-  removes files ending in ~ if the same file is given without ~ too.
-  (i.e. remove backup files added by shell patterns)
+  Omit args ending in ~ if the same arg is given without ~ too
+  (i.e. omit backup files added by shell patterns). \"Same\" includes
+  files which have the same \`date_\` stamp in them (with some
+  additional restrictions) so that backup files are properly ignored
+  even if a file using such a time stamp (as created by
+  \`emacscratch\`) is renamed at some point. Also allows renames which
+  extended the filename to the right (such as when adding scoring to 
+  files to be sorted by \`jobs-sort\`).
 
-  e.g.
-    r _e *foo*
+  E.g.
+
+    r ren *foo*
 
   (Christian Jaeger <$email>)
 ";
