@@ -9,10 +9,13 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname [opts] [patterns]
 
   Run locate with the given arguments except -F is dropped and when -F
-  isn't given --regex is added.
+  isn't given --regex is added. Also, if multiple patterns are given,
+  paths that match all of them are shown instead of either of them
+  (intersection instead of union) unless --union is given (note that
+  you can also provide union semantivs via '|' regex patterns).
 
   (Christian Jaeger <$email>)
 ";
@@ -62,9 +65,13 @@ sub opt($) {
 use Getopt::Long;
 my $verbose=0;
 my $opt_F;
+my $opt_union;
+my $opt_intersection;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "F"=> \$opt_F,
+           "union"=> \$opt_union,
+           "intersection"=> \$opt_intersection,
            "A|all"=> opt "all",
            "b|basename"=> opt "basename",
            "c|count"=> opt "count",
@@ -89,7 +96,14 @@ my @patterns= @ARGV;
 
 my $regex_given= exists $opt{regex};
 
-usage "both -F and --regex given" if ($opt_F and $regex_given);
+usage "both -F and --regex given"
+    if ($opt_F and $regex_given);
+
+usage "both --intersection and --union given"
+    if ($opt_intersection and $opt_union);
+
+my $is_union= $opt_union;
+
 
 my @reconstructed_opt;
 for my $k (keys %opt) {
@@ -112,11 +126,43 @@ my @opts= (
      } @reconstructed_opt),
     );
 
-my @cmd= (
-    "locate", @opts, "--", @patterns
-    );
+sub cmd {
+    my (@patterns)= @_;
+    (
+     "locate", @opts, "--", @patterns
+    )
+}
 
-exec @cmd
-    or exit 127; # which exit code was the right one?
+# XX sigh, should also check for --regexp option(s) !
+
+if ($is_union or @patterns <= 1) {
+    exec cmd(@patterns)
+        or exit 127; # which exit code was the right one?
+} else {
+    # same approach as in "multiggc", XX abstract....
+
+    use lib "/opt/functional-perl/lib"; # for fixed version of Chj::IO::Command
+    require Chj::IO::Command;
+
+    my $maxfd= 99999; # ?
+
+    my @qs= do {
+        local $^F= $maxfd;
+        map {
+            scalar Chj::IO::Command->new_sender(cmd($_))
+        } @patterns;
+    };
+
+    my @fds= map { $_->fileno } @qs;
+
+    for (@fds) {
+        die "too many file handles used" if $_ > $maxfd
+    }
+
+    exec "intersection", map { "/dev/fd/$_" } @fds
+        or exit 127; # which exit code was the right one?
+
+    #/ abstract
+}
 
 #repl;
