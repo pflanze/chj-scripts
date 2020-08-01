@@ -41,10 +41,15 @@ sub european2us {
     my ($str)= @_;
     if (my ($pre, $day,$mon,$maybe_year, $post)=
         $str=~ /^(.*?)\b(\d+)\.(\d+)(?:\.(\d+\b)?)?(.*)\z/s) {
-        # *have* to use dots as neither 27/7/ nor 27/7 is accepted by
-        # str2time
-        my $usdate= "$mon.$day.".($maybe_year //"");
-        "$pre $usdate ".european2us($post);
+        if ($pre=~ /:\z/) {
+            # 10:01:13.499132167
+            $str
+        } else {
+            # *have* to use dots as neither 27/7/ nor 27/7 is accepted by
+            # str2time
+            my $usdate= "$mon.$day.".($maybe_year //"");
+            "$pre $usdate ".european2us($post);
+        }
     } else {
         $str
     }
