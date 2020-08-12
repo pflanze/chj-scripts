@@ -26,9 +26,14 @@ if [ $# -eq 0 ]; then
     else
 	defaultfile="$(git rev-parse --git-dir)/gru-default"
 	if [ -e "$defaultfile" ]; then
-	    remote=$(cat "$defaultfile")
-	    set -x
-	    git remote update "$remote"
+            (
+                IFS="$(perl -we 'print "\n\r\t"') "
+                remotes=$(cat "$defaultfile")
+                (
+	            set -x
+	            git remote update $remotes
+                )
+            )
 	else
 	    echo "More than one remote, please specify the ones to use via"
 	    echo "arguments or $defaultfile :"

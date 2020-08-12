@@ -1,59 +1,118 @@
 #!/usr/bin/perl -w
 
-use strict;
+# Thu 23 Jul 22:20:51 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+use utf8;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [datestring(s)]
+
+  Parse the given date string(s) (or read all of stdin as one
+  datestring) and show it/them as unixtime and localtime on stdout.
+  If string contains some kind of dash or 'to', it will parse both
+  start and end time and show them both with a minus inbetween.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+#usage unless @ARGV;
 
 use Date::Parse;
+use Encode qw(decode_utf8);
+
+
+sub european2us {
+    # turn European to US date format -- *assuming* that no US dates
+    # ever use the dot:
+    my ($str)= @_;
+    if (my ($pre, $day,$mon,$maybe_year, $post)=
+        $str=~ /^(.*?)\b(\d+)\.(\d+)(?:\.(\d+\b)?)?(.*)\z/s) {
+        if ($pre=~ /:\z/) {
+            # 10:01:13.499132167
+            $str
+        } else {
+            # *have* to use dots as neither 27/7/ nor 27/7 is accepted by
+            # str2time
+            my $usdate= "$mon.$day.".($maybe_year //"");
+            "$pre $usdate ".european2us($post);
+        }
+    } else {
+        $str
+    }
+}
+
+sub pars {
+    my ($str)=@_;
+    my $usstr= european2us($str);
+    my $t= str2time $usstr
+        or die "invalid format of time string: '$usstr'";
+    my $lt= localtime $t;
+    [ $t, $lt ]
+}
+
+sub pt {
+    my @ps= map { pars $_ } @_;
+    my @ts= map { $$_[0] } @ps;
+    my @ls= map { $$_[1] } @ps;
+    my $t = join(" - ", @ts);
+    my $l = join(" - ", @ls);
+    print "$t  $l\n"
+        or die "stdout: $!";
+}
+
+sub pr {
+    my ($str)= @_;
+    my @p= split /(?:-|—|\b(?:to|bis|à)\b)/, $str;
+    if (@p==1) {
+        pt $p[0]
+    } elsif (@p==2) {
+        my ($from,$to)=@p;
+        my ($frombegin,$fromt)= $from=~
+            /^(.*?)\b(\d+:\d+(?:\d+)?(?:\s*(?:pm|am))?)\s*$/si
+            or die "no match for first part: '$from'";
+        my ($tot,$torest)= $to=~
+            /^\s*\b(\d+:\d+(?:\d+)?(?:\s*(?:pm|am))?)(.*)/si
+            or die "no match for latter part: '$to'";
+        my $t1= "$from $torest";
+        my $t2= "$frombegin $to";
+        #use FP::Repl; repl;
+        pt $t1, $t2
+    } elsif (@p==3
+             and $p[0]=~ /\d\z/
+             and $p[1]=~ /^\d+\z/
+             and $p[2]=~ /^\d/) {
+        pt $str
+    } elsif (@p==0) {
+        # wow, didn't realize split does this (or is this new?)
+        die "no input";
+    } else {
+        die "can't handle more than one dash in: '$str'";
+    }
+}
+
+#pr "2:00 PM — 5:30 PM UTC+00:00"
 
 if (@ARGV) {
-    my $printarg;
-    my $unix=1;
-    my $back=1;
-    for (@ARGV) {
-	if ($_ eq '-u') {
-	    $unix=1;
-	    undef $_;
-	} elsif ($_ eq '-U') {
-	    $unix=0;
-	    undef $_;
-	} elsif ($_ eq '-b') {
-	    $back=1;
-	    undef $_;
-	} elsif ($_ eq '-B') {
-	    $back=0;
-	    undef $_;
-	}
-    }
-    if ((grep {defined} @ARGV)>1) {
-        $printarg=1;
-    }
-    for (@ARGV) {
-	next unless defined;
-        next unless length( $_);
-        if (my $d= str2time($_)) {
-	    my @v=
-	      (
-	       ($printarg ? "$_:" : ()),
-	       ($unix ? "$d" : ()),
-	       ($back ? localtime($d)."" : ())
-	      );
-	    print join(" ", @v),"\n";
-        } else {
-            print "$_: " unless $printarg;
-            print "invalid format\n";
-        }
-    }
+    pr $_ for map { decode_utf8 $_ } @ARGV;
+} else {
+    my $str= do {
+        local $/;
+        <STDIN>
+    };
+    close STDIN or die "stdin: $!";
+    pr decode_utf8 $str;
 }
-else {
-    $0=~ /[^\/]*$/;
-    die "Usage:
-    $& [-u] datestring [, datestring, ..]
-
-    Parses the datestring and converts it into local time if possible.
-    Don't forget to put quotes around the strings.
-    Prints the unixtime value as well unless option -U is given.
-
-    -b  also convert back (default)
-    -B  do not convert back
-";
-}
-

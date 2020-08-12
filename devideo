@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+cmd='find "$@" -name "*.wav" -o -name "*.webm" -o  -name "*.ogv"  -o  -name "*.mp4" -o  -name "*.mp3" -o  -name "*.ogg" -o -name "*.ogx" -o -name "*.mpga" |» mv-parents-to ~/Videos/'
+
+usage () {
+    echo "$0 dir(s)"
+    echo
+    echo "  Runs: $cmd"
+    echo
+    echo "  I.e. moves away all the video and audio files from"
+    echo "  the given directory/directories and subdirectories."
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+eval "$cmd"

@@ -6,7 +6,11 @@ usage () {
     echo "$0 prog file(s)"
     echo "  feed each file to prog on stdin, write stdout back in its place,"
     echo "  through a temp file rename, while keeping permissions."
-    echo "  See also 'lambda'."
+    echo
+    echo "  Options:"
+    echo "    \$INPLACE_BACKUP: if set to 1, keep backups as '~' (default: 1)."
+    echo
+    echo "  See also: 'lambda'."
     exit 1
 }
 
@@ -21,10 +25,19 @@ fi
 cmd="$1"
 shift
 
+
+backup=${INPLACE_BACKUP-1}
+
+
 for f in "$@"; do
     dir=`dirname "$f"`
     tmp=`tempfile -d "$dir"`
     "$cmd" < "$f" >> "$tmp"
     cp-perms "$f" "$tmp"
+    if [ "$backup" = 1 ]; then
+        bck="$f~.$$.$RANDOM$RANDOM"
+        link "$f" "$bck"
+        mv "$bck" "$f~"
+    fi
     mv "$tmp" "$f"
 done

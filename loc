@@ -1,253 +1,168 @@
-#!/usr/bin/perl -wT
+#!/usr/bin/perl -w
 
-use strict;
+# Tue 28 Jul 18:40:13 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
 sub usage {
-    my $err=@_;
-    my $fh= $err ? *STDERR{IO} : *STDOUT{IO};
-    if ($err) {
-	print $fh @_,"\n";
-    }
-    print $fh <<'END';
-Usage:
-    loc [-i] [-F] description_of_file
-or  loc [-i] [-F] -d description_of_folder
-or  loc [-i] [-F] [-d] description -e[i] exclude_desc
-or  loc [-i] [-F] [-d] description -ee[i] exclude_desc_on_whole_path
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [opts] [patterns]
 
-With the -d option, only folders are searched, else only files.
+  Run locate with the given arguments except -F is dropped and when -F
+  isn't given --regex is added. Also, if multiple patterns are given,
+  paths that match all of them are shown instead of either of them
+  (intersection instead of union) unless --union is given (note that
+  you can also provide union semantivs via '|' regex patterns).
 
-The description is a [perl or mlocate] style regular expression, or a
-literal part of the file/folder name if the -F option is given.
-
-In both cases, only the name of the file/folder is searched, not
-any other part of the path of the file. And you can specify the
-whole file name this way:
-    loc '^myfile\.txt$'
-
-If you specify the -i option, the search (!) is case insensitive. (This
-does not touch the exclude pattern - see below.)
-(The -F flag affects both the search and exclude patterns, though,
-curently.)
-
-Finally, you can give an 'exclude' description. File/folder names
-matching this description are NOT displayed. If you specify -ee, the
-whole file path is checked, -e only checks the item name. If you want
-the exclusion terms to be case insensitive, specify the i option
-after the e in the -e options.
-
-LIMITATIONS:  handling of search patterns is not complete. For example
-you may NOT use the 'or' syntax (like in '(some)|(other)'). Read the
-first printed line to see what's being done. (This does not concern
-exclusion patterns.)
-
-This is a wrapper around either 'locate' or 'mlocate', in the former
-case filtering the output with perl, in the latter using mlocate's
-abilities directly.
-
-Further options:
- -w | --whole-path  match the pattern against the whole path instead
-                    of only against the basename
-
-END
-    exit($err ? 1 : 0);
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
 }
 
-our $loc='loc'; #name of this
-our $locate;
-our $have_mlocate;
-if (-f "/usr/bin/mlocate") {
-    $have_mlocate=1;
-    $locate= "/usr/bin/mlocate";
+#use FP::Repl;
+
+
+my %opt_has_val= (
+    all=> 0,
+    basename=> 0,
+    count=> 0,
+    database=> 1,
+    existing=> 0,
+    follow=> 0,
+    #help
+    'ignore-case'=> 0,
+    limit=> 1,
+    #mmap=>
+    nofollow=> 0,
+    null=> 0,
+    statistics=> 0,
+    quiet=> 0,
+    regexp=> 1,
+    regex=> 0,
+    #stdio=>
+    version=> 0,
+    wholename=> 0,
+    );
+
+my %opt; # name => [ $argnum, $maybe_val ]
+
+my $argnum= 0; # hacky
+
+sub opt($) {
+    my ($k)=@_;
+    my $has_val= $opt_has_val{$k} //
+        die "bug: missing opt_has_val for '$k'";
+    sub {
+        my ($whatsthishash, $arg)=@_;
+        #repl;
+        push @{$opt{$k}}, [ $argnum++, $arg];
+    }
+}
+
+use Getopt::Long;
+my $verbose=0;
+my $opt_F;
+my $opt_union;
+my $opt_intersection;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "F"=> \$opt_F,
+           "union"=> \$opt_union,
+           "intersection"=> \$opt_intersection,
+           "A|all"=> opt "all",
+           "b|basename"=> opt "basename",
+           "c|count"=> opt "count",
+           "d|database=s"=> opt "database",##?
+           "e|existing"=> opt "existing",
+           "L|follow"=> opt "follow",
+           "i|ignore-case"=> opt "ignore-case",
+           "limit|n=n"=> opt "limit",
+           "m|mmap"=> sub{ },
+           "P|nofollow|H"=> opt "nofollow", #XX oppos of follow
+           "0|null"=> opt "null",
+           "S|statistics"=> opt "statistics",
+           "q|quiet"=> opt"quiet",
+           "r|regexp=s"=> opt "regexp", ##
+           "regex"=> opt "regex",
+           "stdio"=> sub { },
+           "V|version"=> opt "version",
+           "w|wholename"=> opt "wholename",
+    ) or exit 1;
+
+my @patterns= @ARGV;
+
+my $regex_given= exists $opt{regex};
+
+usage "both -F and --regex given"
+    if ($opt_F and $regex_given);
+
+usage "both --intersection and --union given"
+    if ($opt_intersection and $opt_union);
+
+my $is_union= $opt_union;
+
+
+my @reconstructed_opt;
+for my $k (keys %opt) {
+    my $has_val= $opt_has_val{$k} // die "bug";
+    for my $tupl (@{$opt{$k}}) {
+        my ($argnum, $arg) = @$tupl;
+        $reconstructed_opt[$argnum] and die "bug";
+        $reconstructed_opt[$argnum] = [ "--$k", $has_val ? $arg : () ];
+    }
+}
+
+my @opts= (
+    ($opt_F or $regex_given) ? () : "--regex",
+    (map {
+        if (defined $_) {
+            @$_
+        } else {
+            ()
+        }
+     } @reconstructed_opt),
+    );
+
+sub cmd {
+    my (@patterns)= @_;
+    (
+     "locate", @opts, "--", @patterns
+    )
+}
+
+# XX sigh, should also check for --regexp option(s) !
+
+if ($is_union or @patterns <= 1) {
+    exec cmd(@patterns)
+        or exit 127; # which exit code was the right one?
 } else {
-    $have_mlocate=0;
-    $locate= '/usr/bin/locate';
-}
+    # same approach as in "multiggc", XX abstract....
 
+    use lib "/opt/functional-perl/lib"; # for fixed version of Chj::IO::Command
+    require Chj::IO::Command;
 
-usage unless @ARGV;
+    my $maxfd= 99999; # ?
 
-our ($folders,$insensitive,$desc,$exclude,$excludep,$exinsensitive,$exmatch,$opt_F);
-our $opt_wholepath;
-
-foreach (@ARGV) {
-    if ($_ eq '--help' or $_ eq '-h') {
-	usage
-    }
-    if (/^-[fd]$/) {
-	$folders=1;
-	next
-    }
-    if (/^-i$/) {
-	$insensitive=1;
-	next
-    }
-    if (/^-F$/) {
-	$opt_F=1;
-	next
-    }
-    if (/^--?w(?:hole(?:-path)?)?$/) {
-	$opt_wholepath=1;
-	next
-    }
-    unless (defined $desc) {
-	$desc = $_;
-	next
-    }
-    if (/^-e(e?)(i?)$/) {
-	$exclude=1;
-	$excludep=$1;
-	$exinsensitive=$2;
-	next
-    }
-    if ($exclude) {
-	$exmatch = $_;
-	next
-    }
-    usage "too many arguments or wrong options.\n";
-}
-
-die "$loc: missing exclusion pattern\n"
-  if $exclude and not defined $exmatch;
-
-sub detaint ( $ ) {
-    my ($str)=@_;
-    $str=~ /^(.*)\z/s;
-    $1
-}
-
-if ($have_mlocate) {
-    die "exclude with mlocate not implemented yet" if $exclude;
-    die "folders with mlocate not implemented yet" if $folders;#uh
-    my @cmd= ($locate,
-	      ($opt_wholepath ? () : "--basename"),
-	      ($insensitive ? "-i" : ()),
-	      ($opt_F ? () : "-r"),
-	      detaint($desc));
-    delete $ENV{PATH};delete $ENV{BASH_ENV};delete $ENV{ENV};
-    exec @cmd
-      or die "could not exec $locate: $!";
-} else {
-    # go on with locate and perl below..
-    die "\$opt_wholepath not supported in locate-using mode [yet]" if $opt_wholepath;
-}
-
-our $match;
-
-if (not $opt_F) {  # a pattern is given
-    # 1. First, extract the longest part of the pattern without meta chars
-    my $p = $desc;
-    # a) 'erase' [] parts 'cause these parts are not contiguous
-    $p=~ s/(?<!\\)\[.*?(?<!\\)\]/./g;
-    ##print "Vorher: '$desc'; Nach Lookbehindundso replace: '$p'\n";
-    #    and also () parts since they are too complicated ...:
-    $p=~ s/(?<!\\)\(.*?(?<!\\)\)/./g;
-
-    # b) look for longest match
-    $match='';
-    my $maxlen=0;
-    $p=~ s| (?: [^\^\[\]\*\$\.\\]*  (?:\\[\^\[\]\*\$\.])?)+ |
-      # '?':
-      #my $a=$&;   aber wie soll ich mpe?g richtig behandeln? quatsch. 23.12.00
-
-      ##print "Nonmetamatch: '$&'\n";
-      if (length($&)>$maxlen) {
-	  $maxlen= length($&);
-	  $match=$&;
-      }
-    |exg;
-    ##print "Longest match is: $match\n";
-    $match=~ s/\\//g;
-
-} else {  # literal
-    $match = $desc;      # locate this
-    $desc= quotemeta($desc);
-}
-
-if ($insensitive) {
-    $match=~ s|[a-zA-Z]|'['.lc($&).uc($&).']'|eg
-      #^the only way to tell locate to be insensitive?
-      and $match = '*'.$match.'*';
-    $desc= '(?i)'.$desc;
-}
-
-if ($exclude) {
-    if ($opt_F) {
-	$exmatch= quotemeta($exmatch);
-    }
-    if ($exinsensitive) {
-	$exmatch= '(?i)'.$exmatch;
-    }
-    print STDERR "    (locate '$match', exclude '$exmatch' on ",do{
-	$excludep and 'path' or 'item'
-    },", filter '$desc')\n";
-} else {
-    print STDERR "    (locate '$match', filter '$desc')\n";
-}
-
-our ($fls,$fldrs,$n)=(0,0,0);
-#^ for counting folders/files that are matching but not displayed
-our ($nnn,$nn)=(0,0);
-
-$match=~ /(^[^']*$)/
-  or die "Embedded \"'\" not yet supported.\n";
-our $smatch=$1;# (und schliesslich gebe das ja ich selber ein)
-
-delete $ENV{PATH};delete $ENV{BASH_ENV};delete $ENV{ENV};
-open LOC, "$locate '$smatch'|"
-  or die "could not fork, $!";
-
-while (<LOC>) {
-    $nnn++;
-    next if $excludep and /$exmatch/o;
-    chomp;
-    our $item = $_;
-    # extract pure file name
-    s|^.*/||;
-    next if $exclude and not($excludep) and /$exmatch/o;
-    $nn++;
-    if (/$desc/o) {
-	if (-d $item) {
-	    if ($folders) {
-		print $item,"\n";
-	    } else {
-		$n++
-	    }
-	    $fldrs++
-	} else {
-	    if ($folders) {
-		$n++
-	    } else {
-		print $item,"\n";
-	    }
-	    $fls++
-	}
-    }
-}
-
-close LOC
-    or do {
-	if ($!) {
-	    die "close: $!"
-	}
-	if ($? == 256) {
-	    #ok
-	} else {
-	    die "loc ended with status $?"
-	}
+    my @qs= do {
+        local $^F= $maxfd;
+        map {
+            scalar Chj::IO::Command->new_sender(cmd($_))
+        } @patterns;
     };
 
+    my @fds= map { $_->fileno } @qs;
 
-if ($folders) {
-    print STDERR ("    (Found also $n file"
-		  .do{$n>1 and 's' or ''}
-		  ." matching your description.)\n")
-      if ($n);
-} else {
-    print STDERR ("    (Found also $n folder"
-		  .do{$n>1 and 's' or ''}
-		  ." matching your description. Use the -d option to display "
-		  .do{$n>1 and 'them' or 'it'}.".)\n")
-      if ($n);
+    for (@fds) {
+        die "too many file handles used" if $_ > $maxfd
+    }
+
+    exec "intersection", map { "/dev/fd/$_" } @fds
+        or exit 127; # which exit code was the right one?
+
+    #/ abstract
 }
 
+#repl;

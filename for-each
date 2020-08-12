@@ -1,23 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
-# cj Sun, 15 Aug 2004 21:26:39 +0200
-# so lange hat das gebraucht.
+set -euo pipefail
+IFS=
 
+usage () {
+    echo "$0 cmd items..."
+    echo "  Runs cmd \$item for each of the items."
+    exit 1
+}
 
-code="$1"
-shift
-
-# make it behave more like the interactive shell. sigh?
-if [ -e ~/.bashrc ]; then
-    PS1='not interactive'
-    . ~/.bashrc
+if [ $# -lt 1 ]; then
+    usage
 fi
 
-set -e
-# ^- ahaaaa das darf erst hier stehen wegen mesg error.
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
 
-for arg in "$@"; do
-    eval $code "$arg"
-    #HEH.  $code "$arg"  ging nicht. na. nun ja klar.
-    #####schEISS, "$arg" geht doch ned gibt fehler mit '(bla...' files. wegen eval offenbar. mannnn
+cmd="$1"
+shift
+
+for item in "$@"; do
+    "$cmd" "$item"
 done
