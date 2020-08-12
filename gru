@@ -28,12 +28,11 @@ if [ $# -eq 0 ]; then
 	if [ -e "$defaultfile" ]; then
             (
                 IFS="$(perl -we 'print "\n\r\t"') "
-                for remote in $(cat "$defaultfile"); do
-                    (
-	                set -x
-	                git remote update "$remote"
-                    )
-                done
+                remotes=$(cat "$defaultfile")
+                (
+	            set -x
+	            git remote update $remotes
+                )
             )
 	else
 	    echo "More than one remote, please specify the ones to use via"
