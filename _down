@@ -1,5 +1,7 @@
 #!/bin/bash
 
+YOUTUBEDOWN=${YOUTUBEDOWN-youtubedown}
+
 degoogle --pass \
-    | »» perl -we 'my($url)=@ARGV; print "URL: $url\n"; exec "youtubedown",@ARGV' 2>&1 \
+    | »» perl -we 'my($url)=@ARGV; print "URL: $url\n"; exec $ENV{YOUTUBEDOWN}, @ARGV' 2>&1 \
     | tee >(log-timestamp --pid >> ~/.down.log)
