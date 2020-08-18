@@ -1,6 +1,6 @@
 #!/bin/bash
 
-YOUTUBEDOWN=${YOUTUBEDOWN-youtubedown}
+export YOUTUBEDOWN=${YOUTUBEDOWN-youtubedown}
 
 degoogle --pass \
     | »» perl -we 'my($url)=@ARGV; print "URL: $url\n"; exec $ENV{YOUTUBEDOWN}, @ARGV' 2>&1 \
