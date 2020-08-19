@@ -1,0 +1,94 @@
+#!/usr/bin/perl -w
+
+# Wed 19 Aug 15:19:18 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname size_requirement
+
+  Read paths from stdin, print those which pass the given
+  size requirement.
+
+    +\$n[unit]   greater or equal than given size
+    -\$n[unit]   smaller or equal than given size
+
+  Note: simply tests what lstat returns (i.e. symlinks are probably
+  always satisfying size checks, and directories are checked against
+  inode entry size, not contents).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV==1;
+
+usage if $ARGV[0]=~ /^--?h(elp)?$/;
+
+# once more ?
+my $units= +{
+    '' => 1,
+    Ki => 1024,
+    Mi => 1024*1024,
+    Gi => 1024*1024*1024,
+    Ti => 1024*1024*1024*1024,
+    Pi => 1024*1024*1024*1024*1024,
+    K => 1000,
+    M => 1000*1000,
+    G => 1000*1000*1000,
+    T => 1000*1000*1000*1000,
+    P => 1000*1000*1000*1000*1000,
+};
+
+my $EOL= "\n";
+
+my ($val)= @ARGV;
+
+my $num_re= qr/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/;
+
+my ($gtlt, $num, $maybe_unit)= $val=~ /^\s*([+-])\s*($num_re)\s*(\w+)?\s*\z/
+    or usage "no match for val '$val'";
+
+my $numbytes= do {
+    if (defined $maybe_unit) {
+        my $unit= $maybe_unit;
+        $unit=~ s/B\z//;
+        if (defined (my $multiplier= $units->{$unit})) {
+            $num * $multiplier
+        } else {
+            die "unknown unit '$unit'";
+        }
+    } else {
+        $num+0
+    }
+};
+
+my $size_ok=
+    $gtlt eq '+' ? sub { my ($siz)= @_; $siz >= $numbytes } :
+    $gtlt eq '-' ? sub { my ($siz)= @_; $siz <= $numbytes } :
+    die "Bug";
+
+#warn "numbytes = $numbytes";
+
+use Chj::xperlfunc qw(xlstat);
+
+while (<STDIN>) {
+    chomp;
+    my $s= xlstat $_;
+    if ($size_ok->($s->size)) {
+        print $_, $EOL
+            or die "stdout: $!";
+    }
+}
+
+close STDIN or die "stdin: $!";
+close STDOUT or die "stdout: $!";
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
