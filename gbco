@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: $0 branchname"
+    echo "  create \$branchname and check it out (useful for"
+    echo "  when HEAD is floating, e.g. in submodules)."
+    echo "  Also see: gcob"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+branchname="$1"
+
+set -x
+git branch "$branchname"
+git checkout "$branchname"

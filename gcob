@@ -7,6 +7,7 @@ usage () {
     echo "usage: $0 maybefullyqualifiedbranchname"
     echo "  checks out given branch if not containing a slash;"
     echo "  creates and checks out branch if containing a slash."
+    echo "  Also see: gbco"
     exit 1
 }
 
