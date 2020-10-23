@@ -3,4 +3,45 @@
 set -euo pipefail
 IFS=
 
-exec /opt/chj/hosts-in/bin/concentrate "$@"
+if [ -e /opt/chj/hosts-in/bin/concentrate ]; then
+
+    exec /opt/chj/hosts-in/bin/concentrate "$@"
+
+else
+
+    usage () {
+        echo "$0 [start|stop|off]"
+        exit 1
+    }
+
+    start () {
+        linkchooser /etc/hosts-concentrate
+    }
+
+    stop () {
+        linkchooser /etc/hosts-distractive
+    }
+
+    if [ $# -gt 1 ]; then
+        usage
+    fi
+
+    case "${1-}" in
+        "")
+            start
+            ;;
+        start)
+            start
+            ;;
+        stop)
+            stop
+            ;;
+        off)
+            stop
+            ;;
+        *)
+            usage
+            ;;
+    esac
+
+fi
