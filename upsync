@@ -235,7 +235,7 @@ if ($opt_dryrun) {
 
 $synchfilemd5= sub {
     my ($path_from_base)=@_;
-    if ($verbose) {
+    if ($DEBUG) {
 	print "getting md5 of remote file ".singlequote($path_from_base)."\n";
 	#well only in debug mode ?
     }
