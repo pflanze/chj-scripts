@@ -19,6 +19,7 @@ use Chj::singlequote;
 use Digest::MD5;
 use Chj::xopen 'xopen_read';
 use Chj::FP::lazy;
+use Chj::Git::Functions qw(git_ls_files); # load lazily?
 
 
 our $sleeptime=1;#
@@ -47,6 +48,11 @@ sub usage {
   alike location string.
 
   Options:
+
+  --gls
+
+        Instead of using readdir, ask \`git ls-files\` for the file
+        list.
 
   --include 'perl expr'
 
@@ -90,6 +96,7 @@ our $opt_dryrun;
 our $opt_continuous;
 our $opt_followlinks=1; # fixed for now, ok?
 our $verbose=0;
+our $opt_gls;
 our $opt_include;
 our @exclude_expr= ('$filename eq ".git" or $filename=~ /~$/',
 		    'our $emacstmp_re; $filename=~ /$emacstmp_re/');
@@ -113,6 +120,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_dryrun=1;
     } elsif (/^--?sound$/) {
 	$opt_sound=1;
+    } elsif (/^--?gls$/) {
+        $opt_gls= 1;
     } elsif (/^--?i(?:nclude(?:=(.*))?)?$/) {
         if (defined $1) {
 	    $opt_include=$1;
@@ -246,6 +255,43 @@ if ($opt_sound) {
     $synchfiledelete= &$mk($synchfiledelete, \&sound_delete);
 }
 
+package PFLANZE::FakeDirhandle {
+    use FP::Struct [ "items" ];
+    sub xnread {
+        my $s=shift;
+        shift @{$$s{items}}
+    }
+    _END_
+}
+
+sub fakeopendir {
+    my ($tree, $path)= @_;
+
+    my @p= split /\//, $path;
+    my $t= $tree;
+    while (@p) {
+        my $segment= shift @p;
+        next if $segment eq ".";
+        die "bug" if $segment eq "..";
+        my $is_last= !@p;
+        if (defined (my $t2= $$t{$segment})) {
+            if (! ref $t2 and $t2 eq "FILE") {
+                if ($is_last) {
+                    die "this is an opendir, not open file, but '$path' is a file";
+                    # except if it's a subrepo, XX ?
+                } else {
+                    die "bug, '$path' too long for tree"
+                }
+            } else {
+                $t = $t2;
+            }
+        } else {
+            die "bug: unknown path '$path' in tree"
+        }
+    }
+    PFLANZE::FakeDirhandle->new([sort keys %$t])
+}
+
 
 our $Stat= ($opt_followlinks ? \&Xstat : \&Xlstat);
 
@@ -253,11 +299,32 @@ sub scan_base ( $ $ ) {
     my ($lastsynched, $checkprintthunk)=@_;
     my $synched={};
 
+    my $tree; # only used if $opt_gls
+    if ($opt_gls) {
+        $tree= {};
+        for my $path (git_ls_files) {
+            my @p= split /\//, $path;
+            my $t= $tree;
+            while (@p) {
+                my $segment= shift @p;
+                my $is_last= !@p;
+                my $t2;
+                if (defined ($t2= $$t{$segment})) {
+                    die "bug: duplicate" if $is_last;
+                } else {
+                    $t2= $is_last ? "FILE" : {};
+                    $$t{$segment}= $t2;
+                }
+                $t = $t2;
+            }
+        }
+    }
+
     my $scandir; $scandir= sub {
 	my ($path_from_base)=@_;
 	print "scanning '$path_from_base'\n" if $DEBUG;
 	my $path= $basedir."/".$path_from_base;
-	my $d=xopendir($path);
+	my $d= $opt_gls ? fakeopendir($tree, $path_from_base) : xopendir($path);
 	while (defined (my $item= $d->xnread)) {
 	    my $itempath_from_base= $path_from_base."/".$item;
 	    if (exclude($itempath_from_base)) {
