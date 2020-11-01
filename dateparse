@@ -76,6 +76,19 @@ sub pt {
 
 sub pr {
     my ($str)= @_;
+
+    # Meetup.com, in their Emails, uses "PT" for Pacific time without
+    # DST specification; deal with that.
+    local $ENV{TZ}= do {
+        my $n= $str=~ s/\bPT\b//sg;
+        if ($n) {
+            warn "apply PT hack";#
+            "America/San_Francisco"
+        } else {
+            $ENV{TZ}
+        }
+    };
+
     my @p= split /(?:-|—|\b(?:to|bis|à)\b)/, $str;
     if (@p==1) {
         pt $p[0]
