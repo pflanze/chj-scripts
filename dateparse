@@ -55,20 +55,19 @@ sub european2us {
     }
 }
 
-our $perhaps_zone= [];
-
 sub pars {
-    my ($str)=@_;
+    my ($tz_offsetter, $str)=@_;
     my $usstr= european2us($str);
-    my $t= str2time($usstr, @$perhaps_zone)
-        or die("invalid format of time string: '$usstr'"
-               .(@$perhaps_zone ? " in zone @$perhaps_zone" : ""));
+    my $t_possibly_UTC= str2time $usstr
+        or die "invalid format of time string: '$usstr'";
+    my $t= $tz_offsetter->($t_possibly_UTC, $str);
     my $lt= localtime $t;
     [ $t, $lt ]
 }
 
 sub pt {
-    my @ps= map { pars $_ } @_;
+    my $tz_offsetter= shift;
+    my @ps= map { pars $tz_offsetter, $_ } @_;
     my @ts= map { $$_[0] } @ps;
     my @ls= map { $$_[1] } @ps;
     my $t = join(" - ", @ts);
@@ -77,24 +76,78 @@ sub pt {
         or die "stdout: $!";
 }
 
+sub offsetter_for_TZ {
+    my ($tzstr, $origTZ, $TZ_nodst_dst) = @_;
+    #require FP::Repl::AutoTrap;
+    require DateTime::TimeZone;
+    my $tz= DateTime::TimeZone->new(name=> $tzstr);
+    sub {
+        my ($unixtime_parsedAsUTC, $str) = @_;
+        my $dt= DateTime->from_epoch(epoch=> $unixtime_parsedAsUTC);
+        my $is_dst= $tz->is_dst_for_datetime($dt);
+        $str=~ s/\bUTC\b/$origTZ/sg or warn "bug?";
+        $str=~ s/\s+/ /sg;
+        $str=~ s/^ +//;
+        $str=~ s/ \z//;
+        my $is_dst_index = $is_dst ? 1 : 0;
+        warn "$str: assuming ".$TZ_nodst_dst->[$is_dst_index]."\n";
+        my $offset = $tz->offset_for_datetime($dt);
+        $unixtime_parsedAsUTC - $offset
+    }
+}
+
+
+# Meetup.com, in their Emails, uses "PT" for Pacific time without DST
+# specification; deal with that.
+our $nondst_zone_names= +{
+    PT=> [
+        "PST", # "Pacific Standard Time" (PST) when standard time is
+               # being observed (early November to mid-March)
+        "PDT", # "Pacific Daylight Time" (PDT) when daylight saving
+               # time (mid-March to early November) is being observed.
+        "America/Los_Angeles"
+        ],
+    ET=> [
+        "EST", #Eastern Standard Time, when observing standard time
+               #(autumn/winter) are five hours behind Coordinated
+               #Universal Time (UTC−05:00).
+        "EDT", #Eastern Daylight Time, when observing daylight saving
+               #time (spring/summer), is four hours behind Coordinated
+               #Universal Time (UTC−04:00).
+        "America/New_York"
+        ],
+};
+
 sub pr {
     my ($str)= @_;
 
-    # Meetup.com, in their Emails, uses "PT" for Pacific time without
-    # DST specification; deal with that.
-    local $perhaps_zone= do {
-        my $n= $str=~ s/\bPT\b//sg;
-        if ($n) {
-            warn "apply PT hack";#
-            ["America/San_Francisco"]
+    my $tz_offsetter= do {
+        my $origstr= $str;
+        my @replacements= map {
+            my $n= $str=~ s/\b$_\b/UTC/sg;
+            if ($n) {
+                [$_, $n]
+            } else {
+                ()
+            }
+        } sort keys %$nondst_zone_names;
+
+        if (@replacements==0) {
+            sub { $_[0] }
+        } elsif (@replacements==1) {
+            my ($nondstTZ, $n)= @{$replacements[0]};
+            my $zones= $nondst_zone_names->{$nondstTZ} || die "bug";
+            offsetter_for_TZ $$zones[2], $nondstTZ, $zones
         } else {
-            $perhaps_zone
+            die("$myname: more than one non-dst time zone names used, can't currently deal with that: "
+                .join(", ", map { $$_[0] } @replacements)
+                ."\n")
         }
     };
 
     my @p= split /(?:-|—|\b(?:to|bis|à)\b)/, $str;
     if (@p==1) {
-        pt $p[0]
+        pt $tz_offsetter, $p[0]
     } elsif (@p==2) {
         my ($from,$to)=@p;
         my ($frombegin,$fromt)= $from=~
@@ -105,13 +158,12 @@ sub pr {
             or die "no match for latter part: '$to'";
         my $t1= "$from $torest";
         my $t2= "$frombegin $to";
-        #use FP::Repl; repl;
-        pt $t1, $t2
+        pt $tz_offsetter, $t1, $t2
     } elsif (@p==3
              and $p[0]=~ /\d\z/
              and $p[1]=~ /^\d+\z/
              and $p[2]=~ /^\d/) {
-        pt $str
+        pt $tz_offsetter, $str
     } elsif (@p==0) {
         # wow, didn't realize split does this (or is this new?)
         die "no input";
