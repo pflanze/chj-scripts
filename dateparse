@@ -113,6 +113,11 @@ our $nondst_zone_names= +{
     # Universal Time (UTC−04:00).
 };
 
+our $continents=
+    # from DateTime::TimeZone::all_names
+    ['Africa', 'America', 'Antarctica', 'Asia', 'Atlantic', 'Australia',
+     'Europe', 'Indian', 'Pacific'];
+
 sub pr {
     my ($str)= @_;
 
@@ -130,7 +135,25 @@ sub pr {
         } sort keys %$nondst_zone_names;
 
         if (@replacements==0) {
-            sub { $_[0] }
+            # check if locations are mentioned:
+            my @replacements= do {
+                my $cre= join("|", @$continents);
+                my %r;
+                while ($str=~ s{\b((?:$cre)/\w+)\b}{UTC}s) {
+                    $r{$1}++
+                }
+                sort keys %r
+            };
+            if (@replacements==0) {
+                sub { $_[0] }
+            } elsif (@replacements==1) {
+                offsetter_for_TZ $replacements[0], $replacements[0]
+            } else {
+                die("$myname: more than one location used, "
+                    ."can't currently deal with that: "
+                    .join(", ", @replacements)
+                    ."\n")
+            }
         } elsif (@replacements==1) {
             my ($nondstTZ, $n)= @{$replacements[0]};
             my $location= $nondst_zone_names->{$nondstTZ} || die "bug";
