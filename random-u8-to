@@ -11,7 +11,9 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname len
+    print "$myname rangelen
+
+  Print random integer in [0..rangelen)
 
   (Christian Jaeger <$email>)
 ";
