@@ -31,17 +31,17 @@ usage unless @ARGV==1;
 
 my ($n) = @ARGV;
 
-use Chj::Random::Formatted 'random_u32';
+use Chj::Random::Formatted 'random_u64';
 use Chj::reallysleep;
 
 sub gaussianrandom {
     my ($ntries)= @_;
     my $tot= 0;
-    $tot += random_u32 for 1..$ntries;
-    $tot / ($ntries * 2**31)
+    $tot += random_u64 for 1..$ntries;
+    $tot / ($ntries * 2**63)
 }
 
-my $r= gaussianrandom 5;
+my $r= gaussianrandom 3;
 
 my $seconds = $n * $r;
 
