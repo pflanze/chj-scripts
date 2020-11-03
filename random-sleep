@@ -34,8 +34,14 @@ my ($n) = @ARGV;
 use Chj::Random::Formatted 'random_u32';
 use Chj::reallysleep;
 
-my $r= (random_u32 + random_u32 + random_u32 + random_u32 + random_u32)
-    / (5 * 2**31);
+sub gaussianrandom {
+    my ($ntries)= @_;
+    my $tot= 0;
+    $tot += random_u32 for 1..$ntries;
+    $tot / ($ntries * 2**31)
+}
+
+my $r= gaussianrandom 5;
 
 my $seconds = $n * $r;
 
