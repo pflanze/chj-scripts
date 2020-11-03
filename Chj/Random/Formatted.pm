@@ -1,5 +1,5 @@
 # 
-# Copyright 2004-2019 by Christian Jaeger, copying@christianjaeger.ch
+# Copyright 2004-2020 by Christian Jaeger, copying@christianjaeger.ch
 # Published under the same terms as perl itself
 #
 
@@ -24,7 +24,9 @@ package Chj::Random::Formatted;
 @EXPORT_OK=qw(
                  random_hex_string
                  random_u32
+                 random_u64
                  random_i32
+                 random_i64
                  random_boolean
                  make_random_u8_to
                  random_u8_to
@@ -50,9 +52,19 @@ sub random_u32 () {
     unpack('L*', $bin)
 }
 
+sub random_u64 () {
+    my $bin= seed(8);
+    unpack('Q*', $bin)
+}
+
 sub random_i32 () {
     my $bin= seed(4);
     unpack('l*', $bin)
+}
+
+sub random_i64 () {
+    my $bin= seed(8);
+    unpack('q*', $bin)
 }
 
 sub random_boolean() {
