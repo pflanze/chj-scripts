@@ -77,20 +77,19 @@ sub pt {
 }
 
 sub offsetter_for_TZ {
-    my ($tzstr, $origTZ, $TZ_nodst_dst) = @_;
+    my ($location, $origTZ) = @_;
     #require FP::Repl::AutoTrap;
     require DateTime::TimeZone;
-    my $tz= DateTime::TimeZone->new(name=> $tzstr);
+    my $tz= DateTime::TimeZone->new(name=> $location);
     sub {
         my ($unixtime_parsedAsUTC, $str) = @_;
         my $dt= DateTime->from_epoch(epoch=> $unixtime_parsedAsUTC);
-        my $is_dst= $tz->is_dst_for_datetime($dt);
         $str=~ s/\bUTC\b/$origTZ/sg or warn "bug?";
         $str=~ s/\s+/ /sg;
         $str=~ s/^ +//;
         $str=~ s/ \z//;
-        my $is_dst_index = $is_dst ? 1 : 0;
-        warn "$str: assuming ".$TZ_nodst_dst->[$is_dst_index]."\n";
+        my $TZstr = $tz->short_name_for_datetime ($dt);
+        warn "$str: assuming $TZstr\n";
         my $offset = $tz->offset_for_datetime($dt);
         $unixtime_parsedAsUTC - $offset
     }
@@ -100,22 +99,18 @@ sub offsetter_for_TZ {
 # Meetup.com, in their Emails, uses "PT" for Pacific time without DST
 # specification; deal with that.
 our $nondst_zone_names= +{
-    PT=> [
-        "PST", # "Pacific Standard Time" (PST) when standard time is
-               # being observed (early November to mid-March)
-        "PDT", # "Pacific Daylight Time" (PDT) when daylight saving
-               # time (mid-March to early November) is being observed.
-        "America/Los_Angeles"
-        ],
-    ET=> [
-        "EST", #Eastern Standard Time, when observing standard time
-               #(autumn/winter) are five hours behind Coordinated
-               #Universal Time (UTC−05:00).
-        "EDT", #Eastern Daylight Time, when observing daylight saving
-               #time (spring/summer), is four hours behind Coordinated
-               #Universal Time (UTC−04:00).
-        "America/New_York"
-        ],
+    PT=> "America/Los_Angeles",
+    # "Pacific Standard Time" (PST) when standard time is
+    # being observed (early November to mid-March)
+    # "Pacific Daylight Time" (PDT) when daylight saving
+    # time (mid-March to early November) is being observed.
+    ET=> "America/New_York",
+    # Eastern Standard Time, when observing standard time
+    # (autumn/winter) are five hours behind Coordinated
+    # Universal Time (UTC−05:00).
+    # Eastern Daylight Time, when observing daylight saving
+    # time (spring/summer), is four hours behind Coordinated
+    # Universal Time (UTC−04:00).
 };
 
 sub pr {
@@ -136,8 +131,8 @@ sub pr {
             sub { $_[0] }
         } elsif (@replacements==1) {
             my ($nondstTZ, $n)= @{$replacements[0]};
-            my $zones= $nondst_zone_names->{$nondstTZ} || die "bug";
-            offsetter_for_TZ $$zones[2], $nondstTZ, $zones
+            my $location= $nondst_zone_names->{$nondstTZ} || die "bug";
+            offsetter_for_TZ $location, $nondstTZ
         } else {
             die("$myname: more than one non-dst time zone names used, can't currently deal with that: "
                 .join(", ", map { $$_[0] } @replacements)
