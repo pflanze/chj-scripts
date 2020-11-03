@@ -17,6 +17,10 @@ sub usage {
   sleeps till then. Prints the end time to STDERR unless --quiet is
   given.
 
+  --random
+            sleep 0..2 times as long as the duration specified by
+            timedesc (largely within a factor of about 1.5)
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -25,9 +29,11 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_quiet;
+our $opt_random;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "quiet"=> \$opt_quiet,
+           "random"=> \$opt_random,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
@@ -35,6 +41,18 @@ my ($str)= @ARGV;
 
 use Time::ParseDate;
 use Time::HiRes qw(time sleep);
+if ($opt_random) {
+    require Chj::Random::Formatted; Chj::Random::Formatted->import("random_u64");
+}
+
+sub gaussianrandom {
+    my ($ntries)= @_;
+    my $tot= 0;
+    $tot += random_u64() for 1..$ntries;
+    $tot / ($ntries * 2**63)
+}
+
+
 
 my %short2long=
   (s=> "seconds",
@@ -107,10 +125,15 @@ sub sleepUntil ($) {
 
 my $t= parseFuture $str, time;
 
+if ($opt_random) {
+    my $t0 = time;
+    my $d = $t - $t0;
+    my $d2 = $d * gaussianrandom 3;
+    $t = $t0 + $d2;
+}
+
 warn "$myname: sleeping till $t = ".localtime($t)."\n"
   unless $opt_quiet;
 
 sleepUntil $t;
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
