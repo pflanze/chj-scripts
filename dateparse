@@ -134,7 +134,8 @@ sub pr {
             my $location= $nondst_zone_names->{$nondstTZ} || die "bug";
             offsetter_for_TZ $location, $nondstTZ
         } else {
-            die("$myname: more than one non-dst time zone names used, can't currently deal with that: "
+            die("$myname: more than one non-dst time zone name used, "
+                ."can't currently deal with that: "
                 .join(", ", map { $$_[0] } @replacements)
                 ."\n")
         }
