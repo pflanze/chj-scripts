@@ -17,6 +17,10 @@ sub usage {
   If string contains some kind of dash or 'to', it will parse both
   start and end time and show them both with a minus inbetween.
 
+  Accepts locations in Continent/City format as well as some
+  abbreviated time zones without daylight savings information (PT,
+  ET).
+
   If the TZ env var is set, adds the time zone name to the output.
 
   (Christian Jaeger <$email>)
