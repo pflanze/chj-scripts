@@ -120,6 +120,8 @@ sub pr {
         my $origstr= $str;
         my @replacements= map {
             my $n= $str=~ s/\b$_\b/UTC/sg;
+            # ^ XX bug: multiple are all replaced but multiple 'UTC'
+            #   makes parsing fail later
             if ($n) {
                 [$_, $n]
             } else {
