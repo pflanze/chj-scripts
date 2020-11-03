@@ -17,6 +17,8 @@ sub usage {
   If string contains some kind of dash or 'to', it will parse both
   start and end time and show them both with a minus inbetween.
 
+  If the TZ env var is set, adds the time zone name to the output.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -55,6 +57,13 @@ sub european2us {
     }
 }
 
+sub tzname_of_location_for_t {
+    my ($location, $unixtime)= @_;
+    my $tz= DateTime::TimeZone->new(name=> $location);
+    my $dt= DateTime->from_epoch(epoch=> $unixtime);
+    $tz->short_name_for_datetime ($dt)
+}
+
 sub pars {
     my ($tz_offsetter, $str)=@_;
     my $usstr= european2us($str);
@@ -62,6 +71,11 @@ sub pars {
         or die "invalid format of time string: '$usstr'";
     my $t= $tz_offsetter->($t_possibly_UTC, $str);
     my $lt= localtime $t;
+    if (my $TZ= $ENV{TZ}) {
+        my $tzname= tzname_of_location_for_t $TZ, $t;
+        $lt=~ s/ (\d{4})\z/ $tzname $1/
+            or die "could not find year at the end of: '$lt'";
+    }
     [ $t, $lt ]
 }
 
