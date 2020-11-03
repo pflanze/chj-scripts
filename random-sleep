@@ -1,0 +1,43 @@
+#!/usr/bin/perl -w
+
+# Tue  3 Nov 13:45:56 GMT 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname seconds
+
+  Sleep *about* \$seconds seconds, with some random deviation above or
+  below (from 0 to 2 times as long, largely within about a factor of
+  1.5).
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+my ($n) = @ARGV;
+
+use Chj::Random::Formatted 'random_u32';
+use Chj::reallysleep;
+
+my $r= (random_u32 + random_u32 + random_u32 + random_u32 + random_u32)
+    / (5 * 2**31);
+
+my $seconds = $n * $r;
+
+reallysleep $seconds;
+
