@@ -87,8 +87,8 @@ if (-f $cnffilepath) {
 	#my $argc=0;
 	#my @argv;
 	#MySQL::Config::load_defaults "my", ["client", "myclient"], \$argc, \@argv;
-	$cnf= MySQL::Config::parse_defaults "my", ["client" #, "myclient"
-						  ];## wasch myclient?
+	$cnf= MySQL::Config::parse_defaults("my", ["client" #, "myclient"
+                                            ]);## wasch myclient?
     };
 }
 
