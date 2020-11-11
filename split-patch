@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+
+# Wed 11 Nov 10:58:27 GMT 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname patchfile...
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xtmpfile;
+use Chj::xopen 'xopen_read';
+
+
+sub rewrite_head {
+    my ($file, $head, $prefix)= @_;
+    $head=~ s/(\nsubject: *(?:\[PATCH\] *)?)([^\n]*)/$1$prefix$2/si
+        or warn "could not find subject in head of file: '$file'";
+    $head
+}
+
+sub write_diff {
+    my ($head, $diff, $origpath)=@_;
+    my ($fileb)= $diff=~ /^diff.* (\S+)/
+        or die "missing file in first line of diff: '$diff'";
+    my $prefix= $fileb;
+    $prefix=~ s|^[ab]/||;
+    my $addon= $prefix;
+    $addon=~ s|/|_|sg;
+    my $path= $origpath;
+    $path=~ s{(^|/)([^/]+?)(\.[^.]+)?\z}{"$1$2-$addon".($3//"")}se;
+    $path ne $origpath
+        or die "path is the same as origpath, '$path'";
+    my $t= xtmpfile $path;
+    $t->xprint(rewrite_head($origpath, $head, "$prefix: "),
+               $diff);
+    $t->xclose;
+    $t->xputback(0666);
+}
+
+sub splitpatch {
+    my ($path)=@_;
+    my $cnt= xopen_read($path)->xcontent; ## unsafe
+    $cnt=~ s/\n(?:-- \n(?:[^\n]*\n){0,3})?\z//s;
+    my ($head, @diffs)= split /\ndiff /, $cnt;
+    @diffs or die "file does not appear to contain diffs: '$path'";
+    for my $_diff (@diffs) {
+        write_diff "$head\n", "diff $_diff\n", $path
+    }
+}
+
+
+splitpatch $_ for @ARGV;
+
