@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "usage: 0or1 cmd [ args ]"
+    echo "  runs cmd with given args, and exits 0 if cmd exited"
+    echo "  with code 0, and 1 otherwise."
+    echo "  (Useful e.g. for git bisect.)"
+    exit 1
+}
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+if "$@"; then
+    exit 0
+else
+    exit 1
+fi
+
+# todo: exit 127 or something if cmd didn't exist?
