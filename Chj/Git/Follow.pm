@@ -65,7 +65,7 @@ sub next_commit {
 # instead just parse it all once:
 
 our $mode= qr{\d{6}};
-our $hashellipsis= qr{[a-f0-9]{4,37}\.\.\.};
+our $hashellipsis= qr{[a-f0-9]{4,37}(?:\.\.\.)?};
 
 sub paths {
     my $s=shift;
