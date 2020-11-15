@@ -5,7 +5,7 @@ set -eu
 if [[ $# = 0 ]]; then
 
     a .
-    coma -m .
+    coma.
 
 else
     echo "usage: $0"
