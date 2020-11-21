@@ -4,6 +4,7 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict; use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -17,12 +18,18 @@ sub usage {
      rm -f -- src...
 
   Options:
-    --         terminate option processing
-    --help     help
-    --dry-run  don't act
-    --to ...   target, instead of taking the last argument
-    -...       other options passed to cp (only options without argument
-               accepted for now)
+    --         Terminate option processing.
+    --help     Help.
+    --dry-run  Don't act.
+    --to ...   Target, instead of taking the last argument.
+    --rename   Instead of using link and unlink if source and target
+               are on the same file system, use rename (i.e.  silently
+               replace any previous file at the target location).
+    --force-copying
+               Instead of using link and unlink if source and target
+               are on the same file system, force use of cp and rm.
+    -...       Other options passed to cp (only options without argument
+               accepted for now), or ignored in xlinkunlink mode.
 
   (Christian Jaeger <$email>)
 ";
@@ -32,6 +39,8 @@ exit (@_ ? 1 : 0);
 
 my @options;
 our $opt_dry;
+our $opt_force_copying;
+our $opt_rename;
 our $opt_to;
 our $verbose;
 my @paths;
@@ -51,6 +60,10 @@ for (my $i=0; $i< @ARGV; $i++) {
         my $a= $1;
         if ($a=~ /^dry(-run)?$/) {
             $opt_dry= 1
+        } elsif ($a=~ /^force-copying$/) {
+            $opt_force_copying= 1
+        } elsif ($a=~ /^rename$/) {
+            $opt_rename= 1
         } elsif ($a=~ /^v(erbose)?$/) {
             $verbose= 1
         } elsif ($a=~ /^h(elp)?$/) {
@@ -85,17 +98,98 @@ exit unless @src;
 
 use Chj::xperlfunc ":all";
 use Chj::singlequote "singlequote_sh";
+use FP::List qw(list);
 
-my $doprefix= $opt_dry ? "would run " : "+ ";
-sub Do {
-    if ($opt_dry or $verbose) {
-        print $doprefix, join(" ", map {singlequote_sh $_} @_), "\n";
-    }
-    if (! $opt_dry) {
-        xxsystem @_;
+sub mv_parents_different_dev ($srcs) {
+    my $doprefix= $opt_dry ? "would run " : "+ ";
+
+    my $Do = sub {
+        if ($opt_dry or $verbose) {
+            print $doprefix, join(" ", map {singlequote_sh $_} @_), "\n";
+        }
+        if (! $opt_dry) {
+            xxsystem @_;
+        }
+    };
+
+    $Do->("cp", "-a", "--parents", @options, "--", @$srcs, $target);
+    $Do->("sync", "--file-system",
+          "--", "$target/"); # XX does the end slash resolve symlinks here?
+    $Do->("rm", "-f", "--", @$srcs);
+}
+
+sub mv_parents_same_dev ($srcs) {
+    my $moveopstr= $opt_rename ? "rename" : "xlinkunlink";
+    my $moveop= $opt_rename ? \&xrename : \&xlinkunlink;
+    
+    my $doprefix= $opt_dry ? "would run " : "+ ";
+
+    my $mv = sub ($src) {
+        $src=~ m|^/| and die "not accepting absolute paths as source: '$src'";
+        # stupid: mkdir_p reimplemented
+        my @seg= grep {
+            die "not accepting '..' in source paths: '$src'" if $_ eq "..";
+            not $_ eq '.'
+        } split m|/+|, $src;
+        my $mkdirp;
+        $mkdirp= sub ($l) {
+            if ($l->is_null) {
+                # done
+            } else {
+                $mkdirp->($l->rest);
+                my $path= $target . "/" . $l->reverse->join("/");
+                if (! -e $path) {
+                    if ($opt_dry or $verbose) {
+                        print $doprefix,
+                            join(" ",
+                                 "mkdir",
+                                 singlequote_sh($path)),
+                            "\n";
+                    }
+                    if (! $opt_dry) {
+                        xmkdir $path;
+                    }
+                }
+            }
+        };
+        $mkdirp->(list(reverse @seg)->rest);
+        undef $mkdirp;
+        # / stupid
+        my $targ= $target . "/" . $src;
+        if ($opt_dry or $verbose) {
+            print $doprefix,
+                join(" ",
+                     $moveopstr,
+                     singlequote_sh($src),
+                     singlequote_sh($targ)),
+                "\n";
+        }
+        if (! $opt_dry) {
+            $moveop->($src, $targ);
+        }
+    };
+
+    $mv->($_) for @$srcs;
+}
+
+
+my %src_by_dev;
+for (@src) {
+    my $s= xlstat $_;
+    $src_by_dev{$s->dev}{$_}= $s;
+}
+
+my $target_s= xstat $target;
+my $target_dev= $target_s->dev;
+
+for my $dev (sort keys %src_by_dev) {
+    my $s= $src_by_dev{$dev};
+    my $srcs= [ keys %$s ];
+    if (!$opt_force_copying and $dev eq $target_dev) {
+        mv_parents_same_dev($srcs);
+    } else {
+        mv_parents_different_dev($srcs);
     }
 }
 
-Do "cp", "-a", "--parents", @options, "--", @src, $target;
-Do "rm", "-f", "--", @src;
 
