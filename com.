@@ -1,4 +1,4 @@
 #!/bin/bash
 
-exec com -m . "$@"
+exec com --no-verify -m . "$@"
 
