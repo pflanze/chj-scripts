@@ -33,6 +33,9 @@ else
         start)
             start
             ;;
+        on)
+            start
+            ;;
         stop)
             stop
             ;;
