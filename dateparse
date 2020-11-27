@@ -184,7 +184,7 @@ sub pr {
         }
     };
 
-    my @p= split /(?:-|—|\b(?:to|bis|à)\b)/, $str;
+    my @p= split /(?:-|—|\b(?:to|bis|à)\b) (?!\d{4}\b)/x, $str;
     if (@p==1) {
         pt $tz_offsetter, $p[0]
     } elsif (@p==2) {
