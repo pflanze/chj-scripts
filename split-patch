@@ -11,16 +11,25 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname patchfile...
 
+  Split the given patchfile(s) into new files so that each new file
+  only contains the part of the patch for one particular target file.
+
+  Options:
+
+    --hunks    Split on hunk boundaries, too.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
-our $verbose=0;
+my $verbose=0;
+my $opt_hunks;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+	   "hunks"=> \$opt_hunks,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -48,11 +57,58 @@ sub write_diff {
     $path=~ s{(^|/)([^/]+?)(\.[^.]+)?\z}{"$1$2-$addon".($3//"")}se;
     $path ne $origpath
         or die "path is the same as origpath, '$path'";
-    my $t= xtmpfile $path;
-    $t->xprint(rewrite_head($origpath, $head, "$prefix: "),
-               $diff);
-    $t->xclose;
-    $t->xputback(0666);
+    if ($opt_hunks) {
+
+        # Should really do some class(es), parse once, represent.
+        my ($diffline, $indexline, $minus, $plus, $rest)=
+            $diff=~ m{^
+                      (diff\ [^\n]*)\n
+                      (index\ [^\n]*)\n
+                      (---\ [^\n]*)\n
+                      (\+\+\+\ [^\n]*)\n
+                      (.*)
+                 }sx
+                   or die "invalid patch file format";
+        my @_hunks= split /\n\@\@ /, $rest;
+        my @hunks= do {
+            my $i=0;
+            map {
+                $_ = '@@ ' . $_ unless $i == 0;
+                $_ = $_ . "\n" unless $i == $#_hunks;
+                $i++;
+                $_
+            } @_hunks
+        };
+        # ^ how ugly is that?
+        # use FP::Repl;repl;
+
+        my $i= 0;
+        for my $hunk (@hunks) {
+            my $diff = join("\n",
+                            $diffline,
+                            # $indexline, needed for perms? fix it?
+                            $plus,
+                            $minus,
+                            $hunk);
+            my $i000 = sprintf('%03d', $i);
+            my $path2= $path;
+            $path2=~ s/\.patch$/-$i000.patch/
+                or die "suffix wrong?";
+            $i++;
+            #use FP::Repl;repl;
+            my $t= xtmpfile $path2;
+            $t->xprint(rewrite_head($origpath, $head, "$prefix $i000: "),
+                       $diff);
+            $t->xclose;
+            $t->xputback(0666);
+        }
+    } else {
+        my $t= xtmpfile $path;
+        $t->xprint(rewrite_head($origpath, $head, "$prefix: "),
+                   $diff);
+        $t->xclose;
+        $t->xputback(0666);
+    }
 }
 
 sub splitpatch {
