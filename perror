@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Fri Apr 24 10:04:43 EDT 2009
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
 
@@ -23,10 +23,21 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
+require Errno;
+
+my %errno2str;
+for my $str (@Errno::EXPORT_OK) {
+    next unless $str=~ /^\w/;
+    no strict 'refs';
+    my $errno= &{"Errno::$str"} // die "exported sub '$str' from Errno is returning undef";
+    $errno2str{$errno}= $str;
+}
+
 sub printerrno {
     my ($no)=@_;
     $!=$no; my $err= "$!";
-    print "$err\n"
+    my $errsym= ($errno2str{$no} // "(no symbol defining $no)");
+    print "$no == $errsym: $err\n"
       or die $!;
 }
 
