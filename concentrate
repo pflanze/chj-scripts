@@ -3,6 +3,14 @@
 set -euo pipefail
 IFS=
 
+log () {
+    if [ ! -e ~/log/ ]; then
+        private mkdir ~/log/
+    fi
+    echo "`date`  $@" >> ~/log/concentrate.log
+}
+
+
 if [ -e /opt/chj/hosts-in/bin/concentrate ]; then
 
     exec /opt/chj/hosts-in/bin/concentrate "$@"
@@ -16,10 +24,12 @@ else
 
     start () {
         linkchooser /etc/hosts-concentrate
+        log start
     }
 
     stop () {
         linkchooser /etc/hosts-distractive
+        log stop
     }
 
     if [ $# -gt 1 ]; then

@@ -1,0 +1,112 @@
+#!/usr/bin/perl -w
+
+# Mon 14 Dec 00:09:35 GMT 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+use experimental "signatures";
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print STDERR "$myname [+-]n[+-] | n..m
+
+  Pass through file paths which have an mtime from n days ago, or, if
+  + or - is put left of the number, greater than n or less than n days
+  (should behave the same way as find). If + or - is put after n, it
+  means n or greater or n or fewer days (i.e. include n itself).
+
+  If a range is given, pass through if falling into that range.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+
+Getopt::Long::Configure("no_getopt_compat", "pass_through");
+# or prefix=> "--" ?
+
+my $verbose=0;
+#my $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+    ) or exit 1;
+usage unless @ARGV;
+usage "only 1 non-option argument supported" unless @ARGV == 1;
+
+my ($nstr) = @ARGV;
+
+my $t= time;
+
+sub agedays_matcher ($fn) {
+    sub ($mtime) {
+        my $agedays= ($t - $mtime) / (24*3600);
+        $fn->(int $agedays)
+    }
+}
+
+my $match= do {
+    my ($qualifier, $days);
+    my @p= split /\.\./, $nstr;
+    if (@p > 1) {
+        @p == 2 or usage "more than one '..' given";
+        my ($a, $b)= @p;
+        agedays_matcher sub ($agedays) {
+            $a <= $agedays and $agedays <= $b
+        }
+    } elsif (($qualifier, $days)= $nstr=~ /^([+-]?)(\d+)\z/) {
+        if ($qualifier eq '') {
+            agedays_matcher sub ($agedays) {
+                $agedays == $days
+            }
+        } elsif ($qualifier eq '+') {
+            agedays_matcher sub ($agedays) {
+                $agedays > $days
+            }
+        } elsif ($qualifier eq '-') {
+            agedays_matcher sub ($agedays) {
+                $agedays < $days
+            }
+        } else {
+            die "??"
+        }
+    } elsif (($days, $qualifier)= $nstr=~ /^(\d+)([+-])\z/) {
+        if ($qualifier eq '+') {
+            agedays_matcher sub ($agedays) {
+                $agedays >= $days
+            }
+        } elsif ($qualifier eq '-') {
+            agedays_matcher sub ($agedays) {
+                $agedays <= $days
+            }
+        } else {
+            die "??"
+        }
+    } else {
+        usage "invalid match argument '$nstr'";
+    }
+};
+
+use Chj::xperlfunc ":all";
+
+while (defined (my $path = <STDIN>)) {
+    chomp $path;
+    if (my $s= Xlstat $path) {
+        if ($match->($s->mtime)) {
+            xprintln $path;
+        }
+    } else {
+        warn "$myname: can't stat '$path': $!\n";
+    }
+}
+
+close STDIN or die "stdin: $!";
+close STDOUT or die "stdout: $!";
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
