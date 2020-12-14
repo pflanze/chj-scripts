@@ -10,7 +10,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [+-]n[+-] | n..m
+    print STDERR "$myname [+-]n[+-] | n..m
 
   Pass through file paths which have an mtime from n days ago, or, if
   + or - is put left of the number, greater than n or less than n days
