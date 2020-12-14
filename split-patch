@@ -94,13 +94,12 @@ sub write_diff {
             my $path2= $path;
             $path2=~ s/\.patch$/-$i000.patch/
                 or die "suffix wrong?";
-            $i++;
-            #use FP::Repl;repl;
             my $t= xtmpfile $path2;
             $t->xprint(rewrite_head($origpath, $head, "$prefix $i000: "),
                        $diff);
             $t->xclose;
             $t->xputback(0666);
+            $i++;
         }
     } else {
         my $t= xtmpfile $path;
