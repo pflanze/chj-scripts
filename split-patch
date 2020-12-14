@@ -102,11 +102,11 @@ sub write_diff {
 sub splitpatch {
     my ($path)=@_;
     my $cnt= xopen_read($path)->xcontent; ## unsafe
-    $cnt=~ s/\n(?:-- \n(?:[^\n]*\n){0,3})?\z//s;
-    my ($head, @diffs)= split /\ndiff /, $cnt;
+    $cnt=~ s/\n(?:-- \n(?:[^\n]*\n){0,3})?\z/\n/s;
+    my ($head, @diffs)= split /(?<=\n)(?=diff )/, $cnt;
     @diffs or die "file does not appear to contain diffs: '$path'";
-    for my $_diff (@diffs) {
-        write_diff "$head\n", "diff $_diff\n", $path
+    for my $diff (@diffs) {
+        write_diff $head, $diff, $path
     }
 }
 
