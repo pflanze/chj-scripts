@@ -22,26 +22,30 @@ else
 fi
 
 
-base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz)[^/]*$}{}s; print'`
+base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz|tar.gz|zip)[^/]*$}{}s; print'`
 
 produce () {
+    local format
+    format="$1"
     local bn
     bn=`basename "$base"`
-    git archive --format=tar --prefix="$bn"/ "$id"
+    git archive --format="$format" --prefix="$bn"/ "$id"
     # ^yeah, don't forget the / ..
 }
 
 if echo "$outpath" | grep -q 'gz$'; then
-    produce | gzip > "$outpath"
+    produce tar | gzip > "$outpath"
 elif echo "$outpath" | egrep -q '\.xz$'; then
-    produce > "$base.tar"
+    produce tar > "$base.tar"
     xz "$base.tar"
 elif echo "$outpath" | egrep -q '\.rz$'; then
-    produce > "$base.tar"
+    produce tar > "$base.tar"
     rzip "$base.tar"
 elif echo "$outpath" | egrep -q 'bz2$'; then
-    produce > "$base.tar"
+    produce tar > "$base.tar"
     bzip2 "$base.tar"
+elif echo "$outpath" | egrep -q '\.zip$'; then
+    produce zip > "$outpath"
 else
-    produce > "$outpath"
+    produce tar > "$outpath"
 fi
