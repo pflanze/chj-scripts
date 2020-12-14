@@ -63,6 +63,7 @@ sub european2us {
 
 sub tzname_of_location_for_t {
     my ($location, $unixtime)= @_;
+    require DateTime::TimeZone;
     my $tz= DateTime::TimeZone->new(name=> $location);
     my $dt= DateTime->from_epoch(epoch=> $unixtime);
     $tz->short_name_for_datetime ($dt)
