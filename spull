@@ -5,7 +5,18 @@ set -eux
 
 if git status |grep '^nothing to commit' -q; then
 
-    git pull || true
+    tmp=$(tempfile)
+    ( git pull || true ) 2>&1 | tee "$tmp"
+    if egrep -q 'CONFLICT|merge failed' "$tmp"; then
+        set +x
+        echo " Please fix the merge failure, then run "
+        if [ -f .git/scoma-no-user-group ]; then
+            echo cj-gitmetadata restore --no-user-group
+        else
+            echo cj-gitmetadata restore
+        fi
+        exit 1
+    fi
 
     if [ -f .git/scoma-no-user-group ]; then
 	cj-gitmetadata restore --no-user-group
