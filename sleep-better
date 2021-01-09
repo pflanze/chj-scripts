@@ -31,14 +31,15 @@ use Getopt::Long;
 our $verbose=0;
 our $opt_quiet;
 our $opt_random;
+our $debug;
+our $opt_test;
 GetOptions("verbose"=> \$verbose,
+           "debug"=> \$debug,
+           "test"=> \$opt_test,
 	   "help"=> sub{usage},
 	   "quiet"=> \$opt_quiet,
            "random"=> \$opt_random,
 	   ) or exit 1;
-usage unless @ARGV==1;
-
-my ($str)= @ARGV;
 
 use Time::ParseDate;
 use Time::HiRes qw(time sleep);
@@ -69,8 +70,9 @@ my %short2long=
 
 use Scalar::Util qw(blessed);
 
-sub Error {
-    bless [@_], "PFLANZE::Error"
+sub Error($v) {
+    die $v if $debug;
+    bless [$v], "PFLANZE::Error"
 }
 sub is_Error ($v) {
     blessed($v) and $v->isa("PFLANZE::Error")
@@ -88,7 +90,7 @@ sub perhaps_parse($str, $unit_re) {
 sub parse_hms {
     my ($orig)= @_;
     my $str0= $orig;
-    if (my ($hours, $str1)= perhaps_parse $str0, qr/h(?:ours?)?/) {
+    my $ms= sub ($hours, $str1, $seen_hours) {
         if (my ($min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
             my $sec;
             if (my ($_sec, $str3)= perhaps_parse $str2, qr/s(?:ec(?:onds?)?)?/) {
@@ -104,25 +106,33 @@ sub parse_hms {
             }
             (($hours * 60) + $min) * 60 + $sec
         } else {
-            my $min;
-            if (my ($_min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
-                length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
-                $min = $_min;
-            } else {
-                if (($_min)= $str1=~ /^(\d+)\s*\z/) {
+            if ($seen_hours) {
+                my $min;
+                if (my ($_min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
+                    length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
                     $min = $_min;
                 } else {
-                    length($str1) and return Error "parse_hms($orig): unknown rest '$str1'";
-                    $min = 0;
+                    if (($_min)= $str1=~ /^(\d+)\s*\z/) {
+                        $min = $_min;
+                    } else {
+                        length($str1) and return Error "parse_hms($orig): unknown rest '$str1'";
+                        $min = 0;
+                    }
                 }
+                (($hours * 60) + $min) * 60
+            } else {
+                Error "parse_hms($orig): no match";
             }
-            (($hours * 60) + $min) * 60
         }
+    };
+    if (my ($hours, $str1)= perhaps_parse $str0, qr/h(?:ours?)?/) {
+        $ms->($hours, $str1, 1)
     } else {
-        Error "parse_hms($orig): no match";
+        $ms->(0, $str0, 0)
     }
 }
 
+require FP::Repl::Trap if $debug;
 is_Error parse_hms "1" or die;
 parse_hms("1h") == 3600 or die;
 parse_hms("2h") == 2*3600 or die;
@@ -131,7 +141,9 @@ parse_hms("1h10") == 70*60 or die;
 is_Error parse_hms "1h10s" or die;
 parse_hms("1h10m5") == 70*60+5 or die;
 parse_hms("1h10m5seconds") == 70*60+5 or die;
-#parse_hms("10m5") == 10*60+5 or die;  TODO
+parse_hms("10m5") == 10*60+5 or die;
+parse_hms("10m") == 10*60 or die;
+is_Error parse_hms("10s") or die; # OK since parsedate will handle that one
 #use FP::Repl;repl;
 
 sub parseFuture ($orig, $now, $accept_past = 0){
@@ -196,6 +208,10 @@ sub sleepUntil ($) {
     }
 }
 
+exit if $opt_test;
+usage unless @ARGV==1;
+
+my ($str)= @ARGV;
 
 my $t= parseFuture $str, time;
 
