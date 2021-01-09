@@ -4,6 +4,7 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict; use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -64,18 +65,79 @@ my %short2long=
    "''"=> "seconds",
   );
 
-sub parseFuture ($$;$);
-sub parseFuture ($$;$){
-    my ($orig, $now, $accept_past)= @_;
-    if (my ($hours,$minutes,$seconds) =
-        $orig=~ /^\s*
-        (?:(\d+)\s*h(?:ours?)? \s*)?
-        (?:(\d+)\s*m(?:in(?:utes?)?)? \s*)?
-        (?:(\d+)\s*s(?:ec(?:onds?)?)? \s*)?
-        \z/sxi) {
-        my $m= ($hours // 0) * 60 + ($minutes // 0);
-        my $s= ($m + ($seconds // 0)) * 60;
-        $now + $s
+
+
+use Scalar::Util qw(blessed);
+
+sub Error {
+    bless [@_], "PFLANZE::Error"
+}
+sub is_Error ($v) {
+    blessed($v) and $v->isa("PFLANZE::Error")
+}
+
+sub perhaps_parse($str, $unit_re) {
+    if ($str=~ s/^\s*(\d+)\s* $unit_re \s*//sxi) {
+        my ($val)= ($1);
+        ($val, $str)
+    } else {
+        ()
+    }
+}
+
+sub parse_hms {
+    my ($orig)= @_;
+    my $str0= $orig;
+    if (my ($hours, $str1)= perhaps_parse $str0, qr/h(?:ours?)?/) {
+        if (my ($min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
+            my $sec;
+            if (my ($_sec, $str3)= perhaps_parse $str2, qr/s(?:ec(?:onds?)?)?/) {
+                length($str3) and return Error "parse_hms($orig): unknown rest '$str3'";
+                $sec = $_sec;
+            } else {
+                if (($_sec)= $str2=~ /^(\d+)\s*\z/) {
+                    $sec = $_sec;
+                } else {
+                    length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
+                    $sec = 0;
+                }
+            }
+            (($hours * 60) + $min) * 60 + $sec
+        } else {
+            my $min;
+            if (my ($_min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
+                length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
+                $min = $_min;
+            } else {
+                if (($_min)= $str1=~ /^(\d+)\s*\z/) {
+                    $min = $_min;
+                } else {
+                    length($str1) and return Error "parse_hms($orig): unknown rest '$str1'";
+                    $min = 0;
+                }
+            }
+            (($hours * 60) + $min) * 60
+        }
+    } else {
+        Error "parse_hms($orig): no match";
+    }
+}
+
+is_Error parse_hms "1" or die;
+parse_hms("1h") == 3600 or die;
+parse_hms("2h") == 2*3600 or die;
+parse_hms("1h10m") == 70*60 or die;
+parse_hms("1h10") == 70*60 or die;
+is_Error parse_hms "1h10s" or die;
+parse_hms("1h10m5") == 70*60+5 or die;
+parse_hms("1h10m5seconds") == 70*60+5 or die;
+#parse_hms("10m5") == 10*60+5 or die;  TODO
+#use FP::Repl;repl;
+
+sub parseFuture ($orig, $now, $accept_past = 0){
+    my $hms= parse_hms $orig;
+    if (! is_Error $hms) {
+        $now + $hms
     } else {
         my @parts= split /\+/, $orig;
         my $t= do {
@@ -107,13 +169,14 @@ sub parseFuture ($$;$){
                             WHOLE=> 1, PREFER_FUTURE=> 1, VALIDATE=> 1, UK=>1,
                             NOW=> $now);
                 defined $maybe_t
-                  or die "parseFuture('$orig'): $err";
+                  or die join("\n  and ", @$hms, "parseFuture('$orig'): $err");
                 $maybe_t
             }
         };
         if (!$accept_past and $t < $now) {
-            die "parseFuture('$orig'): time (".localtime($t)
-                ." is past now (".localtime ($now).")";
+            die join("\n  and ", @$hms,
+                     "parseFuture('$orig'): time (".localtime($t)
+                     ." is past now (".localtime ($now).")");
         }
         $t
     }
