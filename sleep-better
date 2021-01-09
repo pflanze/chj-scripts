@@ -67,45 +67,56 @@ my %short2long=
 sub parseFuture ($$;$);
 sub parseFuture ($$;$){
     my ($orig, $now, $accept_past)= @_;
-    my @parts= split /\+/, $orig;
-    my $t= do {
-        if (@parts > 1) {
-            # must be relative!-- or not? see below
-            #my @ts = map { parseFuture $_ } @parts;
-            #no, fold.
-            my $t= $now;
-            for my $p (@parts) {
-                # How to enforce it to be relative??  what about
-                # "10:40+5min" or so ? Ah that actually does work and is
-                # not all-parts relative! But, what about '5s+4:40'? Well
-                # that's parsed as 4:40:00 currently. And, might be
-                # perfect.
-                $t= parseFuture($p, $t, 1);
+    if (my ($hours,$minutes,$seconds) =
+        $orig=~ /^\s*
+        (?:(\d+)\s*h(?:ours?)? \s*)?
+        (?:(\d+)\s*m(?:in(?:utes?)?)? \s*)?
+        (?:(\d+)\s*s(?:ec(?:onds?)?)? \s*)?
+        \z/sxi) {
+        my $m= ($hours // 0) * 60 + ($minutes // 0);
+        my $s= ($m + ($seconds // 0)) * 60;
+        $now + $s
+    } else {
+        my @parts= split /\+/, $orig;
+        my $t= do {
+            if (@parts > 1) {
+                # must be relative!-- or not? see below
+                #my @ts = map { parseFuture $_ } @parts;
+                #no, fold.
+                my $t= $now;
+                for my $p (@parts) {
+                    # How to enforce it to be relative??  what about
+                    # "10:40+5min" or so ? Ah that actually does work and is
+                    # not all-parts relative! But, what about '5s+4:40'? Well
+                    # that's parsed as 4:40:00 currently. And, might be
+                    # perfect.
+                    $t= parseFuture($p, $t, 1);
+                }
+                $t
+            } else {
+                my $s= $orig;
+                # Time::ParseDate does not support 's' etc, thus pre-process
+                $s=~ s{(\b|\d)([smhdy])(\b|\d)}{
+                    $1 . ($short2long{$2} // die "bug") . $3
+                }ge;
+                $s=~ s{(\'+)}{
+                    ($short2long{$1} // die "bug")
+                }ge;
+                my ($maybe_t, $err)=
+                  parsedate($s,
+                            WHOLE=> 1, PREFER_FUTURE=> 1, VALIDATE=> 1, UK=>1,
+                            NOW=> $now);
+                defined $maybe_t
+                  or die "parseFuture('$orig'): $err";
+                $maybe_t
             }
-            $t
-        } else {
-            my $s= $orig;
-            # Time::ParseDate does not support 's' etc, thus pre-process
-            $s=~ s{(\b|\d)([smhdy])(\b|\d)}{
-                $1 . ($short2long{$2} // die "bug") . $3
-            }ge;
-            $s=~ s{(\'+)}{
-                ($short2long{$1} // die "bug")
-            }ge;
-            my ($maybe_t, $err)=
-              parsedate($s,
-                        WHOLE=> 1, PREFER_FUTURE=> 1, VALIDATE=> 1, UK=>1,
-                        NOW=> $now);
-            defined $maybe_t
-              or die "parseFuture('$orig'): $err";
-            $maybe_t
+        };
+        if (!$accept_past and $t < $now) {
+            die "parseFuture('$orig'): time (".localtime($t)
+                ." is past now (".localtime ($now).")";
         }
-    };
-    if (!$accept_past and $t < $now) {
-        die "parseFuture('$orig'): time (".localtime($t)
-            ." is past now (".localtime ($now).")";
+        $t
     }
-    $t
 }
 
 sub sleepUntil ($) {
