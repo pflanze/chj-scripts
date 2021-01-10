@@ -22,6 +22,8 @@ sub usage {
             sleep 0..2 times as long as the duration specified by
             timedesc (largely within a factor of about 1.5)
 
+  Also see dateparse.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
