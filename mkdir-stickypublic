@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for d in "$@"; do
+    private mkdir "$d"
+    chmod a+rwx,o+t "$d"
+done
