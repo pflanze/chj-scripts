@@ -517,13 +517,13 @@ sub git_tags () {
 sub status_is_clean {
     local $ENV{LANG}="C";
     local $ENV{LC_ALL}="C";
-    my $in= Chj::IO::Command->new_combinedsender( "git","status");
+    my $in= Chj::IO::Command->new_combinedsender("git", "status", "--", @_);
     my $incnt= $in->xcontent;
     my $instatus= $in->xfinish;
     [
-     (scalar ((($instatus==(1<<8)) or ($instatus==0))
-	      and
-	      $incnt=~ /\nnothing to commit..working (directory|tree) clean/)),
+     scalar((($instatus==(1<<8)) or ($instatus==0))
+            and
+            $incnt=~ /\nnothing to commit..working (directory|tree) clean/),
      $incnt
     ]
 }
