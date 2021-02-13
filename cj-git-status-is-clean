@@ -9,12 +9,16 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [ files ]
 
-  If git status is clean, exit 0. Otherwise output a message to stdout
+  Check if the Git status on the given files, or if none given, the
+  whole working directory, is clean.
+
+  If the status is clean, exit 0. Otherwise output a message to stdout
   unless --silent was given, and exit 2.
 
   Environment vars:
+
    GDROP_FORCE=1  make $myname quit with success immediately
 
   (Christian Jaeger <$email>)
@@ -31,14 +35,13 @@ GetOptions("verbose"=> \$verbose,
 	   "silent"=> \$opt_silent,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage if @ARGV;
 
 exit 0
   if $ENV{GDROP_FORCE};
 
 use Chj::Git::Functions 'status_is_clean';
 
-my $s= status_is_clean;
+my $s= status_is_clean(@ARGV);
 
 if ($$s[0]) {
     exit 0

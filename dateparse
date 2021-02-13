@@ -23,6 +23,8 @@ sub usage {
 
   If the TZ env var is set, adds the time zone name to the output.
 
+  Also see sleep-better.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);

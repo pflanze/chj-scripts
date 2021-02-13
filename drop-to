@@ -79,7 +79,17 @@ sub xpermcheck {
 
 
 our $targetbase=
-  $user_or_dir=~ m|/| ? $user_or_dir
+    $user_or_dir=~ m|/| ? do {
+        my $s= $user_or_dir;
+        $s=~ s{/+\z}{}s;
+        my @p= split m{/+}, $s;
+        if ($s=~ m{^/} and @p == 3) {
+            # a home dir
+            "$s/DROP"
+        } else {
+            $user_or_dir
+        }
+    }
   : "/home/$user_or_dir/DROP"; # XX do it right (with getpwnam)?
 
 xpermcheck $targetbase, "3733";
