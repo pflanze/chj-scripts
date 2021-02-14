@@ -1,6 +1,6 @@
 # Add this directory to PATH if not there already.
 
-function PATH_add {
+PATH_add () {
     local dir="$1"
     case ":$PATH:" in
         *:"$dir":*) ;;
