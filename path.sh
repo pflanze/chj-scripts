@@ -1,4 +1,4 @@
 # Add this directory to PATH if not there already.
-if ! [[ :$PATH: = *:/opt/chj/chjize:* ]]; then
-    PATH=/opt/chj/chjize:$PATH
+if ! [[ :$PATH: = *:/opt/chj/bin:* ]]; then
+    PATH=/opt/chj/bin:$PATH
 fi
