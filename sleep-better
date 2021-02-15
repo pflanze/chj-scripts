@@ -233,8 +233,9 @@ my $dstr= do {
     sprintf '%02dh %02dm %02ds', $h, $m, $s
 };
 
-warn "$myname: sleeping $dstr till $t = ".localtime($t)."\n"
-  unless $opt_quiet;
+warn "$myname: sleeping $dstr\n"
+    .(' ' x length($myname))."  until $t = ".localtime($t)."\n"
+    unless $opt_quiet;
 
 sleepUntil $t;
 
