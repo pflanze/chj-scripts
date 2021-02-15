@@ -215,7 +215,8 @@ usage unless @ARGV==1;
 
 my ($str)= @ARGV;
 
-my $t= parseFuture $str, time;
+my $t0= time;
+my $t= parseFuture $str, $t0;
 
 if ($opt_random) {
     my $t0 = time;
@@ -224,7 +225,15 @@ if ($opt_random) {
     $t = $t0 + $d2;
 }
 
-warn "$myname: sleeping till $t = ".localtime($t)."\n"
+my $d= $t-$t0;
+my $dstr= do {
+    use integer;
+    my $m1= $d / 60; my $s= $d % 60;
+    my $h= $m1 / 60; my $m= $m1 % 60;
+    sprintf '%02dh %02dm %02ds', $h, $m, $s
+};
+
+warn "$myname: sleeping $dstr till $t = ".localtime($t)."\n"
   unless $opt_quiet;
 
 sleepUntil $t;
