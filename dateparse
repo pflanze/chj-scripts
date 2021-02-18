@@ -74,8 +74,8 @@ sub tzname_of_location_for_t {
 sub pars {
     my ($tz_offsetter, $str)=@_;
     my $usstr= european2us($str);
-    my $t_possibly_UTC= str2time $usstr
-        or die "invalid format of time string: '$usstr'";
+    my $t_possibly_UTC= Date::Parse::str2time $usstr
+        or die "Date::Parse::str2time failed for: '$usstr'";
     my $t= $tz_offsetter->($t_possibly_UTC, $str);
     my $lt= localtime $t;
     if (my $TZ= $ENV{TZ}) {
