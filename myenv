@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+
+# Sun 21 Feb 23:51:12 GMT 2021
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [FOO=bar ...] -- cmd [args...]
+
+  Same as \`env\`(1) but accepts/expects '--' which makes it safe.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+
+my @cmd;
+parseargs: {
+    while (@ARGV) {
+        my $a= shift @ARGV;
+        if ($a eq "--") {
+            @cmd = @ARGV;
+            last parseargs;
+        } elsif ($a eq "-h" or $a eq "--help") {
+            usage
+        } else {
+            my ($k,$v)= split /=/, $a, 2;
+            defined $v or usage "invalid argument: '$a'";
+            $ENV{$k}= $v;
+            # ^ XX is this safe? during running process here ?
+        }
+    }
+    usage "missing '--'";
+}
+
+@cmd or usage "missing cmd";
+
+exec @cmd
+    or exit 127;
+
