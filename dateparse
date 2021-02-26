@@ -139,7 +139,7 @@ our $continents=
     ['Africa', 'America', 'Antarctica', 'Asia', 'Atlantic', 'Australia',
      'Europe', 'Indian', 'Pacific'];
 
-sub pr {
+sub _pr {
     my ($str)= @_;
 
     my $tz_offsetter= do {
@@ -211,6 +211,36 @@ sub pr {
         die "no input";
     } else {
         die "can't handle more than one dash in: '$str'";
+    }
+}
+
+
+sub pr {
+    my ($str)=@_;
+    eval {
+	_pr $str;
+	1
+    } || do {
+	my $e1= $@;
+	my $str_= $str;
+	$str_=~ s/_/ /sg;
+	if ($str eq $str_) {
+	    die $e1
+	} else {
+	    eval {
+		_pr $str_;
+		1
+	    } || do {
+		my $e2= $@;
+		if ($e1 eq $e2) {
+		    die $e1
+		} else {
+		    die ("Exceptions with original and with underscores replaced by space:\n"
+			 . "  $e1"
+			 . "  $e2")
+		}
+	    }
+	}
     }
 }
 
