@@ -32,7 +32,9 @@ sub xgetfile_utf8 ($) {
     my ($path)=@_;
     my $in= xopen_read ($path);
     binmode $in, ":utf8" or die "binmode";
-    $in->xcontent
+    my $cntrf= $in->xcontentref;
+    $in->xclose;
+    $$cntrf
 }
 
 # print, not write, i.e. flatten nested structures out, but don't
