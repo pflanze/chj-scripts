@@ -25,6 +25,7 @@ use strict; use warnings; use warnings FATAL => 'uninitialized';
 
 use Chj::xopen ":all";
 # ^ well, this voids the point of Chj::xIO (to avoid Chj::IO::*)
+use Chj::xtmpfile;
 use Chj::FP2::Lazy;
 use Chj::FP2::List;
 
@@ -58,17 +59,19 @@ sub xprint_object ($$) {
     }
 }
 
-sub xputfile_utf8 ($$) {
-    my ($path,$str)=@_;
-    my $out= xopen_write($path);
+sub xputfile_utf8 {
+    my ($path, $str, $maybe_mode)=@_;
+    my $out= xtmpfile($path);
     binmode $out, ":utf8" or die "binmode";
     xprint_object ($out, $str);
     $out->xclose;
+    $out->xputback($maybe_mode // (0666 & umask));
 }
 
-sub xcopyfile_utf8 ($$) {
-    my ($src,$dest)=@_;
-    xputfile_utf8 ($dest, xgetfile_utf8 ($src));
+sub xcopyfile_utf8 {
+    my ($src, $dest, $maybe_mode)=@_;
+    my $mode = $maybe_mode // (0666 & umask); # XX use xstat ?
+    xputfile_utf8 ($dest, xgetfile_utf8 ($src), $mode);
 }
 
 
