@@ -67,11 +67,11 @@ sub create {
     my $exporterdefs=
       $baseclass ? ""
 	:
-	  "#use Exporter \"import\";
+	  "use Exporter \"import\";
 
-#our \@EXPORT=qw();
-#our \@EXPORT_OK=qw();
-#our \%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
+our \@EXPORT=qw();
+our \@EXPORT_OK=qw();
+our \%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
 ";
 
 
