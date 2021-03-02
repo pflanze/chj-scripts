@@ -118,6 +118,7 @@ package $namespace;
 use strict;
 use warnings;
 use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 ${exporterdefs}
 
 1
