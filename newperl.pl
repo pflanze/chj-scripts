@@ -1,41 +1,11 @@
 
 
-my %adresse = (
-	       chris=> 'Christian Jaeger, ch at christianjaeger ch',
-	      );
-
-
 sub copy {
-    my $adr= do {
-	if ($ENV{EMAIL} and $ENV{USER} ne "root") {
-	    # take from those.
-	    if (my ($name,$passwd,$uid,$gid,
-		    $quota,$comment,$gcos,$dir,$shell,$expire)= getpwnam ($ENV{USER})) {
-		# gcos
-		my $fullname= do {
-		    my $str= $gcos;
-		    $str=~ s/,.*//s;
-		    $str
-		};
-		my $scrambledemail= do {
-		    my $str= $ENV{EMAIL};
-		    $str=~ s/\@/ at /sg;
-		    $str=~ s/\./ /sg;
-		    $str
-		};
-		"$fullname, $scrambledemail"
-	    } else {
-		die "could not find user '$ENV{USER}' in pw database";
-	    }
-	} else {
-	    $adresse{$ENV{USER}}
-	      or die "Kenne Dich ($ENV{USER}) nicht. Bitte Christian sagen.\n";
-	}
-    };
     my $year= (localtime)[5]+1900;
-	"#\n".
-	"# Copyright $year by $adr\n".
-	"# Published under the same terms as perl itself"
+    my $email_full= `email-full`; chomp $email_full;
+    ("#\n".
+     "# Copyright $year by $email_full\n".
+     "# Published under the same terms as perl itself")
 }
 
 sub edit {
