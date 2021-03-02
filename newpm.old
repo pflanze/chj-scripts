@@ -18,7 +18,8 @@ sub usage {
   Macht neues Perlmodul-File im \$EDITOR (ist zurzeit '$ENV{EDITOR}') auf.
   Im letzten Fall wird Namespace 'mymodule' angenommen (Du musst 
   /some/path::mymodule angeben wenn Du es anders willst).
-  Optional kann Basisklasse vom Typ Class::Array angegeben werden.
+
+  -b is ignored now.
 ";
 	exit;
 }
@@ -63,16 +64,6 @@ edit (24,\@additionaloptions, @paths);
 sub create {
     my ($path,$namespace)=@_; # global: $baseclass
 
-    my $baseclassdefs=
-      $baseclass ? "
-use $baseclass -extend=>
-  -publica=>
-  ;
-" : "
-use Class::Array -fields=>
-  -publica=>
-  ;
-";
     my $exporterdefs=
       $baseclass ? ""
 	:
@@ -129,27 +120,9 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 ${exporterdefs}
 
-$baseclassdefs
-
-# sub new {
-#     my \$class=shift;
-#     my \$s= \$class->SUPER::new;
-#     (\@\$s[])=\@_;
-#     \$s
-# }
-
-#sub DESTROY {
-#    my \$s=shift;
-#    local ($@,$!,$?);
-#    # ç remove if not used
-#    \$s->SUPER::DESTROY; # or rather NEXT::
-#}
-
-end Class::Array;
+1
 END
 #end $namespace;
-# Könnte noch  use vars qw{$VERSION};  und  $VERSION = '0.00'; reintun. Aber naja?
-# oder müsste ich eh BEGIN { $DBI::VERSION= "..." } machen?
 
         $out->xclose;
         $out->xputback(0666 & ~umask);
