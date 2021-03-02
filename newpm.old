@@ -76,10 +76,11 @@ use Class::Array -fields=>
     my $exporterdefs=
       $baseclass ? ""
 	:
-	  "#\@ISA=\"Exporter\"; require Exporter;
-#\@EXPORT=qw();
-#\@EXPORT_OK=qw();
-#\%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
+	  "#use Exporter \"import\";
+
+#our \@EXPORT=qw();
+#our \@EXPORT_OK=qw();
+#our \%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
 ";
 
 
@@ -123,8 +124,11 @@ $namespace
 
 
 package $namespace;
+use strict;
+use warnings;
+use warnings FATAL => 'uninitialized';
 ${exporterdefs}
-use strict; use warnings; use warnings FATAL => 'uninitialized';
+
 $baseclassdefs
 
 # sub new {
