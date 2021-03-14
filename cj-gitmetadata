@@ -39,7 +39,7 @@ sub usage {
   Options:
 
    --no-user-group
-       do not record or restore user nor group
+       do not record user nor group (still restore whatever is stored)
 
    --no-mtime / --no-times
        don't restore mtime, only user/group/permissions
@@ -164,6 +164,9 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	   # inode: nope, since not stable across filesystems
 	   'permissions', #incl setuid and such, right?.
 	   'type', #not settable of course. but checkable, ok?. like symlink vs file.
+
+           # On writing only used if !$opt_no_user_group, on reading
+           # only if any stored record does contain those fields:
 	   'caching_username', #not uid, right?
 	   #'uid', #keep anyway? no would give bad diff
 	   'caching_groupname',
@@ -173,9 +176,10 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
       -publica=>
 	(
 	 'path',
+         'restore_no_user_group',
 	 @ct_statfields,
 	);
-    our @statfields=
+    our @write_statfields=
       $opt_no_user_group
       ? @ct_statfields[0,1,2]
       : @ct_statfields[0,1,2,3,4];
@@ -185,7 +189,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	my ($path,$stat)=@_;
 	my $s=$cl->SUPER::new;
 	$$s[Path]=$path;
-	for my $field (@statfields) {
+	for my $field (@write_statfields) {
 	    my $setmethod="set_$field";
 	    $s->$setmethod($stat->$field);
 	}
@@ -209,7 +213,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		 scalar schemestring_oneline(scalar $s->$_)
 	     }
 	     (
-	      @statfields,
+	      @write_statfields,
 	     ))
     }
     sub new_from_path_string { #parse
@@ -223,12 +227,15 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 	   }
 	   split /\t/, $str
 	  );
-	@v == @statfields
-	  or die "new_from_string: invalid number of fields in '$str'";
+	$s->[Restore_no_user_group]= do {
+            if (@v == 3) { 1 }
+            elsif (@v == 5) { 0 }
+            else { die "invalid number of fields in str '$str':", @v }
+        };
 	# pairing how?...
 	$$s[Path]= $path;
-	for (my $i=0; $i < @statfields; $i++) {
-	    my $field= $statfields[$i];
+	for (my $i=0; $i < @v; $i++) {
+	    my $field= $ct_statfields[$i];
 	    my $setmethod="set_$field";
 	    $s->$setmethod($v[$i]);
 	}
@@ -249,7 +256,7 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 		    xutime $stat->atime,$s->mtime, $$s[Path];
 		}
 	    }
-	    unless ($opt_no_user_group) {
+	    unless ($s->[Restore_no_user_group]) {
 		if (($stat->uid != $s->xuid)
 		    or
 		    ($stat->gid != $s->xgid)
