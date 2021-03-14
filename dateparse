@@ -223,8 +223,11 @@ sub pr {
     } || do {
 	my $e1= $@;
 	my $str_= $str;
+	# `date_` style format:
 	$str_=~ s/_(\d{2})(\d{2})(\d{2})_/ $1:$2:$3 /sg;
 	$str_=~ s/_/ /sg;
+	# cj-tim (Emacs) style format:
+	$str_=~ s/\{(.+)\}/$1/sg;
 	if ($str eq $str_) {
 	    die $e1
 	} else {
