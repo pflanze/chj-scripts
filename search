@@ -1,0 +1,101 @@
+#!/usr/bin/perl -w
+
+# Sun 14 Mar 23:46:14 GMT 2021
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname regex...
+
+  In the current Git checkout, searches both paths, as well as file
+  contents, for all of the given perl style regexes. Shows those paths
+  that can be found (either via path or content) for all regexes
+  (intersection).
+
+  Options:
+
+     -i | --insensitive   regex is matched insensitively
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+my $opt_i;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "insensitive"=> \$opt_i,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::Git::Functions qw(git_ls_files);
+use FP::HashSet ":all";
+use Chj::xperlfunc qw(xprintln xlstat); # xgetfile_utf8
+use Chj::xIOUtil qw(xgetfile_utf8);
+
+# why use both array and purearray? XX hashset should be adapted.
+use FP::Array ":all";
+use FP::PureArray ":all";
+
+
+my $fileset= do {
+    my $fs= array_to_purearray scalar git_ls_files;
+    my $pss= $fs->map(
+        sub ($path) {
+            [$path, scalar xlstat $path]
+        })->filter(
+        sub ($ps) {
+            my ($path, $stat)= @$ps;
+            not $stat->is_link
+        });
+    my $filter= sub ($pred) {
+        $pss->filter(
+            sub ($ps) {
+                my ($path, $stat)= @$ps;
+                $pred->($stat->is_dir)
+            })->map(
+            sub ($ps) {
+                my ($path, $stat)= @$ps;
+                $path
+            })
+    };
+    $filter->(sub ($isdir) { $isdir })->for_each(
+        sub ($p) {
+            xprintln "NOTE: ignoring sub-repository: $p";
+        });
+    array_to_hashset $filter->(sub ($isdir) { not $isdir })
+        #XX should provide ->hashset on arraylikes
+};
+
+for my $regex (@ARGV) {
+    my $re= $opt_i ? qr/$regex/i : qr/$regex/;
+
+    my $fileset2 = array_to_hashset [ grep {
+        m/$re/
+    } hashset_keys_unsorted $fileset ];
+
+    # Might there be more paths to consider, via their contents?
+    my $tocheckset= hashset_difference $fileset, $fileset2;
+    # We promised Perl style regexes, deliver on that:
+    my $morefiles= array_to_hashset [ grep {
+        my $cnt= xgetfile_utf8 $_;
+        $cnt=~ /$re/
+    } hashset_keys_unsorted $tocheckset ];
+    $fileset = hashset_union $fileset2, $morefiles;
+}
+
+for my $path (hashset_keys $fileset) {
+    xprintln $path;
+}
+
+#use FP::Repl::Trap;
