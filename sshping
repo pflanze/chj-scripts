@@ -125,6 +125,7 @@ my @p= map {
     my $f= `mktemp`; $? == 0 or die "mktemp exited $?"; chomp $f;
     my $pid= fork // die "fork: $!";
     $pid ? [$f,$pid] : do{ open STDOUT, ">>", $f or die;
+                           open STDERR, ">>", $f or die;
                            sshping $_;
                            exit 0; }
 } @ARGV;
