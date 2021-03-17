@@ -1,9 +1,21 @@
+use strict; 
+use warnings FATAL => 'uninitialized';
 
+
+sub email_full {
+    my $email_full= `email-full`; chomp $email_full;
+    $email_full
+}
+
+sub shebang {
+    "#!/usr/bin/perl -w\n"
+}
 
 sub copy {
+    my ($email_full)= @_;
+    $email_full //= email_full;
     my $year= (localtime)[5]+1900;
-    my $email_full= `email-full`; chomp $email_full;
-    ("#\n".
+    (# "#\n".
      "# Copyright $year by $email_full\n".
      "# Published under the same terms as perl itself")
 }

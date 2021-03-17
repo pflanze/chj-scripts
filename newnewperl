@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+# Wed 17 Mar 12:42:49 GMT 2021
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  Creates new Perl script scaffold.
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+require "$mydir/newperl.pl";
+
+use Chj::xtmpfile;
+use Chj::xperlfunc qw(xexec);
+
+
+my $email_full= email_full();
+
+sub script_template () {
+    my $main= <<'END'
+
+use strict; 
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my $email_full= '$EMAIL_FULL';
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
+END
+        ;
+    $main=~ s/\$EMAIL_FULL/$email_full/sg;
+    join("\n", shebang(), copy($email_full), $main)
+}
+
+sub newperl ($path) {
+    if (-f $path) {
+        warn "$myname: file already exists, leave unchanged: '$path'\n";
+        return
+    }
+    my $t= xtmpfile $path;
+    $t->xprint(script_template);
+    $t->xclose;
+    $t->xputback(0777 & ~umask);
+}
+
+
+newperl $_ for @ARGV;
+
+xexec "sensible-editor", @ARGV;
+
+#use FP::Repl; repl;
