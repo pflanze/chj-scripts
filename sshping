@@ -32,7 +32,9 @@ sub usage {
   The idea for this is to be more reliable than ICMP pings in the face
   of firewalls. Also, it pings all of the given ip-or-hostnames in
   parallel, to avoid the influence of time dependent performance
-  fluctuations in the network.
+  fluctuations in the network. Also, it deviates randomly somewhat in
+  the chosen time points to try to minimize any temporal influence or
+  the influence by the other threads.
 
   Options:
 
@@ -92,10 +94,23 @@ sub sum { my $z=0; $z+=$_ for @_; $z }
 sub min { my $z=shift; for(@_) { $z= $_ if $_ < $z }; $z }
 sub max { my $z=shift; for(@_) { $z= $_ if $_ > $z }; $z }
 
+sub sleep_until ($t_target) {
+    while (1) {
+        my $d= $t_target - time;
+        return if $d <= 0;
+        sleep $d;
+    }
+}
+
+my $t0_global = time;
+
 sub sshping {
     my ($ip_or_hostname_maybe_port)= @_;
     my @t= grep {defined $_} map {
-        sleep 0.8;
+        # It appears that Perl's rand *is* randomized across fork now?
+        my $t_target = $t0_global + $_ - 0.5 + rand;
+        sleep 0.05 * rand; # just for some minimal distance.
+        sleep_until $t_target;
         sshping1 $ip_or_hostname_maybe_port;
     } (1..$count);
     my $n= @t;
