@@ -1,0 +1,110 @@
+#!/usr/bin/perl -w
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict; 
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname path-from-git-root...
+
+  Print Git web UI urls to see the given files. By default, looks in
+  'origin' and 'github' for github base urls.
+
+  Options:
+
+    --base url   base Github url to use instead of auto-detection
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+use Getopt::Long;
+our $verbose=0;
+my $opt_base;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "base=s"=> \$opt_base,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+sub _auto_detect_remote {
+    my $remotes= `git remote -v`; $? == 0 or die "git remote exited $?";
+
+    my @remotes= map {
+        my @s= split /\t/, $_;
+        @s == 2 or die "parsing issue, execting 2 fields, got: @s";
+        my ($name, $rest)= @s;
+        my @s2= split /\s+/, $rest;
+        @s2 >= 2 or die "parsing issue, expecting >= 2 fields, got: @s2";
+        my ($url, $mode)= @s2;
+        [ $name, $url, $mode ]
+    } split /\n/, $remotes;
+
+    my @r = grep {
+        my ($name, $url, $mode)= @$_;
+        ($name eq "origin" or $name eq "github")
+            and $url=~ /github\.com/
+    } @remotes;
+
+    my @r_https= grep  {
+        my ($name, $url, $mode)= @$_;
+        $url=~ /^https:/;
+    } @r;
+
+    if (@r) {
+        if (@r_https) {
+            $r_https[0]
+        } else {
+            die "converting ssh urls to https is not done yet"; # XX
+        }
+    } else {
+        die "$myname: none of the remotes in the current repository is named origin or github and refers to a github url\n";
+    }
+}
+
+sub auto_detect_remote () {
+    my $url= _auto_detect_remote->[1];
+    $url=~ s/\.git.*//;
+    $url
+}
+
+
+my $base= $opt_base // auto_detect_remote;
+
+sub github_url_for_path ($path) {
+    # -> https://github.com/pflanze/chj-bin/blob/master/0or1
+    if ($path=~ m{^/}) {
+        die "path is absolute, expecting relative from Git root: '$path'"
+    }
+    $path=~ s{^\./+}{}s;
+    $path=~ s{/+}{/}sg;
+    "$base/blob/master/$path"
+}
+
+for (@ARGV) {
+    my $url= github_url_for_path $_;
+    print "$url\n" or die;
+}
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
