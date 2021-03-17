@@ -43,12 +43,15 @@ my $email_full= email_full();
 
 sub script_template () {
     my $main= <<'END'
+my $copyright= <<'COPYRIGHT';
+$COPY
+COPYRIGHT
 
 use strict; 
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
-my $email_full= '$EMAIL_FULL';
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 my ($mydir, $myname);
 BEGIN {
@@ -83,7 +86,9 @@ usage unless @ARGV;
 END
         ;
     $main=~ s/\$EMAIL_FULL/$email_full/sg;
-    join("\n", shebang(), copy($email_full), $main)
+    my $copy= copy($email_full);
+    $main=~ s/\$COPY\b/$copy/sg;
+    join("\n", shebang(), $main)
 }
 
 sub newperl ($path) {
