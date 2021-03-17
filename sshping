@@ -117,8 +117,12 @@ sub sshping {
         maybe_sshping1 $ip_or_hostname_maybe_port;
     } (1..$count);
     my $n= @t;
-    my $tot= sum @t;
-    print "$ip_or_hostname_maybe_port: $n: ".min(@t).", ".$tot/$n.", ".max(@t)." (@t)\n";
+    if ($n) {
+        my $tot= sum @t;
+        print "$ip_or_hostname_maybe_port: $n: ".min(@t).", ".$tot/$n.", ".max(@t)." (@t)\n";
+    } else {
+        print "$ip_or_hostname_maybe_port: only failures.\n";
+    }
 }
 
 my @p= map {
