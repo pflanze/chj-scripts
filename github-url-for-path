@@ -27,6 +27,7 @@ sub usage {
   Options:
 
     --base url   base Github url to use instead of auto-detection
+    --no-assert  do not verify we're in the root of a Git checkout
 
   ($email_full)
 ";
@@ -37,10 +38,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 my $opt_base;
+my $opt_noassert;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "base=s"=> \$opt_base,
+           "no-assert"=> \$opt_noassert,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -106,8 +109,10 @@ sub wg() {
     $p
 }
 
-my $wg= wg;
-$wg eq ".git" or die "$myname: you don't appear to be in the root of a Git checkout, as we're expecting wg to be at .git but it's at: '$wg'\n";
+unless ($opt_noassert) {
+    my $wg= wg;
+    $wg eq ".git" or die "$myname: you don't appear to be in the root of a Git checkout, as we're expecting wg to be at .git but it's at: '$wg'\n";
+}
 
 for (@ARGV) {
     my $url= github_url_for_path $_;
