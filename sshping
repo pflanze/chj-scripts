@@ -1,0 +1,124 @@
+#!/usr/bin/perl -w
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict; 
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+my $default_port= 22;
+my $default_count= 10;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ip-or-hostname[:port]...
+
+  NOTE (BUG): currently only ips work?
+
+  Try to build a TCP connection to the SSH daemon at ip-or-hostname,
+  measure the time it takes to get the 'SSH' welcome string back.
+
+  The idea for this is to be more reliable than ICMP pings in the face
+  of firewalls. Also, it pings all of the given ip-or-hostnames in
+  parallel, to avoid the influence of time dependent performance
+  fluctuations in the network.
+
+  Options:
+
+    --port n
+
+        If :\$port is not appended to ip-or-hostname, the default port
+        number of $default_port is used. This option changes that
+        default.
+
+    --count n
+
+        How many TCP connections to open per ip-or-hostname (default:
+        $default_count).
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+use Getopt::Long;
+my $verbose=0;
+my ($opt_port, $opt_count);
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "port=n"=> \$opt_port,
+           "count=n"=> \$opt_count,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+my $port= $opt_port // $default_port;
+my $count= $opt_count // $default_count;
+
+use IO::Socket::INET;
+use Time::HiRes qw(time sleep);
+
+sub sshping1 {
+    my ($ip_or_hostname_maybe_port)= @_;
+    my $start= time;
+    my $s= 
+      IO::Socket::INET->new(
+          ($ip_or_hostname_maybe_port=~ /:/ ?
+           (PeerAddr=> $ip_or_hostname_maybe_port)
+           : (PeerHost=> $ip_or_hostname_maybe_port, PeerPort=> $port)),
+          Timeout=> 2)
+        or die "connecting to $ip_or_hostname_maybe_port: $!";
+    $s->printflush ("");
+    my $buf="";
+    $s->read($buf, 3);
+    my $end= time;
+    $buf eq "SSH" ? ($end-$start) : undef
+}
+
+sub sum { my $z=0; $z+=$_ for @_; $z }
+sub min { my $z=shift; for(@_) { $z= $_ if $_ < $z }; $z }
+sub max { my $z=shift; for(@_) { $z= $_ if $_ > $z }; $z }
+
+sub sshping {
+    my ($ip_or_hostname_maybe_port)= @_;
+    my @t= grep {defined $_} map {
+        sleep 0.8;
+        sshping1 $ip_or_hostname_maybe_port;
+    } (1..$count);
+    my $n= @t;
+    my $tot= sum @t;
+    print "$ip_or_hostname_maybe_port: $n: ".min(@t).", ".$tot/$n.", ".max(@t)." (@t)\n";
+}
+
+my @p= map {
+    my $f= `mktemp`; $? == 0 or die "mktemp exited $?"; chomp $f;
+    my $pid= fork // die "fork: $!";
+    $pid ? [$f,$pid] : do{ open STDOUT, ">>", $f or die;
+                           sshping $_;
+                           exit 0; }
+} @ARGV;
+
+for (@p) {
+    my ($f,$pid)=@$_;
+    waitpid($pid, 0);
+    system "cat", $f; $? == 0 or die "cat exited $?";
+    unlink $f;
+}
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
