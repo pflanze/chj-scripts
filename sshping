@@ -73,7 +73,7 @@ my $count= $opt_count // $default_count;
 use IO::Socket::INET;
 use Time::HiRes qw(time sleep);
 
-sub sshping1 {
+sub maybe_sshping1 {
     my ($ip_or_hostname_maybe_port)= @_;
     my $start= time;
     my $s= 
@@ -82,7 +82,10 @@ sub sshping1 {
            (PeerAddr=> $ip_or_hostname_maybe_port)
            : (PeerHost=> $ip_or_hostname_maybe_port, PeerPort=> $port)),
           Timeout=> 2)
-        or die "connecting to $ip_or_hostname_maybe_port: $!";
+        or do {
+            warn "connecting to $ip_or_hostname_maybe_port: $!";
+            return undef;
+    };
     $s->printflush ("");
     my $buf="";
     $s->read($buf, 3);
@@ -111,7 +114,7 @@ sub sshping {
         my $t_target = $t0_global + $_ - 0.5 + rand;
         sleep 0.05 * rand; # just for some minimal distance.
         sleep_until $t_target;
-        sshping1 $ip_or_hostname_maybe_port;
+        maybe_sshping1 $ip_or_hostname_maybe_port;
     } (1..$count);
     my $n= @t;
     my $tot= sum @t;
