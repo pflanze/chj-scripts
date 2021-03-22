@@ -19,7 +19,7 @@ sub usage {
 
   Accepts locations in Continent/City format as well as some
   abbreviated time zones without daylight savings information (PT,
-  ET).
+  ET, BT).
 
   If the TZ env var is set, adds the time zone name to the output.
 
@@ -132,6 +132,7 @@ our $nondst_zone_names= +{
     # Eastern Daylight Time, when observing daylight saving
     # time (spring/summer), is four hours behind Coordinated
     # Universal Time (UTC−04:00).
+    BT=> 'Europe/London',
 };
 
 our $continents=
