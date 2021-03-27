@@ -8,7 +8,7 @@ sub email_full {
 }
 
 sub shebang {
-    "#!/usr/bin/perl -w\n"
+    "#!/usr/bin/env perl\n"
 }
 
 sub copy {

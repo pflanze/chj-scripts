@@ -47,7 +47,8 @@ my $copyright= <<'COPYRIGHT';
 $COPY
 COPYRIGHT
 
-use strict; 
+use strict;
+use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
