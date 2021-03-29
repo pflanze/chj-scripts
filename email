@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+EMAIL_FULL_CLEAN=1 email-full "$@"

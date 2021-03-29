@@ -17,4 +17,8 @@ fi
 
 fullname=$(cat ~/.chj-home_fullname)
 
+if [ "${EMAIL_FULL_CLEAN-0}" = 1 ]; then
+    fullname=$(printf '%s' "$fullname" | perl -wne 's/\s*\([^()]*\)\s*/ /s; s/\s+\z//; print')
+fi
+
 echo "$fullname <$EMAIL>"
