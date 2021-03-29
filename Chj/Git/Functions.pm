@@ -46,6 +46,7 @@ package Chj::Git::Functions;
 	      git_tags
 
 	      status_is_clean
+	      status
 
 	      git_log_oneline
 
@@ -526,6 +527,29 @@ sub status_is_clean {
             $incnt=~ /\nnothing to commit..working (directory|tree) clean/),
      $incnt
     ]
+}
+
+
+sub status {
+    local $ENV{LANG}="C";
+    local $ENV{LC_ALL}="C";
+    my $in= Chj::IO::Command->new_combinedsender(
+        "git", "status",
+        "--porcelain", "-z",
+        "--", @_);
+    my $incnt= $in->xcontent;
+    my $instatus= $in->xfinish;
+    my @item;
+    for (split /\0/, $incnt) {
+        my ($M1, $M2, $pathS)= /([ MADRCU])([ MADRCU]) (.*)/
+            or die "no match: '$_'";
+        # XXX: should split $pathS into " -> " parts. How is it formatted then?
+        push @item, [$M1, $M2, $pathS]
+    }
+    # XXX should not be used yet; and, look at "meta/pre-commit" in FunctionalPerl!
+    
+    #use FP::Repl; repl;
+    \@item
 }
 
 
