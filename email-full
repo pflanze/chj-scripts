@@ -15,4 +15,6 @@ if [ $# -ne 0 ]; then
     usage
 fi
 
-echo "$(cat ~/.chj-home_fullname) <$EMAIL>"
+fullname=$(cat ~/.chj-home_fullname)
+
+echo "$fullname <$EMAIL>"
