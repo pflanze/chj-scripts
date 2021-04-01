@@ -133,6 +133,7 @@ our $nondst_zone_names= +{
     # time (spring/summer), is four hours behind Coordinated
     # Universal Time (UTC−04:00).
     BT=> 'Europe/London',
+    CH=> 'Europe/Zurich',
 };
 
 our $continents=
