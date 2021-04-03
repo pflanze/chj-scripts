@@ -3,7 +3,7 @@ use warnings FATAL => 'uninitialized';
 
 
 sub email_full {
-    my $email_full= `email-full`; chomp $email_full;
+    my $email_full= `EMAIL_FULL_CLEAN=1 email-full`; chomp $email_full;
     $email_full
 }
 
