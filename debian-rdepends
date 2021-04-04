@@ -1,9 +1,16 @@
 #!/usr/bin/perl -w
 
-# Sat Sep 27 21:24:32 CEST 2008
-(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+my $copyright= <<'COPYRIGHT';
+# Copyright 2008-2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
 
 use strict;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -12,17 +19,23 @@ sub usage {
     print "$myname packagename
 
   Uses 'apt-cache rdepends' and 'dpkglist' to only list the rdepends
-  which are locally installed.
+  which are locally installed (unless --all is given).
 
-  (Christian Jaeger <$email>)
+  Options:
+
+    --all  show rdepends even if not locally installed
+
+  ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_all;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "all"=> \$opt_all,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
@@ -30,7 +43,7 @@ our ($packagename)=@ARGV;
 
 use Chj::IO::Command;
 
-our $packagename_installed= do {
+our $packagename_installed= $opt_all ? undef : do {
     my $h={};
     my $in= Chj::IO::Command->new_sender ("dpkglist");
     while (<$in>) {
@@ -40,6 +53,10 @@ our $packagename_installed= do {
     $in->xxfinish;
     $h
 };
+
+sub is_installed ($packagename) {
+    $opt_all ? 1 : $$packagename_installed { $packagename }
+}
 
 use Chj::singlequote;
 
@@ -80,7 +97,7 @@ sub packagename_rdepends_local {
     my $rdepends= packagename_rdepends ($packagename);
     [
      grep {
-	 $$packagename_installed { $_->packagename }
+         is_installed($_->packagename)
      } @$rdepends
     ]
 }
