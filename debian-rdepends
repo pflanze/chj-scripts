@@ -13,6 +13,8 @@ use experimental 'signatures';
 use Getopt::Long;
 use Chj::IO::Command;
 use Chj::singlequote;
+use FP::autobox;
+use Chj::xperlfunc qw(xprintln);
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -83,7 +85,7 @@ sub packagename_rdepends {
     [
      map {
 	 my $is_or= s/^\|//;
-	 /^[\w-]+\z/
+	 /^[\w\-.+]+\z/
 	   or die "hm invalid packagename or not?: '$_'";
 	 Package($is_or, $_)
      } @dep
@@ -100,6 +102,8 @@ sub packagename_rdepends_local {
     ]
 }
 
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
+for (@ARGV) {
+    packagename_rdepends_local($_)->for_each(sub($p) {
+                                                 xprintln $p->packagename
+                                             });
+}
