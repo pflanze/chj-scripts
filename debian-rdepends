@@ -102,10 +102,15 @@ if ($opt_repl) {
     require FP::Repl;
     FP::Repl::repl();
 } else {
-    for (@ARGV) {
-        packagename_rdepends_local($_)->for_each(sub($p) {
-                                                     xprintln $p->packagename
-                                                 });
+    for my $package (@ARGV) {
+        unless ($opt_all) {
+            Package($package)->is_installed
+                or warn "Note: package '$package' is not installed\n";
+        }
+        packagename_rdepends_local($package)->for_each(
+            sub($p) {
+                xprintln $p->packagename
+            });
     }
 }
 
