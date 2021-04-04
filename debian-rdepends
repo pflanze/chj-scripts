@@ -62,8 +62,7 @@ our $packagename_installed= $opt_all ? undef : do {
 
 package PFLANZE::Package {
     use FP::Ops qw(the_method);
-    use FP::Struct ['is_or',
-                    'packagename'];
+    use FP::Struct ['packagename', 'is_or'];
     sub is_installed ($self) {
         $main::opt_all ? 1 : $main::packagename_installed->{ $packagename }
     }
@@ -89,7 +88,7 @@ sub packagename_rdepends {
             my $is_or= $packagename=~ s/^\|//;
             $packagename =~ /^[\w\-.+]+\z/
                 or die "hm invalid packagename or not?: '$packagename'";
-            Package($is_or, $packagename)
+            Package($packagename, $is_or)
         })
 }
 
