@@ -80,18 +80,17 @@ sub packagename_rdepends {
 	die join ("",@_,": ",singlequote($cnt));
     };
     $cnt=~ s/^$packagename\s+//s
-      or &$die("was expecting packagename in output first");
+        or &$die("was expecting packagename in output first");
     $cnt=~ s/^Reverse Depends:\s+//s
-      or &$die("was expecting 'Reverse Depends:' in output");
-    my @dep= split /\s+/, $cnt;
-    [
-     map {
-	 my $is_or= s/^\|//;
-	 /^[\w\-.+]+\z/
-	   or die "hm invalid packagename or not?: '$_'";
-	 Package($is_or, $_)
-     } @dep
-    ]
+        or &$die("was expecting 'Reverse Depends:' in output");
+    my $dependencies= [ split /\s+/, $cnt ];
+    $dependencies->sort->map(
+        sub ($packagename) {
+            my $is_or= $packagename=~ s/^\|//;
+            $packagename =~ /^[\w\-.+]+\z/
+                or die "hm invalid packagename or not?: '$packagename'";
+            Package($is_or, $packagename)
+        })
 }
 
 sub packagename_rdepends_local {
