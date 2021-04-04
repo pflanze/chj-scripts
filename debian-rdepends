@@ -10,6 +10,10 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
+use Getopt::Long;
+use Chj::IO::Command;
+use Chj::singlequote;
+
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -30,7 +34,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-use Getopt::Long;
 our $verbose=0;
 our $opt_all;
 GetOptions("verbose"=> \$verbose,
@@ -40,8 +43,6 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV==1;
 
 our ($packagename)=@ARGV;
-
-use Chj::IO::Command;
 
 our $packagename_installed= $opt_all ? undef : do {
     my $h={};
@@ -58,7 +59,13 @@ sub is_installed ($packagename) {
     $opt_all ? 1 : $$packagename_installed { $packagename }
 }
 
-use Chj::singlequote;
+
+package PFLANZE::Package {
+    use FP::Struct ['is_or',
+                    'packagename'];
+    _END_
+}
+PFLANZE::Package::constructors->import;
 
 sub packagename_rdepends {
     my ($packagename)=@_;
@@ -78,18 +85,9 @@ sub packagename_rdepends {
 	 my $is_or= s/^\|//;
 	 /^[\w-]+\z/
 	   or die "hm invalid packagename or not?: '$_'";
-	 bless [ $is_or ? "|" : "", $_ ], "CHJ_::Package"
+	 Package($is_or, $_)
      } @dep
     ]
-}
-
-{
-    package CHJ_::Package;
-    use Class::Array -fields=>
-      -publica=>
-	('is_or',
-	 'packagename');
-    end Class::Array;
 }
 
 sub packagename_rdepends_local {
