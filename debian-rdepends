@@ -78,7 +78,7 @@ sub packagename_rdepends {
 	 my $is_or= s/^\|//;
 	 /^[\w-]+\z/
 	   or die "hm invalid packagename or not?: '$_'";
-	 bless [ $is_or ? "|" : "", $_ ], "CHJ_::Package"   #'gib ihm', asap, n type...~.
+	 bless [ $is_or ? "|" : "", $_ ], "CHJ_::Package"
      } @dep
     ]
 }
@@ -101,11 +101,6 @@ sub packagename_rdepends_local {
      } @$rdepends
     ]
 }
-
-#hm and  uniq'ify the list right doh first maybe -  .
-
-#'starting to get type obsessed'"?"
-
 
 
 #use Chj::ruse;
