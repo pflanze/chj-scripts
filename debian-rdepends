@@ -15,6 +15,7 @@ use Chj::IO::Command;
 use Chj::singlequote;
 use FP::autobox;
 use Chj::xperlfunc qw(xprintln);
+use FP::Ops qw(the_method);
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -58,14 +59,14 @@ our $packagename_installed= $opt_all ? undef : do {
     $h
 };
 
-sub is_installed ($packagename) {
-    $opt_all ? 1 : $$packagename_installed { $packagename }
-}
-
 
 package PFLANZE::Package {
+    use FP::Ops qw(the_method);
     use FP::Struct ['is_or',
                     'packagename'];
+    sub is_installed ($self) {
+        $main::opt_all ? 1 : $main::packagename_installed->{ $packagename }
+    }
     _END_
 }
 PFLANZE::Package::constructors->import;
@@ -95,12 +96,7 @@ sub packagename_rdepends {
 
 sub packagename_rdepends_local {
     my ($packagename)=@_;
-    my $rdepends= packagename_rdepends ($packagename);
-    [
-     grep {
-         is_installed($_->packagename)
-     } @$rdepends
-    ]
+    packagename_rdepends($packagename)->filter(the_method "is_installed")
 }
 
 
