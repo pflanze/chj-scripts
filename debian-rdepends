@@ -37,10 +37,11 @@ exit (@_ ? 1 : 0);
 }
 
 our $verbose=0;
-our $opt_all;
+our ($opt_all, $opt_repl);
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "all"=> \$opt_all,
+           "repl"=> \$opt_repl,
 	   ) or exit 1;
 usage unless @ARGV==1;
 
@@ -102,8 +103,15 @@ sub packagename_rdepends_local {
     ]
 }
 
-for (@ARGV) {
-    packagename_rdepends_local($_)->for_each(sub($p) {
-                                                 xprintln $p->packagename
-                                             });
+
+if ($opt_repl) {
+    require FP::Repl;
+    FP::Repl::repl();
+} else {
+    for (@ARGV) {
+        packagename_rdepends_local($_)->for_each(sub($p) {
+                                                     xprintln $p->packagename
+                                                 });
+    }
 }
+
