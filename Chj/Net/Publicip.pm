@@ -57,13 +57,13 @@ our @defaultifaces= qw(eth0 eth1 ppp0);
       );
     sub new { my $cl=shift; bless [@_],$cl}
 
-    our $if_publ=
-      +{
-	lo=> 0,
-	eth=> 1,
-	ppp=> 2,
-       };
-
+    our $if_publ= +{
+        lo=> 0,
+        tap=> 0.2,
+        eth=> 1,
+        ppp=> 2,
+    };
+    
     sub publicity_likelyness {
 	my $s=shift;
 
