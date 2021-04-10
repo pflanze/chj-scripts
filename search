@@ -40,8 +40,7 @@ usage unless @ARGV;
 
 use Chj::Git::Functions qw(git_ls_files);
 use FP::HashSet ":all";
-use Chj::xperlfunc qw(xprintln xlstat); # xgetfile_utf8
-use Chj::xIOUtil qw(xgetfile_utf8);
+use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
 
 # why use both array and purearray? XX hashset should be adapted.
 use FP::Array ":all";
@@ -52,9 +51,14 @@ my $fileset= do {
     my $fs= array_to_purearray scalar git_ls_files;
     my $pss= $fs->map(
         sub ($path) {
-            [$path, scalar xlstat $path]
+            if (my $s= Xlstat $path) {
+                [$path, $s]
+            } else {
+                undef
+            }
         })->filter(
         sub ($ps) {
+            return 0 unless defined $ps;
             my ($path, $stat)= @$ps;
             not $stat->is_link
         });
