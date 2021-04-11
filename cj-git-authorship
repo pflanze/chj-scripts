@@ -102,7 +102,9 @@ sub blame_path ( $ ) {
 	for my $author (sort {
 	    (($$authors{$b})
 	     <=>
-	     ($$authors{$a}))
+	     ($$authors{$a})
+             or
+             $a cmp $b)
 	} keys %$authors) {
 	    next if $author eq "__ALL__";
 	    printf '%5d %s'."\n", $$authors{$author}, $author;
