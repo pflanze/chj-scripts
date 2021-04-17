@@ -34,7 +34,7 @@ use Chj::chompspace;
 
 sub userfullname {
     my ($uid,$replacement_nofullname,$replacement_notexist);
-    my $dflt_replacement_nofullname= sub { shift };#(nun doch nicht mehr für eq gebraucht. nun stehts halt hier für nix.)
+    my $dflt_replacement_nofullname= sub { shift };#(nun doch nicht mehr fÃ¼r eq gebraucht. nun stehts halt hier fÃ¼r nix.)
     if (@_>3) {
 	croak "userfullname: expecting 0 to 3 arguments, got ".@_;
     } else {
@@ -86,7 +86,7 @@ sub userfullname {
 	}
     }
 }
-# well dann gibts noch den Fall der system accounts wo der fullname auf username gesetzt wird von Debian. Ob man das evtl. erkennen müsste. ..
+# well dann gibts noch den Fall der system accounts wo der fullname auf username gesetzt wird von Debian. Ob man das evtl. erkennen mÃ¼sste. ..
 
 1
 

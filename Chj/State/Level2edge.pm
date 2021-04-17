@@ -38,7 +38,7 @@ sub new {
 }
 
 sub samebool {
-    #shift;# auch dies ne methode  für overrid? forged
+    #shift;# auch dies ne methode  fÃ¼r overrid? forged
     ($_[0] and $_[1]) or (!$_[0] and !$_[1])
 }
 
@@ -66,7 +66,7 @@ sub setlevel { # absichtlich nicht set_level weil mehr als access
 	my $edge; # undef / 0 / 1
 	my $new_alarmstate= do {
 	    if (samebool($state,$alarmstate)) {
-		# (but be careful: could only be vorübergehend gleich, laststate unterschiedlich - aber das berechnen wir unten bei new_n)
+		# (but be careful: could only be vorÃ¼bergehend gleich, laststate unterschiedlich - aber das berechnen wir unten bei new_n)
 		$alarmstate # or $state heh
 	    } else {
 		if ($nneeded <= 1  # in which case we don't need to look at old state
@@ -89,7 +89,7 @@ sub setlevel { # absichtlich nicht set_level weil mehr als access
 		1
 	    }
 	};
-	#my $new_   and set//store the new state  oh kann ich oben einfügen  so isch imperativ.
+	#my $new_   and set//store the new state  oh kann ich oben einfÃ¼gen  so isch imperativ.
 	#if (samebool($state,$laststate)){
 	#} else {
 	# EH  dubel ebe will ja alles zusammen setzen.

@@ -106,7 +106,7 @@ use Carp;
 use Class::Array -fields=> (
 			    "Runpath",# file path e.g. ".../foo.run" (or maybe .lck)
 			    "_Runfile",
-			    "In", # zahl oder fh, oder undef, oder: "" f¸r gar nix machen
+			    "In", # zahl oder fh, oder undef, oder: "" f√ºr gar nix machen
 			    "Out",
 			    "Err",
 			    "Namegiver",
@@ -116,7 +116,7 @@ use Class::Array -fields=> (
 sub new {
     my $class=shift;
     my $self= $class->SUPER::new;
-    @$self[Runpath,Namegiver]=@_;## sinn hier was zu geben wenn dann ja doch sp‰ter ¸bergeben m¸ssen?!
+    @$self[Runpath,Namegiver]=@_;## sinn hier was zu geben wenn dann ja doch sp√§ter √ºbergeben m√ºssen?!
     #$$self[Namegiver]= Chj::Unix::Daemonizer::Namegiver->default; sigh, Can't call method "default" without a package or object reference
     $$self[Namegiver] ||= "Chj::Unix::Daemonizer::Namegiver"->default;
     $self
@@ -124,10 +124,10 @@ sub new {
 
 
 #my $single;
-my $default;# defaultinstance w‰r halt auch besser; na, "my $a= default Daemonizer" tˆnt aber auch gut. Die Frage ist nur, soll eine programmiersprache gut tˆnen?
+my $default;# defaultinstance w√§r halt auch besser; na, "my $a= default Daemonizer" t√∂nt aber auch gut. Die Frage ist nur, soll eine programmiersprache gut t√∂nen?
 sub default {
     my $class=shift;
-    $default||=$class->new(@_);# komisch, bei erstmalig werden argumente angekuckt? und ja muss andersch lauten als set_default in dem fall   aber eh komisch dass ein obj transparent kreiert wird dadurch oder findsch nˆd?.
+    $default||=$class->new(@_);# komisch, bei erstmalig werden argumente angekuckt? und ja muss andersch lauten als set_default in dem fall   aber eh komisch dass ein obj transparent kreiert wird dadurch oder findsch n√∂d?.
 }
 sub set_default {#(sollte einen required parameter haben)
     my $class=shift;
@@ -200,7 +200,7 @@ sub fork {
 		   die (bless {}, "ALREADYRUNNING")
 	       });
 	    # ^ throws exception if already in use. ##interessant: erst nach dem fork?
-	    #$$s[_Runfile]->autoclean;#(well, doch ziemlich unnˆtig
+	    #$$s[_Runfile]->autoclean;#(well, doch ziemlich unn√∂tig
 	    #   dass dies eine extra methode ist?)
 	    # ^- rather dangerous since we do not know if the user is
 	    # keeping the daemonizer instance till the end? well no,

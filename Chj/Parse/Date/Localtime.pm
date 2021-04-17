@@ -38,7 +38,7 @@ use enum qw(E_success
 	    E_invalidformat
 	    E_invalidmonthname
 	    E_dateoutofrange
-	   ); #ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben würd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
+	   ); #ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben wÃ¼rd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
 our @errmsgs;
 $errmsgs[E_invalidformat]= "invalid date format";
 $errmsgs[E_invalidmonthname]= "invalid month name";
@@ -54,7 +54,7 @@ use Class::Array -fields=> (
 sub parse {
     my $self=shift;
     my ($str)=@_;
-    # 'bewährte' kombination aus selber zerlegen und dann durch strftime in unix verwandeln.
+    # 'bewÃ¤hrte' kombination aus selber zerlegen und dann durch strftime in unix verwandeln.
     $str=~ /^(\w+) +(\w+) +(\d+) +(\d+):(\d+):(\d+) +(\d+)$/
       or do { $$self[Error]=E_invalidformat; return };
     my ($dayname,$monname,$mday,$hour,$min,$sec,$year)=($1,$2,$3,$4,$5,$6,$7);
@@ -80,4 +80,4 @@ sub xparse {
 
 __END__
 
-vgl. Chj::Parse::Date::Xferlog für volles Fragenpaket
+vgl. Chj::Parse::Date::Xferlog fÃ¼r volles Fragenpaket

@@ -60,7 +60,7 @@ __END__
 
   ein store dem man obj's zum  ent-/beladen geben. jup
 
-das obj muss seine daten präsentieren gemäss einem vordefinierten interface.
+das obj muss seine daten prÃ¤sentieren gemÃ¤ss einem vordefinierten interface.
 anderes interface als dieses hier
 
 
@@ -69,7 +69,7 @@ Welche strukturen soll es speichern koennen?
 
 - collection.  key=>undef    hm wie?  emtpyfile oder symlink  aber  symlink rausfinden waere costly
 
-PS das obj seine Daten holen lassen hätte vorteil dass es sie dann holen kann wenn es sie benoetigt
+PS das obj seine Daten holen lassen hÃ¤tte vorteil dass es sie dann holen kann wenn es sie benoetigt
 aber es muss dafur den eigenen  "handle" haben ?
 
 

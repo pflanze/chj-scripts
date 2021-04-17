@@ -128,7 +128,7 @@ sub new_import {
 	my $memq_ignores= sub { my ($f)=@_; for(@ignores) {return 1 if $_ eq $f} 0};
 	while (my($key,$file) = each %INC) {
 	    next if $memq_ignores->($file);#too confusing
-	    #local $^W = 0; nope, only shut down redefinition warnings please. ç
+	    #local $^W = 0; nope, only shut down redefinition warnings please. Ã§
 	    my $mtime = (stat $file)[9];
 	    $Stat{$file} = $^T
 	      unless defined $Stat{$file};
@@ -168,7 +168,7 @@ sub reimport {
     my $class=$key;
     $class=~ s|/|::|sg;##COPY above !!
     $class=~ s|\.pm$||s;
-    if (my $importer= $class->can("import")) { ##hmm. aufgepasst? falsch sogar. muss ja Exporter::import sein. aber na kann das ja noch prüfen.
+    if (my $importer= $class->can("import")) { ##hmm. aufgepasst? falsch sogar. muss ja Exporter::import sein. aber na kann das ja noch prÃ¼fen.
 #	if ($importer eq \&Exporter::import) {
 	    my $imports= $rdep{$class};
 	    for my $caller (keys %$imports) {
@@ -176,7 +176,7 @@ sub reimport {
 		#hmm und now how do we set up caller.
 		#calc> :l caller(0)=("haha","hoho",22)
 		#Can't modify caller in scalar assignment at (eval 34) line 2, at EOF
-		#wenn doch perl schon alles hacking zulässt, warum nicht auch das?
+		#wenn doch perl schon alles hacking zulÃ¤sst, warum nicht auch das?
 		my $code= "package $caller; ".'$Chj::ruse::orig_import->(@{$$imports{$caller}})';
 		eval $code;
 		if (ref$@ or $@) {
@@ -185,7 +185,7 @@ sub reimport {
 	    }
 # 	}
 # 	else {
-# 	    warn "reimport: $class->can('import') returned another routine than Exporter::import, so doing nothing to be careful";# sinnlos?  ich will wissen  ob der code  wieder täte.  doch hiermit finde ich das ja doch nicht raus ?.   AH ps. und namespace cleanen ist noch nicht done.  na das darf ich aber eh nicht?  aber @ISA und so  wenn das neu modul nicht mehr hat?   och   ist es SO schwer?  alles kleanen ginge ja schon  doch dann wird state info auch weg geräumt. aber ist wohl einzig saubere variante.
+# 	    warn "reimport: $class->can('import') returned another routine than Exporter::import, so doing nothing to be careful";# sinnlos?  ich will wissen  ob der code  wieder tÃ¤te.  doch hiermit finde ich das ja doch nicht raus ?.   AH ps. und namespace cleanen ist noch nicht done.  na das darf ich aber eh nicht?  aber @ISA und so  wenn das neu modul nicht mehr hat?   och   ist es SO schwer?  alles kleanen ginge ja schon  doch dann wird state info auch weg gerÃ¤umt. aber ist wohl einzig saubere variante.
 # 	}
     } else {
 	warn "reimport WARNING: $class->can('import') didn't yield true, seems the module doesn't inherit from Exporter any more ?";
@@ -206,7 +206,7 @@ sub ruse {
 
 sub import {
     #my $caller=shift;
-    my $caller=caller;#mann ich döbel
+    my $caller=caller;#mann ich dÃ¶bel
     no strict 'refs';
     warn "Kopiere ruse funktion nach '${caller}::ruse'" if $DEBUG>1;
     *{"${caller}::ruse"}= \&ruse; #na, kein renamenichts?

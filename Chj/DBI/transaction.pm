@@ -41,14 +41,14 @@ and (Thu, 23 Mar 2006 00:10:35 +0100):
 
 that subclassing DBI for adding a transaction method would be a possible alternative.
 
-und übrigens: use Chj::DBI::transaction $DB; (+ currying) wäre doch cleaner als der caller lese trick.
+und Ã¼brigens: use Chj::DBI::transaction $DB; (+ currying) wÃ¤re doch cleaner als der caller lese trick.
 
 =head1 PROBLEM
 
-weil $db handle nicht reconnect von mir hat  eben.  ja subclassing wäre das richtige./richtiger.
+weil $db handle nicht reconnect von mir hat  eben.  ja subclassing wÃ¤re das richtige./richtiger.
 HACK nun: $Chj::DBI::transaction::reconnect;  auf eine sub setzen bitte.
 
-ps es scheint tonnen probleme zu geben wenn man nicht alles OO macht. destructor kann ich nicht registern hier: denn geht in perl nur über DESTROY und wie soll ich das  wenn  klasse  fremd ist. (Ok weak table könnte problem insofern lösen dass ich keinen destructor mehr bräuchte)
+ps es scheint tonnen probleme zu geben wenn man nicht alles OO macht. destructor kann ich nicht registern hier: denn geht in perl nur Ã¼ber DESTROY und wie soll ich das  wenn  klasse  fremd ist. (Ok weak table kÃ¶nnte problem insofern lÃ¶sen dass ich keinen destructor mehr brÃ¤uchte)
 
 =cut
 
@@ -63,7 +63,7 @@ use Carp;
 our $reconnect= sub { confess "\$Chj::DBI::transaction::reconnect has not been set, thus cannot reconnect" };
 
 
-# ("was nicht alles nötig ist, bloss weil man OO umgeht": )
+# ("was nicht alles nÃ¶tig ist, bloss weil man OO umgeht": )
 our $begin_work= sub {
     my ($db)=@_;
     if (my $c= UNIVERSAL::can($db,"real_begin_work")) {
@@ -133,7 +133,7 @@ sub exception_warrants_reconnect {
     )
 }
 
-# dann evtl. solche exceptions die abbruch wollen? rollback.  wenn code n rollback will,  muss auch fluss abgebrochen werden, damit keine neuen sachen auf db ausgeführt werden und am ende hier wieder commit. ODER?
+# dann evtl. solche exceptions die abbruch wollen? rollback.  wenn code n rollback will,  muss auch fluss abgebrochen werden, damit keine neuen sachen auf db ausgefÃ¼hrt werden und am ende hier wieder commit. ODER?
 # Zuerst dachte ich, ich nenne es:  rethrow_if_transaction_related($@);
 # doch evtl. ist dies besserer name: transaction_check_exception($@);
 
@@ -150,7 +150,7 @@ sub exception_means_abort {
 
 sub transaction_check_exception {
     my ($e)=@_;
-    # hier hätte ich eine stored continuation.
+    # hier hÃ¤tte ich eine stored continuation.
     # Wann will ich abbrechen?
     # - wenn exception_warrants_retry? direkt. ja vielleicht gut.
     if (exception_warrants_retry($e)) {
@@ -207,11 +207,11 @@ sub safe_rollback {
 		# ok, 'no problem'
 		# well ja, mach hier den reconnect.
 		#$DB::single=1;
-		#todo: dies hier removen, right?, weil nun unten reconnected wird.  well, klar es kann weiterhin error geben hier WENN rollback nicht so gemacht ist dass er nicht ausgeführt wird wenn nicht inside transaction.
+		#todo: dies hier removen, right?, weil nun unten reconnected wird.  well, klar es kann weiterhin error geben hier WENN rollback nicht so gemacht ist dass er nicht ausgefÃ¼hrt wird wenn nicht inside transaction.
 		warn "transaction: reconnecting (old: '$db')";
 		$_[0]= $reconnect->($db);# or throw an exception otherwise.pleas.
 		warn "transaction: done, after reconnect: '$_[0]'";
-		#(Wed, 03 May 2006 16:55:25 +0200  undef $@; nein nicht nötig. problem liegt woanders.)
+		#(Wed, 03 May 2006 16:55:25 +0200  undef $@; nein nicht nÃ¶tig. problem liegt woanders.)
 	    } else {
 		my $e2str="$e2"; chomp $e2str;
 		my $estr= "$e"; chomp $estr;
@@ -238,7 +238,7 @@ sub safe_rollback {
 # 	}
 #     }
 # }
-# EH  hier brauchen wir kein exception catch. sondern der muss aussen rum  für retry sorgen.
+# EH  hier brauchen wir kein exception catch. sondern der muss aussen rum  fÃ¼r retry sorgen.
 
 sub running_transaction {
     my ($db)=@_;
@@ -255,7 +255,7 @@ sub transaction {
     if ($running_transactions{$db}) {
 	confess "transaction: there is already a transaction running for db handle $db";
     }
-    #local $running_transactions{$db}= 1;#[ (caller)[0..2] ];  nein muss unten sein, weil $db ändern kann.
+    #local $running_transactions{$db}= 1;#[ (caller)[0..2] ];  nein muss unten sein, weil $db Ã¤ndern kann.
     my $tries=3;
 
     my $wantarray= wantarray;
@@ -269,12 +269,12 @@ sub transaction {
 	};
 	if (ref $@ or $@) {
 	    my $e=$@;
-	    safe_rollback($db,$e); #$$dbref=$db; nein dumm hier. safe_rollback ist eigentlich nicht gemeint dass das reconnected. well, genauer gesagt: nicht mehr. das war komische idee von mir. Heute, wo EiD::DBI::db real_rollback nur dann rollback macht wenn inside transaction um warning zu verhindern, gibts dort keine exception mehr, hence kein merken dass dies grund für failure ist und kein reconnect. neu hier:
+	    safe_rollback($db,$e); #$$dbref=$db; nein dumm hier. safe_rollback ist eigentlich nicht gemeint dass das reconnected. well, genauer gesagt: nicht mehr. das war komische idee von mir. Heute, wo EiD::DBI::db real_rollback nur dann rollback macht wenn inside transaction um warning zu verhindern, gibts dort keine exception mehr, hence kein merken dass dies grund fÃ¼r failure ist und kein reconnect. neu hier:
 	    if (exception_warrants_reconnect($e)) {
 		my $olddb=$db;
 		$$dbref= $db= $reconnect->($db);# or throw an exception otherwise.pleas.
 		# wird das hacky...:
-		#delete $running_transactions{$olddb}; # nützt das überhaupt, wenn local ja noch ist ?? to do might leave a leak behind. -> nein, funktionniert richtig offenbar. ehr  mensch kann ich eh weg lassen! denn neu ist local ja innerhalb. und local entfernt gleich den ganzen key, was kool ist.
+		#delete $running_transactions{$olddb}; # nÃ¼tzt das Ã¼berhaupt, wenn local ja noch ist ?? to do might leave a leak behind. -> nein, funktionniert richtig offenbar. ehr  mensch kann ich eh weg lassen! denn neu ist local ja innerhalb. und local entfernt gleich den ganzen key, was kool ist.
 	    }
 	    if (exception_warrants_retry($e)) {# sollte immer wahr sein wenn exception_warrants_reconnect wahr ist. right?
 		if (--$tries > 0) {

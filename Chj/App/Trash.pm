@@ -39,7 +39,7 @@ our $trash_alternatives=
   [
    $ENV{TRASHCAN}, # or make this special priority hm?
    $ENV{HOME}."/Desktop/Trash",
-   $ENV{HOME}."/Desktop/Mülleimer",
+   $ENV{HOME}."/Desktop/MÃ¼lleimer",
    $ENV{HOME}."/.trash",# lowercase now so that hopefully gnome won't move it.
   ];
 our $trash_to_create_index= -1; # the last.

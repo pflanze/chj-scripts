@@ -138,7 +138,7 @@ sub remove {# returns true on successful removal, false if non removed.
 	      croak "remove: unlink '$$self[Basedir]/$k/"._escape_val($val)."': $!";
 	  }
       };
-    # check ob verzeichnis leer zurückgelassen? resp einfach versuchen:
+    # check ob verzeichnis leer zurÃ¼ckgelassen? resp einfach versuchen:
     rmdir "$$self[Basedir]/$k"
       or $!==ENOENT or $!==ENOTEMPTY or croak "remove: rmdir '$$self[Basedir]/$k': $!";
     1;

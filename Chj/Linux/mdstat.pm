@@ -164,6 +164,6 @@ root@pflanze root# cat /proc/mdstat
   read_ahead 1024 sectors
   md0 : active raid5 [dev 07:07][7] [dev 07:06][6] [dev 07:05][5] [dev 07:04][4] [dev 07:03][3] [dev 07:02][2] [dev 07:01][1] [dev 07:00][0]
   4658752 blocks level 5, 64k chunk, algorithm 2 [8/8] [UUUUUUUU]
-  							       ^- dieses letzte U war ein _ w‰hrenddem es am Aufbau des Arrays war nachdem ichs neu gemacht hab.
+  							       ^- dieses letzte U war ein _ w√§hrenddem es am Aufbau des Arrays war nachdem ichs neu gemacht hab.
   unused devices: <none>
   

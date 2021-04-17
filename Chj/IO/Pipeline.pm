@@ -46,7 +46,7 @@ sub xxfinish {
     my $s=shift;
     $s->SUPER::xxfinish;
     my $nextio=$s->nextio;
-    $nextio->xxfinish if $nextio and $nextio->isa("Chj::IO::Command");#mache mirs mal so. weil: mehrere receiverpipelines pipelinen isch ja scho ne luschtige idee sowieso. also auch dann finishen wenn die nägscht ned vo "uns" kreiert wurde.
+    $nextio->xxfinish if $nextio and $nextio->isa("Chj::IO::Command");#mache mirs mal so. weil: mehrere receiverpipelines pipelinen isch ja scho ne luschtige idee sowieso. also auch dann finishen wenn die nÃ¤gscht ned vo "uns" kreiert wurde.
 }
 
 sub xreceiverpipeline_with_out_to {
@@ -71,7 +71,7 @@ sub xreceiverpipeline_with_out_to {
 sub DESTROY {
     my $self=shift;
     local ($@,$!,$?,$_);
-    #$self->xxfinish unles   TODO ç
+    #$self->xxfinish unles   TODO Ã§
     delete $metadata{pack"I",$self};
     $self->SUPER::DESTROY;
 }

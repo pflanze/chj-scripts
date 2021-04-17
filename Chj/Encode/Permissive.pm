@@ -95,7 +95,7 @@ sub old_encode_permissive {
 
     #idee: utf-16. oder 32.
 
-    # na  unknown-8bit  hat zu exception geführt hier.
+    # na  unknown-8bit  hat zu exception gefÃ¼hrt hier.
     my $conv1= eval { Text::Iconv->new($from,"utf-32") };
     if ($@) {
 	if ($@=~ /unsupported conversion/i) {

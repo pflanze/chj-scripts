@@ -50,12 +50,12 @@ our $shellquoted= sub {
 # our $passthrough= sub {
 #     @_
 # };
-# eh brauch ich ja doch nid bräucht ich eben nur wenn obige
-# einzelnejedefunc ansatz verfolgt würde.
+# eh brauch ich ja doch nid brÃ¤ucht ich eben nur wenn obige
+# einzelnejedefunc ansatz verfolgt wÃ¼rde.
 
 sub CheckSuccess {
     my ($reply,$code)=@_;
-    $code == 0 or die "error"; ####shit 'aha' eben wieder das WAS für ein error bitte. msg how.
+    $code == 0 or die "error"; ####shit 'aha' eben wieder das WAS fÃ¼r ein error bitte. msg how.
     $reply
 }
 sub CheckSuccessAndEmptyness {

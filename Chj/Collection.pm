@@ -268,7 +268,7 @@ sub Collection_merge {
 
 sub Collection_subtract {
     die "not enough arguments" unless @_>=1;
-    #return {} unless @_;# die überbleibsel von keiner menge ist auch keine menge. --HMM falsch? das hier ist eh nicht intersect? gam (-) gibt error.
+    #return {} unless @_;# die Ã¼berbleibsel von keiner menge ist auch keine menge. --HMM falsch? das hier ist eh nicht intersect? gam (-) gibt error.
     # now unlike (- x) which returns -x this will return the argument unchanged.
     my $first= shift;
     return $first unless @_;# no copy. (see also above)
@@ -322,5 +322,5 @@ $VAR1 = {
         };
 main> :d Collection_subtract ([1],[1]);
 $VAR1 = {};
-das IST ja gar nicht überschiebe (intersec)
+das IST ja gar nicht Ã¼berschiebe (intersec)
 "

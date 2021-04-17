@@ -67,7 +67,7 @@ sub new {
 #sub new_from_basedirectorypath_basename { <-- Basefolder.pm
 #}
 
-# sub new_from_subbasename { # kette aller childs bilden und am schluss uns zurückgeben.  ALMOST copy from same method in Subfolder.pm
+# sub new_from_subbasename { # kette aller childs bilden und am schluss uns zurÃ¼ckgeben.  ALMOST copy from same method in Subfolder.pm
 #     my $class=shift;
 #     my ($parent,$subbasename)=@_;
 #     if ($subbasename=~ s/^\.([^.]+)//s) {
@@ -91,7 +91,7 @@ sub new {
 #     while(defined(my$item=$d->xnread)){
 # 	#next unless /^\./;
 # 	#next unless /^\Q$basename\E(.+)/s;
-# 	# going to scan multiple times höm?
+# 	# going to scan multiple times hÃ¶m?
 # 	# try to be more efficient here: only scan the dir once.
 # 	next unless /^\Q$basename\E\.(.+)/s;
 # # 	my $rest=$1;

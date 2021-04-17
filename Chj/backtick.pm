@@ -338,12 +338,12 @@ sub xputget {
                 if ($terminatedpid == 0) { ## "on *some* systems" :((... (perldoc -f waitpid)
                     # none finished
                     unless ($timeout) {
-                        warn "DEBUG n‰xte Runde.." if DEBUG; 
+                        warn "DEBUG n√§xte Runde.." if DEBUG; 
                         redo LOOP;
                     }
                     $resttime= $timeout + $starttime - time();
                     if ($resttime > 0) {
-                        warn "DEBUG n‰xte Runde.." if DEBUG; 
+                        warn "DEBUG n√§xte Runde.." if DEBUG; 
                         redo LOOP;
                     } else {
                         #carp "Timeout";

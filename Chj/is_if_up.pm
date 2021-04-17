@@ -110,4 +110,4 @@ print "\n";
 See also is_if_up script.
 
   Sun, 10 Aug 2003 21:09:00 +0200
-  TODO::  !!:  (für publicip) welches interface nehmen: einfach das wo das default gateway geht \drauf.
+  TODO::  !!:  (fÃ¼r publicip) welches interface nehmen: einfach das wo das default gateway geht \drauf.

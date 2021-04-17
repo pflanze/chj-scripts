@@ -64,7 +64,7 @@ sub new {
 	#push @$socket_errors,[@_];
 	#warn "error_trap called: ".singlequote_many (@_);
 	#use Chj::repl;;repl;
-	#1#nütznisx
+	#1#nÃ¼tznisx
 	my ($socket, $msg)=@_;
 	chomp $msg;
 	die $msg;
@@ -78,9 +78,9 @@ sub new {
        SSL_verify_mode=> 1,
        SSL_verify_callback=> $verify_callback,
        SSL_check_crl=> 1, #gibt weder ohne oder mit SSL_ca_path angabe einen fehler. thus dunno if works.
-       #SSL_reuse_ctx  für speed wohl, aber für hier irrelevant
-       #SSL_session_cache_size  ah oder eher dies für speed?
-       SSL_error_trap=> $error_trap, #für normalsocketlayerlevel anschau
+       #SSL_reuse_ctx  fÃ¼r speed wohl, aber fÃ¼r hier irrelevant
+       #SSL_session_cache_size  ah oder eher dies fÃ¼r speed?
+       SSL_error_trap=> $error_trap, #fÃ¼r normalsocketlayerlevel anschau
       );
     while(@opts) {
 	my $key= shift @opts;
@@ -96,7 +96,7 @@ sub new {
       #or die "???bug?". "error: ".IO::Socket::SSL::errstr;#oder nicht exception?, nah nun eh oben schon exception.
       # errstr is ALWAYS so senseless
       #or die "error: ".IO::Socket::INET::errstr; doesn't exist
-      or die "could not connect to '$host' port ".singlequote($options{PeerPort}).": $!";# nope, 'Das Argument ist ungültig' only. unrelated?. kack, lib macht spiele mmit $! beschreiben, geht ev nid
+      or die "could not connect to '$host' port ".singlequote($options{PeerPort}).": $!";# nope, 'Das Argument ist ungÃ¼ltig' only. unrelated?. kack, lib macht spiele mmit $! beschreiben, geht ev nid
 
     my $s= $class->SUPER::new;
     $$s[Socket]=$socket;

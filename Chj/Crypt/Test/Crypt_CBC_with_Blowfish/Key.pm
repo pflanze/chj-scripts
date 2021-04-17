@@ -37,9 +37,9 @@ sub new {
     $$self[Cipher]= Crypt::CBC->new({key=> $$self[Key],
 				    cipher=> "Blowfish",#perl isch krank, (die leut)
 				    regenerate_key=>1,#? waschdas?
-				    });# mann, { } wirklich nˆtig.
+				    });# mann, { } wirklich n√∂tig.
     $self
-    # eh nein viel simpler?: Crypt::CBC->new(...) zur¸ckgeben?  ach weissjonichtsovoraus
+    # eh nein viel simpler?: Crypt::CBC->new(...) zur√ºckgeben?  ach weissjonichtsovoraus
 }
 
 sub encrypt {

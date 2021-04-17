@@ -26,7 +26,7 @@ use Carp;
 sub touch_r($ $ ) {
     my ($from,$to)=@_;
     my @s=stat $from  # lstat? no, touch -r takes the target time. and sets the time of the target of the target item. which utime is doing, heh.
-      or croak "touch_r: stat '$from': $!";##(sollte ich mein quote ding nehmen überall nun?)
+      or croak "touch_r: stat '$from': $!";##(sollte ich mein quote ding nehmen Ã¼berall nun?)
     utime $s[8],$s[9],$to
       or croak "touch_r: utime '$to': $!";
 }

@@ -54,7 +54,7 @@ use HTTP::Date; # only used for Date: header which is not important.
 use Chj::xtmpfile;
 #use Chj::Hostname "checked_hostname";
 #our $hostname= checked_hostname;
-#ah war eh nur für forwarding gewesen.  ps subclassing  hehe  tmpfiel hehe  huh.  maybe? maybenot?. wissen aus welcher klasse ne methode kommt. automatisch methoden erben  jojo.schweisnidiges.
+#ah war eh nur fÃ¼r forwarding gewesen.  ps subclassing  hehe  tmpfiel hehe  huh.  maybe? maybenot?. wissen aus welcher klasse ne methode kommt. automatisch methoden erben  jojo.schweisnidiges.
 #/lazyload
 
 sub pop3_fetchmail {
@@ -65,7 +65,7 @@ sub pop3_fetchmail {
     my @mails;
     eval {
         my $cnt= $pop->apop($s->user,$s->pass) or die;
-        ##ps. könnte auch per Net::Netrc passwort abfragen lassen ?
+        ##ps. kÃ¶nnte auch per Net::Netrc passwort abfragen lassen ?
 
         $|=1;
 

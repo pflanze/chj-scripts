@@ -82,7 +82,7 @@ sub remote_run_commandstring_with_statusreply { # returns (\@replylines, $status
 #     my (@cmd)=@_;
 #     $s->remote_run_commandstring_with_statusreply(join(" ",map{ singlequote_sh $_ } @cmd))
 # }
-#sinnlos, besser das generisch allgemein offerieren. statt danach  jede methode wählen zu wollen.
+#sinnlos, besser das generisch allgemein offerieren. statt danach  jede methode wÃ¤hlen zu wollen.
 
 sub _Mk_remote_chdir {
     my ($path2cmd)=@_;
@@ -125,7 +125,7 @@ sub _Mk_remote_chdir {
 #sub DESTROY {
 #    my $s=shift;
 #    local $@;
-#    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    # Ã§ rausschmeissen wenn nicht benutzt, ebenso wie sub new
 #    $s->SUPER::DESTROY;
 #}
 

@@ -46,7 +46,7 @@ see Chj/DataStructure/Megalist/test script for an example.
  sub next {
      my $self=shift;
      my $N= $self->[Next];
-     #warn "N='$N' (@$N)\n";# am problempunkt isches wirklich ein array das ein element, ein Element, enth‰lt: N='ARRAY(0x8177e3c)' (Chj::DataStructure::Megalist::Element=ARRAY(0x8177f98))
+     #warn "N='$N' (@$N)\n";# am problempunkt isches wirklich ein array das ein element, ein Element, enth√§lt: N='ARRAY(0x8177e3c)' (Chj::DataStructure::Megalist::Element=ARRAY(0x8177f98))
      #$N->isa(__PACKAGE__) ? $N : undef
      # wegen Alpha nun:
      $N->isa("Chj::DataStructure::Megalist::Entrypoint") ? undef : $N
@@ -84,7 +84,7 @@ see Chj/DataStructure/Megalist/test script for an example.
 }
 
 {
- package Chj::DataStructure::Megalist::Entrypoint;##nachtrag(040612): warum nicht Head genannt? Wollte ich wirklich glauben, dass zirkul‰re liste, wo der entrypoint selber auch ein element isch oder was? IST sie denn zirkul‰r?  Ja ist sie nun  komisch kˆnnti ja eben auch andersch machen  viel uberlegen noch  (hohn einsack"?") ansonsten  jedenfalls warum nicht head?: weil head und tail  etwas anders besetzt sind bei listen.
+ package Chj::DataStructure::Megalist::Entrypoint;##nachtrag(040612): warum nicht Head genannt? Wollte ich wirklich glauben, dass zirkul√§re liste, wo der entrypoint selber auch ein element isch oder was? IST sie denn zirkul√§r?  Ja ist sie nun  komisch k√∂nnti ja eben auch andersch machen  viel uberlegen noch  (hohn einsack"?") ansonsten  jedenfalls warum nicht head?: weil head und tail  etwas anders besetzt sind bei listen.
  use strict;
  use Carp;
 
@@ -103,7 +103,7 @@ see Chj/DataStructure/Megalist/test script for an example.
      my $self=shift;
      my $new= Chj::DataStructure::Megalist::Element->new(@_);
      if (my $L= $self->[Last]) {
-	 # hm, code f¸r handling wirklich hier?
+	 # hm, code f√ºr handling wirklich hier?
 	 $L->[Chj::DataStructure::Megalist::Element::Next]= $new;
 	 $new->[Chj::DataStructure::Megalist::Element::Prev]= $L;
      } else {
@@ -171,7 +171,7 @@ see Chj/DataStructure/Megalist/test script for an example.
 
  sub values {
      my $self=shift;
-     #ps. perl fehlt eine funktion um iterativ eine liste aufzubauen ohne ein array dazwischen?! grep und map helfen nicht ausser wenn ich ne fake list mache zuerst UND noch einen iterator externen mitf¸hr?.  AH ich weiss ja gar ned vieviele elemente drin sind.
+     #ps. perl fehlt eine funktion um iterativ eine liste aufzubauen ohne ein array dazwischen?! grep und map helfen nicht ausser wenn ich ne fake list mache zuerst UND noch einen iterator externen mitf√ºhr?.  AH ich weiss ja gar ned vieviele elemente drin sind.
      #my $pos= $self->[First];
      #map {
      my @v;
@@ -225,7 +225,7 @@ see Chj/DataStructure/Megalist/test script for an example.
      #$self->[EP]->destroy;
      # Sun, 13 Jun 2004 06:13:01 +0200
      #fun: nun isch EP undef?? seit ich verlinkung wie ich glaubte korrigiert hab.
-     $$self[EP]->destroy if $$self[EP];#########verd‰chtig.
+     $$self[EP]->destroy if $$self[EP];#########verd√§chtig.
  }
 
  our $AUTOLOAD;

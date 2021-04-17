@@ -15,7 +15,7 @@ use Net::Domain;
 use Chj::Net::Publicip 'publicip';
 use Socket;
 
-sub checked_ip_hostname { ## "sigh!": wenn gefundene ip in /etc/hosts eingetragen ist wird sie dort aufgelöst !!! aufpassenalso
+sub checked_ip_hostname { ## "sigh!": wenn gefundene ip in /etc/hosts eingetragen ist wird sie dort aufgelÃ¶st !!! aufpassenalso
     my $n= Net::Domain::hostfqdn;
     # check it
     if (my $ip= gethostbyname($n)) {
@@ -52,7 +52,7 @@ sub hostname { # non-qualified hostname
 	return $hn;
     }
 }
-# WELL, should we use Sys::Hostname instead of the latter? hehe. (does uname() syscall on linus  ps so funny der erste syscall von perl überhaupt ist auch uname())
+# WELL, should we use Sys::Hostname instead of the latter? hehe. (does uname() syscall on linus  ps so funny der erste syscall von perl Ã¼berhaupt ist auch uname())
 
 __END__
 package Chj::Hostname;

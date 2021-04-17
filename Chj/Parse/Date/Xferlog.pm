@@ -48,14 +48,14 @@ use enum qw(E_success
 	    E_invalidmonthname
 	    E_invalidparts_EHGIBTSDOCHGARNIEsighwarirrtummeinerseits
 	    E_dateoutofrange
-	   );#ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben würd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
+	   );#ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben wÃ¼rd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
 
 our $error;
 #our %errorhandler= (
-		    #E_noprimarymatch, Foo::Bar->can("throw"),  HMMM inklusive der class will ich diese sub. aber unten im kontext ausführen, daher lieber keine neue sub hier.
+		    #E_noprimarymatch, Foo::Bar->can("throw"),  HMMM inklusive der class will ich diese sub. aber unten im kontext ausfÃ¼hren, daher lieber keine neue sub hier.
 		    # oder doch nur klassen namen, immer throw?
-		    # könnt dann ja immer noch wrapperklassen machen  für mehr flexibel?
-		    #hey könnt hier auch objekte speichern. auf welche dann throw geht. damit noch mehr fun machbar.
+		    # kÃ¶nnt dann ja immer noch wrapperklassen machen  fÃ¼r mehr flexibel?
+		    #hey kÃ¶nnt hier auch objekte speichern. auf welche dann throw geht. damit noch mehr fun machbar.
 #		    );
 # hey mann ich doch array.
 #our @errorhandler;
@@ -67,9 +67,9 @@ our $errorhandlers;
 #$$errorhandlers[E_noprimarymatch]= ...;
 #$errorhandlers= [ ... ];
 
-use elcms_general_settings; use EL::Exception();####ç
+use elcms_general_settings; use EL::Exception();####Ã§
 {
-    package Chj::Parse::Date::Xferlog::Exception::Noprimarymatch;##ist hierige Platzierung gute idee? (woran erkennt man wasfür eine exception konstruktion es ist?) ##ps. syntaxfilter wirklich n wichtiger punkt, für ->can("croakthrow")||->can("throw")||... zeugs.  oder eben rausfinden wie ich sonst von soner neuen schurksub aus dann die frames entfernen lassen.
+    package Chj::Parse::Date::Xferlog::Exception::Noprimarymatch;##ist hierige Platzierung gute idee? (woran erkennt man wasfÃ¼r eine exception konstruktion es ist?) ##ps. syntaxfilter wirklich n wichtiger punkt, fÃ¼r ->can("croakthrow")||->can("throw")||... zeugs.  oder eben rausfinden wie ich sonst von soner neuen schurksub aus dann die frames entfernen lassen.
     our @ISA='EL::Exception'; #ps isches nich funny dass strict hier noch wirkung hat?
 }
 {
@@ -85,7 +85,7 @@ use elcms_general_settings; use EL::Exception();####ç
     our @ISA='EL::Exception';
     ### Ps. nun muss ich *hier* wieder schauen, dass ich n stackframe ignorier. *und wie schon wieder*. vgl. Thea.
     ##ps. ethrow Idee statt throw? eben doch gescheiter mit ->can hantieren  aber auch gleich die parameterliste reintun?  ****ist das ein function object? ****
-    #####ah  ja und dann noch   dass   croak  statt throw . damit auch ohne trace schlecht eh schön.
+    #####ah  ja und dann noch   dass   croak  statt throw . damit auch ohne trace schlecht eh schÃ¶n.
 }
 
 $$errorhandlers[E_noprimarymatch]= 'Chj::Parse::Date::Xferlog::Exception::Noprimarymatch';
@@ -96,7 +96,7 @@ $$errorhandlers[E_dateoutofrange]= 'Chj::Parse::Date::Xferlog::Exception::DateOu
 
 sub parse_date_xferlog {
     my ($s)=@_;
-    # 'bewährte' kombination aus selber zerlegen und dann durch strftime in unix verwandeln.
+    # 'bewÃ¤hrte' kombination aus selber zerlegen und dann durch strftime in unix verwandeln.
     $s=~ /^(\w+) +(\w+) +(\d+) +(\d+):(\d+):(\d+) +(\d+)$/
       or do { $error=E_noprimarymatch; return };
     my ($dayname,$monname,$mday,$hour,$min,$sec,$year)=($1,$2,$3,$4,$5,$6,$7);
@@ -125,8 +125,8 @@ PS. Fragen zusammengestellt:
 - sollen die versionen der routine die keine exception werfen, die routine verwenden welche exceptions wirft?  egal ob ja oder nein: soll der error in ner global gespeichert werden ala errno? (in C isses (super) effizient, in perl? well. zahlen? strings? packages/symbols?)
 - sollen sie unixinteger geben oder ein date/time objekt?
 
-Mit return values könnte man spielen? in C++ nicht so sehr.
-(in lisp prüfung?)
+Mit return values kÃ¶nnte man spielen? in C++ nicht so sehr.
+(in lisp prÃ¼fung?)
 
 
 
@@ -145,7 +145,7 @@ sub parse_date_xferlog {
     eval {
 	#Time::Piece->strptime('%a %b  %d %H:%M:%S %Y',$s)  #hmm now returns an obj.krach. und HMMMMM gibt eh schon eine exception.
 	#Time::Piece->strptime('%H:%M:%S',$s)->epoch
-	Time::Piece->strptime($s,'%a %b %d %H:%M:%S %Y')->epoch  # %R verstehts auch nicht. UND DEN WOCHENTAG Prüfts nicht.  einfach schrott.
+	Time::Piece->strptime($s,'%a %b %d %H:%M:%S %Y')->epoch  # %R verstehts auch nicht. UND DEN WOCHENTAG PrÃ¼fts nicht.  einfach schrott.
 	    # Hatte ich das nich schon mal? "ach vertrau doch ner std library" format like  evenifidontlike  aha problem?likeimorenow?
       };
 }
@@ -160,6 +160,6 @@ __END__
 Was erwart ich von der klass?
 subklasse von date klasse?  oder bloss retournieren eines solchen.!
 dann reicht aber, solang ich keine werte sonst speichern muss (eh das kann ich dann ja nicht) eine funktion. isch dann auch weniger verwirrend. logo.
-  Klassenmethoden würden nur Sinn machen, wenn inheritance benutzt. Für instanzlose klassen? hm?
+  Klassenmethoden wÃ¼rden nur Sinn machen, wenn inheritance benutzt. FÃ¼r instanzlose klassen? hm?
 
 

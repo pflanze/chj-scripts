@@ -39,7 +39,7 @@ sub new {
 1;
 __END__
 
-# .gz -> plain -> ....  usw.  aber "poly morph" sein bleiben können  für detailiertere
+# .gz -> plain -> ....  usw.  aber "poly morph" sein bleiben kÃ¶nnen  fÃ¼r detailiertere
 # bestimmung in compressionrates.
 
 our %suffix2compressed=

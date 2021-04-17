@@ -4,7 +4,7 @@
 # Published under the terms of the GNU General Public License
 #
 # -Thu, 18 Dec 2003 17:04:10 +0100
-# hum ob das in cplpl langsamer w‰re oder in lisp schneller.
+# hum ob das in cplpl langsamer w√§re oder in lisp schneller.
 #
 # $Id$
 

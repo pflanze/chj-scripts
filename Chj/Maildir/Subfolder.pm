@@ -90,12 +90,12 @@ sub basefolder { # get the basefolder (toplevel parent) object
 sub _unquotename {
     my $n=shift;
     #$n=~ s|0x  nah
-    $n=~ s/\&ANY-/Ö/sg;
-    $n=~ s/\&APY-/ö/sg;
-    $n=~ s/\&ANw-/Ü/sg;
-    $n=~ s/\&APw-/ü/sg;
-    $n=~ s/\&AMQ-/Ä/sg;
-    $n=~ s/\&AOQ-/ä/sg;
+    $n=~ s/\&ANY-/Ã–/sg;
+    $n=~ s/\&APY-/Ã¶/sg;
+    $n=~ s/\&ANw-/Ãœ/sg;
+    $n=~ s/\&APw-/Ã¼/sg;
+    $n=~ s/\&AMQ-/Ã„/sg;
+    $n=~ s/\&AOQ-/Ã¤/sg;
     $n=~ s/\&-/\&/sg;
     # XX these are not necessarily restoring the original:
     $n=~ s/\\0/\0/sg;

@@ -76,4 +76,4 @@ __END__
     ## ok
     #} else {
     ##hmmm.
-    # na, behelfskrücke unten machen?  aber hey, distance rechnen muss eh zahlen ausgeben. also:
+    # na, behelfskrÃ¼cke unten machen?  aber hey, distance rechnen muss eh zahlen ausgeben. also:

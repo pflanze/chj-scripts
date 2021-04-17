@@ -67,7 +67,7 @@ sub init { # initialize internal state.(remaining variables.)
 sub run {
     my $s=shift;
     while (my $conn= $$s[Socket]->accept) {
-	my $handler= $$s[Handlerclass]->new($s,$conn);#kann eben genaugleichwie in fp  nur durch analyse durch compiler statisiert werden ? !!.(parametrisierung dieser __PACKAGE__ würde es explizit allowen, thus ohne analyse ermoeglichen.)
+	my $handler= $$s[Handlerclass]->new($s,$conn);#kann eben genaugleichwie in fp  nur durch analyse durch compiler statisiert werden ? !!.(parametrisierung dieser __PACKAGE__ wÃ¼rde es explizit allowen, thus ohne analyse ermoeglichen.)
 	$s->handle_connection($conn)
     }
 }
@@ -76,14 +76,14 @@ sub run {
 sub err_too_many_connections {
     my $s=shift;
     my($conn)=@_; ##  eben man sollte ne conn klasse machen gell. dortdrauf dann all das wIRKLICHGEEEEERRRr.
-    ç
+    Ã§
 }
 
 
 #sub DESTROY {
 #    my $s=shift;
 #    local $@;
-#    # ç rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    # Ã§ rausschmeissen wenn nicht benutzt, ebenso wie sub new
 #    $s->SUPER::DESTROY;
 #}
 

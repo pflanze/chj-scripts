@@ -52,10 +52,10 @@ sub valueref {
     \ do{ $$s[Value] }
 }
 
-# "cj 4.8.04: spaces am ende von headers haben dazu geführt dass
+# "cj 4.8.04: spaces am ende von headers haben dazu gefÃ¼hrt dass
 # folders kreiert wurden welche in squirrelmail/courier-imap nicht
 # subscribebar waren. weil wohl spaces am ende in
-# courierimapsubscribes weggelöscht werden on read supi. daher wirkli
+# courierimapsubscribes weggelÃ¶scht werden on read supi. daher wirkli
 # nun hier zentral? isch eigentlich falsch.  aber mal
 # einfcahheitshaltberhier."
 # Well can now access value method for un-decoded value.

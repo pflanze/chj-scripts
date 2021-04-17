@@ -13,7 +13,7 @@ Chj::Log::Timed
 
  #$stringtooutput=Chj::Log::Timed::write("str")
  Chj::Log::Timed::write(*out{IO},"str"[,$time])
- ($nextentry,$time)=Chj::Log::Timed::read(*in{IO}) #ps (denkwürdig:)ein stream der nicht io ist.
+ ($nextentry,$time)=Chj::Log::Timed::read(*in{IO}) #ps (denkwÃ¼rdig:)ein stream der nicht io ist.
 
  # damit kann es aber nicht wissen wann es der erste output ist (andererheader!).
  # und beim parsen weiss es nicht die start time.

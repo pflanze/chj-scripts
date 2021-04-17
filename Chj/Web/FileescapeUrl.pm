@@ -27,9 +27,9 @@ package Chj::Web::FileescapeUrl;
 use strict;
 
 sub fileescapeurl {
-    # Die Regel ist: wenn die url ein - enthält, dann / mit zwei -- ersetzen.
-    # Wenn die url -- enthält, / mit --- ersetzen.
-    # Also: (fürs unescapen) die maxzahl der minusse ist die die ICH verwende für /.
+    # Die Regel ist: wenn die url ein - enthÃ¤lt, dann / mit zwei -- ersetzen.
+    # Wenn die url -- enthÃ¤lt, / mit --- ersetzen.
+    # Also: (fÃ¼rs unescapen) die maxzahl der minusse ist die die ICH verwende fÃ¼r /.
     my ($url)=@_;
     my $minuslen=0;
     while ($url=~ /(-{1,})/sg) {

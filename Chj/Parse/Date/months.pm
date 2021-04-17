@@ -44,7 +44,7 @@ our @short_english_month= qw(
 			      Oct
 			      Nov
 			      Dec
-			     ); ## jan-may nicht getestet!!!ç
+			     ); ## jan-may nicht getestet!!!Ã§
 our %short_english_month;
 {
     my $n=1;
@@ -67,7 +67,7 @@ our %shortmonth_list_by_locale=
    de_CH=>[qw(
 	      Jan
 	      Feb
-	      Mär
+	      MÃ¤r
 	      Apr
 	      Mai
 	      Jun
@@ -78,7 +78,7 @@ our %shortmonth_list_by_locale=
 	      Nov
 	      Dez
 	     )],
-   # ^- ist glaub von mir. DateTime hat aber Mrz nicht Mär:
+   # ^- ist glaub von mir. DateTime hat aber Mrz nicht MÃ¤r:
    de=> [
 	 'Jan',
 	 'Feb',
@@ -143,7 +143,7 @@ our %longmonth_list_by_locale=
    de_CH=>[qw(
 	      Januar
 	      Februar
-	      März
+	      MÃ¤rz
 	      April
 	      Mai
 	      Juni

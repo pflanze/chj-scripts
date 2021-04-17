@@ -41,7 +41,7 @@ sub new_public_key {
 *new_private_key= \&new_public_key;
 
 sub generate_key {
-    die "็ well einfach zufallsstring generieren.  ur alte sache"
+    die "รง well einfach zufallsstring generieren.  ur alte sache"
 }
 
 

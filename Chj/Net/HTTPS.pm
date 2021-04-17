@@ -51,7 +51,7 @@ sub get_url_to {
 #sub DESTROY {
 #    my $s=shift;
 #    local (,Inappropriate ioctl for device,0);
-#    # ็ rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    # รง rausschmeissen wenn nicht benutzt, ebenso wie sub new
 #    $s->SUPER::DESTROY; # or rather NEXT::
 #}
 

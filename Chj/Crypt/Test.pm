@@ -25,7 +25,7 @@ use strict;
 use Class::Array -fields=>
   ;#none? just methods?
 
-#ach mein altes huere dings   das methods   aka  interface  prüft?
+#ach mein altes huere dings   das methods   aka  interface  prÃ¼ft?
 
 
 1;

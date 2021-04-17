@@ -35,7 +35,7 @@ sub is_symbol {
 *is_glob= \&is_symbol;
 
 
-sub is_number { # alternative Devel::Peek gaht nöd guet, SvIV direkt selber wäre besser.
+sub is_number { # alternative Devel::Peek gaht nÃ¶d guet, SvIV direkt selber wÃ¤re besser.
     my ($str)=@_;
     #$str=~ /^[+-]?(?:\d+\.?|\d*\.\d+)\z/
     if ($str=~ /^-?\d+(?:\.\d+)?(?:e[+-]\d+)?\z/) {
@@ -73,6 +73,6 @@ sub symbol_of_string {
 
 1
 __END__
-  grr, Data::Dumper kann unterscheiden, offenbar hat er selber XS code dafür.
+  grr, Data::Dumper kann unterscheiden, offenbar hat er selber XS code dafÃ¼r.
   warum nicht modular.
 

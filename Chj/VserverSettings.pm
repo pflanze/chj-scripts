@@ -35,7 +35,7 @@ our $etcbase= "/etc/vservers";
 # use Chj::xperlfunc;
 # sub chroot_sh {
 #     xsystem   hm nein, weil will sie ev ja auch  mit io pipes usw aufrufen.
-#       hm. das was im child ausgeführt werden muss hier so.  mal irgendwannnachdenken
+#       hm. das was im child ausgefÃ¼hrt werden muss hier so.  mal irgendwannnachdenken
 # }
 
 our $use_opt= do {

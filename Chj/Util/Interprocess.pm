@@ -107,7 +107,7 @@ sub In_subprocess ($ ) {
 	    #todo make sure $w is not inherited over further forks or execs
 	    $want_array ? &$thunk : scalar &$thunk
 	};
-	#ps andere arten von scope exits, return, callcc?,. dynamic wind kennt perl nicht für return schutz.nur warning.
+	#ps andere arten von scope exits, return, callcc?,. dynamic wind kennt perl nicht fÃ¼r return schutz.nur warning.
 	# AHHH und was ich  funny  vergass sind exits through exit.[resp signale].
 	if (ref$@ or $@) {
 	    my $e=$@;
@@ -115,7 +115,7 @@ sub In_subprocess ($ ) {
 	    #'yeah.'
 	    #$w->xprint ("E",Dumper $e);
 	    $w->xprint ("E");#GRRRNICHTVERGESSEN
-	    store_fd(\$e,$w) or die "error sending: $!";#nötig?ja.
+	    store_fd(\$e,$w) or die "error sending: $!";#nÃ¶tig?ja.
 	    $w->xclose;
 	    exit 1;
 	} else {

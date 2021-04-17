@@ -43,7 +43,7 @@ use Chj::Mail::SimpleHead::Header;
 use Class::Array -fields=>
   -publica=>
   (
-   # "ps warum's Inmail class gibt in elcms: weil es inder db es ja auch so gross will wie es eben ist i.e. ram grösse.  (chunking?)"
+   # "ps warum's Inmail class gibt in elcms: weil es inder db es ja auch so gross will wie es eben ist i.e. ram grÃ¶sse.  (chunking?)"
    # "enum? wie schon machte ich jenes, zahlen versus db."
 
    'Errors',       # array
@@ -241,7 +241,7 @@ sub mailinglist_id {
 			#warn "entered Resent-From check";
 			if ($value=~ /<([^<>]{3,})>/) { # just in case
 			    #warn "note: even if debian mailinglists do not put resent-from into <>, this mail did it ('$value')"; -> cj14.12.: die neuen Debian BTS Mails tun dies.
-			    ##ps. cj 12.12.04 warum tat ich nicht pick_out_of_anglebrackets nehmen? aha: nur optional. // $value also nötig.
+			    ##ps. cj 12.12.04 warum tat ich nicht pick_out_of_anglebrackets nehmen? aha: nur optional. // $value also nÃ¶tig.
 			    $id=$1;
 			    #warn "id=$id";
 			} elsif (length $value > 3) {
@@ -251,15 +251,15 @@ sub mailinglist_id {
 			    warn "(almost-)empty Resent-From '$value'";
 			    last RESENT;
 			}
-			# cj 12.12.04: weil neuerdings eine email reinkam mit Resent-From: Hideki Yamane <henrich@samba.gr.jp> (== From) vom Debian BTS, und X-Loop: mysql@packages.qa.debian.org (vorsicht mehrere X-Loop headers sind in andern mails möglich), das noch prüfen:
+			# cj 12.12.04: weil neuerdings eine email reinkam mit Resent-From: Hideki Yamane <henrich@samba.gr.jp> (== From) vom Debian BTS, und X-Loop: mysql@packages.qa.debian.org (vorsicht mehrere X-Loop headers sind in andern mails mÃ¶glich), das noch prÃ¼fen:
 			my $p_from= chompspace MailUtil::oerr_pick_out_of_anglebrackets $self->header("from");
-			my $p_id= chompspace MailUtil::oerr_pick_out_of_anglebrackets $id; ##sollte zwar ja eben nicht mehr nötig sein, aber warum oben eigener müll gemacht?.
+			my $p_id= chompspace MailUtil::oerr_pick_out_of_anglebrackets $id; ##sollte zwar ja eben nicht mehr nÃ¶tig sein, aber warum oben eigener mÃ¼ll gemacht?.
 			if (defined($p_from)
 			    and
 			    lc($p_from) eq lc($p_id)) {
 			    # need alternative value.
 			    #if (my @xloop= $self->header   aber das kann ich gar nicht, mehrere abfragen so. mann. schlecht, mal todo besseren head parser machen. auf wantarray schauen um zu sehen ob undef oder multiple geben.
-			    #if (my $xloop= $self->header("X-Loop")) { hm dumm ist dass bereits in meinem fall tatsächlich mehrere drin sind.
+			    #if (my $xloop= $self->header("X-Loop")) { hm dumm ist dass bereits in meinem fall tatsÃ¤chlich mehrere drin sind.
 			    #} else {
 			    #	warn "kein X-Loop header (oder mehrere) drin";
 			    #}
@@ -277,7 +277,7 @@ sub mailinglist_id {
 			    };
 			    if (defined $xloop) {
 				$id= chompspace MailUtil::oerr_pick_out_of_anglebrackets $xloop;
-				##Frage: warum hatte compiler nöd reklamiert über undef methode? aber runtime?
+				##Frage: warum hatte compiler nÃ¶d reklamiert Ã¼ber undef methode? aber runtime?
 				#warn "ok X-Loop header drin: id isch nun $id";
 				last SEARCH;
 			    } else {
@@ -289,7 +289,7 @@ sub mailinglist_id {
 		    }
 		    #warn "still in Resent-From check, id is ".(defined($id)? "'$id'": "undef");
 		    #warn "id=$id";  wie kann das undef sein????--> mann blind auf beiden Augen
-		    # cj 12.12.04: weil neuerdings eine email reinkam mit Resent-From: Hideki Yamane <henrich@samba.gr.jp> (== From) vom Debian BTS, und X-Loop: mysql@packages.qa.debian.org (vorsicht mehrere X-Loop headers sind in andern mails möglich), das noch prüfen:
+		    # cj 12.12.04: weil neuerdings eine email reinkam mit Resent-From: Hideki Yamane <henrich@samba.gr.jp> (== From) vom Debian BTS, und X-Loop: mysql@packages.qa.debian.org (vorsicht mehrere X-Loop headers sind in andern mails mÃ¶glich), das noch prÃ¼fen:
 		    # ----> NACH OBEN
 		}#/RESENT
 		# lugs: (mail alt dings)

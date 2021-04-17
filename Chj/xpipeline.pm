@@ -75,8 +75,8 @@ sub xxpipeline {
 	    $out->xxfinish;
 	} else {
 	    $out->xdup2(1);
-	    # ps zum glück kein close von $out nötig, sonst würde mir destructor mit seinem wait reinfunken? isch das ein mess.  todo mal überlegen ob wait dort raus oder was immer
-	    # to_do2: ev hier auch noch das err ding machen für rausfinden was failed  done tja
+	    # ps zum glÃ¼ck kein close von $out nÃ¶tig, sonst wÃ¼rde mir destructor mit seinem wait reinfunken? isch das ein mess.  todo mal Ã¼berlegen ob wait dort raus oder was immer
+	    # to_do2: ev hier auch noch das err ding machen fÃ¼r rausfinden was failed  done tja
 	    if (ref ($firstframe) eq "CODE") {
 		eval {
 		    &$firstframe()

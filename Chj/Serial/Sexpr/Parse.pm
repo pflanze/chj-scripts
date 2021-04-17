@@ -39,7 +39,7 @@ use Class::Array -fields=>
 #sub DESTROY {
 #    my $s=shift;
 #    local $@;
-#    # ็ rausschmeissen wenn nicht benutzt, ebenso wie sub new
+#    # รง rausschmeissen wenn nicht benutzt, ebenso wie sub new
 #    $s->SUPER::DESTROY;
 #}
 

@@ -44,7 +44,7 @@ my @what_real_scalar_util_might_have = (@weakstuff,@pureperl,@from_real_scalar_u
 #BEGIN{
     #@EXPORT_OK=();
     #*EXPORT_OK=[];
-    # öh ??
+    # Ã¶h ??
 #}
 use vars '@EXPORT_OK', '$DEBUG';
 

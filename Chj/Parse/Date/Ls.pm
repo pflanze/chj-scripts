@@ -29,8 +29,8 @@ use enum qw(E_success
 	    E_nomatch
 	    E_invalidmonthname
 	    E_dateoutofrange
-	   );#ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben würd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
-# ^-çç
+	   );#ps. E_invalidparts gibts nicht nur im Sinne dass strftime selben wert geben wÃ¼rd, sondern es gibt gar keinen fehler wenn z.B. stundenangabe >24 ist.
+# ^-Ã§Ã§
 our @errmsgs;
 $errmsgs[E_success]= "success";
 $errmsgs[E_nomatch]= "invalid date format";
@@ -43,14 +43,14 @@ use Class::Array -fields=> (
 
 
 
-my $currentyear= (localtime)[5]; ###ç natürli schlecht.  sowieso falsch?.ç
+my $currentyear= (localtime)[5]; ###Ã§ natÃ¼rli schlecht.  sowieso falsch?.Ã§
 
 sub _year_normalize {
     my $year=shift;
     #$year > 1900 ? $year :
     # $year < 200 ?
 
-    if ($year > 1900 and $year < 2200) { ## ungefähr naja
+    if ($year > 1900 and $year < 2200) { ## ungefÃ¤hr naja
 	$year
     } elsif ($year > 0 and $year < 200) { ##
 	$year+1900
@@ -100,12 +100,12 @@ sub parse_de_CH {
     my ($str)=@_;
     $str=~ s/^\s*//s;
     $str=~ s/\s*$//s;
-    if ($str=~ /^(\d+)\. ([\wäöü]+) (\d+)\:(\d+)\z/s) {    # 20. Jan 06:29
+    if ($str=~ /^(\d+)\. ([\wÃ¤Ã¶Ã¼]+) (\d+)\:(\d+)\z/s) {    # 20. Jan 06:29
 	$self->
 	  #_tag_mon_jahr_min_h($1,$2, ,$3,$4); # MANN   listen huere interpolation. muss undef geben.
 	  _tag_mon_jahr_h_min($1,$2, undef,$3,$4);
     }
-    elsif ($str=~ /^(\d+)\. ([\wäöü]+) (\d+)\z/) { # 11. Mär 2003
+    elsif ($str=~ /^(\d+)\. ([\wÃ¤Ã¶Ã¼]+) (\d+)\z/) { # 11. MÃ¤r 2003
 	$self->
 	  _tag_mon_jahr_h_min($1,$2,$3);
     }
@@ -147,7 +147,7 @@ root@ethlife-b tmp# sort_ls_bydate < fulllisting_root  > sorted
   TODO auch:
 - FEHLER:   ls tut  Dez  letzten jahres nicht curyear  verwenden
 
- sowieso: gescheiter grep range    nunja dafür auchgut    oder         find selber machen mit stat
+ sowieso: gescheiter grep range    nunja dafÃ¼r auchgut    oder         find selber machen mit stat
   anst. sort_ls_date skript
 
   

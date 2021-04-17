@@ -55,7 +55,7 @@ sub status_str {
     if (my $s=&signal) {
 	#irgendwo habe ich schon mal!
 	# Frage ob es terminiert wurde.
-	# Annahme dass nur für wait funktionniert also  ich mein echte exits hum
+	# Annahme dass nur fÃ¼r wait funktionniert also  ich mein echte exits hum
 	"killed by signal $s" #loclz..
     } else {
 	"exited with status ".&exitstatus

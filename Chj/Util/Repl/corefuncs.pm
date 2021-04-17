@@ -87,7 +87,7 @@ use strict;
            "bless", "dbmclose", "dbmopen", "package", "ref", "tie", "tied", "untie", "use"
 
        Low-level socket functions
-           "accept", "bind", "connect", "getpeername", "getsockname", "getsockopt", "lis­
+           "accept", "bind", "connect", "getpeername", "getsockname", "getsockopt", "lisÂ­
            ten", "recv", "send", "setsockopt", "shutdown", "socket", "socketpair"
 
        System V interprocess communication functions
@@ -96,13 +96,13 @@ use strict;
 
        Fetching user and group info
            "endgrent", "endhostent", "endnetent", "endpwent", "getgrent", "getgrgid",
-           "getgrnam", "getlogin", "getpwent", "getpwnam", "getpwuid", "setgrent", "setp­
+           "getgrnam", "getlogin", "getpwent", "getpwnam", "getpwuid", "setgrent", "setpÂ­
            went"
 
        Fetching network info
            "endprotoent", "endservent", "gethostbyaddr", "gethostbyname", "gethostent",
-           "getnetbyaddr", "getnetbyname", "getnetent", "getprotobyname", "getprotobynum­
-           ber", "getprotoent", "getservbyname", "getservbyport", "getservent", "sethos­
+           "getnetbyaddr", "getnetbyname", "getnetent", "getprotobyname", "getprotobynumÂ­
+           ber", "getprotoent", "getservbyname", "getservbyport", "getservent", "sethosÂ­
            tent", "setnetent", "setprotoent", "setservent"
 
        Time-related functions
@@ -115,7 +115,7 @@ use strict;
            "use"
 END
   ;
-    $txt=~ s/(\w)[-­]\s*(\w)/$1$2/sg;# careful: the -­ are two different chars.
+    $txt=~ s/(\w)[-Â­]\s*(\w)/$1$2/sg;# careful: the -Â­ are two different chars.
     #print $txt;
     my @corefuncs= grep {
 	length($_)>=3

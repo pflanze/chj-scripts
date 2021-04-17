@@ -17,8 +17,8 @@ Chj::IO::Tempfile
 
 If you kill the program i.e. using Ctl-C, it will not clean up
 it's temp file.
-(wen ich noch wüsst wo ich das mit signals oder whatever gelöst
-hatte. gibts eine sauber lösg?)
+(wen ich noch wÃ¼sst wo ich das mit signals oder whatever gelÃ¶st
+hatte. gibts eine sauber lÃ¶sg?)
 
 =cut
 
@@ -36,11 +36,11 @@ our $MAXTRIES=10;
 our $DEFAULT_AUTOCLEAN=1; # 0=never unlink automatically, 1= unlink on destruction, 2= unlink immediately.
 
 my %metadata; # numified => [ (path-->not any more), autoclean [,{hashwithattributes}] ]
-		# für die putback permanentize putreal restore stay makestayif irgend funktion.
+		# fÃ¼r die putback permanentize putreal restore stay makestayif irgend funktion.
 		##  ehr, sisi, path again:  numified=> [ basepath, autoclean,...]
 		##  ehr doch nicht, weil da hin der echte random path gespeichert wird ?
 		##  ehr aber dasch ein anderes lexical metadata!
-		# also, basepath. obwohl das etwas unsicher ist: user könnte auch einfach dir gegeben haben.
+		# also, basepath. obwohl das etwas unsicher ist: user kÃ¶nnte auch einfach dir gegeben haben.
 # numified => [ basepath,
 #		autoclean,
 #		[{hashwithattributes}],
@@ -87,7 +87,7 @@ sub xtmpfile {
 	    $!=0;
 	    #better today:
 	    $Chj::IO::ERRNO=0;
-	    my $rand= int(rand(99999)*100000+rand(99999));# well, weder gut genug für gefahrfälle noch sinnvoll für nongefahrfall.
+	    my $rand= int(rand(99999)*100000+rand(99999));# well, weder gut genug fÃ¼r gefahrfÃ¤lle noch sinnvoll fÃ¼r nongefahrfall.
 	    my $path= &$genpath($rand);
 	    $last_path=$path;
 	    #$DB::single=1;
@@ -98,7 +98,7 @@ sub xtmpfile {
 		undef $path;
 	    }
 	    $metadata{pack"I",$self}=[&$genpath(""),$autoclean];
-	    #$self->set_opened_path(1,$path); gar nicht nötig, da xsysopen das schon macht.
+	    #$self->set_opened_path(1,$path); gar nicht nÃ¶tig, da xsysopen das schon macht.
 	};
 	if ($@) {
 	    #warn "SUCK, '$@', '$!', ".($!+0)." -- or $Chj::IO::ERRNO / $Chj::IO::ERRSTR";
@@ -122,9 +122,9 @@ sub xtmpfile {
 		    redo TRY;
 		}
 	    } else {
-		### hehe: möchte auch dies machen können, messages neu wrappen. Quasi exception objekte um-ownern. !
+		### hehe: mÃ¶chte auch dies machen kÃ¶nnen, messages neu wrappen. Quasi exception objekte um-ownern. !
 		croak "xtmpfile: could not create tempfile at '$last_path': $@";
-		### heh und tatsächlich ist es jetzt foobar   und $! kann ich hier (komischerweise?) auch ned mehr lesen.
+		### heh und tatsÃ¤chlich ist es jetzt foobar   und $! kann ich hier (komischerweise?) auch ned mehr lesen.
 	    }
 	}
     }
@@ -226,7 +226,7 @@ sub DESTROY {
 #     }
 # }
 
-# v- ps wo benütze ich das überhaupt?? cj 21.10.04.
+# v- ps wo benÃ¼tze ich das Ã¼berhaupt?? cj 21.10.04.
 sub attribute { # :lvalue does not work because of perl bugs. :-(
     my $self=shift;
     my $key=shift;
@@ -274,7 +274,7 @@ sub xreplace_or_withmode {
 	      or croak "xreplace_or_withmode: chown '$path': $!";
 	} else {
 	    if ($uid != $euid) {
-		carp "xreplace_or_withmode: warning: cannot set owner of '$path' to $uid since we are not root";# ein zentraler mechanismus um warnings einzuhängen analog zu exceptions wäre halt eben schon noch interessant.
+		carp "xreplace_or_withmode: warning: cannot set owner of '$path' to $uid since we are not root";# ein zentraler mechanismus um warnings einzuhÃ¤ngen analog zu exceptions wÃ¤re halt eben schon noch interessant.
 		$mode &= 0777; # see below
 	    }
 	    chown $euid,$gid, $path

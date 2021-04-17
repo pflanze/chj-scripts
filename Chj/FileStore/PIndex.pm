@@ -15,7 +15,7 @@ Chj::FileStore::PIndex
  $pindex->add($key,$val); # key and val must be strings (or maybe overloaded as such), and can contain any byte
  my $iterator= $pindex->iter_get(sub{my $v=shift; $v cmp "foo" < 0 });
  #while(my $obj= $iterator->next) {
- #   print $obj->key, "\t", $obj->val, "\n"  #quasi variante wenn scheme kein multivalue return hätte
+ #   print $obj->key, "\t", $obj->val, "\n"  #quasi variante wenn scheme kein multivalue return hÃ¤tte
  #}
  while(my ($key,$val)=$iterator->next) {
      print "$key\t$val\n";
@@ -85,7 +85,7 @@ sub add {
 sub xadd {
     my $self=shift;
     my ($key,$val)=@_;
-    xsymlink  ##sollten eben typisierte exceptions sein, und dann: nicht die von xsymlink sondern implementationsunabhängige.
+    xsymlink  ##sollten eben typisierte exceptions sein, und dann: nicht die von xsymlink sondern implementationsunabhÃ¤ngige.
       _escape_val($val),
 	"$$self[Basedir]/"._escape_key($key);
 }
@@ -95,7 +95,7 @@ sub set {
     my ($key,$val)=@_;
     # random numbers?
     # no, pid should be enough, advantage: can unlink stale ones; - what with threading? todo.
-    #my $tmppath="$$self[Basedir]/t.$$."._escape_key($key);  eh, warum langer pfad mit problem dass wenigerlange keys möglich als dann speicherbar, wenn doch kurzer auch geht.
+    #my $tmppath="$$self[Basedir]/t.$$."._escape_key($key);  eh, warum langer pfad mit problem dass wenigerlange keys mÃ¶glich als dann speicherbar, wenn doch kurzer auch geht.
     my $tmppath="$$self[Basedir]/t.$$";
     my $n;
   AGAIN:

@@ -28,7 +28,7 @@ use Class::Array -fields=> (
 			    'Parent',
 			    'Criterion',
 			    #'Dirfh',
-			    'Array',#ach wie schön eben doch wie immer
+			    'Array',#ach wie schÃ¶n eben doch wie immer
 			    'Pos',
 			    'Basedircopy',
 			   );
@@ -47,7 +47,7 @@ sub new {
 # 		   grep {
 # 		       $$self[Criterion] ? $$self[Criterion]->($_) : 1
 # 		   }
-# 		   $dir->xnread # geht das überhaupt in list kontext?
+# 		   $dir->xnread # geht das Ã¼berhaupt in list kontext?
 # 		   ];
     #ist das doof oben weil liste builden fur nix? oder ich dubel doch effizienter?
     $$self[Array]=[
@@ -57,7 +57,7 @@ sub new {
 		   map {
 		       Chj::FileStore::Collection::_unescape $_
 		   }
-		   $dir->xnread # geht das überhaupt in list kontext?
+		   $dir->xnread # geht das Ã¼berhaupt in list kontext?
 		  ];
     $$self[Pos]=0;
     $self

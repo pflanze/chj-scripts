@@ -69,7 +69,7 @@ sub packagedata {
 	#warn "kind: $symkind, method: $symmethod, name: $symname\n";
 	for (Devel::Symdump->$symmethod($package)) {
 	    next if $_ eq 'main::ENV' or $_ eq 'main::INC' or $_ eq 'main::SIG'
-	      or $_ eq 'main::@' or $_ eq 'main::_' or $_ eq '_'; ##beides nötog?
+	      or $_ eq 'main::@' or $_ eq 'main::_' or $_ eq '_'; ##beides nÃ¶tog?
 	    next if /\:$/s; ##ARGGH.
 	    next if /:BEGIN$/s;
 

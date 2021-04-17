@@ -33,7 +33,7 @@ use Class::Array -fields=>
   ;
 
 
-sub new_with_hosts { # spezielle funktion um parametrisierung immerhin so chance zu geben und ah jo kann destrucktiv oder  curriend  sp‰ter noch andere Werte erg‰nzen.
+sub new_with_hosts { # spezielle funktion um parametrisierung immerhin so chance zu geben und ah jo kann destrucktiv oder  curriend  sp√§ter noch andere Werte erg√§nzen.
     my $class=shift;
     my $s= $class->SUPER::new;
     $$s[LcHosts]= do {
@@ -43,7 +43,7 @@ sub new_with_hosts { # spezielle funktion um parametrisierung immerhin so chance
 	    $$hh{lc $k}= $$h{$k}
 	}
 	$hh
-    };# SO macht man das weisch!  es isch eben NICHT einfach selbstverst‰ndlichbuilt in to prl weisch.
+    };# SO macht man das weisch!  es isch eben NICHT einfach selbstverst√§ndlichbuilt in to prl weisch.
     $s
 }
 

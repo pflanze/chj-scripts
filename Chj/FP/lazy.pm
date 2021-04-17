@@ -28,7 +28,7 @@ package Chj::FP::lazy;
 	   StringOfStream
 	   ListOfStream
 	   LengthOfStream
-	  );## hmm $EmptyList und so gehört doch in sep modul ?
+	  );## hmm $EmptyList und so gehÃ¶rt doch in sep modul ?
 
 use strict;
 

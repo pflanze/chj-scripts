@@ -255,8 +255,8 @@ sub Chomped ( $ ) {
 sub xEditfileln ($ $ ) {
     my ($fn,$path)=@_;
     my $realpath= _Realpath ($path);
-    # ^ ps da wo ich xEditfile benütze wird eh zuerst auf symlinks
-    # geprüft.. also eigentlich unsinig 'aber egal'.
+    # ^ ps da wo ich xEditfile benÃ¼tze wird eh zuerst auf symlinks
+    # geprÃ¼ft.. also eigentlich unsinig 'aber egal'.
     Warn "editing '$realpath'";
     my $newcontent= $fn->( xCatfile ($realpath) );
     my $f= xtmpfile $realpath;

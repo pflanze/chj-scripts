@@ -54,8 +54,8 @@ our %compressionrate=  # compressed/uncompressed
    h=>0.495, # 198584/401124
 
    log=>0.140, # 1756900/12531110
-   sql=>0.381,  # 18987/49827  ## hmm nicht eben repräsentativ, waren alles kleine files
-   iso=>0.887, # 172641822/194543616 ## kommt natürli aufs iso draufan
+   sql=>0.381,  # 18987/49827  ## hmm nicht eben reprÃ¤sentativ, waren alles kleine files
+   iso=>0.887, # 172641822/194543616 ## kommt natÃ¼rli aufs iso draufan
    rm=>0.987, # movie,  5251800/5316553
 
    # not measured:!

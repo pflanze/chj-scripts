@@ -35,7 +35,7 @@ package Chj::listutil;
 #	   maps_to_false
 # ah, any and every
 # hm multi list traversal? srfi-1
-# egal. andere für jenes
+# egal. andere fÃ¼r jenes
 # ps. zu any vgl. auch find!
 
 use strict;
@@ -72,7 +72,7 @@ sub findidx ( & ; @ ) {
     my $c=shift;
     if (wantarray) {
 	my $i=-1;
-	#grepmap ehr. müsste jeweils 2 values, OB rausgeben und WAS rausgeben, returnen von test function.
+	#grepmap ehr. mÃ¼sste jeweils 2 values, OB rausgeben und WAS rausgeben, returnen von test function.
 	# well warum nicht?.
 	grepmap {
 	    $i++;
@@ -90,7 +90,7 @@ sub findidx ( & ; @ ) {
 }
 
 # Tue, 06 Jun 2006 03:45:14 +0200
-# eigentlich dachte ich ich hätte das schon mal geschrieben, aber finde nix.
+# eigentlich dachte ich ich hÃ¤tte das schon mal geschrieben, aber finde nix.
 # not very efficient, but I only use it for "human compare tasks" or such. (validity  assertions  checks. or test cases.)  (ahh: /home/chris/perldevelopment/Filepaths/Chj/Filepath/Tests.pm but no, there's not a real equal)
 
 sub equal ( $ $ );

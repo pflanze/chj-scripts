@@ -33,7 +33,7 @@ sub maybe_new {
     my ($string)=@_;
     my $s= $class->SUPER::new;
     (@$s[User,Host,Path])=
-      $string=~ mé^(?:([^\@:]*)\@)?([^\@:/]+)\:(.*)\zés
+      $string=~ mÃ©^(?:([^\@:]*)\@)?([^\@:/]+)\:(.*)\zÃ©s
 	or return;
     # no way to give port, right ?
     $s

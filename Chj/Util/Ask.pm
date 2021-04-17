@@ -31,7 +31,7 @@ eval {
 };
 my $have_readline= !$@;
 
-my $term; ##experimental: reuse history.  **dafür ev probleme mit offengehaltenen filehandles?**
+my $term; ##experimental: reuse history.  **dafÃ¼r ev probleme mit offengehaltenen filehandles?**
 
 sub ask_string {
     my ($promptbegin,$value)=@_;
@@ -63,11 +63,11 @@ sub xask_string {
     my $res= &ask_string;
     return $res if defined $res;
     #require Chj::Exception
-    # was will ich alles sagen? EOF, undefvalueexception, und einen eigenen text natürlich.
+    # was will ich alles sagen? EOF, undefvalueexception, und einen eigenen text natÃ¼rlich.
     # mehrtextigkeit in perl: sowohl sowieso im programmtext  immer wenn ich von programm aus was ausgebe   .
-    # Ein Format für verschiedene Strings?
-    # Ein Kontext für die Sprache? funktion oder variable? WELCHE Sprache erlaubt schon wieder ne seamless solche gleichgültigkeit? hey in perl was machen auf xs ebene?
-    # oder na einfach "constants" die ev keine solchen sind.  geht aber nur global, nicht im kontext eines objektes; ebengerade weil sonst erst zu runtime ausführbar  (effizient Wert abholen isch etwas was perl auf var ebene kann ...)
+    # Ein Format fÃ¼r verschiedene Strings?
+    # Ein Kontext fÃ¼r die Sprache? funktion oder variable? WELCHE Sprache erlaubt schon wieder ne seamless solche gleichgÃ¼ltigkeit? hey in perl was machen auf xs ebene?
+    # oder na einfach "constants" die ev keine solchen sind.  geht aber nur global, nicht im kontext eines objektes; ebengerade weil sonst erst zu runtime ausfÃ¼hrbar  (effizient Wert abholen isch etwas was perl auf var ebene kann ...)
 }
 
 1;
@@ -107,7 +107,7 @@ Psh::Locale::Base (3pm) - containing base code for I18N
                 # but that would again increase the requirements for
                 # psh unnecessarily
 und dann, tut es funktionen oder vars in jenem namespace abrufen?
-nah, tut hash füllen und den accessen  brr
+nah, tut hash fÃ¼llen und den accessen  brr
 
 eben, global, versus  local'ized,  versus per-thread und so   also OO oder so
 
@@ -120,7 +120,7 @@ gute idee?, subs mit params.
 
 also: texte auslagern?    och oder vergleiche exceptiontexte
 
-nicht aufruf einer sub mit context  sondern  noch drunterdrüber  sub für textnehmen.
+nicht aufruf einer sub mit context  sondern  noch drunterdrÃ¼ber  sub fÃ¼r textnehmen.
 
 subs sind cool: compiletime mistype check, flexible, optionally importable.
 
@@ -160,7 +160,7 @@ liblocale-maketext-perl - Perl module for supporting l10n and inheritance-based 
  This is a complete rewrite from the basically undocumented 0.x
  versions.
 
-  -> hey ja hee, inheritance für fallback mann logo  (well für data ned code aber das isch letzlich ja eben dasselbe ausser die effizienz)
+  -> hey ja hee, inheritance fÃ¼r fallback mann logo  (well fÃ¼r data ned code aber das isch letzlich ja eben dasselbe ausser die effizienz)
 
 liblocale-subcountry-perl - Perl modules for converting state, province etc names to/from code
 libmsgcat-perl - Locale::Msgcat perl module
@@ -179,15 +179,15 @@ _("funtext")
 Also, 3 Wege:
 - language() kontext abrufen und selber hierlokal was damit anfangen.
 - einemessage() abrufen, die ist anderswo implementiert und verwendet langugae() oder so
-- genericmessagehandler("einemessage") abrufen, ; vorteil: wenn keine translation wird einfach englisch genommen, also einfacher software zu schreiben damit. nachteil: nicht garantiert dass ne übersetzung da isch, also, wenn ich "einemessage" ändere isch connection broken; 'mistyping' isch also wieder möglich.  Texteverwaltungssoftware soll aber dabei helfen das zu merken und isch ja insofern gut dass es reicht englisch anzupassen und dannlazily die übersetzungen. statt bei einemessage() prinzip nur den englischen und die andern werden zwar gefunden sind aber falsch. nunwell, könnt immer noch auch da so n system machen das prüft ob alle angepasst - wär ev sogar besser.
-#PS. in C könnte _("xx") ersetzt werden per makrooderso durch n lookup in ner table statt strings zu runtime matchen zu gehen. so a la  messages[currentlanguage][442]. über 3 pointers hab ich dann den string, ohne jeden function call!
+- genericmessagehandler("einemessage") abrufen, ; vorteil: wenn keine translation wird einfach englisch genommen, also einfacher software zu schreiben damit. nachteil: nicht garantiert dass ne Ã¼bersetzung da isch, also, wenn ich "einemessage" Ã¤ndere isch connection broken; 'mistyping' isch also wieder mÃ¶glich.  Texteverwaltungssoftware soll aber dabei helfen das zu merken und isch ja insofern gut dass es reicht englisch anzupassen und dannlazily die Ã¼bersetzungen. statt bei einemessage() prinzip nur den englischen und die andern werden zwar gefunden sind aber falsch. nunwell, kÃ¶nnt immer noch auch da so n system machen das prÃ¼ft ob alle angepasst - wÃ¤r ev sogar besser.
+#PS. in C kÃ¶nnte _("xx") ersetzt werden per makrooderso durch n lookup in ner table statt strings zu runtime matchen zu gehen. so a la  messages[currentlanguage][442]. Ã¼ber 3 pointers hab ich dann den string, ohne jeden function call!
 #ob eine sprache sowas selber merken kann?
 # Und in Perl?
-# makros fehlen.  nix compiletime möglich daher.
+# makros fehlen.  nix compiletime mÃ¶glich daher.
 
-#hmm perl noch schlimmer:  die bequeme einbettungs philosophie "hallo $blabla" geht nimmer. (sie ginge noch wenn sogar die sprachwahl zu compiletime festgelegt würde (was supereffizient wäre)). NA, zu runtime code für eine language specialized compilieren? (hmm, stringeval only?).  Alternativ: zu compiletime  _"fun $for you"  zerlegen in _("fun ").$for._(" you"). Tja...mein eigener compiler.   Nah eh schlecht dies, besser: zerlegen in sprintf(_('fun $1 you'),) ach, so: _('fun $1 you $2',$for,$na) was dann per sprintf mit %s und reordering der parameter etc aufgelöst werden kann.
+#hmm perl noch schlimmer:  die bequeme einbettungs philosophie "hallo $blabla" geht nimmer. (sie ginge noch wenn sogar die sprachwahl zu compiletime festgelegt wÃ¼rde (was supereffizient wÃ¤re)). NA, zu runtime code fÃ¼r eine language specialized compilieren? (hmm, stringeval only?).  Alternativ: zu compiletime  _"fun $for you"  zerlegen in _("fun ").$for._(" you"). Tja...mein eigener compiler.   Nah eh schlecht dies, besser: zerlegen in sprintf(_('fun $1 you'),) ach, so: _('fun $1 you $2',$for,$na) was dann per sprintf mit %s und reordering der parameter etc aufgelÃ¶st werden kann.
 
-bei exceptions isches doch doof, weil runtime overhead für jede exception die auch kein text ausgeben muss.
+bei exceptions isches doch doof, weil runtime overhead fÃ¼r jede exception die auch kein text ausgeben muss.
 na, closures?!:
 hab ich die echt noch nicht gehabt?
 

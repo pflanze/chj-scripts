@@ -50,7 +50,7 @@ sub new {
 # 	my $item= $$s[MainDirfh]->xnread;
 # 	defined $item or do {
 # 	    undef $$s[MainDirfh];
-# 	    return;####ç outer
+# 	    return;####Ã§ outer
 # 	};
 # 	$$s[SubDirfh]= xopendir "$$s[Basedircopy]/$item";
 #     };
@@ -77,12 +77,12 @@ sub new {
 # 	$v
 #     }
 # }
-#^- ist verschwenderisch mit Criterion, macht subiteration wo unnötig.  und war escht no falsch, criterion checkte value statt key
+#^- ist verschwenderisch mit Criterion, macht subiteration wo unnÃ¶tig.  und war escht no falsch, criterion checkte value statt key
 
 sub next_val {
     #my $s=shift;
     my ($s)=@_;
-    my $nextmain=sub{ # scho no "unsinn" dass closure creation wenn gar ned sicher ob benötigt. na mit context per argument liefern wärs anderschmöglich. frage: kann scheme/lisp/ocaml lazy closure creation machen?
+    my $nextmain=sub{ # scho no "unsinn" dass closure creation wenn gar ned sicher ob benÃ¶tigt. na mit context per argument liefern wÃ¤rs anderschmÃ¶glich. frage: kann scheme/lisp/ocaml lazy closure creation machen?
 	my $item;
 	do {
 	    $item= $$s[RawCurrentKey]= $$s[MainDirfh]->xnread;
@@ -118,7 +118,7 @@ sub next_key {
 
 sub current_key {#only tracked when using next_val !!
     my ($s)=@_;
-    return unless defined $$s[RawCurrentKey];# oerr wäre so hilfreich echt
+    return unless defined $$s[RawCurrentKey];# oerr wÃ¤re so hilfreich echt
     Chj::FileStore::MIndex::_unescape $$s[RawCurrentKey]
 }
 

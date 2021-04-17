@@ -21,8 +21,8 @@ You are always better off just doing it yourself than firing down time the line 
 
 =head1 TODOOOOOOOO
 
-- scheint, undef geht doch ned als rückgabe wert, weil so skip-networking u.ä. wertlos sind.  auch muss ich parsing anpassen.
-- hmm, manchmal kommen comments VOR dem [section] marker.  comments auch als leerzeile interpretieren? am besten wär, "leerzeile und dann comments und kein leer mehr" in dieser reihenfolge isch leer. well.
+- scheint, undef geht doch ned als rÃ¼ckgabe wert, weil so skip-networking u.Ã¤. wertlos sind.  auch muss ich parsing anpassen.
+- hmm, manchmal kommen comments VOR dem [section] marker.  comments auch als leerzeile interpretieren? am besten wÃ¤r, "leerzeile und dann comments und kein leer mehr" in dieser reihenfolge isch leer. well.
 
 =cut
 
@@ -44,7 +44,7 @@ use Class::Array -fields=> (
 			    # subvalues not split here yet, thus would have to recreate hm
 			    'List',# contains both value parts and the stuff inbetween. hm, to be able to add stuff, it's also broken up just before any new [section] line. Well, each line by itself  [except in future if there are multi-line-values]
 			    'Sectionends', # pointers to the last non-empty element of a section (for appends). sectionname=>[listelementrefs]
-			    #'Eof', # last element of whole file  what for??? => [List]->last. eehr no doesn' work (with empty file) like that. ; again different: last||entrypoint rule; Eof would be bad because would have to be nachgeführt, too.    Even better!: since checking for above two, I can decide whether to call value!
+			    #'Eof', # last element of whole file  what for??? => [List]->last. eehr no doesn' work (with empty file) like that. ; again different: last||entrypoint rule; Eof would be bad because would have to be nachgefÃ¼hrt, too.    Even better!: since checking for above two, I can decide whether to call value!
 			    'Db', # sectionname=>key=>[listelementrefs] (hopefully only one?)
 			    'Scope_section',
 			   );
@@ -127,7 +127,7 @@ sub set {
 	    # create new section at end of file.
 # 	    #$el= $$self[Eof];
 # 	    $el= $$self[List]->last||$$self[List]->entrypoint;
-# 	    #$el= $$self[List]->entrypoint;  so schräg, das last isch wirkli nötig?. ah klar: after last, after entrypoint.
+# 	    #$el= $$self[List]->entrypoint;  so schrÃ¤g, das last isch wirkli nÃ¶tig?. ah klar: after last, after entrypoint.
 # 	    unless ($el->value =~ /\n\z/s) {
 # 		$el= $el->insertvalue_after("\n");
 # 	    }
@@ -165,7 +165,7 @@ sub to_string {
 # 	$el=$el->next;
 #     }
 #     join "",@v
-    #mann ich dubel hab für das ja was geschrieben.
+    #mann ich dubel hab fÃ¼r das ja was geschrieben.
     join "",$$self[List]->values
 }
 

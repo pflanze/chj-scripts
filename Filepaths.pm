@@ -1,6 +1,6 @@
 package Filepaths;
 
-# FILEPFADE-VERARBEITUNGSSYSTEM (Unabhängig von URI::URL)
+# FILEPFADE-VERARBEITUNGSSYSTEM (UnabhÃ¤ngig von URI::URL)
 # cj 20.9.98
 # cj 10.4.00: AddURL so modifiziert, dass es undef liefert wenn 'underrun' auftritt
 #			FolderOfThisFile korrigiert, so dass der Folder von 'file.xyz' wirklich '' wird
@@ -8,9 +8,9 @@ package Filepaths;
 #			Note: URLDiff is (still) not consitent yet! I should work out an exact interpretation scheme
 # cj 17.8.00: Changed AddURL again to NEVER RETURN ENDING SLASHES.
 # cj 2001/07/01: AddURL: Adding a '..' should mean the same as '../'. Attempt to strip /./.
-# cj 2001/11/21 (militär): changed AddURL to accept a flag so "" && "some/path.html" gives "/some/path.html"  (yes hacky i know)
+# cj 2001/11/21 (militÃ¤r): changed AddURL to accept a flag so "" && "some/path.html" gives "/some/path.html"  (yes hacky i know)
 #							^-  SHOULD REALLY BE CLEANED UP
-# cj 2001/11/21 (militär): URLDiff("/", "/samba.htm") and URLDiff("", "/samba.htm") gave both "/samba.html"
+# cj 2001/11/21 (militÃ¤r): URLDiff("/", "/samba.htm") and URLDiff("", "/samba.htm") gave both "/samba.html"
 
 =head1 SYNOPSIS
 
@@ -285,8 +285,8 @@ sub _xInFolder
 	my $pattern = shift;
 	my @files;
 
-	if ($Mac) {		##??? neu funktionnierts doch wieder für dec?? #nee doch nicht, zeigt nur ORDNER an??!
-		# ($Mac or $Win) würd auch gehen, ausser dass wegen Win dann noch "." und ".." dirs rausgefiltert werden müssten
+	if ($Mac) {		##??? neu funktionnierts doch wieder fÃ¼r dec?? #nee doch nicht, zeigt nur ORDNER an??!
+		# ($Mac or $Win) wÃ¼rd auch gehen, ausser dass wegen Win dann noch "." und ".." dirs rausgefiltert werden mÃ¼ssten
 		unless (opendir DIR, $folder) { warn "Filepaths: Did not find folder '$folder'!\n"; return };
 	
 		while (defined ($filename = readdir DIR )) {
@@ -346,7 +346,7 @@ and/or modify it under the same terms as perl itself.
 
 =cut
 
-# Other addresses: pflanze@gmx.ch; Christian Jaeger, Burgstr. 26, CH-8037 Zürich
+# Other addresses: pflanze@gmx.ch; Christian Jaeger, Burgstr. 26, CH-8037 ZÃ¼rich
 
 __END__
 

@@ -86,7 +86,7 @@ sub exists {
 1;
 
 __END__
-  hmm, nur mit get isch es scheiss zu prüfen ob ein key existiert
+  hmm, nur mit get isch es scheiss zu prÃ¼fen ob ein key existiert
   va mit dieser ramschexception
 
   

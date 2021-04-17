@@ -79,7 +79,7 @@ sub parse_segments {
 		$t
 	    } else {
 		die "?? parse_segments(".singlequote_many(@_)."): str2time can't parse, shouldn't happen here, internal inconsistency, got str '$newstr'";
-		##ok könte noch sein dass zonen nid stimmen oder solches -- wie dies genau konsistent handhaben?
+		##ok kÃ¶nte noch sein dass zonen nid stimmen oder solches -- wie dies genau konsistent handhaben?
 	    }
 	} else {
 	    $$s[Error]= E_invalidmonthname;

@@ -60,7 +60,7 @@ sub walk_element {
     my $elname= $node->nodeName;#?
     xprint $o outencode($elname);#
     #my $attrnode = $node->getAttributeNode ( $aname ); #eeehr  und wie krieg ich die namen ?
-    #ah: @attrs =$node->attributes;  von Node Klasse. sowas echt komisches wenn dann doch alle nodes egalwas attribute haben können.  ?.
+    #ah: @attrs =$node->attributes;  von Node Klasse. sowas echt komisches wenn dann doch alle nodes egalwas attribute haben kÃ¶nnen.  ?.
     if (my @attrs=$node->attributes) {
 	xprint $o "(@";
 	for my $attr (@attrs) {
@@ -102,7 +102,7 @@ sub file_xml_to_sexpr {
     walk_element $top,$o;
     $o->xclose;
     #$o->xputback;##oderso.
-    #$o->xreplace_or_withmode  ist für wenn ziel anders ist als eigener path.
+    #$o->xreplace_or_withmode  ist fÃ¼r wenn ziel anders ist als eigener path.
     $o->xputback(0666);
 }
 

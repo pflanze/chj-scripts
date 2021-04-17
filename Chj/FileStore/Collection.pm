@@ -16,7 +16,7 @@ Chj::FileStore::Collection
  #$coll->get_iterator;
  my $iterator= $coll->iter_get(sub{my $v=shift; $v cmp "foo" < 0 });
  #while(my $obj= $iterator->next) {
- #   print $obj->key, "\t", $obj->val, "\n"  #quasi variante wenn scheme kein multivalue return hätte
+ #   print $obj->key, "\t", $obj->val, "\n"  #quasi variante wenn scheme kein multivalue return hÃ¤tte
  #}
  while(my ($key,$val)=$iterator->next) {
      print "$key\t$val\n";

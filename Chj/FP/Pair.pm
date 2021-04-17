@@ -93,7 +93,7 @@ sub cddr {
     $$p[Cdr]
 }
 sub cdddr {
-    #shift->[Cdr][Cdr][Cdr]   #ps. das failed ja  wenn liste zu kurz. aber ja: scheme tut das auch. PAIR expected. OHOH: todo: ich faile ja gar nicht hier, autovivication mann. (und gibt dann, und zwar eins zu fr¸h (eh nein, eben, '() ist undef bei mir), undef und darauf geht values nicht.)  DASS '()->list bei mir einen fehler gibt isch ev eben doch schitty.
+    #shift->[Cdr][Cdr][Cdr]   #ps. das failed ja  wenn liste zu kurz. aber ja: scheme tut das auch. PAIR expected. OHOH: todo: ich faile ja gar nicht hier, autovivication mann. (und gibt dann, und zwar eins zu fr√ºh (eh nein, eben, '() ist undef bei mir), undef und darauf geht values nicht.)  DASS '()->list bei mir einen fehler gibt isch ev eben doch schitty.
     my $p=shift;#  or croak "cdddr: argument is false";
     $p= $$p[Cdr] or croak "cdddr: cdr is not set";
     $p= $$p[Cdr] or croak "cdddr: cddr is not set";
@@ -142,7 +142,7 @@ sub values { #turn into a perl list. funny that the CORE::values function for ha
 # 	$s->[Cdr] ? $getone->($s->[Cdr]) : ();
 #     };$getone->($s);
     #ok, be sane.
-    while(defined $s and $s != $Chj::FP::EmptyList) {## sollte ich  eher auf  inklusive  also auf Pair  pr¸fen?
+    while(defined $s and $s != $Chj::FP::EmptyList) {## sollte ich  eher auf  inklusive  also auf Pair  pr√ºfen?
 	push @ret,$s->[Car];
 	$s=$s->[Cdr];
     }
@@ -193,7 +193,7 @@ sub stringify_atom { ## not a method
 sub stringify_element { # atom or list (or..?)
     my ($car)=@_;
     if (!defined $car) {
-	"#f" ## well.  auch noch ein todo h‰ngend?
+	"#f" ## well.  auch noch ein todo h√§ngend?
     } elsif (ref $car) {
 	if (ref($car) eq 'HASH') {
 	    "{".join(" ",
@@ -224,9 +224,9 @@ sub stringify {
   LOOP: {
         $out.= stringify_element $car;
         #if (defined $cdr and ref $cdr and $cdr->isa(__PACKAGE__)) { ## viele Wege nach Rom
-	# F‰lle:
-	# - [undef (hm wirklich?) oder] $Chj::FP::EmptyList:  regul‰res listenende.
-	# - ref $cdr and $cdr->isa(__PACKAGE__): regul‰re listenfortsetzung.
+	# F√§lle:
+	# - [undef (hm wirklich?) oder] $Chj::FP::EmptyList:  regul√§res listenende.
+	# - ref $cdr and $cdr->isa(__PACKAGE__): regul√§re listenfortsetzung.
 	# - sonst (ref oder nicht ref): dotted end.
 	if (defined $cdr) {
 	    if (ref $cdr) {

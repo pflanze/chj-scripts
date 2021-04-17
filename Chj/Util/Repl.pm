@@ -164,7 +164,7 @@ sub run {
 	    # arrow completion:
 	    if ($partie=~ /(.*)\$(\w+)\s*->\s*([{\[]\s*)?(\w*)\z/s) {
 		# need to know the class of that thing. either statically (huh) or just peek at it
-		my ($pre,$varnam,$brace,$alreadywritten)=($1,$2,$3,$4);# muss ich echt selber schauen was er schon geschrieben hat und dann meine liste von values bei jedem mal ausfiltern?(->neinoffenbardochnicht¿)
+		my ($pre,$varnam,$brace,$alreadywritten)=($1,$2,$3,$4);# muss ich echt selber schauen was er schon geschrieben hat und dann meine liste von values bei jedem mal ausfiltern?(->neinoffenbardochnichtÂ¿)
 		no strict 'refs';
 		my $r;
 		if (my $val= do{
@@ -185,7 +185,7 @@ sub run {
 		    #warn "jo, habe n value von \$$varnam gekriegt";
 		    if ($r||=ref($val)) {
 			if ($r eq 'HASH') {
-			    #("{") #scheisse, es wird ein space hintendrangetan obwohl ich doch gar nöd fertighabenwollte.
+			    #("{") #scheisse, es wird ein space hintendrangetan obwohl ich doch gar nÃ¶d fertighabenwollte.
 			    #("{hallo}","{ballo}")
 			    if ($brace) {
 				map {"$_}"} keys %$val
@@ -218,7 +218,7 @@ sub run {
 				# it has to match the already-written part of the string
 #				/^\Q$alreadywritten\E/
 #				  and
-# gar nöd nötig. warum dachte ich??? evtl. wurde  $attribs->{completion_word} wieder gelöscht oder so
+# gar nÃ¶d nÃ¶tig. warum dachte ich??? evtl. wurde  $attribs->{completion_word} wieder gelÃ¶scht oder so
 				    # exclude some of the possible methodnames:
 				    # - all-uppercase when characters are contained.
 				    not(/[A-Z]/ and uc($_) eq $_)
@@ -304,10 +304,10 @@ sub run {
 		};
 		#print $STDOUT Data::Dumper::Dumper(\@a);
 		#("HAHAHA")
-		# ach so muss wirklich ganzes teil wieder ranstellen. nun ja nöd so schlecht sieht man es realistischer immer das ganze package
-		# hm, nun fehlt nur noch dass, falls es mit :: aufhört, oder auch generell, nicht space anhängt bei der completion.
-		#$attribs->{completion_append_character}=""; oder unten wenn es nicht stört dass nie.
-		#och ich wollte nur wenn es NICHT auf :: endet. muss ich den space an den einzelnen vervollständiger fügen.
+		# ach so muss wirklich ganzes teil wieder ranstellen. nun ja nÃ¶d so schlecht sieht man es realistischer immer das ganze package
+		# hm, nun fehlt nur noch dass, falls es mit :: aufhÃ¶rt, oder auch generell, nicht space anhÃ¤ngt bei der completion.
+		#$attribs->{completion_append_character}=""; oder unten wenn es nicht stÃ¶rt dass nie.
+		#och ich wollte nur wenn es NICHT auf :: endet. muss ich den space an den einzelnen vervollstÃ¤ndiger fÃ¼gen.
 		$attribs->{completion_append_character}="";
 		map {
 		    if (/::\z/) {
@@ -383,7 +383,7 @@ sub run {
 	while ( defined (my $input = &$myreadline) ) {
 	    my $res;
 	    my ($evaluator,$error);
-	    #my $_end=Chj::end{undef $evaluator}; #nötig?
+	    #my $_end=Chj::end{undef $evaluator}; #nÃ¶tig?
 	    if (length($input)) {
 		my ($cmd,$args)=
 		  $input=~ /^ *\:(\w+)\b(.*)/s ?
@@ -391,8 +391,8 @@ sub run {
 		      :(undef,$input);
 		$evaluator=sub {
 		    $res= myeval "package ".($$self[Package]||$caller)."; no strict 'vars'; $args";
-		    #$oldinput= $input;# na könnte man auch nach draussen nehmen?
-		    # eh, nein , ist ja eben eh no nöd fertig. todo. eben durch evaluatorbehalten lösen.
+		    #$oldinput= $input;# na kÃ¶nnte man auch nach draussen nehmen?
+		    # eh, nein , ist ja eben eh no nÃ¶d fertig. todo. eben durch evaluatorbehalten lÃ¶sen.
 		    $oldinput= $args;
 		    $error=$@;
 		    #$evaluator= sub{ (defined $res ? $res : 'undef'), "\n"};##copy from below
@@ -408,7 +408,7 @@ sub run {
 			$1
 		    }
 		    my $help=sub {
-			#$evaluator=sub{ ...  könnte man hier auch so lösen doch. könnte man logik bissel vereinf.
+			#$evaluator=sub{ ...  kÃ¶nnte man hier auch so lÃ¶sen doch. kÃ¶nnte man logik bissel vereinf.
 			print $STDOUT "Repl help:\n";
 			print $STDOUT "currently these commands are implemented:\n";
 			print $STDOUT ":package \$pack   use \$pack as new compilation package\n";
@@ -486,7 +486,7 @@ sub run {
 		$res=
 		  myeval "package ".($$self[Package]||$caller)."; no strict 'vars'; $oldinput";
 		$error=$@;
-		$evaluator= sub{ (defined $res ? $res : 'undef'), "\n"};##copy from above. ps wenn ich  einfach  erster step ist wert producen  mache,  und   ja  irgend  dann wär easier.  tun.
+		$evaluator= sub{ (defined $res ? $res : 'undef'), "\n"};##copy from above. ps wenn ich  einfach  erster step ist wert producen  mache,  und   ja  irgend  dann wÃ¤r easier.  tun.
 	    } else {
 		next;
 	    }
@@ -503,7 +503,7 @@ sub run {
 		print $STDERR $err;
 	    } else {
 		if($evaluator) {
-		    print $OUT (&$evaluator);# komisch, klammern nötig sonst entsteht komischer müll, 'A h  d%' statt '1' und so.
+		    print $OUT (&$evaluator);# komisch, klammern nÃ¶tig sonst entsteht komischer mÃ¼ll, 'A h  d%' statt '1' und so.
 		}
 		if (my $varname= $$self[KeepResultIn]) {
 		    $varname= ($$self[Package]||$caller)."::$varname" unless $varname=~ /::/;

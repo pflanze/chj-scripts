@@ -184,7 +184,7 @@ sub autoclean {
     if (!@_ or $_[0]) {
 	bless $$s[_Fh],"Chj::Unix::DaemonRunfile::File";
     } elsif (@_) {
-	croak __PACKAGE__.": autoclean cannot really be undone";#well isch ne lüge da ich ja eh hardcoded hab
+	croak __PACKAGE__.": autoclean cannot really be undone";#well isch ne lÃ¼ge da ich ja eh hardcoded hab
     }
 }
 

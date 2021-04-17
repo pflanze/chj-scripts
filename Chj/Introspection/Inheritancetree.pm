@@ -43,8 +43,8 @@ ooder: auch lisp like,  erstes auch in die dep "pairlis" rein.
    ]
 ]
 
-Noch die Frage ob ich für Ausgabe nach Dumper dependencies so ordnen kann,
-dass möglichst alle deps vorher ausgegeben wurden?
+Noch die Frage ob ich fÃ¼r Ausgabe nach Dumper dependencies so ordnen kann,
+dass mÃ¶glichst alle deps vorher ausgegeben wurden?
 
 nehme ein entry, schau seine erste dep an pushe sie vorher, deren dep,pushvorher, derendep....
 (wieder problem loops aber so what)
@@ -88,7 +88,7 @@ use strict;
 # 	    for my $dep ($of->[1,$#$of]) {
 # 		my $depname=$dep->[0];
 # 		warn "deps: depname=$depname";
-# 		#next unless $hash->{$depname};# only consider deps present in main level (sonst bringts für dumper ja nix? well doch schon noch aber, well... ah well: doch ausgeben ! damit es toplevel angezeigt wird !!
+# 		#next unless $hash->{$depname};# only consider deps present in main level (sonst bringts fÃ¼r dumper ja nix? well doch schon noch aber, well... ah well: doch ausgeben ! damit es toplevel angezeigt wird !!
 # 		## brauch ich ein   find_and_move_to ding?
 # 		#damit nicht mehrmals dasselbe reinkopiert wird.  well: *kann auch einfach am schluss ein eliminate machen!*, wenn ichs in eine perlliste ummappe.
 # 		$firstone->insertvalue_before($dep);
@@ -99,7 +99,7 @@ use strict;
 
 sub inheritancetree($ ; $ ) {
     my ($package,$show_all)=@_;
-    #$package.="::";#   nein doch nicht?. sondern special case für "" unten.
+    #$package.="::";#   nein doch nicht?. sondern special case fÃ¼r "" unten.
     my $f= do{
 	no strict 'refs';
 	*{"${package}::"}{HASH}
@@ -127,7 +127,7 @@ sub inheritancetree($ ; $ ) {
 		    $cache->{$realpackname}= $desclis;# save it right at the beginning so that it will already be there in case of circles
 		    push @$desclis,map { # map package names to desclist references
 			# paul simon, spass lassen einfach zu singen
-			$cache->{$_} or $descliscreate->($_)  #fun das schaut so ähnlich aus
+			$cache->{$_} or $descliscreate->($_)  #fun das schaut so Ã¤hnlich aus
 		    } @{$h->{ISA}};
 		    $desclis
 		})->($realpackname);
@@ -154,7 +154,7 @@ sub inheritancetree($ ; $ ) {
 # 	#    
 # 	#eh
 # 	my $packname= $desclis->[0];
-#       ach mann, ???. kann bei aufbau neu nich mehr nur einfach packagename nehmen sondern muss ref, d.h. automatisch machen gleich bei creation. und jenen eben einfüllen  auch schon bei creation in der rekursion drin.  ??  aber rekursion dort isch ja eben nicht isa hierarchie sondern namespace hierarchie dh kommt later on right   well wenn überhaupt von wegen exkludes, tja, sollt ich zwei rekursionen machen  und die namespacehierarchie rekursion nur unless done.
+#       ach mann, ???. kann bei aufbau neu nich mehr nur einfach packagename nehmen sondern muss ref, d.h. automatisch machen gleich bei creation. und jenen eben einfÃ¼llen  auch schon bei creation in der rekursion drin.  ??  aber rekursion dort isch ja eben nicht isa hierarchie sondern namespace hierarchie dh kommt later on right   well wenn Ã¼berhaupt von wegen exkludes, tja, sollt ich zwei rekursionen machen  und die namespacehierarchie rekursion nur unless done.
 #     }
     $cache
 }

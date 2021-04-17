@@ -124,7 +124,7 @@ sub unixtime {
     $$self[Mon]= $Chj::Parse::Date::months::short_english_month{$$self[Monname]}
       or do{ $$self[Error]=E_invalidmonthname; return };
     my $rv=strftime('%s',@$self[Sec,Min,Hour,Mday],$$self[Mon]-1,$$self[Year]-1900,
-		    #$$self[TZone] HMMMM  GRRRRR scheint gar nicht unterstützt zu sein.
+		    #$$self[TZone] HMMMM  GRRRRR scheint gar nicht unterstÃ¼tzt zu sein.
 		   );
     if ($rv<0) { $$self[Error]=E_dateoutofrange; return };
     return $$self[Unixtime]=$rv;

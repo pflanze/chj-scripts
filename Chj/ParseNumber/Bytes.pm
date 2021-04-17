@@ -15,7 +15,7 @@ Chj::ParseNumber::Bytes
 
  $tmpsiz= parsenumber_bytes $tmpsiz;
 800M -> 800*1024*1024
-  irgendwo kürzlich hatte ich son parser gemacht
+  irgendwo kÃ¼rzlich hatte ich son parser gemacht
   wo schon wieder
   egal, mount kann M und so selber verstehen
   ach ja

@@ -31,12 +31,12 @@ L<Chj::Vserver>, L<Chj::Vserver::Status_cmd_base>
 
 package Chj::Vserver::Status;
 use strict;
-use Carp;#ps das poisened meinen method name space! wenn mir das bewusst w‰r
+use Carp;#ps das poisened meinen method name space! wenn mir das bewusst w√§r
 
 use Chj::Vserver::Status_cmd_base -extend=>
   -pub=>
   'context', # number
-  'status', # string  ((symbol w‰re richtig?  oder identity objects  ))
+  'status', # string  ((symbol w√§re richtig?  oder identity objects  ))
   'processes',
   'uptime',
   ;

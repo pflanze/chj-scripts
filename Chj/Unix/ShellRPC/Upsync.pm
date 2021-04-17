@@ -55,7 +55,7 @@ sub upload_file_fh { # upload_file_by_fh  or through_fh or ?.
 	}));
     # permissions: (ignore user and group   ?  hm?  TODO could even be dangerous with this!)
     if (defined(my $stat= $maybe_stat)) {
-	#my $cmd= "chmod 0".sprintf('%o', $stat->permissions);#richtige knallköpfe
+	#my $cmd= "chmod 0".sprintf('%o', $stat->permissions);#richtige knallkÃ¶pfe
 	my $cmd= ("chmod 0".sprintf('%o', $stat->permissions)
 		  ." "
 		  .singlequote_sh ($remotetmp));
@@ -75,7 +75,7 @@ sub upload_file_path {
     my ($s, $sourcepath, $remotepath)=@_;
     $s->upload_file_fh(Chj::xopen::xopen_read($sourcepath), $remotepath);
 }
-#((praktisch, wie exceptions überall jeweils abbrechen automaticaly.))
+#((praktisch, wie exceptions Ã¼berall jeweils abbrechen automaticaly.))
 
 use Chj::xperlfunc ();
 sub upload_file_path_with_permissions {
