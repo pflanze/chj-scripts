@@ -1,0 +1,61 @@
+#!/usr/bin/perl -w
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict; 
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file key
+
+  Retrieve the value for key from file, e.g.
+
+    $myname foo tags
+
+  where foo contains this line near the top:
+
+   # Tags: (git-shortcut debian)
+
+  will print
+
+   (git-shortcut debian)
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==2;
+
+my ($file, $key)= @ARGV;
+
+use Chj::xperlfunc qw(xslurp xprintln);
+
+my $str= xslurp $file;
+if (my ($val) = $str=~ /\n *# *\Q$key\E: *([^\n]*)/is) {
+    xprintln $val;
+} else {
+    die "$myname: key '$key' not found in '$file'\n";
+}
+
