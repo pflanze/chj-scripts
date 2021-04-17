@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict; 
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use Chj::xperlfunc qw(xslurp xprintln);
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname perlfile(s)
+
+  Try to find all the dependencies that perlfile uses and print them
+  on stdout, one per line.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+my %dep; # dep-name => n
+
+my $packagesinglename= qr/[A-Za-z]\w*/;
+my $packagename= qr/$packagesinglename (?: :: $packagesinglename)* /x;
+
+sub add_deps ($file) {
+    my $str= xslurp $file;
+    while ($str=~ m/(?:^|\n) *(?:use|require) +($packagename)/g) {
+        my $dep = $1;
+        $dep{$dep}++
+    }
+}
+
+add_deps $_ for @ARGV;
+
+xprintln $_ for sort keys %dep;
+    
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
