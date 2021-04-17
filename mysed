@@ -16,7 +16,10 @@ sub usage {
     print "$name s/../../sigo -T filelist\n";
     print "$name s/../../sigo -l < filelist\n";
     print "  Applies perl regex to all given files; moves old versions of the modified\n";
-    print "  files to the trash can (if possible).\n";
+    print "  files to the trash can (if possible). The current file path\n";
+    print "  is available in \$path, the folder and file name in \$folder and\n";
+    print "  \$filename.\n";
+    print "  \n";
     print "  Other options: (to be given *before* the above-mentioned options!)\n";
     print "    --keep-time    keep the modification time of the file\n";
     print "                   (if it's a symlink, hmmmm currently get the mtime of the\n";
@@ -34,7 +37,8 @@ my $mode;
 # -=filelist on stdin,
 # r=recursive with $path and $optionalpathregex
 
-my ($path,
+
+my ($path0,
     $optionalpathregex,
     $fileregex_is_negative,
     $opt_keep_time,
@@ -46,7 +50,7 @@ OPTPARSE: {
     if ($_ eq '-r') {
 	$mode='r';
 	shift;
-	$path=shift
+	$path0=shift
 	  or usage "missing path";
 	$optionalpathregex= shift;
 	# Special character ! at beginning has special meaning
@@ -91,6 +95,7 @@ OPTPARSE: {
 
 defined $regex or usage;
 
+our ($path, $folder, $filename);
 eval "sub doreg { $regex }; 1"
   or die "could not eval regex: $@";
 
@@ -112,8 +117,8 @@ if ($trash and $mode eq 'r')
   # XXX: test for EXDEV, ask
  {
     my $trashdev= (stat $trash)[0]; ## or die?
-    my $pathdev= (stat $path)[0];
-    defined $pathdev or die "could not stat '$path': $!";
+    my $pathdev= (stat $path0)[0];
+    defined $pathdev or die "could not stat '$path0': $!";
     ASK: {
 	my $ans;
 	do {
@@ -180,8 +185,8 @@ sub scandir {
 my $opt_L;
 
 sub changefile {
-    my ($folder,$file)=@_;
-    my $path= length($folder)? "$folder/$file" : $file;##hum?
+    local ($folder, $filename)=@_;
+    local $path= length($folder)? "$folder/$filename" : $filename; # hum?
     my $maybe_stat= ($opt_keep_time and xstat $path);
     my $is_exe= -x $path;
     my $maybe_apply_statinfo= sub {
@@ -218,7 +223,7 @@ sub changefile {
 			    $trashpath=~ s|/..$|/__|s;
 			    $trashpath= "$actualtrashdir/$trashpath";
 			    mkpath($trashpath); # error check?
-			    if (rename $path,"$trashpath/$file") {
+			    if (rename $path,"$trashpath/$filename") {
 				# ok
 			    } elsif ($!==EXDEV) {
 				if ($opt_L) {
@@ -226,9 +231,9 @@ sub changefile {
 				    last CHANGE;
 				}
 				# slow path
-				xxsystem "mv", "--", $path, "$trashpath/$file";
+				xxsystem "mv", "--", $path, "$trashpath/$filename";
 			    } else {
-				die "Could not move `$path' to trash dir `$trashpath/$file': $!";
+				die "Could not move `$path' to trash dir `$trashpath/$filename': $!";
 			    }
 			}
 			if (rename "$path.$appendix",$path) {
@@ -239,10 +244,10 @@ sub changefile {
 			}
 		    }#/CHANGE
                 } else {
-                    die "Could not write (everything) to file `$folder/$file.$appendix': $!";
+                    die "Could not write (everything) to file `$folder/$filename.$appendix': $!";
                 }
             } else {
-                die "Could not open file `$folder/$file.$appendix' for writing: $!";
+                die "Could not open file `$folder/$filename.$appendix' for writing: $!";
             }
         } else {
             warn "No match in $path\n" if DEBUG;
@@ -256,10 +261,10 @@ sub changefile {
 #warn "mode=$mode";
 
 if ($mode eq 'r') {
-    if (-d $path) {
-	scandir($path);
+    if (-d $path0) {
+	scandir($path0);
     } else {
-	$path=~ m|(.*?)([^/]+)$|s or die "???";
+	$path0=~ m|(.*?)([^/]+)$|s or die "???";
 	my ($folder,$file)=($1,$2);
 	$folder=~ s/\/$//s;
 	changefile($folder,$file);
