@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# Tags: (functional)
+
 # Copyright 2008-2017 Christian Jaeger, MIT license.
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 

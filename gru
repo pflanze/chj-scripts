@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Tags: (git-shortcut)
+
 set -euo pipefail
 IFS=
 

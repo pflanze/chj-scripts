@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# Tags: (ipc)
+
 # Mit Feb 13 13:22:44 CET 2008
 (my $email='chrjae%gmail,com')=~ tr/%,/@./;
 
