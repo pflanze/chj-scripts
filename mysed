@@ -198,10 +198,10 @@ sub changefile {
 	}
     };
     warn "Scanning file $path\n" if DEBUG;
-    if (open FILE ,"<$path") {
+    if (open FILE, "<$path") {
         local $/=undef;
         local $_=<FILE>;
-        close FILE;
+        close FILE or die "close('$path'): $!";
         if (defined $_ and my $cnt = doreg()) {
             print "$cnt ".($cnt==1 ? "change": "changes")." in $path\n"
 	      unless $opt_quiet;
