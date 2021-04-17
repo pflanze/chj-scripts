@@ -44,6 +44,7 @@ HMMMM, can only rename? not move to a different 'place' (folder) altogether?
 package Chj::Maildir::SubfolderAndSubfolders;
 
 use strict;
+use utf8;
 use Chj::xopendir;
 use Carp;
 use POSIX qw(EEXIST ENOTEMPTY);

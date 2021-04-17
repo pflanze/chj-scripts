@@ -21,6 +21,7 @@ Same interface for all of them.
 
 package Chj::Crypt::Test;
 use strict;
+use utf8;
 
 use Class::Array -fields=>
   ;#none? just methods?

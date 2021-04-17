@@ -20,6 +20,7 @@ Chj::Socket::SSL
 package Chj::Socket::SSL;
 
 use strict;
+use utf8;
 
 use Class::Array -fields=>
   -publica=>

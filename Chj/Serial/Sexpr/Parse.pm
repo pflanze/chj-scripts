@@ -23,6 +23,7 @@ package Chj::Serial::Sexpr::Parse;
 #%EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
+use utf8;
 
 use Class::Array -fields=>
   -publica=>

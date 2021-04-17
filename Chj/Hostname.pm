@@ -10,6 +10,7 @@ package Chj::Hostname;
 require Exporter;
 @ISA='Exporter';
 use strict;
+use utf8;
 use Carp;
 use Net::Domain;
 use Chj::Net::Publicip 'publicip';

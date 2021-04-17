@@ -27,6 +27,7 @@ package Chj::Predicates;
 	  );
 
 use strict;
+use utf8;
 
 
 sub is_symbol {

@@ -20,6 +20,7 @@ Chj::Crypt::Test::Crypt_CBC_with_Blowfish
 package Chj::Crypt::Test::Crypt_CBC_with_Blowfish;
 
 use strict;
+use utf8;
 
 use Chj::Crypt::Test::Crypt_CBC_with_Blowfish::Key;
 use Chj::IO::File;

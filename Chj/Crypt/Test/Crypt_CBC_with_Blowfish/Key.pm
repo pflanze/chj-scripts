@@ -22,6 +22,7 @@ Chj::Crypt::Test::Crypt_CBC_with_Blowfish::Key
 
 package Chj::Crypt::Test::Crypt_CBC_with_Blowfish::Key;
 use strict;
+use utf8;
 use Crypt::CBC;
 
 use Class::Array -fields=>

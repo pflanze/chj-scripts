@@ -36,6 +36,7 @@ Na, bei relative auch blanke zahlen zulassen !!
 package Chj::Temperature;
 
 use strict;
+use utf8;
 
 
 use Carp;

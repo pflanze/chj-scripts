@@ -21,6 +21,7 @@ package Chj::Parse::Date::Ls;
 #@ISA="Exporter"; require Exporter;
 #@EXPORT_OK=qw();
 use strict;
+use utf8;
 use Chj::Parse::Date::months;
 use Carp;
 use POSIX 'strftime';

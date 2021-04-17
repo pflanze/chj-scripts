@@ -20,6 +20,7 @@ Chj::Unix::ShellRPC::Common
 package Chj::Unix::ShellRPC::Common;
 
 use strict;
+use utf8;
 
 use Chj::IO::CommandBidirectional;
 use Carp;

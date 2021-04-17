@@ -26,6 +26,7 @@ see Chj/DataStructure/Megalist/test script for an example.
 {
  package Chj::DataStructure::Megalist::Element;
  use strict;
+use utf8;
 
  use Class::Array -fields=> (
 			     'Prev',

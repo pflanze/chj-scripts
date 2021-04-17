@@ -26,6 +26,7 @@ status:  active / inactive
 package Chj::Linux::mdstat;
 
 use strict;
+use utf8;
 
 #use Class::Array -fields=> ();
 

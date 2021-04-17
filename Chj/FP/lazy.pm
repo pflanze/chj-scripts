@@ -31,6 +31,7 @@ package Chj::FP::lazy;
 	  );## hmm $EmptyList und so gehört doch in sep modul ?
 
 use strict;
+use utf8;
 
 use Chj::FP::Promise;
 use Chj::FP::Pair; # for $Chj::FP::EmptyList

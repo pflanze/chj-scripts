@@ -99,6 +99,7 @@ package Chj::Collection;
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
 
 use strict;
+use utf8;
 
 sub Items ($ ){# olle OO dispatch.
     my ($v)=@_;

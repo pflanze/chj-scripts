@@ -26,6 +26,7 @@ Chj::App::Trash
 package Chj::App::Trash;
 
 use strict;
+use utf8;
 
 use Carp; #always. well. we pay the (electricity bill)
 use POSIX 'EEXIST'; #dito.joyofprl.5.

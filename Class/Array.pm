@@ -17,6 +17,7 @@ package Class::Array;
 $VERSION = '0.10pre1';
 
 use strict;
+use utf8;
 use Carp;
 
 #use constant DEBUG=>0;

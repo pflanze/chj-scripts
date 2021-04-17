@@ -97,6 +97,7 @@ L<Chj::Unix::DaemonRunfile>
 package Chj::Unix::Daemonizer;
 
 use strict;
+use utf8;
 use Chj::xperlfunc qw(xfork xfileno);
 use Chj::xpipe;
 use POSIX "setsid";

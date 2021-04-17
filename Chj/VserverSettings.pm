@@ -29,6 +29,7 @@ package Chj::VserverSettings;
 %EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
+use utf8;
 
 our $etcbase= "/etc/vservers";
 

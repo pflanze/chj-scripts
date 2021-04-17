@@ -31,6 +31,7 @@ L<Chj::Vserver>, L<Chj::Vserver::Status_cmd_base>
 
 package Chj::Vserver::Status;
 use strict;
+use utf8;
 use Carp;#ps das poisened meinen method name space! wenn mir das bewusst wär
 
 use Chj::Vserver::Status_cmd_base -extend=>

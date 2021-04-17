@@ -19,6 +19,7 @@ Chj::Net::HTTPS
 package Chj::Net::HTTPS;
 
 use strict;
+use utf8;
 
 use Chj::Socket::SSL;
 

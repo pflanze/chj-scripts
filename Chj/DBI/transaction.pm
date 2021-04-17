@@ -58,6 +58,7 @@ package Chj::DBI::transaction;
 @EXPORT=qw(transaction transaction_check_exception);
 
 use strict;
+use utf8;
 use Carp;
 
 our $reconnect= sub { confess "\$Chj::DBI::transaction::reconnect has not been set, thus cannot reconnect" };

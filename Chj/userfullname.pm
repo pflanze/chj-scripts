@@ -29,6 +29,7 @@ package Chj::userfullname;
 @EXPORT=qw(userfullname);
 
 use strict;
+use utf8;
 use Carp;
 use Chj::chompspace;
 

@@ -39,6 +39,7 @@ package Chj::Path::Calc;
 #hmmmmm  alles wirklich right raus ?.
 
 use strict;
+use utf8;
 use Carp;
 
 #warn "this module is depreciated";

@@ -31,6 +31,7 @@ package Chj::Algo::CircularWraparound;
 	      circwrap
 	     );
 use strict;
+use utf8;
 
 
 sub circularwraparound {# circular_wraparound.  circwrap.

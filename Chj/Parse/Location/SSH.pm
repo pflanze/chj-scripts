@@ -22,6 +22,7 @@ Parse the ssh/scp/rsync-'typical' user@domain:location uris.
 package Chj::Parse::Location::SSH;
 
 use strict;
+use utf8;
 
 use Chj::Parse::Location -extend=>
   -publica=>

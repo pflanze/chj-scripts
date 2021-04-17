@@ -53,6 +53,7 @@ require Exporter;
 @EXPORT_OK=qw(packagedata);
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
 use strict;
+use utf8;
 use Devel::Symdump;
 
 my @symkind= ( ['$', "scalars","SCALAR"],

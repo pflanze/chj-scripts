@@ -1,4 +1,5 @@
 package Filepaths;
+use utf8;
 
 # FILEPFADE-VERARBEITUNGSSYSTEM (Unabhängig von URI::URL)
 # cj 20.9.98

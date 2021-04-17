@@ -21,6 +21,7 @@ package Chj::Shelllike::touch_r;
 @ISA="Exporter"; require Exporter;
 @EXPORT=qw(touch_r);
 use strict;
+use utf8;
 use Carp;
 
 sub touch_r($ $ ) {

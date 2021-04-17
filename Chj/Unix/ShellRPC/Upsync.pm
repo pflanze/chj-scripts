@@ -27,6 +27,7 @@ but because it can't (with my current class array implementation).)
 package Chj::Unix::ShellRPC::Upsync;
 
 use strict;
+use utf8;
 use Chj::Random::Formatted;
 use Chj::xopen ();
 use Chj::Unix::ShellRPC::Functions ':all';

@@ -20,6 +20,7 @@ Chj::FileStore::MIndex::NonsortedIterator
 package Chj::FileStore::MIndex::NonsortedIterator;
 
 use strict;
+use utf8;
 use Chj::xopendir;
 
 use Class::Array -fields=> (

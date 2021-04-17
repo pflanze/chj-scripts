@@ -36,6 +36,7 @@ Time zone is not supported grr
 package Chj::Parse::Apache::Accesslog;
 
 use strict;
+use utf8;
 our @IMPORTABLE;
 BEGIN {
     @IMPORTABLE=(

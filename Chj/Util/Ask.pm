@@ -24,6 +24,7 @@ package Chj::Util::Ask;
 	      );
 
 use strict;
+use utf8;
 use Carp;
 
 eval {

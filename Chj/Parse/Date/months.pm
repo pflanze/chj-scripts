@@ -29,6 +29,7 @@ package Chj::Parse::Date::months;
 	       $lcmonth_hash
 	     );
 use strict;
+use utf8;
 use Carp;
 
 our @short_english_month= qw(

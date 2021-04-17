@@ -78,6 +78,7 @@ require Exporter;
 @ISA=qw(Exporter);
 
 use strict;
+use utf8;
 use Carp; # load time?
 use Fcntl; # 30ms
 use POSIX qw(WNOHANG EINTR EPERM); #":sys_wait_h"; # not *that* costly, ~50ms, versus 150ms of vectolist;

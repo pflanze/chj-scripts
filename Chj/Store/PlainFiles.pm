@@ -20,6 +20,7 @@ Chj::Store::PlainFiles
 package Chj::Store::PlainFiles;
 
 use strict;
+use utf8;
 use Chj::xopen qw(xopen_write xopen_read);
 use POSIX qw(ENOENT EEXIST);
 

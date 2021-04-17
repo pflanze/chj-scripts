@@ -20,6 +20,7 @@ Chj::FP::Pair
 package Chj::FP::Pair;
 
 use strict;
+use utf8;
 use Chj::Predicates;
 use Carp;
 

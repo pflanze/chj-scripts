@@ -42,6 +42,7 @@ todo isch, mehrere add gleichen keys  und dasselbe bei holen undsoweiter. (ps. h
 package Chj::FileStore::Collection;
 
 use strict;
+use utf8;
 use Chj::xperlfunc;
 use Chj::FileStore::Helpers;
 

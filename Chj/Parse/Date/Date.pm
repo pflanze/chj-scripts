@@ -27,6 +27,7 @@ LANG=C locale or some other locales (German, at least).
 package Chj::Parse::Date::Date;
 
 use strict;
+use utf8;
 
 use enum qw(E_success
 	    E_invalidformat

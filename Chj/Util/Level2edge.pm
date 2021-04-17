@@ -35,6 +35,7 @@ For system state checker alarm scripts.
 package Chj::Util::Level2edge;
 
 use strict;
+use utf8;
 use Chj::xopendir;
 use Chj::xopen "xopen_append";
 use Chj::xperlfunc;#xstat

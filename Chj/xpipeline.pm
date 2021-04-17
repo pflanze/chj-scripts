@@ -36,6 +36,7 @@ package Chj::xpipeline;
 %EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
+use utf8;
 use Chj::IO::Pipeline;
 use Carp;
 use Chj::xpipe;

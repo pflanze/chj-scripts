@@ -28,6 +28,7 @@ package Chj::Transform::Xml2Sexpr;
 	     );
 
 use strict;
+use utf8;
 
 use XML::LibXML;
 #use Chj::xopen qw(xopen_

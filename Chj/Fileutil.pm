@@ -75,6 +75,7 @@ package Chj::Fileutil;
 %EXPORT_TAGS= (all=> \@EXPORT_OK);
 
 use strict;
+use utf8;
 
 use Chj::xperlfunc;
 use Chj::singlequote qw(singlequote singlequote_many);

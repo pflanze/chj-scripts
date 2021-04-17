@@ -30,6 +30,7 @@ You are always better off just doing it yourself than firing down time the line 
 package Chj::MySQL::Cnf;
 
 use strict;
+use utf8;
 use Carp;
 use Chj::xopen qw(xopen_read);
 use Chj::xtmpfile;#### eben, wie?

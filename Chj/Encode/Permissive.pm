@@ -26,6 +26,7 @@ package Chj::Encode::Permissive;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(encode_permissive);
 use strict;
+use utf8;
 
 use Text::Iconv;
 use Carp;

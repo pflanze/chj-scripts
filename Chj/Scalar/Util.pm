@@ -52,6 +52,7 @@ use vars '@EXPORT_OK', '$DEBUG';
 $DEBUG=0;
 
 use strict;
+use utf8;
 
 eval {
     # try the "real thing"

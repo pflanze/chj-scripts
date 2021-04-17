@@ -23,6 +23,7 @@ Note that lineno() starts with 0 (as coded in SimpleHead.pm, currently).
 package Chj::Mail::SimpleHead::Header;
 
 use strict;
+use utf8;
 
 use MIME::Words 'decode_mimewords';
 use Chj::Encode::Permissive 'encode_permissive';

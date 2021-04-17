@@ -20,6 +20,7 @@ Chj::State::Level2edge
 package Chj::State::Level2edge;
 
 use strict;
+use utf8;
 
 use Class::Array -fields=>
   -publica=>

@@ -25,6 +25,7 @@ package Chj::Web::FileescapeUrl;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(fileescapeurl);
 use strict;
+use utf8;
 
 sub fileescapeurl {
     # Die Regel ist: wenn die url ein - enthält, dann / mit zwei -- ersetzen.

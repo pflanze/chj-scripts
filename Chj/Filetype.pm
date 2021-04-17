@@ -20,6 +20,7 @@ Chj::Filetype
 package Chj::Filetype;
 
 use strict;
+use utf8;
 
 use Class::Array -fields=> (
 			    "Path",

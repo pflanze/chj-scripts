@@ -24,6 +24,9 @@ package Chj::Web::url_encode;
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
+use strict;
+use utf8;
+
 sub url_encode {
     my ($str)=@_;
     #my $str= decode("utf-8", $_str, Encode::FB_CROAK);

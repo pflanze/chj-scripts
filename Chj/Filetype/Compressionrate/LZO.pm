@@ -20,6 +20,7 @@ Chj::Filetype::Compressionrate::LZO
 package Chj::Filetype::Compressionrate::LZO;
 #@EXPORT_OK=qw(%Factors
 use strict;
+use utf8;
 
 use Chj::Filetype -extend=> ();
 

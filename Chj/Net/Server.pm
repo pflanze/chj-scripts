@@ -43,6 +43,7 @@ ah. that could be made open. well. so for now this' the runnning mode.
 package Chj::Net::Server;
 
 use strict;
+use utf8;
 
 use Class::Array -fields=>
   -publica=>

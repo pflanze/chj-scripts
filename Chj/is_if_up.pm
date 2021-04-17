@@ -25,6 +25,7 @@ package Chj::is_if_up;
 %EXPORT_TAGS=(all=>[@EXPORT]);
 
 use strict;
+use utf8;
 
 our $ifconfig= "/sbin/ifconfig";
 

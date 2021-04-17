@@ -29,6 +29,7 @@ package Chj::status;
 	     );
 
 use strict;
+use utf8;
 
 # sub status {
 #     my $st= @_ ? $_[0] : $?;

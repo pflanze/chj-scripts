@@ -46,6 +46,7 @@ Does not allow to add the same key,value pair more than once. add returns false 
 package Chj::FileStore::MIndex;
 
 use strict;
+use utf8;
 use Chj::xperlfunc;
 use POSIX qw(EEXIST ENOENT ENOTEMPTY);
 use Carp;

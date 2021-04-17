@@ -24,7 +24,8 @@ package Chj::FileStore::Helpers;
 @EXPORT_OK=qw();
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
 
-use strict; use warnings FATAL => 'uninitialized';
+use strict;
+use utf8; use warnings FATAL => 'uninitialized';
 
 ###ps. lame copy  PIndex.pm <-> MIndex.pm
 sub _escape_key {

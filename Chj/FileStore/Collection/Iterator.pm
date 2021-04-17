@@ -20,6 +20,7 @@ Chj::FileStore::Collection::Iterator
 package Chj::FileStore::Collection::Iterator;
 
 use strict;
+use utf8;
 use Chj::xopendir;
 use Carp;#hrm
 use POSIX "ENOENT";

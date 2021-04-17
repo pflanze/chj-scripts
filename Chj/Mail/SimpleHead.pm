@@ -35,6 +35,7 @@ Note that lineno starts with 0.
 package Chj::Mail::SimpleHead;
 
 use strict;
+use utf8;
 
 use Chj::chompspace;
 use Chj::Mail::SimpleHead::Header;

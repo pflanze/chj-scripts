@@ -28,6 +28,7 @@ package Chj::Parse::Date::Xferlog;
 	     );
 
 use strict;
+use utf8;
 use Carp;
 use POSIX 'strftime';
 use Chj::Parse::Date::months;

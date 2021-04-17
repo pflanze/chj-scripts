@@ -28,6 +28,7 @@ Chj::IO::Pipeline
 
 package Chj::IO::Pipeline;
 use strict;
+use utf8;
 
 use Chj::xpipe;
 use base "Chj::IO::Command";#  #vgl. notizen in ~/perldevelopment/pipeline/Chj/xpipeline.pm

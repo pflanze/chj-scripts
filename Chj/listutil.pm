@@ -39,6 +39,7 @@ package Chj::listutil;
 # ps. zu any vgl. auch find!
 
 use strict;
+use utf8;
 
 sub any ( & ; @ ) {
     my $c=shift;

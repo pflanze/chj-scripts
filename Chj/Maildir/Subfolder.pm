@@ -25,6 +25,7 @@ thread/multiprocessing safe anyway (right?).
 package Chj::Maildir::Subfolder;
 
 use strict;
+use utf8;
 use Chj::xsysopen;
 use Chj::xsysopen 'xsysopen_append';
 use Carp;

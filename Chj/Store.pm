@@ -35,6 +35,7 @@ It then works by giving the storage pool objects for storage or loading; those o
 package Chj::Store;
 
 use strict;
+use utf8;
 
 use Class::Array -fields=> ();
 

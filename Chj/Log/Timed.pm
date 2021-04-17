@@ -30,6 +30,7 @@ Chj::Log::Timed
 package Chj::Log::Timed;
 
 use strict;
+use utf8;
 
 #use Class::Array -fields=> ();
 #wenn schon obi's die ich hier drin BENUTZE

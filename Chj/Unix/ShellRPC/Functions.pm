@@ -30,6 +30,7 @@ package Chj::Unix::ShellRPC::Functions;
 %EXPORT_TAGS=(all=>\@EXPORT_OK);
 
 use strict;
+use utf8;
 
 use Chj::Random::Formatted qw(random_passwd_string);
 use Chj::singlequote ':all';

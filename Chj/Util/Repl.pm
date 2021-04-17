@@ -74,6 +74,7 @@ Completion:
 package Chj::Util::Repl;
 
 use strict;
+use utf8;
 
 sub myeval {# this has to be at the top before any lexicals are defined! so that lexicals from this module are not active in the eval'ed code.
     eval $_[0]

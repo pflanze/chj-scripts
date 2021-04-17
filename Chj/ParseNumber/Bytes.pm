@@ -29,6 +29,7 @@ package Chj::ParseNumber::Bytes;
 @EXPORT= qw(parsenumber_bytes);
 
 use strict;
+use utf8;
 use Carp;
 
 sub contextsensitive {

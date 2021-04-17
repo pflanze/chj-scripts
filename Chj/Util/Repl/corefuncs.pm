@@ -24,6 +24,7 @@ package Chj::Util::Repl::corefuncs;
 @EXPORT=qw(corefuncs);
 
 use strict;
+use utf8;
 
 {
     # for some reason I can't seem to find out how to get at that otherwise.

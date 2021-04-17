@@ -80,6 +80,7 @@ L<Chj::Unix::Daemonizer>
 package Chj::Unix::DaemonRunfile;
 
 use strict;
+use utf8;
 use Carp;
 use Fcntl ':flock';
 use Chj::xsysopen; use Chj::xsysopen qw(xsysopen_readwrite);

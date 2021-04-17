@@ -260,7 +260,8 @@ require Exporter;
 	      #caching_getpwuid
 	      #caching_getgrgid
 %EXPORT_TAGS=(all=>[@EXPORT,@EXPORT_OK]);
-use strict; use warnings; use warnings FATAL => 'uninitialized';
+use strict;
+use utf8; use warnings; use warnings FATAL => 'uninitialized';
 use Carp;
 use Chj::singlequote 'singlequote_many'; # the only dependency so far
 use Chj::Unix::Exitcode qw(exitcode);

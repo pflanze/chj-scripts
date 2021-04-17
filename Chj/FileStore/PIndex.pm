@@ -55,6 +55,7 @@ set does not return any value.
 package Chj::FileStore::PIndex;
 
 use strict;
+use utf8;
 use Chj::xperlfunc;
 use Carp;
 use POSIX qw(EEXIST ENOENT);

@@ -68,6 +68,7 @@ package Chj::Introspection::Inheritancetree;
 @ISA="Exporter"; require Exporter;
 @EXPORT_OK=qw(inheritancetree dependencyordered);
 use strict;
+use utf8;
 # use Chj::DataStructure::Megalist;
 
 # sub dependencyordered($ ) {

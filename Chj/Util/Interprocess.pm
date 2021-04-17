@@ -33,6 +33,7 @@ package Chj::Util::Interprocess;
   );
 
 use strict;
+use utf8;
 
 use Chj::xpipe;
 #use Data::Dumper;##t odo replace with something undangerous

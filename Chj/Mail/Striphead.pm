@@ -20,6 +20,7 @@ Chj::Mail::Striphead
 package Chj::Mail::Striphead;
 
 use strict;
+use utf8;
 
 use Chj::Mail::SimpleHead;
 

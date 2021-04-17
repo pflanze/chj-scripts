@@ -65,6 +65,7 @@ package Chj::ruse;
 require Exporter;
 #@EXPORT_OK=qw();
 use strict;
+use utf8;
 use Carp;
 our $DEBUG=0; # -1 = more than normal-silent. 0 = no debugging. 1,2,3= debugging levels.
 

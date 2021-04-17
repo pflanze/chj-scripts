@@ -29,6 +29,7 @@ OO only - in spite of the fact that currently functional would suffice
 package Chj::Parse::Date::Localtime;
 
 use strict;
+use utf8;
 use Carp;
 use POSIX 'strftime';
 use Chj::Parse::Date::months;
