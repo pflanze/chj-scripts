@@ -50,3 +50,20 @@ Finding all dependencies for a set of files consists of:
     not packaged separately) that are needed, specify a dependency on
     the other packages needed.
 
+### (Partial) usage example:
+
+    $ cd /opt/chj/perllib
+    $ t=$(mktemp)
+    $ perl-getdeps Chj/Transform/Xml2Sexpr.pm Chj/xtmpfile.pm | perl-namespace2path > "$t"
+    $ # Modules which are part of chj-perllib:
+    $ filter $(C test -f _) < "$t" | perl-path2namespace --no-use
+    Chj::IO::Tempfile
+    Chj::schemestring
+    Chj::xtmpfile
+    $ # Modules which are *not* part of chj-perllib:
+    $ filter $(C test '!' -f _) < "$t" | perl-path2namespace --no-use
+    Exporter
+    XML::LibXML
+    strict
+
+(Note that `strict` and `Exporter` are part of the Perl core.)
