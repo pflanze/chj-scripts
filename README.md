@@ -2,6 +2,15 @@
 
 ## Installation
 
+### Via chjize
+
+[chjize](https://github.com/pflanze/chjize) makes installation of this
+library easy. Follow its own installation instructions, then:
+
+    chjize chj-bin
+
+### Manually
+
 (In all repositories there may be a signed tag every now and
 then. Feel free to check with `git tag -v $tagname`.)
 
