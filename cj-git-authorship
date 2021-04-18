@@ -44,6 +44,8 @@ use Chj::Git::Functions 'git_ls_files';
 
 our @ls= git_ls_files (undef, \@lsfiles_opt);
 
+#use FP::Repl::Trap;
+
 sub blame_path ( $ ) {
     my ($path)=@_;
     my $authors={};
@@ -57,13 +59,15 @@ sub blame_path ( $ ) {
     while (<$in>) {
 	chomp;
 	/^
-	 # accept up to 80 char long id's to be compatible with future gits where it's not a sha-1 anymore (well?)
-	 [a-f0-9]{40,80}
-	 # ignore filenames if present. assume that they never contain a paren.ok?
-	 [^(]*
+            # accept up to 80 char long id's to be compatible with future gits where it's not a sha-1 anymore (well?)
+            # git blame -t -l -b uses the empty string for lines that are available in the initial commit
+            (?:[a-f0-9]{40,80}|[ ]{40,80})
 
-	 # author fullname followed by unixtime, tz, lineno
-	 \((.*?)\s+\d+\ [+-]\d{4}\s+\d+\)
+            # ignore filenames if present. assume that they never contain a paren.ok?
+            [^(]*
+
+             # author fullname followed by unixtime, tz, lineno
+             \((.*?)\s+\d+\ [+-]\d{4}\s+\d+\)
 	 /x
 	  or die "no match in '$_'";
 	my $author= $1;
@@ -98,7 +102,9 @@ sub blame_path ( $ ) {
 	for my $author (sort {
 	    (($$authors{$b})
 	     <=>
-	     ($$authors{$a}))
+	     ($$authors{$a})
+             or
+             $a cmp $b)
 	} keys %$authors) {
 	    next if $author eq "__ALL__";
 	    printf '%5d %s'."\n", $$authors{$author}, $author;
@@ -135,10 +141,29 @@ sub blame_path ( $ ) {
     end Class::Array;
 }
 
+our $ignore_suffix= +{
+    map { $_ => 1 }
+    qw(tif png gif jpg jpeg svg ico icns
+       bmp xpm
+       pdf ai
+       exe so
+       pbxproj
+       win32 win32-cygwin-gnuc win32-msvc gtk2
+       depend
+       COPYING LICENSE
+        )};
+
 our @entries= map {
     my $path= $_;
-    my $authors= blame_path $path;
-    CJ_git_authorship->new($path,$authors)
+    my $suffix= $path;
+    $suffix=~ s{^.*[/\\]}{}s;
+    $suffix=~ s/^.*\.//s;
+    if ($ignore_suffix->{$suffix} or $ignore_suffix->{lc $suffix}) {
+        ()
+    } else {
+        my $authors= blame_path $path;
+        CJ_git_authorship->new($path,$authors)
+    }
 } (@ls);
 
 
