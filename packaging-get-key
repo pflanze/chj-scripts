@@ -21,7 +21,8 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname file key
 
-  Retrieve the value for key from file, e.g.
+  Retrieve the value (which must be an S-expression) for key from
+  file, e.g.
 
     $myname foo tags
 
@@ -32,6 +33,10 @@ sub usage {
   will print
 
    (git-shortcut debian)
+
+  and then, importantly, whatever follows in the same comment block!
+  It is the duty of the receiver of the output to only parse the first
+  S-expression.
 
   ($email_full)
 ";
@@ -52,9 +57,18 @@ my ($file, $key)= @ARGV;
 
 use Chj::xperlfunc qw(xslurp xprintln);
 
+my $commentlinestart = qr/\n *#/s;
+
 my $str= xslurp $file;
-if (my ($val) = $str=~ /\n *# *\Q$key\E: *([^\n]*)/is) {
-    xprintln $val;
+if (my ($valplus) = $str=~ m/
+       .* $commentlinestart \ * \Q$key\E: \ * ([^\n]* # the first line
+          (?: $commentlinestart [^\n]*)* # subsequent lines 
+       )
+    /isx) {
+    $valplus =~ s/\n# ?/\n/sg;
+    # This captured more than just the value! Rely on the user using
+    # an S-expression parser that just reads the first expression.
+    xprintln $valplus;
 } else {
     die "$myname: key '$key' not found in '$file'\n";
 }
