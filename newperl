@@ -52,6 +52,8 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
+use Getopt::Long;
+
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 my ($mydir, $myname);
@@ -69,8 +71,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-
-use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
