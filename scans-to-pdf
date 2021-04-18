@@ -3,6 +3,11 @@
 # Wed Sep 24 19:05:37 CEST 2008
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
+# Depends: (
+#  (debian imagemagick convert)
+#  (debian texlive-binaries pdflatex)
+# )
+
 use strict;
 
 use Chj::IO::Command;
