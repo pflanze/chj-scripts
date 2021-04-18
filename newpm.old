@@ -116,6 +116,7 @@ $namespace
 
 package $namespace;
 use strict;
+use utf8;
 use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
