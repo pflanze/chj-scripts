@@ -14,7 +14,17 @@ retrieve a metadata key. Example:
     (ipc)
 
 The values are lists of symbols in Scheme-compatible S-expression
-format.
+format. 
+
+  * `Depends`: a list of dependencies (excluding Perl modules
+    retrievable via `packaging-perl-getdeps`). If a dependency is a
+    plain symbol, then it's the file name inside the local repository.
+    Otherwise it's a list of at least 2 symbols, the package source (a
+    distro, let's minimize it to just `debian` if possible?), the
+    package name, then the filenames used from it.
+
+  * `Tags`: a list of symbols. Feel free to invent new ones if
+    necessary.
 
 Dependencies on Perl modules in Perl code are not listed in
 `Depends`. Instead, use [`packaging-perl-getdeps
