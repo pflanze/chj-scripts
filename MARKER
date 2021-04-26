@@ -8,7 +8,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname file [ additional text ]
+    print "Usage: $myname file [ additional text ]
 ";
 exit @_ ? 1 : 0;
 }
