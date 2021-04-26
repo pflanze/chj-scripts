@@ -24,7 +24,7 @@ sub usage {
   Retrieve the value (which must be an S-expression) for key from
   file, e.g.
 
-    $myname foo tags
+    $myname foo Tags
 
   where foo contains this line near the top:
 
@@ -37,6 +37,8 @@ sub usage {
   and then, importantly, whatever follows in the same comment block!
   It is the duty of the receiver of the output to only parse the first
   S-expression.
+
+  Note that key names are case sensitive.
 
   ($email_full)
 ";
@@ -64,7 +66,7 @@ if (my ($valplus) = $str=~ m/
        .* $commentlinestart \ * \Q$key\E: \ * ([^\n]* # the first line
           (?: $commentlinestart [^\n]*)* # subsequent lines 
        )
-    /isx) {
+    /sx) {
     $valplus =~ s/\n# ?/\n/sg;
     # This captured more than just the value! Rely on the user using
     # an S-expression parser that just reads the first expression.
