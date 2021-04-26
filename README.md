@@ -17,6 +17,11 @@ then. Feel free to check with `git tag -v $tagname`.)
 As root:
 
     cd /opt
+    git clone https://github.com/pflanze/functional-perl.git
+    cd functional-perl
+    # follow instructions in README.md to check fingerprint
+    perl Makefile.PL && make install
+    cd /opt
     mkdir chj
     cd chj
     git clone https://github.com/pflanze/chj-bin.git bin
