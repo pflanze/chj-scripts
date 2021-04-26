@@ -30,21 +30,42 @@ sub open_key_locally {
 
 # ============= website variant ==============================
 
-our $maybe_browser=
+sub maybe_which_cmd {
+    my $name= shift;
+    if (defined (my $prog= maybe_which $name)) {
+        [$prog]
+    } else {
+        undef
+    }
+}
+
+our $maybe_browser_cmd=
   (
-   maybe_which ("chromium-$ENV{USER}sbx")
+   do {
+       if (my $b= $ENV{BROWSER}) {
+           [split /\s+/, $b]
+       } else {
+           undef
+       }
+   }
    or
-   maybe_which ("galeon-$ENV{USER}sbx")
+   maybe_which_cmd("sensible-browser")
    or
-   maybe_which ("chromium-browser")
+   maybe_which_cmd("firefox-esr")
    or
-   maybe_which ("galeon")
+   maybe_which_cmd("firefox")
    or
-   #well, I haven't tested those..:
-   maybe_which ("firefox")
+   maybe_which_cmd("chromium-browser")
    or
-   maybe_which ("mozilla")
+   maybe_which_cmd("chromium")
+   or
+   maybe_which_cmd("mozilla")
   );
+
+sub browser_cmd {
+    defined $maybe_browser_cmd or die "can't find a web browser";
+    @$maybe_browser_cmd
+}
 
 sub Keyid32bithex ( $ ) {
     my ($str)= @_;
@@ -67,7 +88,7 @@ our $makeurl=sub ( $ $ ) {
 sub open_key_website {
     @_==2 or die;
     my ($sourceid, $targetid)=@_;
-    xxsystem $maybe_browser, &$makeurl ($sourceid, $targetid);
+    xxsystem browser_cmd, &$makeurl ($sourceid, $targetid);
 }
 
 # ============ common code ===================================
@@ -122,8 +143,8 @@ our ($whichway_txt, $open_key) = do {
     if ($maybe_wotsap and $maybe_displaytool) {
 	("local wotsap ($maybe_wotsap), with display tool $maybe_displaytool",
 	 \&open_key_locally)
-    } elsif ($maybe_browser) {
-	("browser $maybe_browser on website",
+    } elsif ($maybe_browser_cmd) {
+	("browser $maybe_browser_cmd->[0] on website",
 	 \&open_key_website)
     } else {
 	# 'eleganter' Weg um doch lazy zu sein. trotz 2er tuple.?.
