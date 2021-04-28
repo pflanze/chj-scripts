@@ -17,6 +17,7 @@ sub usage {
 
   --names     show package names only, one per line
   --dry-run   show apt commands instead of actually running them
+  --remove    remove instead of install
 
   --parse     try to pick out package names from between double
               quotes, as usually listed in Makefile.PL dependency
@@ -32,10 +33,12 @@ our $verbose=0;
 our $opt_names;
 our $opt_dry;
 our $opt_parse;
+our $opt_remove;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "names"=> \$opt_names,
 	   "dry-run"=> \$opt_dry,
+           "remove"=> \$opt_remove,
 	   "parse"=> \$opt_parse,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -74,7 +77,7 @@ sub aptinstall {
 	print $_, "\n"
 	  for @nam;
     } else {
-	my @cmd= ("apt-get", "install", @nam);
+	my @cmd= ("apt-get", ($opt_remove ? "remove" : "install"), @nam);
 	my $cmd= join(" ", @cmd);
 	if ($opt_dry) {
 	    print $cmd, "\n";
