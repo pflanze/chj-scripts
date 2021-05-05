@@ -23,10 +23,11 @@ sub usage {
 
   Options:
 
+    --html
+         HTML parsing mode
     --expand-entities
 	 Replaces &nbsp; with &#160; in the input before feeding to the parser.
 	 Only works when outputting to stdout.
-
     --stdout
 	 Print to stdout even if input file(s) is(/are) given
 
@@ -39,7 +40,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_loaddtd=0;
-our ($opt_expand_entities, $opt_stdout);
+our ($opt_html, $opt_expand_entities, $opt_stdout);
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -49,6 +50,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--html$/) {
+	$opt_html=1;
     } elsif (/^--expand-entities$/) {
 	$opt_expand_entities=1;
     } elsif (/^--stdout$/) {
@@ -72,7 +75,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 
 use Chj::Transform::Xml2Sexpr;
 
-my $transformer = Chj::Transform::Xml2Sexpr->new();
+my $transformer = Chj::Transform::Xml2Sexpr->new(html=> $opt_html);
 
 sub process_stringref {
     my ($strref)=@_;
