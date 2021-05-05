@@ -54,6 +54,11 @@ sub new {
     $self
 }
 
+sub parse_ {
+    my $self=shift;
+    $self->{html} ? "parse_html_" : "parse_"
+}
+
 sub walk_element {
     my ($self, $node, $o)=@_;
     $o->xprint("(");
@@ -86,7 +91,8 @@ sub file_to_sexpr {
     $out=~ s/\.(?:xml|x?html)$//i;
     $out.= ".scm";
 
-    my $tree= $self->{parser}->parse_file($filepath);##or die ?
+    my $method= $self->parse_."file";
+    my $tree= $self->{parser}->$method($filepath);##or die ?
 
     my $o= xtmpfile $out;
     binmode($o,":utf8") or die "binmode: $!";
@@ -111,12 +117,12 @@ sub STRING_OR_PORT_to_sexpr {
 
 sub string_to_sexpr {
     my ($self, $string, $opt_outport)=@_;
-    $self->STRING_OR_PORT_to_sexpr("parse_string", $string, $opt_outport)
+    $self->STRING_OR_PORT_to_sexpr($self->parse_."string", $string, $opt_outport)
 }
 
 sub port_to_sexpr {
     my ($self, $inport, $opt_outport)=@_;
-    $self->STRING_OR_PORT_to_sexpr("parse_fh", $inport, $opt_outport)
+    $self->STRING_OR_PORT_to_sexpr($self->parse_."fh", $inport, $opt_outport)
 }
 
 
