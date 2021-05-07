@@ -82,6 +82,18 @@ use Chj::singlequote ":all";
 use Chj::xopen "xopen_read";
 use Chj::Linux::Mountinfo ':all';
 
+sub perhaps_eval (&) {
+    my ($thunk)= @_;
+    my $res;
+    eval {
+        $res = &$thunk;
+        1
+    } ? $res : do {
+        warn "continuing after: $@";
+        ()
+    }
+}
+
 sub note ($ $) {
     if ($verbose) {
 	my ($msg,$path)=@_;
@@ -143,33 +155,35 @@ sub scan {
 	    if (defined (my $reason= $exclude_item{$item})) {
 		note "excluding (item: $reason)", $path
 	    } else {
-		my $s= xlstat $path;
-		if ($item eq ".git") {
-		    if ($s->is_dir) {
-			push @{$$paths_by_dev_ino{$s->dev}{$s->ino}}, $path;
-		    } elsif ($s->is_symlink) {
-			note "ignoring symlinked .git", $path;
-		    } else {
-			note "ignoring non-dir/link .git", $path;
-		    }
-		} else {
-		    if ($s->is_dir) {
-			if ($opt_optimize and $s->has_no_subdirs) {
-			    # no need to enter it, as no .git subdirs
-			    # can be there.
-			} elsif ($opt_exclude_tmp and $item eq "tmp") {
-			    #note "ignoring dir",$path;
-			    push @ignoredtmp, $path;
-			} else {
-			    scan ($paths_by_dev_ino, $path)
-			      # XX pass $s->nlink on so that it can
-			      # stop scanning when the last dir is
-			      # found?
-			}
-		    } else {
-			#note "ignoring non-dir",$path
-		    }
-		}
+		perhaps_eval {
+                    my $s= xlstat $path;
+                    if ($item eq ".git") {
+                        if ($s->is_dir) {
+                            push @{$$paths_by_dev_ino{$s->dev}{$s->ino}}, $path;
+                        } elsif ($s->is_symlink) {
+                            note "ignoring symlinked .git", $path;
+                        } else {
+                            note "ignoring non-dir/link .git", $path;
+                        }
+                    } else {
+                        if ($s->is_dir) {
+                            if ($opt_optimize and $s->has_no_subdirs) {
+                                # no need to enter it, as no .git subdirs
+                                # can be there.
+                            } elsif ($opt_exclude_tmp and $item eq "tmp") {
+                                #note "ignoring dir",$path;
+                                push @ignoredtmp, $path;
+                            } else {
+                                scan ($paths_by_dev_ino, $path)
+                                  # XX pass $s->nlink on so that it can
+                                  # stop scanning when the last dir is
+                                  # found?
+                            }
+                        } else {
+                            #note "ignoring non-dir",$path
+                        }
+                    }
+                }
 	    }
 	}
     }
