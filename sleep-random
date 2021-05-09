@@ -3,4 +3,4 @@
 set -euo pipefail
 IFS=
 
-sleep-better --random "$@"
+exec sleep-better --random "$@"
