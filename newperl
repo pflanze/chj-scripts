@@ -54,6 +54,7 @@ use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 use Getopt::Long;
+# use FP::Repl::Trap; #
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
