@@ -19,7 +19,8 @@ sub usage {
 
   --random
             sleep 0..2 times as long as the duration specified by
-            timedesc (largely within a factor of about 1.5)
+            timedesc (clustered around 1 times as long); uses random
+            sub-second part, too.
   --verbose
             print the end time to stderr (default)
   --quiet
