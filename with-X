@@ -1,0 +1,121 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use Chj::xopen qw(xopen_read);
+use Chj::xperlfunc qw(Xlstat);
+#use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+my $no_X_exitcode = 108; # int rand 128
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -- cmd args...
+
+  If DISPLAY isn't set, finds the most likely active X session of the
+  current user, and sets DISPLAY to it, then runs cmd with args. If no
+  active X session could be found, exits with code $no_X_exitcode.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+# again..:
+{
+    no experimental 'signatures';
+    sub perhaps_eval (&) {
+        my ($thunk)= @_;
+        my $res;
+        if (eval {
+            $res= &$thunk;
+            1
+            }) {
+            ($res)
+        } else {
+            my ($package, $filename, $line) = caller;
+            warn "note: continuing after: $@ at $filename line $line\n";
+            ()
+        }
+    }
+}
+
+sub file_xparse_environ ($path) {
+    my $in= xopen_read $path;
+    local $/= "\0";
+    my %m= map {
+        chomp;
+        if (my ($k, $v) = split /=/, $_, 2) {
+            ($k, $v)
+        } else {
+            die "non-matching entry in '$path': '$_'"
+        }
+    } $in->xreadline;
+    $in->xclose;
+    \%m
+}
+
+sub run() {
+    exec(@ARGV) or exit 127;
+}
+
+if ($ENV{DISPLAY}) {
+    run;
+} else {
+    my $uid = $>;
+    my @env =
+      map {
+          perhaps_eval {
+              file_xparse_environ($_)
+          }
+      }
+      grep { my $s= Xlstat $_; defined $s and $s->uid == $uid }
+      grep { m{/proc/\d+/} }
+      glob '/proc/*/environ';
+    my @d = map { my $d= $_->{DISPLAY}; defined($d) ? $d : () } @env;
+    # XX: should e.g. ':0' and ':0.0' be uniformized first?
+    my %count;
+    for (@d) {
+        $count{$_}++;
+    }
+    my @counts2d =
+      sort { $a->[0] <=> $b->[0] }
+      map {
+          [$count{$_}, $_]
+      } keys %count;
+    if (@counts2d) {
+        my $d = $counts2d[-1][1];
+        $ENV{DISPLAY} = $d;
+        # XX what to do about XAUTHORITY? Check `xauth list`?
+        run;
+    } else {
+        exit $no_X_exitcode;
+    }
+}
+
