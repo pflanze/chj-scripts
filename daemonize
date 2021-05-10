@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2004-2019 Christian Jaeger, published under the same terms
+# Copyright 2004-2021 Christian Jaeger, published under the same terms
 # as Perl 5
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
@@ -14,6 +14,7 @@ use Chj::xsysopen qw(xsysopen_append xsysopen_read);
 use Chj::xopendir;# ":all"; there's no :all
 use Digest::MD5 "md5_hex";
 use Chj::xperlfunc;
+use Chj::xperlfunc qw(xmkdir_p);
 use Chj::Util::AskYN;
 use Time::HiRes 'sleep';
 use Chj::xtmpfile;
@@ -199,10 +200,17 @@ ARG:{
     }
 }
 
+sub mklogdir {
+    my ($dirpath)= @_;
+    xmkdir_p $dirpath, 0700;
+}
+
 if (defined $opt_multilog) {
+    mklogdir $opt_multilog;
     if (defined $logfile) {
 	if ($logfile=~ m|^/|) {
 	    # leave alone
+            mklogdir dirname $logfile;
 	} else {
 	    $logfile= "$opt_multilog/$logfile"
 	}
@@ -210,7 +218,11 @@ if (defined $opt_multilog) {
 	$logfile= "$opt_multilog/nohup.out"
     }
 } else {
-    $logfile //= "nohup.out";
+    if (defined $logfile) {
+        mklogdir dirname $logfile
+    } else {
+        $logfile= "nohup.out";
+    }
 }
 
 unless ($usage) { # no defined: only avoid if an *error* parsing the
