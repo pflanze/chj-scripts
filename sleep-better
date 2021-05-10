@@ -15,12 +15,16 @@ sub usage {
   Uses Perl's https://metacpan.org/pod/Time::ParseDate plus custom
   features (s, m, h, d, y shortcuts for seconds, minutes, .. years) to
   parse timedesc, which can be a duration or a point in time, and
-  sleeps till then. Prints the end time to STDERR unless --quiet is
-  given.
+  sleeps till then.
 
   --random
             sleep 0..2 times as long as the duration specified by
             timedesc (largely within a factor of about 1.5)
+  --verbose
+            print the end time to stderr (default)
+  --quiet
+            do not print anything
+
 
   Also see dateparse.
 
@@ -30,8 +34,7 @@ exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
-our $verbose=0;
-our $opt_quiet;
+our $verbose=1;
 our $opt_random;
 our $debug;
 our $opt_test;
@@ -39,7 +42,7 @@ GetOptions("verbose"=> \$verbose,
            "debug"=> \$debug,
            "test"=> \$opt_test,
 	   "help"=> sub{usage},
-	   "quiet"=> \$opt_quiet,
+	   "quiet"=> sub{ $verbose = 0; },
            "random"=> \$opt_random,
 	   ) or exit 1;
 
@@ -235,7 +238,7 @@ my $dstr= do {
 
 warn "$myname: sleeping $dstr\n"
     .(' ' x length($myname))."  until $t = ".localtime($t)."\n"
-    unless $opt_quiet;
+    if $verbose;
 
 sleepUntil $t;
 
