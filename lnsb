@@ -1,0 +1,67 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Chj::xrealpath;
+use Chj::xperlfunc qw(xexec);
+use Getopt::Long;
+# use FP::Repl::Trap;
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+my $bookmarks= "$ENV{HOME}/bookmarks";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname paths.. targetpath
+
+  Creates symlinks from targetpath{,/filename} to the paths, where the
+  paths, unless absolute (or --relative is given), are taken to be as
+  relative from '$bookmarks'. targetpath is relative from cwd.
+
+  --relative   check if path exists, if so, take as relative from cwd
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+our $opt_relative;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "relative"=> \$opt_relative,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+my $targetpath = @ARGV > 1 ? pop @ARGV : ".";
+
+my @abspaths= map {
+    m{^/} ? $_ : (($opt_relative and -e $_) ?
+		  xrealpath($_)
+		  : "$bookmarks/$_")
+} @ARGV;
+
+xexec "ln", "-s", "-r", "--", @abspaths, $targetpath;
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
