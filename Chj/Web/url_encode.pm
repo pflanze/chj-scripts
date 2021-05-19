@@ -33,7 +33,7 @@ sub url_encode {
     #  -- nope, actually *want* it as utf-8 code points.
     #local our $u= URI->new($str);
     #hm no method for that.
-    $str=~ sé(.)é
+    $str=~ s{(.)}{
       my $c=$1;
       my $n= ord $c;
       if ($c=~ m{[A-Za-z0-9_/.=-]}) {
@@ -41,9 +41,8 @@ sub url_encode {
       } else {
 	  '%'.sprintf('%02X',$n)
       }
-    éseg;
+    }seg;
     $str
-    #use Chj::repl;repl;
 }
 
 
