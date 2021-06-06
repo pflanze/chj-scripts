@@ -17,6 +17,7 @@ sub usage {
   Options:
 
     --hunks    Split on hunk boundaries, too.
+    --quiet    Do not print the generated files.
 
   (Christian Jaeger <$email>)
 ";
@@ -26,16 +27,19 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 my $verbose=0;
 my $opt_hunks;
+my $opt_quiet;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   "hunks"=> \$opt_hunks,
-	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
+           "quiet"=> \$opt_quiet,
+           "help"=> sub{usage},
+           "hunks"=> \$opt_hunks,
+           #"dry-run"=> \$opt_dry,
+           ) or exit 1;
 usage unless @ARGV;
 
 use Chj::xtmpfile;
 use Chj::xopen 'xopen_read';
+use Chj::xperlfunc 'xprintln';
 
 
 sub rewrite_head {
@@ -88,6 +92,7 @@ sub write_diff {
                        $diff);
             $t->xclose;
             $t->xputback(0666);
+            xprintln $t->path unless $opt_quiet;
             $i++;
         }
     } else {
@@ -96,6 +101,7 @@ sub write_diff {
                    $diff);
         $t->xclose;
         $t->xputback(0666);
+        xprintln $t->path unless $opt_quiet;
     }
 }
 
