@@ -1,0 +1,27 @@
+#!/bin/bash
+
+IFS=
+
+usage () {
+    echo "usage: 0or1-accept cmd [ args ]"
+    echo "  runs cmd with given args, and exits 0 if cmd exited"
+    echo "  with code 0 or 1, 1 otherwise."
+    echo "  E.g. for running 'diff' so that inequal files don't"
+    echo "  lead to abortion."
+    exit 1
+}
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+"$@"
+ret=$?
+
+if [ $ret -eq 0 -o $ret -eq 1 ]; then
+    exit 0
+else
+    exit 1
+fi
+
+# todo: exit 127 or something if cmd didn't exist?
