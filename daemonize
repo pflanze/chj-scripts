@@ -14,7 +14,7 @@ use Chj::xsysopen qw(xsysopen_append xsysopen_read);
 use Chj::xopendir;# ":all"; there's no :all
 use Digest::MD5 "md5_hex";
 use Chj::xperlfunc;
-use Chj::xperlfunc qw(xmkdir_p);
+use Chj::xperlfunc qw(xmkdir_p dirname);
 use Chj::Util::AskYN;
 use Time::HiRes 'sleep';
 use Chj::xtmpfile;
