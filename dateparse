@@ -136,6 +136,18 @@ our $nondst_zone_names= +{
     CH=> 'Europe/Zurich',
 };
 
+our $city2nondst_zone_name= +{
+    Zurich=> "CH",
+    London=> "BT",
+    New_York=> "ET",
+    "New York"=> "ET",
+    "Miami"=> "ET", # XX right?
+    "Los_Angeles"=> "PT",
+    "Los Angeles"=> "PT",
+    "San Francisco"=> "PT",
+    "San_Francisco"=> "PT",
+};
+
 our $continents=
     # from DateTime::TimeZone::all_names
     ['Africa', 'America', 'Antarctica', 'Asia', 'Atlantic', 'Australia',
@@ -168,7 +180,31 @@ sub _pr {
                 sort keys %r
             };
             if (@replacements==0) {
-                sub { $_[0] }
+                # check if cities are mentioned:
+                my @replacements = map {
+                    my $n = $str=~ s/\b$_\b/UTC/sgi;
+                    # UTC is the hack so that we can do offset
+                    # ourselves, right?
+                    if ($n) {
+                        [$_, $n]
+                    } else {
+                        ()
+                    }
+                } sort keys %$city2nondst_zone_name;
+
+                if (@replacements == 0) {
+                    sub { $_[0] }
+                } elsif (@replacements == 1) {
+                    my ($city, $n)= @{$replacements[0]};
+                    my $nondstTZ = $city2nondst_zone_name->{$city} || die "bug";
+                    my $location= $nondst_zone_names->{$nondstTZ} || die "bug";
+                    offsetter_for_TZ $location, $nondstTZ
+                } else {
+                    die("$myname: more than one city used, "
+                        ."can't currently deal with that: "
+                        .join(", ", map { $$_[0] } @replacements)
+                        ."\n")
+                }
             } elsif (@replacements==1) {
                 offsetter_for_TZ $replacements[0], $replacements[0]
             } else {
