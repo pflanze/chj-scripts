@@ -125,6 +125,10 @@ our $nondst_zone_names= +{
     # being observed (early November to mid-March)
     # "Pacific Daylight Time" (PDT) when daylight saving
     # time (mid-March to early November) is being observed.
+    MT=> 'America/Phoenix', # MST
+    # Mountain Time Zone, Mountain Daylight Time
+    CT=> 'America/Chicago', # CDT
+    # Central Time Zone, Central Daylight Time
     ET=> "America/New_York",
     # Eastern Standard Time, when observing standard time
     # (autumn/winter) are five hours behind Coordinated
@@ -132,10 +136,48 @@ our $nondst_zone_names= +{
     # Eastern Daylight Time, when observing daylight saving
     # time (spring/summer), is four hours behind Coordinated
     # Universal Time (UTC−04:00).
+
     BT=> 'Europe/London',
+
+    # We're now using country codes, really?
     CH=> 'Europe/Zurich',
+    DE=> 'Europe/Berlin',
+    SE=> 'Europe/Stockholm',
 };
 
+our $city2nondst_zone_name= +{
+    Zurich=> "CH",
+    Switzerland=> "CH",
+    Berlin=> "DE",
+    Germany=> "DE",
+    Stockholm=> "SE",
+    "Malmö"=> "SE",
+    Sweden=> "SE",
+    London=> "BT",
+    New_York=> "ET",
+    "New York"=> "ET",
+    Boston=> "ET",
+    Miami=> "ET",
+    Orlando=> "ET",
+    Detroit=> "ET",
+    Pittsburgh=> "ET",
+    Richmond=> "ET",
+    "Salt Lake City"=> "MT",
+    Phoenix=> "MT",
+    Denver=> "MT",
+    Dallas=> "CT",
+    Chicago=> "CT",
+    Houston=> "CT",
+    "New Orleans"=> "CT",
+    Seattle=> "PT",
+    "Los_Angeles"=> "PT",
+    "Los Angeles"=> "PT",
+    "San Francisco"=> "PT",
+    "San_Francisco"=> "PT",
+    Portland=> "PT",
+};
+
+# Used to accept e.g. 'Europe/Zurich'
 our $continents=
     # from DateTime::TimeZone::all_names
     ['Africa', 'America', 'Antarctica', 'Asia', 'Atlantic', 'Australia',
@@ -168,7 +210,31 @@ sub _pr {
                 sort keys %r
             };
             if (@replacements==0) {
-                sub { $_[0] }
+                # check if cities are mentioned:
+                my @replacements = map {
+                    my $n = $str=~ s/\b$_\b/UTC/sgi;
+                    # UTC is the hack so that we can do offset
+                    # ourselves, right?
+                    if ($n) {
+                        [$_, $n]
+                    } else {
+                        ()
+                    }
+                } sort keys %$city2nondst_zone_name;
+
+                if (@replacements == 0) {
+                    sub { $_[0] }
+                } elsif (@replacements == 1) {
+                    my ($city, $n)= @{$replacements[0]};
+                    my $nondstTZ = $city2nondst_zone_name->{$city} || die "bug";
+                    my $location= $nondst_zone_names->{$nondstTZ} || die "bug";
+                    offsetter_for_TZ $location, $nondstTZ
+                } else {
+                    die("$myname: more than one city/country used, "
+                        ."can't currently deal with that: "
+                        .join(", ", map { $$_[0] } @replacements)
+                        ."\n")
+                }
             } elsif (@replacements==1) {
                 offsetter_for_TZ $replacements[0], $replacements[0]
             } else {
