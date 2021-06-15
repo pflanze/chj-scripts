@@ -177,6 +177,7 @@ our $city2nondst_zone_name= +{
     Portland=> "PT",
 };
 
+# Used to accept e.g. 'Europe/Zurich'
 our $continents=
     # from DateTime::TimeZone::all_names
     ['Africa', 'America', 'Antarctica', 'Asia', 'Atlantic', 'Australia',
