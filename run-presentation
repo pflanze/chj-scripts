@@ -5,14 +5,18 @@ IFS=
 logdir=~/log
 mkdir -p "$logdir"
 
+did_run=0
 onexit() {
-    daemonize --multilog "$logdir"/xscreensaver --start xscreensaver -no-splash
-    daemonize --multilog "$logdir"/xwrits --start xwrits-mine
+    if [ $did_run = 0 ]; then
+	did_run=1
+	daemonize --multilog "$logdir"/xscreensaver --start xscreensaver -no-splash
+	daemonize --multilog "$logdir"/xwrits --start xwrits-mine
+    fi
 }
 
 daemonize --stop xscreensaver -no-splash
 daemonize --stop xwrits-mine
 
-trap onexit EXIT
+trap onexit EXIT INT
 
 "$@"
