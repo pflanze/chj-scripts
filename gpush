@@ -5,15 +5,22 @@ set -eo pipefail
 # set -eu, so don't do that then.
 IFS=
 
+default_remotes_path() {
+    echo "$(git rev-parse --git-dir)/chj-default-remotes"
+}
+
 push () { var="$1"; eval "${var}[\${#${var}[@]}]=\"\$2\""; }
 
 help () {
     echo "usage: "
-    echo "  gpush [options] remote(s) [options]"
+    echo "  gpush [options] [remote(s)] [options]"
     echo
     echo "  Pushes the currently active branch to all the remotes,"
     echo "  prepending the local hostname and underscore to the branch"
     echo "  name on the remote side."
+    echo
+    echo "  If no remotes are given as arguments, takes them from"
+    echo "  the file $(default_remotes_path) if it exists."
     echo
     echo "  Meant for pushing to repositories with working directories,"
     echo "  which is my most common usage nowadays. Might extend to work"
@@ -24,14 +31,11 @@ help () {
     exit 1
 }
 
-if [ $# -eq 0 ]; then
-    help
+if [ $# -ge 1 ]; then
+    if [ "$1" = "-h" -o "$1" = "--help" ]; then
+        help
+    fi
 fi
-
-if [ "$1" = "-h" -o "$1" = "--help" ]; then
-    help
-fi
-
 
 hn=`hostname`
 br=`cj-git-current-branch`
@@ -55,6 +59,21 @@ gpush () {
 
     git push "${opts[@]}" "$1" "$br:${hn}_$br"
 }
+
+if [ "${#remotes[@]}" -eq 0 ]; then
+    path=$(default_remotes_path)
+    if [ -e "$path" ]; then
+        while read item; do
+            push remotes "$item"
+        done < "$path"
+    else
+        {
+            echo "gpush: no remotes given and file '$path' does not exist."
+            echo "gpush: run gpush --help for more info."
+        } >&2
+        false
+    fi
+fi
 
 for remote in "${remotes[@]}"; do
     gpush "$remote"
