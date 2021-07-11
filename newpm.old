@@ -71,7 +71,7 @@ sub create {
 
 our \@EXPORT=qw();
 our \@EXPORT_OK=qw();
-our \%EXPORT_TAGS=(all=>[\@EXPORT,\@EXPORT_OK]);
+our \%EXPORT_TAGS=(default => \\\@EXPORT, all=>[\@EXPORT,\@EXPORT_OK]);
 ";
 
 
