@@ -261,10 +261,10 @@ sub _pr {
     } elsif (@p==2) {
         my ($from,$to)=@p;
         my ($frombegin,$fromt)= $from=~
-            /^(.*?)\b(\d+:\d+(?:\d+)?(?:\s*(?:pm|am))?)\s*$/si
+            /^(.*?)\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)\s*$/si
             or die "no match for first part: '$from'";
         my ($tot,$torest)= $to=~
-            /^\s*\b(\d+:\d+(?:\d+)?(?:\s*(?:pm|am))?)(.*)/si
+            /^\s*\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)(.*)/si
             or die "no match for latter part: '$to'";
         my $t1= "$from $torest";
         my $t2= "$frombegin $to";
