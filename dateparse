@@ -260,15 +260,21 @@ sub _pr {
         pt $tz_offsetter, $p[0]
     } elsif (@p==2) {
         my ($from,$to)=@p;
-        my ($frombegin,$fromt)= $from=~
-            /^(.*?)\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)\s*$/si
-            or die "no match for first part: '$from'";
-        my ($tot,$torest)= $to=~
-            /^\s*\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)(.*)/si
-            or die "no match for latter part: '$to'";
-        my $t1= "$from $torest";
-        my $t2= "$frombegin $to";
-        pt $tz_offsetter, $t1, $t2
+        eval {
+            my ($frombegin,$fromt)= $from=~
+                /^(.*?)\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)\s*$/si
+                or die "no match for first part: '$from'";
+            my ($tot,$torest)= $to=~
+                /^\s*\b(\d+:\d+(?::\d+)?(?:\s*(?:pm|am))?)(.*)/si
+                or die "no match for latter part: '$to'";
+            my $t1= "$from $torest";
+            my $t2= "$frombegin $to";
+            pt $tz_offsetter, $t1, $t2;
+            1
+        } or do {
+            my $e1= $@; # XX ignore??
+            pt $tz_offsetter, $from, $to
+        };
     } elsif (@p==3
              and $p[0]=~ /\d\z/
              and $p[1]=~ /^\d+\z/
