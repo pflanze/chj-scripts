@@ -11,13 +11,38 @@ sub shebang {
     "#!/usr/bin/env perl\n"
 }
 
+my $is_FunctionalPerl_project;
+sub is_FunctionalPerl_project {
+    $is_FunctionalPerl_project //= do {
+        `pwd`=~ /functional-perl/
+    }
+}
+
 sub copy {
     my ($email_full)= @_;
     $email_full //= email_full;
     my $year= (localtime)[5]+1900;
-    (# "#\n".
-     "# Copyright $year by $email_full\n".
-     "# Published under the same terms as perl itself")
+    if (is_FunctionalPerl_project) {
+        my $str= <<'END';
+#
+# Copyright (c) 2021 Christian Jaeger, copying@christianjaeger.ch
+#
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version). See the file COPYING.md that came
+# bundled with this file.
+#
+END
+        $str=~ s/2021/$year/;
+        my $m= q{Christian Jaeger, copying@christianjaeger.ch};
+        $str=~ s/\Q$m\E/$email_full/ unless $email_full=~ /Christian Jaeger/;
+        chomp $str;
+        $str
+    } else {
+        (# "#\n".
+         "# Copyright $year by $email_full\n".
+         "# Published under the same terms as perl itself")
+    }
 }
 
 sub edit {
