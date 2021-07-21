@@ -9,13 +9,13 @@ did_run=0
 onexit() {
     if [ $did_run = 0 ]; then
 	did_run=1
-	daemonize --multilog "$logdir"/xscreensaver --start xscreensaver -no-splash
-	daemonize --multilog "$logdir"/xwrits --start xwrits-mine
+	init-xscreensaver start
+	init-xwrits-mine start
     fi
 }
 
-daemonize --stop xscreensaver -no-splash
-daemonize --stop xwrits-mine
+init-xscreensaver stop
+init-xwrits-mine stop
 
 trap onexit EXIT INT
 
