@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+newh() {
+    local path
+    local bn
+    local tag
+    path=$1
+    if [ -e "$path" ]; then
+        echo "file already exists: '$path'" 1>&2
+    else
+        bn=$(basename "$path" .h)
+        tag=$(echo "${bn}_h_" | perl -wne 'print uc $_ or die $!')
+        {
+            echo "#ifndef $tag"
+            echo "#define $tag"
+            echo
+            echo "#endif /* $tag */"
+        } > "$path"
+    fi
+}
+
+if [ $# = 0 ]; then
+    {
+        echo "usage: $0 file.h..."
+        echo "  Creates file.h with include guard"
+    } 1>&2
+    exit 1
+fi
+
+for file in "$@"; do
+    newh "$file"
+done
+
+exec $EDITOR "$@"
