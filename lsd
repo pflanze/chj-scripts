@@ -1,3 +1,68 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-ls -d */
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+#use experimental 'signatures';
+
+use Getopt::Long;
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [parentdir]
+
+  List directories in parentdir or ., via default 'ls' formatting (but
+  with color on), i.e. name-sorted and
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+usage "only 1 argument accepted" if @ARGV > 1;
+
+my $parentdir = @ARGV ? $ARGV[0] : ".";
+
+my @dirs;
+my @symlinks;
+
+for (glob "$parentdir/*/") {
+    s{^\./+}{};
+    my $p = $_;
+    $p=~ s{/\z}{};
+    if (-l $p) {
+        push @symlinks, $p;
+    } else {
+        push @dirs, $p; # $_ but no, why would I want to see the slash
+    }
+}
+
+exec "ls", "--color=always", "-d", "--", @dirs, @symlinks;
+
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
