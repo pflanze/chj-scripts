@@ -1,0 +1,98 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use Chj::xperlfunc qw(xchdir xlstat xstat Xlstat xxsystem xgetfile_utf8);
+use FP::Div qw(max);
+use Chj::xIOUtil qw(xputfile_utf8);
+
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname  [file.md ..]
+
+  Retranslate the given markdown files (or all in the current
+  repository) to html if the .md is newer than the .html
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+sub Log {
+    warn @_, "\n"
+	if $verbose;
+}
+
+
+sub md2html($mdpath) {
+    my $htmlpath = $mdpath;
+    $htmlpath =~ s{\.md\z}{.html}s
+	or die "markdown path not ending in .md: '$mdpath'";
+
+    my $generate = sub() {
+	xxsystem "pandoc", "-s", "-o", $htmlpath, $mdpath;
+	# Change .md links to .html (HACK):
+	my $s = xgetfile_utf8 $htmlpath;
+	$s =~ s{(href\s*=\s*"[^"]*)\.md(")}{${1}.html${2}}sg;
+	#use FP::Repl;repl if $mdpath=~ /index/;
+	xputfile_utf8 $htmlpath, $s;
+    };
+    
+    if (my $starget = Xlstat $htmlpath) {
+	my $t_target = $starget->mtime;
+	my $ssource = xlstat($mdpath);
+	my $t_source = $ssource->is_link ?
+	    max($ssource->mtime,
+		xstat($mdpath)->mtime,)
+	    : $ssource->mtime;
+	if ($t_target <= $t_source) {
+	    Log "regenerating '$htmlpath'";
+	    $generate->()
+	} else {
+	    Log "'$htmlpath' is up to date";
+	}
+    } else {
+	Log "generating '$htmlpath'";
+	$generate->()
+    }
+}
+
+if (@ARGV) {
+    md2html $_ for @ARGV;
+} else {
+    my $gitdir = `git rev-parse --git-dir`;
+    $? == 0 or die "git failed";
+    chomp $gitdir;
+    xchdir "$gitdir/..";
+    
+    my @files = `gls-of-suffix md`; chomp @files;
+    md2html $_ for @files;
+}
+
