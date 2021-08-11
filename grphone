@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname phonenumber grep-arguments
+
+  Change the (partial) phonenumber into a regex and calls grep with it
+  and the remaining arguments.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+usage if $ARGV[0]=~ /^--?h(elp)?$/;
+if (@ARGV and $ARGV[0] eq "--") {
+    shift @ARGV
+}
+usage unless @ARGV;
+
+my $phonenumber= shift @ARGV;
+
+my $dirt_char_re = '[\[\]\(\)\-_ \t/\\\']';
+
+my $phoneclean = $phonenumber =~ s/$dirt_char_re//sgr;
+
+my ($phonebare) = $phoneclean =~ m/^(\d+)\z/s
+    or usage "not a plain number after cleaning: '$phoneclean'";
+
+my $phonere = join($dirt_char_re.'{0,3}',
+                   split //, $phonebare);
+
+
+exec "grep", "-P", $phonere, @ARGV
+    or exit 127;
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
