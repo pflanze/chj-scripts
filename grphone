@@ -42,7 +42,7 @@ usage unless @ARGV;
 
 my $phonenumber= shift @ARGV;
 
-my $dirt_char_re = '[\[\]\(\)\-_ \t/\\\']';
+my $dirt_char_re = '[\[\]\(\)\-_ \t/\\\'\.,+]';
 
 my $phoneclean = $phonenumber =~ s/$dirt_char_re//sgr;
 
