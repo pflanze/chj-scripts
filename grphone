@@ -49,6 +49,8 @@ my $phoneclean = $phonenumber =~ s/$dirt_char_re//sgr;
 my ($phonebare) = $phoneclean =~ m/^(\d+)\z/s
     or usage "not a plain number after cleaning: '$phoneclean'";
 
+$phonebare=~ s/^0+//;
+
 my $phonere = join($dirt_char_re.'{0,3}',
                    split //, $phonebare);
 
