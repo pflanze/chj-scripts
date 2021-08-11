@@ -92,8 +92,19 @@ for my $regex (@ARGV) {
     my $tocheckset= hashset_difference $fileset, $fileset2;
     # We promised Perl style regexes, deliver on that:
     my $morefiles= array_to_hashset [ grep {
-        my $cnt= xgetfile_utf8 $_;
-        $cnt=~ /$re/
+        my $res;
+        eval {
+            my $cnt= xgetfile_utf8 $_;
+            $res= $cnt=~ /$re/;
+            1
+        } ? $res : do {
+            if ($@ =~ /ill-formed UTF-8/) {
+                warn "$myname: ignoring file in non-utf8 encoding: '$_'\n";
+            } else {
+                warn "$myname: ignoring file with error: '$_': $@";
+            }
+            0
+        }
     } hashset_keys_unsorted $tocheckset ];
     $fileset = hashset_union $fileset2, $morefiles;
 }
