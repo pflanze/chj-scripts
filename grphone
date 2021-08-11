@@ -51,9 +51,22 @@ my ($phonebare) = $phoneclean =~ m/^(\d+)\z/s
 
 $phonebare=~ s/^0+//;
 
-my $phonere = join($dirt_char_re.'{0,3}',
-                   split //, $phonebare);
+my $phonere = do {
+    my $seen_zero= 0;
+    join($dirt_char_re.'{0,3}',
+         map {
+             if ($_ eq '0' and not $seen_zero) {
+                 $seen_zero=1;
+                 '0?'
+             } else {
+                 $_
+             }
+         }
+         split //, $phonebare)
+};
 
+warn "$myname: grep -P with regex: $phonere\n"
+    if $ENV{DEBUG};
 
 exec "grep", "-P", $phonere, @ARGV
     or exit 127;
