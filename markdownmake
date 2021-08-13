@@ -38,6 +38,7 @@ sub usage {
      -a|--all      translate all .md files in the current git 
                    repository
      -v|--verbose  print what's happening
+     --suffix str  use str instead of md as the suffix
 
   ($email_full)
 ";
@@ -46,10 +47,12 @@ exit (@_ ? 1 : 0);
 
 our $verbose=0;
 our $opt_all=0;
+our $opt_suffix;
 #our $opt_dry;
-GetOptions("verbose"=> \$verbose,
+GetOptions("help"=> sub{usage},
+	   "verbose"=> \$verbose,
            "all"=> \$opt_all,
-	   "help"=> sub{usage},
+           "suffix=s"=> \$opt_suffix,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 
@@ -58,27 +61,32 @@ sub Log {
 	if $verbose;
 }
 
+my ($suffix) = defined($opt_suffix) ?
+    $opt_suffix=~ /^([^']+)\z/s
+    : "md"
+    or usage "invalid suffix $opt_suffix";
 
-sub md2html($mdpath) {
-    my $htmlpath = $mdpath;
-    $htmlpath =~ s{\.md\z}{.html}s
-	or die "markdown path not ending in .md: '$mdpath'";
+
+sub source2html($sourcepath) {
+    my $htmlpath = $sourcepath;
+    $htmlpath =~ s{\.$suffix\z}{.html}s
+	or die "source path not ending in .$suffix: '$sourcepath'";
 
     my $generate = sub() {
-	xxsystem "pandoc", "-s", "-o", $htmlpath, $mdpath;
-	# Change .md links to .html (HACK):
+	xxsystem "pandoc", "-s", "-o", $htmlpath, $sourcepath;
+	# Change .$suffix links to .html (HACK):
 	my $s = xgetfile_utf8 $htmlpath;
-	$s =~ s{(href\s*=\s*"[^"]*)\.md(")}{${1}.html${2}}sg;
-	#use FP::Repl;repl if $mdpath=~ /index/;
+	$s =~ s{(href\s*=\s*"[^"]*)\.$suffix(")}{${1}.html${2}}sg;
+	#use FP::Repl;repl if $sourcepath=~ /index/;
 	xputfile_utf8 $htmlpath, $s;
     };
     
     if (my $starget = Xlstat $htmlpath) {
 	my $t_target = $starget->mtime;
-	my $ssource = xlstat($mdpath);
+	my $ssource = xlstat($sourcepath);
 	my $t_source = $ssource->is_link ?
 	    max($ssource->mtime,
-		xstat($mdpath)->mtime,)
+		xstat($sourcepath)->mtime,)
 	    : $ssource->mtime;
 	if ($t_target <= $t_source) {
 	    Log "regenerating '$htmlpath'";
@@ -93,15 +101,15 @@ sub md2html($mdpath) {
 }
 
 if (@ARGV) {
-    md2html $_ for @ARGV;
+    source2html $_ for @ARGV;
 } elsif ($opt_all) {
     my $gitdir = `git rev-parse --git-dir`;
     $? == 0 or die "git failed";
     chomp $gitdir;
     xchdir "$gitdir/..";
     
-    my @files = `gls-of-suffix md`; chomp @files;
-    md2html $_ for @files;
+    my @files = `gls-of-suffix '$suffix'`; chomp @files;
+    source2html $_ for @files;
 } else {
     usage "missing file arguments or -a option";
 }
