@@ -26,19 +26,22 @@ BEGIN {
     ($mydir, $myname)=($1,$2);
 }
 
+my @default_suffixes= qw(md rst);
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname  [file.md ..]
+    print "$myname  [file.md file.rst ..]
 
-  Retranslate the given markdown files (or all in the current
-  repository) to html if the .md is newer than the .html
+  (Re)translate the given markup files (or all files with suffix
+  @default_suffixes in the current repository) to html if the source
+  file is newer than the .html file.
 
   Options:
 
      -a|--all      translate all .md files in the current git 
                    repository
      -v|--verbose  print what's happening
-     --suffix str  use str instead of md as the suffix
+     --suffix str  use str instead of @default_suffixes as the suffix
 
   ($email_full)
 ";
@@ -61,16 +64,11 @@ sub Log {
 	if $verbose;
 }
 
-my ($suffix) = defined($opt_suffix) ?
-    $opt_suffix=~ /^([^']+)\z/s
-    : "md"
-    or usage "invalid suffix $opt_suffix";
-
-
 sub source2html($sourcepath) {
     my $htmlpath = $sourcepath;
-    $htmlpath =~ s{\.$suffix\z}{.html}s
-	or die "source path not ending in .$suffix: '$sourcepath'";
+    $htmlpath =~ s{\.(\w+)\z}{.html}s
+	or die "source path does not have a suffix: '$sourcepath'";
+    my $suffix = $1;
 
     my $generate = sub() {
 	xxsystem "pandoc", "-s", "-o", $htmlpath, $sourcepath;
@@ -100,6 +98,12 @@ sub source2html($sourcepath) {
     }
 }
 
+my @suffixes = defined($opt_suffix) ?
+    $opt_suffix=~ /^([^']+)\z/s
+    : @default_suffixes
+    or usage "invalid suffix $opt_suffix";
+
+
 if (@ARGV) {
     source2html $_ for @ARGV;
 } elsif ($opt_all) {
@@ -107,9 +111,11 @@ if (@ARGV) {
     $? == 0 or die "git failed";
     chomp $gitdir;
     xchdir "$gitdir/..";
-    
-    my @files = `gls-of-suffix '$suffix'`; chomp @files;
-    source2html $_ for @files;
+
+    for my $suffix (@suffixes) {
+        my @files = `gls-of-suffix '$suffix'`; chomp @files;
+        source2html $_ for @files;
+    }
 } else {
     usage "missing file arguments or -a option";
 }
