@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use HTML::Entities;
+# use FP::Repl::Trap; #
+
+# copy from urldecode from chj-bin:
+use URI;
+use Encode;
+sub url_decode {
+    my ($str)=@_;
+    local our $u= URI->new($str);
+    local our $str2= $u->uri_unescape;
+    decode("utf-8", $str2, Encode::FB_CROAK)
+}
+
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file(s).html
+
+  Print contained (clickable/action) URLs
+
+  --once    only print each url once, when occurring first
+  --decode  unescape URL encoding (this breaks them!, since 
+            this can contain newlines, the '=' character (thus
+            making key-value ambiguous), '#', '?', '&' etc.)
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+our $opt_once;
+our $opt_decode;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "once"=> \$opt_once,
+	   "decode"=> \$opt_decode,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc qw(xgetfile_utf8 xprintln);
+
+sub urls ($str) {
+    $str=~ m{<a\b[^<>]*href\s*=\s*"([^"]*)"}g
+}
+
+my %seen;
+sub printurls($path) {
+    for my $url (urls xgetfile_utf8 $path) {
+	next if ($opt_once and $seen{$url}++);
+	my $d= HTML::Entities::decode $url;
+	xprintln $opt_decode ? url_decode($d) : $d;
+    }
+}
+
+printurls $_ for @ARGV;
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
