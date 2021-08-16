@@ -26,6 +26,7 @@ BEGIN {
     ($mydir, $myname)=($1,$2);
 }
 
+my $suffix_re = qr/\w+/;
 my @default_suffixes= qw(md rst);
 
 sub usage {
@@ -66,7 +67,7 @@ sub Log {
 
 sub source2html($sourcepath) {
     my $htmlpath = $sourcepath;
-    $htmlpath =~ s{\.(\w+)\z}{.html}s
+    $htmlpath =~ s{\.($suffix_re)\z}{.html}s
 	or die "source path does not have a suffix: '$sourcepath'";
     my $suffix = $1;
 
@@ -99,7 +100,7 @@ sub source2html($sourcepath) {
 }
 
 my @suffixes = defined($opt_suffix) ?
-    $opt_suffix=~ /^([^']+)\z/s
+    $opt_suffix=~ /^($suffix_re)\z/s
     : @default_suffixes
     or usage "invalid suffix $opt_suffix";
 
