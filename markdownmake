@@ -43,6 +43,7 @@ sub usage {
                    repository
      -v|--verbose  print what's happening
      --suffix str  use str instead of @default_suffixes as the suffix
+                   (do not include the dot)
 
   ($email_full)
 ";
@@ -68,7 +69,7 @@ sub Log {
 sub source2html($sourcepath) {
     my $htmlpath = $sourcepath;
     $htmlpath =~ s{\.($suffix_re)\z}{.html}s
-	or die "source path does not have a suffix: '$sourcepath'";
+	or die "source path does not have a valid suffix: '$sourcepath'";
     my $suffix = $1;
 
     my $generate = sub() {
@@ -102,7 +103,7 @@ sub source2html($sourcepath) {
 my @suffixes = defined($opt_suffix) ?
     $opt_suffix=~ /^($suffix_re)\z/s
     : @default_suffixes
-    or usage "invalid suffix $opt_suffix";
+    or usage "invalid suffix '$opt_suffix' (does not satisfy regex $suffix_re)";
 
 
 if (@ARGV) {
