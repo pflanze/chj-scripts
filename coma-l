@@ -2,7 +2,7 @@
 
 # copy in com-l !
 exec git commit -a -m "$(
-echo '(commit)'
+echo '()'
 echo
 g-l
 )" -e "$@"
