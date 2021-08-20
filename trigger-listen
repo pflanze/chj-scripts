@@ -50,8 +50,7 @@ sub usage {
 
   Options:
   --verbose|-v show command (and arguments) when triggered
-  --sleep n    sleep n instead of $sleeptime  (I don't remember the
-               use of the sleeptime right now)
+  --sleep n    sleep n instead of $sleeptime
   --umask val  use umask instead of the current one for creating the
                socket file
   --accept-arguments  instead of just the trigger message, accept
