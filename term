@@ -4,6 +4,18 @@
 my $myname= "term";
 
 use strict;
+use POSIX qw(setsid);
+# COPY from Chj::singlequote
+sub singlequote_sh {
+    @_ >= 1 and @_ <= 2 or die "1-2";
+    my ($str, $alternative) = @_;
+    if (defined $str) {
+        $str =~ s/\'/'\\\''/sg;
+        "'$str'"
+    } else {
+        defined($alternative) ? $alternative : "undef"
+    }
+}
 
 my $opt_fg=0;
 my @perhaps_agent;
@@ -52,8 +64,6 @@ other arguments) passed to urxvt--e.g.:
 }
 
 
-use POSIX qw(setsid);
-
 # HACK to fix encoding so that international keyboard input works (*sigh*)
 if ($ENV{LANG} eq "C") {
     # XX probably not working if locale not generated? Well, sucks.
@@ -79,7 +89,6 @@ sub runterminal {
     # Instead of just calling chdir, we use the shell's (bash's) cd
     # functionality to save as much of the PWD variable as possible.
 
-    use Chj::singlequote 'singlequote_sh'; #XXX hope it is correct. versus overridings.wellw'vr?
     my @scriptlines= "set -eu";
     my $chdir= sub {
         my ($path)=@_;
