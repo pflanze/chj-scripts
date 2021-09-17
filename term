@@ -4,7 +4,6 @@
 my $myname= "term";
 
 use strict;
-use POSIX qw(setsid);
 # COPY from Chj::singlequote
 sub singlequote_sh {
     @_ >= 1 and @_ <= 2 or die "1-2";
@@ -81,6 +80,7 @@ $fontsize=~ /^\d+$/s
 
 
 sub runterminal {
+    my ($do_setsid)= @_;
 
     # setting to xterm seems to work? whereas without it
     #  (older) debian (without urxvt installed) usually gives
@@ -110,7 +110,8 @@ sub runterminal {
         my $script= join("\n",@scriptlines);
         warn "script='$script'"
             if $ENV{TERM_DEBUG};
-        exec "/bin/bash", "-c", $script
+        exec(($do_setsid ? ("/usr/bin/setsid", "--") : ()),
+             "/bin/bash", "-c", $script)
           or exit 127;
     };
     if (@ARGV>=1 and
@@ -129,7 +130,7 @@ sub runterminal {
 
 
 if ($opt_fg) {
-    runterminal
+    runterminal 0;
 } else {
     my $pid=fork;
     defined
@@ -137,8 +138,7 @@ if ($opt_fg) {
     if ($pid) {
         exit 0;#well. bugg.buti dontcarenow
     } else {
-        setsid or die $!;
-        runterminal
+        runterminal 1;
     }
 }
 
