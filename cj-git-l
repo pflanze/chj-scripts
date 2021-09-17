@@ -41,6 +41,8 @@ GetOptions("verbose"=> \$verbose,
 our @maybe_files= @ARGV;
 #hh always a list. but may be nil. hhh. \MYLANG[nil,#f]
 
+$ENV{LC_ALL}= "C";
+
 sub files {
     my $g= Chj::IO::Command->new_sender("git", "status");
 
