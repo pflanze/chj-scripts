@@ -4,6 +4,11 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use Getopt::Long;
+use Encode 'decode_utf8';
+use Chj::IO::Command;
+use Chj::Unix::Exitcode 'exitcode';
+use Chj::Git::Functions 'git_unquote_path';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -25,7 +30,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-use Getopt::Long;
 our $verbose=0;
 our $opt_show_deleted=1;
 GetOptions("verbose"=> \$verbose,
@@ -36,10 +40,6 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 our @maybe_files= @ARGV;
 #hh always a list. but may be nil. hhh. \MYLANG[nil,#f]
-
-use Chj::IO::Command;
-use Chj::Unix::Exitcode 'exitcode';
-use Chj::Git::Functions 'git_unquote_path';
 
 sub files {
     my $g= Chj::IO::Command->new_sender("git", "status");
@@ -80,8 +80,6 @@ my $modmap= {
 	     deleted=> "D",
 	     'new file'=> "A"
 	    };
-
-use Encode 'decode_utf8';
 
 sub main {
     my $files= do {
