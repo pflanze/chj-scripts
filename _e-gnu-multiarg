@@ -2,8 +2,6 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
-use Chj::xperlfunc;
-
 my @files=
   (sub {
        my @orig_argv= @ARGV;
@@ -13,7 +11,7 @@ my @files=
 	   if ($_ eq "--") {
 	       if (@pre) {
 		   warn "$0: can't currently deal with options, falling back to single call\n";
-		   xexec "_e-gnu", @orig_argv
+		   exec "_e-gnu", @orig_argv or exit 127;
 	       } else {
 		   # no arguments before "--"
 		   return @ARGV
@@ -37,13 +35,15 @@ if ($n > 8) {
 }
 
 for (@files) {
-    if (my $pid= xfork) {
+    my $pid= fork; defined $pid or die "fork: $!";
+    if ($pid) {
 	push @pid, $pid
     } else {
-	xexec "_e-gnu", $_
+	exec "_e-gnu", $_ or exit 127;
     }
 }
 
 for (@pid) {
-    xxwaitpid $_
+    waitpid $_, 0 or die "waitpid $_: $!";
+    $? == 0 or die "pid $_ exited with code $?";
 }
