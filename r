@@ -4,7 +4,7 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
-use utf8;
+#use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -73,9 +73,9 @@ sub maybe_trunc ( $ ) {
     }
 }
 
-use Chj::TEST;
-TEST { maybe_trunc '(Fre_Mär_20_184758_CET_2015-secupgrades~' }
-'Fre_Mär_20_184758_CET_2015';
+#use Chj::TEST;
+#TEST { maybe_trunc '(Fre_Mär_20_184758_CET_2015-secupgrades~' }
+#'Fre_Mär_20_184758_CET_2015';
 
 
 # (which arguments should be removed?)
