@@ -79,33 +79,39 @@ our $opt_no_user_group;
 our $opt_no_time;
 our $opt_ignore_chown_errors;
 
-if (-e $metadataoptionspath) {
-    my $in = xopen_read $metadataoptionspath;
-    my @l = $in->xreadline;
-    $in->xclose;
-    chomp @l;
-    my %opts = map {
-        if (/^\s*#/s) {
-            ()
-        } elsif (/^\s*([\w-]+)\s*$/s) {
-            # The value `1` is nice for pulling out; have no opts with
-            # values for now.
-            ($1 => 1)
-        } else {
-            die "$myname: invalid line in config file '$metadataoptionspath': "
-                . "'$_'";
+my $maybe_config_read_exn;
+eval {
+    if (-e $metadataoptionspath) {
+        my $in = xopen_read $metadataoptionspath;
+        my @l = $in->xreadline;
+        $in->xclose;
+        chomp @l;
+        my %opts = map {
+            if (/^\s*#/s) {
+                ()
+            } elsif (/^\s*([\w-]+)\s*$/s) {
+                # The value `1` is nice for pulling out; have no opts with
+                # values for now.
+                ($1 => 1)
+            } else {
+                die "$myname: invalid line in '$metadataoptionspath': "
+                    . "'$_'";
+            }
+        } @l;
+        $opt_no_user_group = delete $opts{"no-user-group"};
+        my $no_mtime = delete $opts{"no-mtime"};
+        my $no_times = delete $opts{"no-times"};
+        $opt_no_time = $no_mtime || $no_times;
+        $opt_ignore_chown_errors = delete $opts{"ignore-chown-errors"};
+        if (my @k = keys %opts) {
+            die "$myname: unknown options in '$metadataoptionspath': "
+                . join (", ", sort @k)
         }
-    } @l;
-    $opt_no_user_group = delete $opts{"no-user-group"};
-    my $no_mtime = delete $opts{"no-mtime"};
-    my $no_times = delete $opts{"no-times"};
-    $opt_no_time = $no_mtime || $no_times;
-    $opt_ignore_chown_errors = delete $opts{"ignore-chown-errors"};
-    if (my @k = keys %opts) {
-        die "$myname: unknown options in config file '$metadataoptionspath': "
-            . join (", ", sort @k)
     }
-}
+    1
+} or do {
+    $maybe_config_read_exn = $@;
+};
 
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
@@ -114,6 +120,8 @@ GetOptions("verbose"=> \$verbose,
 	   "no-mtime"=> \$opt_no_time,
 	   "ignore-chown-errors"=> \$opt_ignore_chown_errors,
 	   ) or exit 1;
+
+die $maybe_config_read_exn if defined $maybe_config_read_exn;
 
 usage unless @ARGV>=1;
 
