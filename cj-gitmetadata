@@ -363,6 +363,7 @@ our $ignore_path=
   +{
     $metadatadir=> 1,
     $metadataignorepath=> 1,
+    $metadataoptionspath=> 1,
    };
 
 our $ignore_filename=
