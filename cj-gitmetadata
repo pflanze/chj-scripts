@@ -5,6 +5,19 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
+use Getopt::Long;
+use Chj::xperlfunc ':all';
+use Chj::xopen qw(perhaps_open_read xopen_write);
+use POSIX qw(ENOENT);
+use Chj::xopen 'xopen_read';
+use Chj::Path;
+use Chj::xtmpdir;
+use Chj::IO::Command;
+use Chj::Parallel_for_each;
+use Chj::xpipe;
+use Chj::Git::Functions 'git_ls_files';
+# plus those in nested namespaces
+
 our $metadatadir=".METADATA-v2";
 our $metadataignorepath= "$metadatadir.ignore";
 
@@ -50,12 +63,12 @@ sub usage {
        setgid bits, in which case the default behaviour still happens,
        which reports a warning and leaves permissions at 0.
 
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
-use Getopt::Long;
 our $verbose=0;
 our $opt_no_time;
 our $opt_ignore_chown_errors;
@@ -71,15 +84,6 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV>=1;
 
 our ($command,@args)= @ARGV;
-
-use Chj::xperlfunc ':all';
-#use Chj::Backtrace;
-#use Chj::repl; repl;
-
-##ENDLESS lib stuff:
-
-use Chj::xopen qw(perhaps_open_read xopen_write);
-use POSIX qw(ENOENT);
 
 
 # not fast, but 'easy'
@@ -109,7 +113,6 @@ sub XContent ($) {
     xContent ($path, 1)
 }
 
-#use Chj::xtmpfile;
 sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
     my ($path,$str)=@_;
     #my $f= xtmpfile $path;
@@ -309,9 +312,6 @@ sub xPutfile ( $ $ ) { # the above should then be called xGetfile ?
 }
 
 
-use Chj::xopen 'xopen_read';
-use Chj::Path;
-
 sub pathstr_canonicalize {
     my ($pathstr)=@_;
     Chj::Path->new_from_string ($pathstr)->canonicalize->string
@@ -339,9 +339,6 @@ if (-f $metadataignorepath) {
     $in->xclose;
 }
 
-use Chj::xtmpdir;
-use Chj::IO::Command;
-
 sub dir_or_fold {
     my ($pred,$d)=@_;
     if ($d eq "." or $d eq "/") {
@@ -362,10 +359,6 @@ sub ignore_path {
     dir_or_fold (*_ignore, $path)
 }
 
-
-use Chj::Parallel_for_each;
-use Chj::xpipe;
-use Chj::Git::Functions 'git_ls_files';
 
 our $commands=
   +{
