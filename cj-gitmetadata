@@ -87,7 +87,7 @@ eval {
         $in->xclose;
         chomp @l;
         my %opts = map {
-            if (/^\s*#/s) {
+            if (/^\s*(#|$)/s) {
                 ()
             } elsif (/^\s*([\w-]+)\s*$/s) {
                 # The value `1` is nice for pulling out; have no opts with
