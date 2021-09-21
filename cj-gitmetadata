@@ -20,6 +20,7 @@ use Chj::Git::Functions 'git_ls_files';
 
 our $metadatadir=".METADATA-v2";
 our $metadataignorepath= "$metadatadir.ignore";
+our $metadataoptionspath= "$metadatadir.options";
 
 my $opt_optimize=1;
 
@@ -50,6 +51,10 @@ sub usage {
   Also, only the files in the current HEAD are tracked ('of course').
 
   Options:
+     
+     these can also be written to '$metadataoptionspath',
+     without the leading '--', one per line. Those given
+     as command arguments have precedence.
 
    --no-user-group
        do not record user nor group (still restore whatever is stored)
@@ -70,9 +75,38 @@ exit (@_ ? 1 : 0);
 }
 
 our $verbose=0;
+our $opt_no_user_group;
 our $opt_no_time;
 our $opt_ignore_chown_errors;
-our $opt_no_user_group;
+
+if (-e $metadataoptionspath) {
+    my $in = xopen_read $metadataoptionspath;
+    my @l = $in->xreadline;
+    $in->xclose;
+    chomp @l;
+    my %opts = map {
+        if (/^\s*#/s) {
+            ()
+        } elsif (/^\s*([\w-]+)\s*$/s) {
+            # The value `1` is nice for pulling out; have no opts with
+            # values for now.
+            ($1 => 1)
+        } else {
+            die "$myname: invalid line in config file '$metadataoptionspath': "
+                . "'$_'";
+        }
+    } @l;
+    $opt_no_user_group = delete $opts{"no-user-group"};
+    my $no_mtime = delete $opts{"no-mtime"};
+    my $no_times = delete $opts{"no-times"};
+    $opt_no_time = $no_mtime || $no_times;
+    $opt_ignore_chown_errors = delete $opts{"ignore-chown-errors"};
+    if (my @k = keys %opts) {
+        die "$myname: unknown options in config file '$metadataoptionspath': "
+            . join (", ", sort @k)
+    }
+}
+
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "no-user-group"=> \$opt_no_user_group,
