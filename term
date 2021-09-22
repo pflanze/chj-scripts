@@ -110,8 +110,11 @@ sub runterminal {
         my $script= join("\n",@scriptlines);
         warn "script='$script'"
             if $ENV{TERM_DEBUG};
-        exec(($do_setsid ? ("/usr/bin/setsid", "--") : ()),
-             "/bin/bash", "-c", $script)
+        my @cmd = (
+            ($do_setsid ? ("/usr/bin/setsid") : ()),
+            "/bin/bash", "-c", $script
+            );
+        exec $cmd[0], @cmd
           or exit 127;
     };
     if (@ARGV>=1 and
