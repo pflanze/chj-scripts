@@ -143,6 +143,7 @@ sub main {
 	    #for now to visually warn me of this currently.
 	}
     }
+    $l->xxfinish;
 }
 
 main;
