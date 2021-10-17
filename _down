@@ -2,6 +2,10 @@
 
 export YOUTUBEDOWN=${YOUTUBEDOWN-youtubedown}
 
+if [ ! -e ~/.down.log ]; then
+    private touch ~/.down.log
+fi
+
 degoogle --pass \
     | »» perl -we 'my($url)=@ARGV; print "URL: $url\n"; exec $ENV{YOUTUBEDOWN}, @ARGV' 2>&1 \
     | tee >(log-timestamp --pid >> ~/.down.log)
