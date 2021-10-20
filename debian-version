@@ -232,17 +232,28 @@ our $releases=
    ["buster", "10.7", "2020-12-05"],
    ["buster", "10.8", "2021-02-06"],
    ["buster", "10.9", "2021-03-27"],
-   ["buster", "10.10", ],
-   ["buster", "10.11", ],
+   ["buster", "10.10", "2021-06-19"],
+   ["buster", "10.11", "2021-10-09"],
    ["buster", "10.12", ],
    ["buster", "10.13", ],
    ["buster", "10.14", ],
    ["buster", "10.15", ],
    ["buster", "10.16", ],
 
+   ["bullseye", "11.0", "2021-08-14", "59551", "30000+", undef, "2026-08-14~" ],
+   ["bullseye", "11.1", "2021-10-09"],
+   ["bullseye", "11.2", ],
+   ["bullseye", "11.3", ],
+   ["bullseye", "11.4", ],
+   ["bullseye", "11.5", ],
+   ["bullseye", "11.6", ],
+   ["bullseye", "11.7", ],
+   ["bullseye", "11.8", ],
+   ["bullseye", "11.9", ],
+   
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
-   ["bullseye", "11.0", undef, undef, undef, undef, undef ]
+   ["unknown", "12.0", undef, undef, undef, undef, undef ]
   ];
 
 sub index_of_by {
