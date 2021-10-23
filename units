@@ -32,6 +32,17 @@ sub m2feet($) { # lol
     ($v / 0.3048)
 }
 
+my %currency =
+  (
+   # 1 X in CHF
+   # e.g. https://www.investing.com/currencies/cad-chf
+   CHF=> 1,
+   USD=> 0.9159,
+   EUR=> 1.0668,
+   GBP=> 1.2596,
+   CAD=> 0.7409,
+  );
+
 our $conv=
   +{
     "°C"=> sub {
@@ -104,6 +115,22 @@ our $conv=
 	};
 	(ounce=> $ounce,
 	 "oz."=> $ounce)
+    },
+    do {
+        my $convert = sub {
+            my ($amount) = @_;
+            my $from = $myname;
+            my $to_chf = $currency{$from} // die "unknown currency '$from'";
+            my $chf = $amount * $to_chf;
+            for my $cur (sort keys %currency) {
+                my $to_cur = $currency{$cur};
+                my $in_cur = $chf / $to_cur;
+                printf '%s %.2f'."\n", $cur, $in_cur;
+            }
+        };
+        map {
+            $_ => $convert
+        } keys %currency
     },
    }->{$myname}
   or die "unknown name '$myname'";
