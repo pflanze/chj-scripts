@@ -3,5 +3,9 @@
 set -euo pipefail
 IFS=
 
-exec daemonize --action "$1" --multilog ~/log/firefox firefox
+logdir=~/log/firefox
+
+private mkdir -p "$logdir"
+
+daemonize --action "$1" --multilog "$logdir" firefox
 
