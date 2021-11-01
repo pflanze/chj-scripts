@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+cmd=$1
+
+cmdname=$(printf '%s' "$cmd" | tr / _)
+if printf '%s' "$cmdname" | egrep -q '[^a-zA-Z0-9_-]'; then
+    echo "$0: cmd contains unacceptable letters: '$cmd'" >&2
+    exit 1
+fi
+
+logdir=~/log/"$cmdname"
+
+if [ ! -d "$logdir" ]; then
+    private mkdir -p "$logdir"
+fi
+
+daemonize --start --multilog "$logdir" -- "$@"
