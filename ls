@@ -10,7 +10,7 @@ use strict;
 #$l->xprint("$$ ".localtime()."\n");
 
 our $ls= "/bin/ls";
-our @default_args= qw(--quoting-style=literal --color=auto);
+our @default_args= qw(--quoting-style=literal --color=auto -I *~);
 
 sub parent_process {
     #my $f= xopen_read("/proc/self/status")->xcontent;
@@ -57,7 +57,7 @@ if ($ppname=~ /emacs/) {
 	  }
       }
 	@ARGV;
-    exec $ls, @default_args, qw(-I *~), @args or exit 1;
+    exec $ls, @default_args, @args or exit 1;
 }
 else {
     exec $ls, @default_args, @ARGV or exit 1;
