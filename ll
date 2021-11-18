@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ls -l --color=auto -l -I '*~' --time-style=long-iso "$@"
+exec /opt/chj/bin/ls -l --time-style=long-iso "$@"
 
