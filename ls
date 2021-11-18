@@ -10,7 +10,7 @@ use strict;
 #$l->xprint("$$ ".localtime()."\n");
 
 our $ls= "/bin/ls";
-our @default_args= qw(--quoting-style=literal);
+our @default_args= qw(--quoting-style=literal --color=auto);
 
 sub parent_process {
     #my $f= xopen_read("/proc/self/status")->xcontent;
