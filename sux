@@ -185,11 +185,7 @@ then
     usage #exits
   fi
 
-  # Yeah, tempfile is a debian-specific command.  Workarounds exist for
-  # other machines.  If you do use a workaround, be certain that said
-  # workaround actually creates the new file, (via touch or similar) or
-  # xauth (below) will produce a pointless warning message.
-  sux_tmpfile=`tempfile -p sux`
+  sux_tmpfile=`mktemp --suffix sux`
   xauth -q -f $sux_tmpfile generate $DISPLAY . $sux_untrusted $sux_timeout
   sux_xauth_data=`xauth -f $sux_tmpfile nlist`
   rm -f $sux_tmpfile
