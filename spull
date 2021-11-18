@@ -5,7 +5,7 @@ set -eux
 
 if git status |grep '^nothing to commit' -q; then
 
-    tmp=$(tempfile)
+    tmp=$(mktemp)
     ( git pull || true ) 2>&1 | tee "$tmp"
     if egrep -q 'CONFLICT|merge failed' "$tmp"; then
         set +x

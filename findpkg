@@ -38,7 +38,7 @@ if [ $# -gt 0 ]
 then
     case $1 in
     --update|-u)
-	tmp=`tempfile`
+	tmp=`mktemp`
 	trap "rm -f $tmp; exit" INT EXIT
 	set -e
 	wget ${wgetopts} -O $tmp http://${server}/debian/dists/${dist}/Contents-${arch}.gz

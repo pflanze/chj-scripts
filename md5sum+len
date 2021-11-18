@@ -4,8 +4,8 @@
 
 set -eu
 
-lenfile=`tempfile`
-md5file=`tempfile`
+lenfile=`mktemp`
+md5file=`mktemp`
 rmfiles () {
     rm "$lenfile"
     rm "$md5file"

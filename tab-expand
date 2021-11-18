@@ -10,7 +10,8 @@ fi
 
 if [ $# -gt 0 ]; then
     for file in "$@"; do
-	tmp="$(tempfile -d "$(dirname "$file")")"
+	dir=$(dirname "$file")
+	tmp=$(TMPDIR="$dir" mktemp)
 	expand --tabs=$N < "$file" > "$tmp"  ## no quotes around $N?
 	PERMS="`perms-of "$file"`"
 	mv "$file" "${file}~"

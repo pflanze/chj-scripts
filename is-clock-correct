@@ -48,7 +48,7 @@ curday="`date|cut -c5-11`"
 
 assert_datepart "$curday"
 
-tmpfile1="`tempfile`"
+tmpfile1="`mktemp`"
 trap 'rm "$tmpfile1"' EXIT
 declare -a remember
 grep 'ntpd.*adjusting local clock by' /var/log/daemon.log|tail -1|cut -c1-7 > "$tmpfile1"

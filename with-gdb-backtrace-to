@@ -19,7 +19,7 @@ shift
 program="$1"
 shift
 
-cmdfile=`tempfile`
+cmdfile=`mktemp`
 logfile="${outfile}.log"
 backtracefile="${outfile}_backtrace.txt"
 

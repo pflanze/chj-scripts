@@ -14,8 +14,9 @@ fi
 
 file="$1"
 
-tmp=`tempfile`
-tmpout=$(tempfile -d "$(dirname "$file")")
+tmp=$(mktemp)
+dir=$(dirname "$file")
+tmpout=$(TMPDIR="$dir" mktemp)
 
 
 {

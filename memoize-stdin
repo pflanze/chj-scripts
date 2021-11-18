@@ -21,7 +21,7 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
-input=$(tempfile)
+input=$(mktemp)
 cat > "$input"
 
 hash=$(sha256sum "$input")

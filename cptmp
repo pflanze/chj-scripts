@@ -2,7 +2,7 @@
 
 set -eu
 
-f="`tempfile`"
+f="`mktemp`"
 
 cat "$@" >> "$f"
 

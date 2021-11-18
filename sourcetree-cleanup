@@ -14,7 +14,7 @@ fi
 
 dir="$1"
 
-filelist=`tempfile`
+filelist=`mktemp`
 
 find "$dir" -type f -print0 | grep -z -v '/\.git/' > "$filelist"
 

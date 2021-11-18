@@ -32,7 +32,8 @@ cleanup () {
 trap cleanup EXIT
 
 for file in "$@"; do
-    tmp=`tempfile -d "$(dirname "$file")"`
+    dir=$(dirname "$file")
+    tmp=$(TMPDIR="$dir" mktemp)
     "$cmd" < "$file" > "$tmp"
     rm -f "$file"'~'
     ln "$file" "$file"'~'

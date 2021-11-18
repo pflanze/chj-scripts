@@ -108,7 +108,7 @@ print "$1\n" or die $!
 dir_files () {
     test -d "$1"
     local t
-    t=`tempfile`
+    t=`mktemp`
     find "$1" -type f -print0 |»0 ls -rt > "$t"
     echo "$t"
 }

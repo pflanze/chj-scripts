@@ -14,8 +14,8 @@ if [ $# -ne 0 ]; then
 	usage
 fi
 
-suid=`tempfile`
-big=`tempfile`
+suid=`mktemp`
+big=`mktemp`
 
 # from man find:
 

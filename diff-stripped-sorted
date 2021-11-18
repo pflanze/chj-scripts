@@ -25,8 +25,8 @@ fi
 file1="$1"
 file2="$2"
 
-tmp1="$(tempfile --suffix "$(echo "$file1"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
-tmp2="$(tempfile --suffix "$(echo "$file2"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
+tmp1="$(mktemp --suffix "$(echo "$file1"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
+tmp2="$(mktemp --suffix "$(echo "$file2"|perl -wne 's/\s'\''//sg; s|/|--|sg; print')")"
 
 trap 'rm -f "$tmp1" "$tmp2"' 0  # programexit
 

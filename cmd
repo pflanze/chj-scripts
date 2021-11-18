@@ -20,7 +20,7 @@ if [ $# -eq 0 ]; then
 fi
 
 
-tmp=`tempfile`
+tmp=`mktemp`
 
 {
     echo -n '#!/bin/bash

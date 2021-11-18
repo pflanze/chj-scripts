@@ -30,8 +30,8 @@ backup=${INPLACE_BACKUP-1}
 
 
 for f in "$@"; do
-    dir=`dirname "$f"`
-    tmp=`tempfile -d "$dir"`
+    dir=$(dirname "$f")
+    tmp=$(TMPDIR="$dir" mktemp)
     "$cmd" < "$f" >> "$tmp"
     cp-perms "$f" "$tmp"
     if [ "$backup" = 1 ]; then

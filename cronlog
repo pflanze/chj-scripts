@@ -22,7 +22,7 @@ fi
 logfile="$1"
 shift
 
-tmpf=`tempfile`
+tmpf=`mktemp`
 
 is_ok () {
     local code="$1"
