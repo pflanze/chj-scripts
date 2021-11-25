@@ -37,6 +37,20 @@ if [ "$a" != "$b" ]; then
     fi
 fi
 
+if [ ! -d .METADATA-v2 ]; then
+    echo "scoma is being run for the first time in this repository,"
+    echo "there is no .METADATA-v2 directory yet. Are you sure you"
+    echo -n "want to start recording metadata? [y/n] "
+    read ans
+    if [ "$ans" = y -o "$ans" = yes -o "$ans" = Yes -o "$ans" = Y ]; then
+        true
+    else
+        echo "Cancelled by user request."
+        exit 2
+    fi
+fi
+
+
 set -x
 
 git add .
