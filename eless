@@ -19,7 +19,7 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
 fi
 
 pager() {
-    IFS=' '
+    local IFS=' '
     ${PAGER-less}
 }
 
