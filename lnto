@@ -22,7 +22,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	local $_=$ARGV[$i];
 	if (/^--?h(elp)?$/s) {
 		usage
-	} elsif (/^-[bfiuvs]+$/s) {
+	} elsif (/^-[bfiuvsr]+$/s) {
 		push @options, $_;
 	} elsif (/^-[SV]$/s) {
 		push @options, $_, $ARGV[++$i];
