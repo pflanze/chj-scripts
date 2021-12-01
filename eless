@@ -18,5 +18,9 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
+pager() {
+    IFS=' '
+    ${PAGER-less}
+}
 
-"$@" 2>&1 | less
+"$@" 2>&1 | pager
