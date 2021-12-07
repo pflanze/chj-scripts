@@ -1,0 +1,69 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use POSIX qw(setsid);
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -- cmd args...
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+system("init-xscreensaver", "stop");
+system("init-xwrits-mine", "stop");
+
+{
+    local $^F = 999999;
+    pipe(R, W)
+        or die "pipe: $!";
+}
+
+my $pid = fork; defined $pid or die "fork: $!";
+
+if ($pid) {
+    close R or die $!;
+    my $status = system(@ARGV);
+    print W "done\n" or die $!;
+    # $w->xflush; sleep 1; -- yes, works
+    close W or die $!;
+    exit($status == 0 ? 0 : 1);
+} else {
+    close W or die $!;
+    setsid or die "setsid: $!";
+    my $_firstline = <R>;
+    # This might be EOF, or "done\n", but in either case:
+    system("init-xscreensaver", "start");
+    system("init-xwrits-mine", "start");
+    # warn "done";
+    exit(0);
+}
+
