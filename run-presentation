@@ -12,7 +12,6 @@ use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 use Getopt::Long;
-use Chj::xpipe;
 use POSIX qw(setsid);
 # use FP::Repl::Trap; #
 
@@ -42,24 +41,25 @@ usage unless @ARGV;
 system("init-xscreensaver", "stop");
 system("init-xwrits-mine", "stop");
 
-my ($r, $w) = do {
+{
     local $^F = 999999;
-    xpipe
-};
+    pipe(R, W)
+        or die "pipe: $!";
+}
 
 my $pid = fork; defined $pid or die "fork: $!";
 
 if ($pid) {
-    $r->xclose;
+    close R or die $!;
     my $status = system(@ARGV);
-    $w->xprint("done\n");
+    print W "done\n" or die $!;
     # $w->xflush; sleep 1; -- yes, works
-    $w->xclose;
+    close W or die $!;
     exit($status == 0 ? 0 : 1);
 } else {
-    $w->xclose;
+    close W or die $!;
     setsid or die "setsid: $!";
-    my $_firstline = $r->xreadline;
+    my $_firstline = <R>;
     # This might be EOF, or "done\n", but in either case:
     system("init-xscreensaver", "start");
     system("init-xwrits-mine", "start");
