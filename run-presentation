@@ -1,19 +1,69 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-IFS=
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
 
-logdir=~/log
-mkdir -p "$logdir"
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
-did_run=0
-onexit() {
-    init-xscreensaver start || true
-    init-xwrits-mine start || true
+use Getopt::Long;
+use Chj::xpipe;
+use POSIX qw(setsid);
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
 }
 
-init-xscreensaver stop
-init-xwrits-mine stop
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname -- cmd args...
 
-trap onexit EXIT INT
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
 
-"$@"
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+usage unless @ARGV;
+
+system("init-xscreensaver", "stop");
+system("init-xwrits-mine", "stop");
+
+my ($r, $w) = do {
+    local $^F = 999999;
+    xpipe
+};
+
+my $pid = fork; defined $pid or die "fork: $!";
+
+if ($pid) {
+    $r->xclose;
+    my $status = system(@ARGV);
+    $w->xprint("done\n");
+    # $w->xflush; sleep 1; -- yes, works
+    $w->xclose;
+    exit($status == 0 ? 0 : 1);
+} else {
+    $w->xclose;
+    setsid or die "setsid: $!";
+    my $_firstline = $r->xreadline;
+    # This might be EOF, or "done\n", but in either case:
+    system("init-xscreensaver", "start");
+    system("init-xwrits-mine", "start");
+    # warn "done";
+    exit(0);
+}
+
