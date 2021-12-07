@@ -7,11 +7,8 @@ mkdir -p "$logdir"
 
 did_run=0
 onexit() {
-    if [ $did_run = 0 ]; then
-	did_run=1
-	init-xscreensaver start
-	init-xwrits-mine start
-    fi
+    init-xscreensaver start || true
+    init-xwrits-mine start || true
 }
 
 init-xscreensaver stop
