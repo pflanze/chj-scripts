@@ -1,15 +1,17 @@
 #!/usr/bin/perl -w
 
-# Mon Dec  7 23:55:11 EST 2009
-(my $email='christian-novo%jaeger,mine,nu')=~ tr/%,/@./;
+# Copyright (c) 2009-2021 Christian Jaeger
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+# This is free software, offered under either the same terms as perl 5
+# or the terms of the Artistic License version 2 or the terms of the
+# MIT License (Expat version).
 
 use strict; use warnings FATAL => 'uninitialized';
 
 use Getopt::Long;
 use Chj::xperlfunc ':all';
-use Chj::xopen qw(perhaps_open_read xopen_write);
+use Chj::xopen qw(perhaps_open_read xopen_read xopen_write);
 use POSIX qw(ENOENT);
-use Chj::xopen 'xopen_read';
 use Chj::Path;
 use Chj::xtmpdir;
 use Chj::IO::Command;
