@@ -35,7 +35,7 @@ sub m2feet($) { # lol
 my %currency =
   (
    # 1 X in CHF
-   # e.g. https://www.investing.com/currencies/cad-chf
+   # e.g. for c in usd eur gbp cad; do $BROWSER https://www.investing.com/currencies/"$c"-chf; read; done
    CHF=> 1,
    USD=> 0.9212,
    EUR=> 1.0419,
