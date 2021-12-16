@@ -1,0 +1,119 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Scalar::Util qw(looks_like_number);
+use Getopt::Long;
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub square($x) { $x * $x }
+sub log10($x) { log($x) / log(10) }
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options] [file(s)]
+
+  Read lines with numbers from stdin or the given file(s), print
+  number of values, median, arithmetic mean, variance, sample standard
+  deviation, and standard error.
+
+  --terse   print the numbers without labels
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+our $opt_terse;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "terse"=> \$opt_terse,
+	   ) or exit 1;
+
+my @x;
+while (<>) {
+    chomp;
+    if (looks_like_number $_) {
+        push @x, $_;
+    } else {
+        warn "ignoring non-number value: '$_'";
+    }
+}
+
+my $n = @x;
+
+my $sum;
+{
+    $sum+= $_ for @x;
+}
+
+my $median = do {
+    my @sorted = sort { $a <=> $b } @x;
+    my $nhalf = $n >> 1;
+    ($n & 1) ? $sorted[$nhalf] : ($sorted[$nhalf - 1] + $sorted[$nhalf])/2
+};
+
+my $mean = $sum / $n; # bad way but I'm cheap
+
+my $sumdevsq;
+{
+    $sumdevsq+= $_ for (map { square($_ - $mean) } @x);
+}
+my $variance = sqrt($sumdevsq / $n);
+my $sampleSD = sqrt($sumdevsq / ($n - 1));
+my $SE = $sampleSD / sqrt($n);
+
+my $fmt = "
+n: %i
+median: ?A
+mean: ?A
+SD: ?D
+s: ?D
+SE: ?D
+";
+$fmt=~ s/^\n//;
+$fmt=~ s/ /\t/g;
+if ($opt_terse) {
+    $fmt=~ s/^[^:]*:\s*//;
+}
+# How many digits to print?
+my $Ddigits = int(log10($n + 0.1)) + 2;
+$fmt=~ s/\?D/%.${Ddigits}g/sg;
+my $Adigits = do {
+    # depends on SE
+    my $digits = int(log10($mean/$SE)) + 1;
+    #warn "digits=$digits";
+    $digits + 1
+};
+#warn "Ddigits=$Ddigits, Adigits=$Adigits, mean=$mean";
+$fmt=~ s/\?A/%.${Adigits}g/sg;
+
+#warn "fmt=<$fmt>";
+
+printf $fmt, $n, $median, $mean, $variance, $sampleSD, $SE
+    or die "stdout: $!";
+
+close STDOUT or die "stdout: $!";
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
