@@ -30,7 +30,7 @@ exec --'
     for arg in "$@"; do
         printf ' %q' "$arg"
     done
-    echo
+    echo ' "$@"'
 } >> "$tmp"
 
 chmod +x "$tmp"
