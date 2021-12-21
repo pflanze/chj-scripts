@@ -5,14 +5,12 @@ IFS=
 
 newh() {
     local path
-    local bn
     local tag
     path=$1
     if [ -e "$path" ]; then
         echo "file already exists: '$path'" 1>&2
     else
-        bn=$(basename "$path" .h)
-        tag=$(echo "${bn}_h_" | perl -wne 'print uc $_ or die $!')
+        tag=$(printf '%s' "${path}" | perl -wne 's{.*/}{}; s/\.(h\w*)$/_${1}_/; print uc $_ or die')
         {
             echo "#ifndef $tag"
             echo "#define $tag"
