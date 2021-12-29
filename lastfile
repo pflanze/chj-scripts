@@ -5,13 +5,21 @@
 
 use strict;
 
+my @excludes= qw(HEUTE);
+my %exclude = map {$_ => 1} @excludes;
+my $excludesstr= "[".join(
+    ", ", map{ my $s = $_; $s=~ s/'/\\'/sg; "'$s'" } @excludes)."]";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [directory [directory2 ..]]
-  Outputs name of the last modified *file* which does not begin with a
-  dot or ~ or end in ~ in given directory. Default directory is '.'.
+  Outputs the name of the last modified *file* in the given directory
+  that does not begin with a dot or ~ or end in ~, or matches one of
+  the entries in $excludesstr.
+
+. Default directory is '.'.
 
   --fullpath     full path (including directory) is output, not just
                  the filename.
@@ -70,6 +78,7 @@ sub showit {
     while (defined ($_=readdir $in)){
 	next if ($_ eq "." or $_ eq "..");
 	next if (not $opt_a and (/^[.~]/ or /~\z/));
+        next if $exclude{$_};
         my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
         if (-f _) {
 	    push @items,[$opt_fullpath ? "$dir/$_" : $_,
