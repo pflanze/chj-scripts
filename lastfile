@@ -13,9 +13,12 @@ sub usage {
   Outputs name of the last modified *file* which does not begin with a
   dot or ~ or end in ~ in given directory. Default directory is '.'.
 
-  --fullpath  full path (including directory) is output, not only
-              the filename.
-  -a|--all    don't ignore dot files
+  --fullpath     full path (including directory) is output, not just
+                 the filename.
+  -a|--all       don't ignore dot files
+  --allow-empty  if a directory has no files after filtering, continue
+                 without showing a result (the default is to stop with
+                 an error).
 
   (Christian Jaeger <$email>)
 ";
@@ -25,6 +28,7 @@ exit @_ ? 1 : 0;
 my @args;
 my $DEBUG=0;
 my $opt_fullpath;
+my $opt_allow_empty;
 my $opt_a;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -37,6 +41,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?a(ll)?$/) {
 	$opt_a=1;
+    } elsif (/^--?allow-empty?$/) {
+	$opt_allow_empty=1;
     } elsif (/^--?full(?:-?path(?:=(.*))?)?$/) {
         if (defined $1) {
             $opt_fullpath=$1
@@ -77,7 +83,10 @@ sub showit {
 	      (sort { $b->[1] <=> $a->[1] } @items)[0]->[0]
 	     );# heh, -> after the [0] is necessary here
 	print "\n";
-    } # else  return error status ?
+    } else {
+        die "$myname: directory does not contain any choosable files: '$dir'"
+            unless $opt_allow_empty;
+    }
 }
 
 if (@args) {
