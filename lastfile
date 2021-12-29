@@ -61,14 +61,13 @@ $opt_fullpath = 1
 
 sub showit {
     my ($dir)=@_;
-    #use Chj::singlequote; warn "dir=".singlequote($dir);
-    opendir DIR, $dir
+    opendir my $in, $dir
       or die "opendir '$dir': $!";
     $dir=~ s|/+\z||s;
-    # ^ for path appending. so that '/' still works for opendir.
+    # ^ for appending items, so that '/' still works for opendir.
 
     my @items;
-    while (defined ($_=readdir DIR)){
+    while (defined ($_=readdir $in)){
 	next if ($_ eq "." or $_ eq "..");
 	next if (not $opt_a and (/^[.~]/ or /~\z/));
         my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
@@ -77,12 +76,12 @@ sub showit {
 			 $s[9]];
 	}
     }
+    closedir $in or die "close for '$dir': $!";
 
     if (@items) {
-	print(
-	      (sort { $b->[1] <=> $a->[1] } @items)[0]->[0]
-	     );# heh, -> after the [0] is necessary here
-	print "\n";
+	print((sort { $b->[1] <=> $a->[1] } @items)[0]->[0],
+              "\n")
+            or die "stdout: $!";
     } else {
         die "$myname: directory does not contain any choosable files: '$dir'"
             unless $opt_allow_empty;
