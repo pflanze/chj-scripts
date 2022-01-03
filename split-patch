@@ -3,7 +3,11 @@
 # Wed 11 Nov 10:58:27 GMT 2020
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
-use strict; use warnings FATAL => 'uninitialized';
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -17,6 +21,7 @@ sub usage {
   Options:
 
     --hunks    Split on hunk boundaries, too.
+    --changes  Split on individual change groups, too (implies --hunks)
     --quiet    Do not print the generated files.
 
   (Christian Jaeger <$email>)
@@ -27,26 +32,95 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 my $verbose=0;
 my $opt_hunks;
+my $opt_changes;
 my $opt_quiet;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
            "quiet"=> \$opt_quiet,
            "help"=> sub{usage},
            "hunks"=> \$opt_hunks,
+           "changes"=> \$opt_changes,
            #"dry-run"=> \$opt_dry,
            ) or exit 1;
 usage unless @ARGV;
 
+$opt_hunks = 1 if $opt_changes;
+
 use Chj::xtmpfile;
 use Chj::xopen 'xopen_read';
 use Chj::xperlfunc 'xprintln';
-
+use FP::List qw(list list_append);
 
 sub rewrite_head {
     my ($file, $head, $prefix)= @_;
     $head=~ s/(\nsubject: *(?:\[PATCH\] *)?)([^\n]*)/$1$prefix$2/si
         or warn "could not find subject in head of file: '$file'";
     $head
+}
+
+
+sub starts_with_space($line) {
+    $line=~ /^ /
+}
+sub starts_with_minusplus($line) {
+    $line=~ /^[+-]/
+}
+sub starts_with_minus($line) {
+    $line=~ /^-/
+}
+
+sub split_hunk($hunk) { # hunk -> hunks
+    my ($head, @lines) = split /\n/, $hunk;
+    my ($orig_start, $orig_len, $patched_start, $patched_len, $head_post) =
+        $head =~ /^\@\@ -(\d+),(\d+) \+(\d+),(\d+) (.*)/s
+        or die "invalid hunk head: '$head'";
+    
+    my $current_orig_start = $orig_start;
+    my $current_patched_start = $patched_start;
+    my $lines = list @lines;
+    my @hunks;
+    while (1) {
+        my ($pre, $rest)= $lines->take_while_and_rest(\&starts_with_space);
+        my ($group, $rest2)= $rest->take_while_and_rest(\&starts_with_minusplus);
+        my ($post, $rest3)= $rest2->take_while_and_rest(\&starts_with_space);
+
+        my $newpre= $pre->reverse->take(3)->reverse;
+        my $newpost= $post->take(3);
+
+        my $pre_len = $pre->length;
+        my $newpre_len = $newpre->length;
+        my $group_minus_len = $group->filter(\&starts_with_minus)->length;
+        my $group_plus_len = $group->length - $group_minus_len;
+        # my $post_len = $post->length;
+        my $newpost_len = $newpost->length;
+
+        my $new_orig_len = $newpre_len + $group_minus_len + $newpost_len;
+        my $new_patched_len = $newpre_len + $group_plus_len + $newpost_len;
+
+        #use FP::Repl; repl;
+        push @hunks, [
+            "\@\@ -$current_orig_start,$new_orig_len +$current_patched_start,$new_patched_len $head_post",
+            list_append($newpre,
+                        $group,
+                        $newpost)
+            ];
+        if ($rest3->is_null) {
+            last
+        } else {
+            $lines = $rest2;
+            $current_orig_start += $pre_len + $group_minus_len; # not $new_orig_len
+            $current_patched_start += $pre_len + $group_plus_len; # not $new_patched_len
+            # ^ assumes  one after each other!
+        }
+    }
+
+    map {
+        my ($head,
+            $l)= @$_;
+        join("\n",
+             $head,
+             $l->values)
+    } @hunks
 }
 
 sub write_diff {
@@ -74,6 +148,11 @@ sub write_diff {
                  }sx
                    or die "invalid patch file format: '$diff'";
         my @hunks= split /(?<=\n)(?=\@\@ )/, $rest;
+
+        if ($opt_changes) {
+            @hunks = map { split_hunk $_ } @hunks;
+            #use FP::Repl;repl;
+        }
 
         my $i= 0;
         for my $hunk (@hunks) {
