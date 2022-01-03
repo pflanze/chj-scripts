@@ -64,10 +64,10 @@ sub write_diff {
     if ($opt_hunks) {
 
         # Should really do some class(es), parse once, represent.
-        my ($diffline, $indexline, $minus, $plus, $rest)=
+        my ($diffline, $maybe_indexline, $minus, $plus, $rest)=
             $diff=~ m{^
                       (diff\ [^\n]*)\n
-                      (index\ [^\n]*)\n
+                      (?:(index\ [^\n]*)\n)?
                       (---\ [^\n]*)\n
                       (\+\+\+\ [^\n]*)\n
                       (.*)
