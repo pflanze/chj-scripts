@@ -77,7 +77,7 @@ for my $module (@modules) {
 	    if (defined (my $v= ${$module."::VERSION"})) {
 		print "VERSION $v\n";
 	    } else {
-		print STDERR "$module: no version information available\n";
+		print "no version information available\n";
                 $errs++;
 	    }
 	}
