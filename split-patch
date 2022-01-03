@@ -80,8 +80,8 @@ sub write_diff {
             my $diff = join("\n",
                             $diffline,
                             # $indexline, needed for perms? fix it?
-                            $plus,
                             $minus,
+                            $plus,
                             $hunk);
             my $i000 = sprintf('%03d', $i);
             my $path2= $path;
