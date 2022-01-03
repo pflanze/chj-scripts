@@ -72,7 +72,7 @@ sub write_diff {
                       (\+\+\+\ [^\n]*)\n
                       (.*)
                  }sx
-                   or die "invalid patch file format";
+                   or die "invalid patch file format: '$diff'";
         my @hunks= split /(?<=\n)(?=\@\@ )/, $rest;
 
         my $i= 0;
