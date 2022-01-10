@@ -13,8 +13,8 @@ newh() {
         tag=$(printf '%s' "${path}" | \
                   perl -wne '
                       s{.*/}{};
-                      s{-}{_}sg;
                       s/\.(h\w*)$/_${1}_/;
+                      s{[^\w]}{_}sg;
                       print uc $_ or die')
         {
             echo "#ifndef $tag"
