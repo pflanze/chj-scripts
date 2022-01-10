@@ -10,7 +10,12 @@ newh() {
     if [ -e "$path" ]; then
         echo "file already exists: '$path'" 1>&2
     else
-        tag=$(printf '%s' "${path}" | perl -wne 's{.*/}{}; s/\.(h\w*)$/_${1}_/; print uc $_ or die')
+        tag=$(printf '%s' "${path}" | \
+                  perl -wne '
+                      s{.*/}{};
+                      s{-}{_}sg;
+                      s/\.(h\w*)$/_${1}_/;
+                      print uc $_ or die')
         {
             echo "#ifndef $tag"
             echo "#define $tag"
