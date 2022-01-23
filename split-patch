@@ -102,7 +102,8 @@ sub split_hunk($hunk) { # hunk -> hunks
             "\@\@ -$current_orig_start,$new_orig_len +$current_patched_start,$new_patched_len $head_post",
             list_append($newpre,
                         $group,
-                        $newpost)
+                        $newpost),
+            $rest3->is_null
             ];
         if ($rest3->is_null) {
             last
@@ -116,10 +117,12 @@ sub split_hunk($hunk) { # hunk -> hunks
 
     map {
         my ($head,
-            $l)= @$_;
+            $l,
+            $is_last)= @$_;
         join("\n",
              $head,
              $l->values)
+            .($is_last ? "" : "\n")
     } @hunks
 }
 
