@@ -70,6 +70,7 @@ sub starts_with_minus($line) {
 }
 
 sub split_hunk($hunk) { # hunk -> hunks
+    my $hunk_ends_with_newline = $hunk =~ /\n\z/s;
     my ($head, @lines) = split /\n/, $hunk;
     my ($orig_start, $orig_len, $patched_start, $patched_len, $head_post) =
         $head =~ /^\@\@ -(\d+),(\d+) \+(\d+),(\d+) (.*)/s
@@ -122,7 +123,7 @@ sub split_hunk($hunk) { # hunk -> hunks
         join("\n",
              $head,
              $l->values)
-            .($is_last ? "" : "\n")
+            .(($is_last and !$hunk_ends_with_newline) ? "" : "\n")
     } @hunks
 }
 
