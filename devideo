@@ -3,7 +3,7 @@
 set -euo pipefail
 IFS=
 
-cmd='find "$@" -iname "*.exe" -o -iname "*.wav" -o -iname "*.webm" -o  -iname "*.ogv"  -o  -iname "*.mp4" -o  -iname "*.mp3" -o  -iname "*.ogg" -o -iname "*.ogx" -o -iname "*.mpga" -o -iname "*.mov" -o -iname "*.gif" | filter-size +1MB |» mv-parents-to ~/Videos/'
+cmd='find "$@" -iname "*.exe" -o -iname "*.m4v" -o -iname "*.wav" -o -iname "*.webm" -o  -iname "*.ogv"  -o  -iname "*.mp4" -o  -iname "*.mp3" -o  -iname "*.ogg" -o -iname "*.ogx" -o -iname "*.mpga" -o -iname "*.mov" -o -iname "*.gif" | filter-size +1MB |» mv-parents-to ~/Videos/'
 
 usage () {
     echo "$0 dir(s)"
