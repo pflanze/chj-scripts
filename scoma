@@ -6,7 +6,7 @@
 set -eu
 
 usage () {
-    echo "$0 [ -m message ]"
+    echo "$0 [ -m message | -c commit ]"
     echo "  add all, metadata save, commit and push."
     echo "  Note: set up push upstream so that 'git push'"
     echo "  without arguments works."
