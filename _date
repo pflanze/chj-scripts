@@ -1,0 +1,63 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+#use experimental 'signatures';
+
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname 
+
+  Print the current time as YYYY-MM-DD_HHMM in the current time zone
+  (lexical sorting == time sorting, except when ambiguous...).
+
+  Set TZ=UTC to get unambiguous output.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+my $opt_sec = 0;
+
+while (@ARGV) {
+    my $v = shift @ARGV;
+    if ($v eq "-s" or $v eq "--sec" or $v eq "--seconds") {
+        $opt_sec = 1;
+    }
+    elsif ($v eq "-h" or $v eq "--help") {
+        usage
+    }
+    else {
+        usage "unknown argument '$v'";
+    }
+}
+
+usage if @ARGV;
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+
+my $SEC = $opt_sec ? '%02d' : '';
+
+printf("%04d-%02d-%02d_%02d%02d$SEC\n",
+       $year+1900, $mon+1, $mday, $hour, $min, ($opt_sec ? $sec : ()))
+    or die "stdout: $!";
+
+#use FP::Repl; repl;
