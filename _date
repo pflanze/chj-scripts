@@ -23,12 +23,15 @@ BEGIN {
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname 
+    print "$myname [options]
 
   Print the current time as YYYY-MM-DD_HHMM in the current time zone
   (lexical sorting == time sorting, except when ambiguous...).
 
   Set TZ=UTC to get unambiguous output.
+
+  Options:
+     --sec | --seconds  show seconds as well (-s currently works as well)
 
   ($email_full)
 ";
