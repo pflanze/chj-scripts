@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+# hard coded to current dir for now
+
+exec e "$(_date "$@")"
+
