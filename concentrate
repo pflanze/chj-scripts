@@ -1,60 +1,473 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-set -euo pipefail
-IFS=
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
 
-log () {
-    if [ ! -e ~/log/ ]; then
-        private mkdir ~/log/
-    fi
-    echo "`date`  $@" >> ~/log/concentrate.log
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use Chj::xperlfunc qw(xgetfile_utf8);
+use Chj::xtmpfile;
+use FP::List qw(list array_to_list);
+use FP::Combinators qw(compose);
+use FP::Ops qw(the_method);
+use Chj::TEST ":all";
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+my $hosts= "/etc/hosts";
+my $hostsin = $hosts."-in";
+my $blockfile = $hosts."-blocklist";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname start|stop
+
+  Block entries from $blockfile via generation of $hosts file by
+  appending those as localhost entries to the contents of the $hostsin
+  file.
+
+  $blockfile is parsed as one entry per word, but whitespace and '#'
+  based comments are stripped. No wildcard support since $hosts
+  doesn't support that, right? Supports '{a,b}' syntax, though.
+
+  Options:
+    --repl   get a repl for debugging instead
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+our $opt_repl;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "repl"=> \$opt_repl,
+	   ) or exit 1;
+usage unless @ARGV == 1;
+
+
+package concentrate::Expandable {
+    use FP::Struct []
+        => "FP::Struct::Show", "FP::Struct::Equal";
+    _END_ # abstract
+}
+
+# A single string item
+package concentrate::String {
+    use FP::List;
+    use FP::Predicates qw(is_string);
+    use FP::Struct [[ *is_string, "value" ]]
+        => "concentrate::Expandable";
+
+    sub string ($s) {
+        # XX escaping ?
+        $s->{value}
+    }
+
+    sub variants ($s) {
+        cons($s->value, null)
+    }
+    
+    _END_"main"
+}
+
+package concentrate::Multipart {
+    use FP::List qw(nonempty_list_of);
+    use FP::Predicates qw(instance_of);
+    use FP::Struct [[ nonempty_list_of(instance_of("concentrate::Expandable")),
+                      "items" ]]
+        => "concentrate::Expandable";
+    _END_# abstract
+}
+
+package concentrate::Concatenation {
+    use FP::List qw(list null cons list_of cartesian_product);
+    # use FP::Stream qw(stream_cartesian_product);
+    use FP::Ops qw(the_method);
+
+    use FP::Struct [] => "concentrate::Multipart";
+
+    sub string ($s) {
+        $s->{items}->map(the_method("string"))->join("")
+    }
+
+    sub variants ($s) {
+        my $variantss = $s->items->map(
+            sub ($item) {
+                $item->variants()
+            });
+        my $prod = cartesian_product($variantss->values);
+        $prod->map(sub ($l) { $l->strings_join("") })
+            ## dont have strings_append yet
+    }
+
+    _END_"main"
 }
 
 
-if [ -e /opt/chj/hosts-in/bin/concentrate ]; then
+package concentrate::Alternatives {
+    use FP::Ops qw(the_method);
+    use FP::List qw(null);
+    use FP::Struct [] => "concentrate::Multipart";
 
-    exec /opt/chj/hosts-in/bin/concentrate "$@"
-
-else
-
-    usage () {
-        echo "$0 [start|stop|off]"
-        exit 1
+    sub string ($s) {
+        "{" . $s->{items}->map(the_method("string"))->join(",") . "}"
     }
 
-    start () {
-        linkchooser /etc/hosts-concentrate
-        log start
+    sub variants ($s) {
+        # the concatenation of all the variants of all the sub-items
+        $s->{items}->fold_right(
+            sub ($item, $tail) {
+                $item->variants->append($tail)
+            }, null)
     }
+    
+    _END_"main"
+}
 
-    stop () {
-        linkchooser /etc/hosts-distractive
-        log stop
+sub t0($e) { [ $e->string, $e->variants() ] }
+
+TEST {
+    t0 Alternatives(list(String('A'), String('B')))
+}
+['{A,B}', list('A', 'B')];
+TEST {
+    t0 Concatenation(list(String("X")))
+}
+['X', list('X')];
+TEST {
+    t0 Concatenation(list(String('A'), String('B')))
+}
+['AB', list('AB')];
+TEST {
+    t0 Concatenation(list(String('A'),
+                          Concatenation(list(String('B'),
+                                             String('C')))))
+}
+['ABC', list('ABC')];
+TEST {
+    t0 Alternatives(list(String('A'),
+                         Alternatives(list(String('B'),
+                                           String('C')))))
+}
+['{A,{B,C}}', list('A', 'B', 'C')];
+TEST {
+    t0 Concatenation(list(String('A'),
+                          Concatenation(list(String('B'),
+                                             String('C')))))
+}
+['ABC', list('ABC')];
+TEST {
+    t0 Alternatives(
+        list(String('A'),
+             Concatenation(
+                 list(String('B'),
+                      Alternatives(
+                          list(String('a'), String('b'))),
+                      String('C')))))
+}
+['{A,B{a,b}C}', list('A', 'BaC', 'BbC')];
+TEST {
+    t0 Alternatives(
+        list(String('A'),
+             Concatenation(
+                 list(String('B'),
+                      Alternatives(
+                          list(Alternatives(
+                                   list(String('a1'), String('a2'))),
+                               String('b'))),
+                      String('C')))))
+}
+['{A,B{{a1,a2},b}C}', list('A', 'Ba1C', 'Ba2C', 'BbC')];
+
+
+# -> (Expandable, index_to_rest)
+sub _parse_Expandable($ref, $i0, $is_Alternative) {
+    # inside an Alternative, if encountering ',' a Concatenation part
+    # is finished, at '}' the whole Alternative (otherwise
+    # Concatenation) is finished. (',' is not a separator unless
+    # $is_Alternative.) But if encountering '{', the sub-item is going
+    # to be part of a Concatenation no matter what, and is becoming an
+    # item of the Alternative again.
+    my $len = length $$ref;
+    my @alternatives; # items for Alternative; only used w/ $is_Alternative
+    my $curitems = []; # items for Concatenation going to @alternatives
+    my $curstr = ""; # string for String going to @$curitems
+    my $i = $i0;
+    my $finish_String = sub () {
+        # This is for Concatenation; thus ignore empty strings.
+        if (length $curstr) {
+            push @$curitems, String($curstr);
+            $curstr = "";
+        }
+    };
+    my $finish_Concatenation = sub () {
+        $finish_String->();
+        if (@$curitems) {
+            if (@$curitems == 1) {
+                push @alternatives, $curitems->[0];
+            } else {
+                push @alternatives, Concatenation(array_to_list $curitems);
+            }
+            $curitems = [];
+        } else {
+            if ($is_Alternative) {
+                push @alternatives, String("");
+            }
+        }
+    };
+    my $finish = sub () {
+        $finish_Concatenation->();
+        if (@alternatives == 1) {
+            ($alternatives[0], $i)
+        } else {
+            if ($is_Alternative) {
+                (Alternatives(array_to_list \@alternatives), $i)
+            } else {
+                die "XXX";
+                die "BUG" if not @alternatives;
+                (Concatenation(array_to_list \@alternatives), $i)
+            }
+        }
+    };
+    my $was_backslash = 0;
+    while ($i < $len) {
+        my $c = substr $$ref, $i, 1;
+        $i++;
+        if ($was_backslash) {
+            $curstr .= $c;
+            $was_backslash = 0;
+        } else {
+            if ($c eq '\\') {
+                $was_backslash = 1;
+            } else {
+                if ($c eq '{') {
+                    $finish_String->();
+                    my ($item, $irest) = _parse_Expandable($ref, $i, 1);
+                    push @$curitems, $item;
+                    $i0 = $irest;
+                    $i = $i0;
+                } elsif ($c eq '}') {
+                    $is_Alternative
+                        or die("closing paren without a start "
+                               ."at position $i in: '$$ref'");
+                    # End of opening group we were called with, so:
+                    return $finish->()
+                } elsif ($c eq ',') {
+                    if ($is_Alternative) {
+                        $finish_Concatenation->();
+                    } else {
+                        warn "',' not in an Alternative means it's auto quoted";##
+                        $curstr .= $c;
+                    }
+                } else {
+                    $curstr .= $c;
+                }
+            }
+        }
     }
+    $finish->()
+}
 
-    if [ $# -gt 1 ]; then
-        usage
-    fi
+sub parse_Expandable($str) {
+    if ($str=~ /\{.*\}/) {
+        my ($e, $irest) = _parse_Expandable(\$str, 0, 0);
+        $irest == length $str or die "bug";
+        $e
+    } else {
+        String($str)
+    }
+}
 
-    case "${1-}" in
-        "")
-            start
-            ;;
-        start)
-            start
-            ;;
-        on)
-            start
-            ;;
-        stop)
-            stop
-            ;;
-        off)
-            stop
-            ;;
-        *)
-            usage
-            ;;
-    esac
+sub t($str) {
+    my $e = parse_Expandable($str);
+    [ $e, $e->variants ]
+}
 
-fi
+
+TEST { t "yeah" }
+[ String('yeah'),
+  list('yeah')
+];
+TEST { t "{yeah}" }
+[ String('yeah'),
+  list('yeah')
+  # ^ XX OK? Shell does treat { } as part of string here.
+];
+TEST { t "{hi,there}" }
+[ Alternatives(list(String('hi'), String('there'))),
+  list('hi', 'there')
+];
+TEST { t "yeah{hi,there}" }
+[ Concatenation(list(String('yeah'),
+                     Alternatives(list(String('hi'), String('there'))))),
+  list('yeahhi', 'yeahthere')
+];
+TEST { t "yeah{hi,}" }
+[ Concatenation(list(String('yeah'),
+                     Alternatives(list(String('hi'), String(''))))),
+  list('yeahhi', 'yeah')
+];
+TEST { t "yeah{,there}" }
+[ Concatenation(list(String('yeah'),
+                     Alternatives(list(String(''), String('there'))))),
+  list('yeah', 'yeahthere')
+];
+TEST { t "yeah{,,there}" }
+[ Concatenation(list(String('yeah'),
+                     Alternatives(list(String(''), String(''), String('there'))))),
+  list('yeah', 'yeah', 'yeahthere')
+];
+TEST { t "a{}b" }
+[ Concatenation(list(String('a'), String(''), String('b'))),
+  list('ab')
+  # ^ XX again, bash treats {} as constant string
+];
+TEST { t "a{,}b" }
+[ Concatenation(list(String('a'),
+                     Alternatives(list(String(''), String(''))),
+                     String('b'))),
+  list('ab', 'ab')
+];
+TEST { t '{A,B{a,b}}' }
+[ Alternatives(
+      list(String('A'),
+           Concatenation(
+               list(String('B'),
+                    Alternatives(
+                        list(String('a'), String('b'))))))),
+  list('A', 'Ba', 'Bb')
+];
+TEST { t '{A,B,{a,b}}' }
+[ Alternatives(list(String('A'), String('B'),
+                    Alternatives(list(String('a'), String('b'))))),
+  list('A', 'B', 'a', 'b')
+];
+TEST { t '{A,B{a,b}C}' }
+[ Alternatives(
+      list(String('A'),
+           Concatenation(
+               list(String('B'),
+                    Alternatives(
+                        list(String('a'), String('b'))),
+                    String('C'))))),
+  list('A', 'BaC', 'BbC')
+];
+TEST { t '{A,B{a,b}C{c,d}}' }
+[ Alternatives(
+      list(String('A'),
+           Concatenation(
+               list(String('B'),
+                    Alternatives(
+                        list(String('a'), String('b'))),
+                    String('C'),
+                    Alternatives(
+                        list(String('c'), String('d'))))))),
+  list('A', 'BaCc', 'BaCd', 'BbCc', 'BbCd')
+];
+
+TEST { t 'y{A,B{a,b}}' }
+[ Concatenation(
+      list(String('y'),
+           Alternatives(
+               list(String('A'),
+                    Concatenation(
+                        list(String('B'),
+                             Alternatives(
+                                 list(String('a'),
+                                      String('b'))))))))),
+  list('yA', 'yBa', 'yBb')
+];
+TEST { t 'y{A,B,{a,b}}' }
+[ Concatenation(
+      list(String('y'),
+           Alternatives(
+               list(String('A'),
+                    String('B'),
+                    Alternatives(
+                        list(String('a'),
+                             String('b'))))))),
+  list('yA', 'yB', 'ya', 'yb')
+];
+# XX add escaping
+
+sub get_blockfile_hosts() {
+    my $cnt = xgetfile_utf8($blockfile);
+    $cnt =~ s/#.*//mg;
+    list(map { (/^\s*(.*?)\s*$/ && length($1)) ? $1 : () }
+         split /\n+/, $cnt);
+}
+
+sub get_blockfile_hosts_expanded() {
+    get_blockfile_hosts->map(compose the_method("variants"), \&parse_Expandable)
+}
+
+sub Chomp($str) {
+    chomp $str;
+    $str
+}
+
+sub gen_hosts($is_start) {
+    my $block_hostss = get_blockfile_hosts_expanded();
+    my $startstop = $is_start ? "start" : "stop";
+    (
+     "# *** Automatically generated by $0 $startstop, do not edit! ***\n"
+     ."\n"
+     ."# Copied from $hostsin:\n"
+     .Chomp(xgetfile_utf8($hostsin))."\n"
+     ."\n"
+     .($is_start ?
+       "# Generated from $blockfile:\n"
+       .$block_hostss->map(
+           sub ($hosts) {
+               "127.0.0.1	".$hosts->join(" ")."\n"
+           })->join("")
+       :
+       "# Ignoring $blockfile since 'stop' given.")
+     ."\n"
+     )
+}
+
+sub writeit($is_start) {
+    my $t = xtmpfile $hosts;
+    $t->xprint(gen_hosts $is_start);
+    $t->xclose;
+    $t->xputback(0644);
+}
+
+if ($opt_repl) {
+    require FP::Repl::Trap;
+    require FP::Repl;
+    FP::Repl::repl();
+} else {
+    my $action = +{
+        start=> sub { writeit 1 },
+        stop=> sub { writeit 0 },
+        restart=> sub { writeit 1 },
+        status=> sub {
+            my $cnt= xgetfile_utf8($hosts);
+            my ($startstop) = $cnt=~ /^#[^\n]*generated[^\n]*$myname (start|stop)/
+                or die "no match, bug?";
+            print "${startstop}\n";
+        }
+    }->{$ARGV[0]}
+        or usage;
+    $action->()
+}
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
