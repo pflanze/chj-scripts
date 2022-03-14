@@ -134,7 +134,7 @@ for (0..1) {
     my $name = $tmpnames[$_];
     $name =~ s|/|"-"x($ndashes+1)|sge;
     my ($fh, $filename) = tempfile "${name}.XXXX", DIR=>"/tmp";
-    my $fhin = new IO::File $files[$_],O_RDONLY
+    my $fhin = IO::File->new($files[$_], O_RDONLY)
         or die "can't open '$files[$_]': $!";
     my $in= do {
         local $/;
