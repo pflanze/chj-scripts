@@ -9,7 +9,7 @@ use strict;
 
 use File::Temp qw(tempfile unlink0);
 use IO::File;
-
+use Chj::Web::url_encode qw(url_encode);
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
@@ -92,7 +92,17 @@ sub tagcleanup {
 
 
 sub diffprepare {
-    my ($str)= @_;
+    my ($str, $path)= @_;
+
+    # Make links into ${filename}_files/ folders (as per Firefox when saving
+    # web pages) generic:
+    my $filename = $path;
+    $filename =~ s|.*/||s;
+    $filename =~ s|\.\w+\z||;
+    my $quotedfilename = url_encode($filename);
+    $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg;
+    # (^ any good way to have more precision?)
+
     $str=~ s/\s+/ /sg;
     $str=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
     $str=~ s/\. /.\n/sg;
@@ -143,7 +153,7 @@ for (0..1) {
     $fhin->close
         or die "error reading/closing file '$files[$_]': $!";
     $fh->autoflush(1);
-    print $fh diffprepare($in)
+    print $fh diffprepare($in, $files[$_])
         or die "writing to tempfile: $!";
     $tmpfiles[$_]= [$fh,$filename];
 }
