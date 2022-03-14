@@ -7,6 +7,10 @@ COPYRIGHT
 
 use strict;
 
+use File::Temp qw(tempfile unlink0);
+use IO::File;
+
+
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {
@@ -96,11 +100,8 @@ sub diffprepare {
     $$sr=~ s/^\n//s; # and why that?
 }
 
-use File::Temp qw(tempfile unlink0);
-use IO::File;
 
 my @tmpfiles;
-
 
 my @tmpnames;
 TRY: {
