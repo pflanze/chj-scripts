@@ -92,12 +92,13 @@ sub tagcleanup {
 
 
 sub diffprepare {
-    my ($sr)= \ (@_);
-    $$sr=~ s/\s+/ /sg;
-    $$sr=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
-    $$sr=~ s/\. /.\n/sg;
-    $$sr=~ s/\n\n/\n/sg; # why is this necessary?
-    $$sr=~ s/^\n//s; # and why that?
+    my ($str)= @_;
+    $str=~ s/\s+/ /sg;
+    $str=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
+    $str=~ s/\. /.\n/sg;
+    $str=~ s/\n\n/\n/sg; # why is this necessary?
+    $str=~ s/^\n//s; # and why that?
+    $str
 }
 
 
@@ -133,14 +134,14 @@ for(0..1){
     my ($fh, $filename) = tempfile "${name}.XXXX", DIR=>"/tmp";
     my $fhin = new IO::File $files[$_],O_RDONLY
         or die "can't open '$files[$_]': $!";
-    my $in;
-    local $/;
-    $in= <$fhin>; # errors?
+    my $in= do {
+        local $/;
+        <$fhin> # errors?
+    };
     $fhin->close
         or die "error reading/closing file '$files[$_]': $!";
-    diffprepare($in);
     $fh->autoflush(1);
-    print $fh $in
+    print $fh diffprepare($in)
         or die "writing to tempfile: $!";
     $tmpfiles[$_]= [$fh,$filename];
 }
