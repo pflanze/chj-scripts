@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 
-# Don Feb 20 17:05:12 MET 2003
-# pflanze@gmx.ch
-# Mon, 19 May 2003 15:07:07 +0200 mit tar zusammen erweitert so dass filenamen im tmp namen
-#   ratbar sind.  maxdashes() und so sollte mal in ne lib (todo).
+my $copyright= <<'COPYRIGHT';
+# Copyright 2003-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
 
 use strict;
 
@@ -54,26 +54,27 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @files==2;
 
-# alle umbruche entfernen.
-# vor und nach jedem tag einen umbruch.
-# whitespace uniformieren.
-# ". " umwandeln in ".\n"
+
+# Remove all line breaks,
+# add a line break before and after every tag,
+# make non-linebreak whitespace uniform,
+# add a line break after every ". ".
 
 sub tagcleanup {
     my ($s)=@_;
     return $s unless $opt_clean;
     if ($s=~ s/^<(\/?[\w:-]+)//) {
-	my $tagname= lc($1); # tagname includes / for end tags
-	$s=~ s/(\/?>)$//s or die;
+	my $tagname= lc($1); # tagname includes '/' for end tags
+	$s=~ s/(\/?>)$//s or die "?";
 	my $closure= $1;
 	my %attr;
-	$s=~ s/([\w:-]+)\s*=\s*"([^"]*)"/$attr{lc($1)}=$2;""/sge;  #"
-	$s=~ s/([\w:-]+)\s*=\s*'([^']*)'/$attr{lc($1)}=$2;""/sge;  #'
-	$s=~ s/([\w:-]+)\s*=\s*(\S*)/$attr{lc($1)}=$2;""/sge;  #"'/"'/dsfsd; #
+	$s=~ s/([\w:-]+)\s*=\s*"([^"]*)"/$attr{lc($1)}=$2;""/sge;
+	$s=~ s/([\w:-]+)\s*=\s*'([^']*)'/$attr{lc($1)}=$2;""/sge;
+	$s=~ s/([\w:-]+)\s*=\s*(\S*)/$attr{lc($1)}=$2;""/sge;
 	my @flags= split /\s+/,$s; #$s=~ /([\w:-]+)/g;
 	if (@flags or %attr){
 	    "<$tagname ".join(" ",map{my $a=$attr{$_};
-				      $a=~ s/"/\&quot;/sg; #"
+				      $a=~ s/"/\&quot;/sg;
 				      "$_=\"$a\""} sort keys %attr)
 	      .join(" ",@flags)
 	      .$closure
@@ -91,8 +92,8 @@ sub diffprepare {
     $$sr=~ s/\s+/ /sg;
     $$sr=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
     $$sr=~ s/\. /.\n/sg;
-    $$sr=~ s/\n\n/\n/sg; # warum eigtl is das notig?
-    $$sr=~ s/^\n//s; # und warum das?
+    $$sr=~ s/\n\n/\n/sg; # why is this necessary?
+    $$sr=~ s/^\n//s; # and why that?
 }
 
 use File::Temp qw(tempfile unlink0);
@@ -129,17 +130,17 @@ for(0..1){
     my $name= $tmpnames[$_];
     $name =~ s|/|"-"x($ndashes+1)|sge;
     my ($fh, $filename) = tempfile "${name}.XXXX", DIR=>"/tmp";
-    #my $inr= fetchfile($files[$_]);
-    my $fhin = new IO::File $files[$_],O_RDONLY or die "öffnen von '$files[$_]': $!";
+    my $fhin = new IO::File $files[$_],O_RDONLY
+        or die "can't open '$files[$_]': $!";
     my $in;
-    #$fhin->read($in,100) or die "reading from '$files[$_]': $!";
-    #read $fhin,$in,1e6 or die "reading from '$files[$_]': $!";  1e9->out of memory
     local $/;
-    $in= <$fhin>; # und fehler abfangen?
-    $fhin->close or die "error reading/closing file '$files[$_]': $!";
+    $in= <$fhin>; # errors?
+    $fhin->close
+        or die "error reading/closing file '$files[$_]': $!";
     diffprepare($in);
     $fh->autoflush(1);
-    print $fh $in or die "writing to tempfile: $!";
+    print $fh $in
+        or die "writing to tempfile: $!";
     $tmpfiles[$_]= [$fh,$filename];
 }
 
