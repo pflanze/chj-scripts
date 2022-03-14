@@ -29,10 +29,10 @@ exit @_ ? 1 : 0;
 
 my @files;
 my $DEBUG=0;
-my $opt_clean;
-our (
-     $opt_text,
-     $opt_diff,
+my (
+    $opt_clean,
+    $opt_text,
+    $opt_diff,
     );
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -124,12 +124,14 @@ sub maxdashes {
     $max
 }
 
-my $ndashes= maxdashes($tmpnames[0]);
-my $ndashes1= maxdashes($tmpnames[1]);
-if($ndashes1 > $ndashes){ $ndashes=$ndashes1}
+my $ndashes = maxdashes($tmpnames[0]);
+my $ndashes1 = maxdashes($tmpnames[1]);
+if ($ndashes1 > $ndashes) {
+    $ndashes = $ndashes1;
+}
 
-for(0..1){
-    my $name= $tmpnames[$_];
+for (0..1) {
+    my $name = $tmpnames[$_];
     $name =~ s|/|"-"x($ndashes+1)|sge;
     my ($fh, $filename) = tempfile "${name}.XXXX", DIR=>"/tmp";
     my $fhin = new IO::File $files[$_],O_RDONLY
@@ -146,6 +148,7 @@ for(0..1){
     $tmpfiles[$_]= [$fh,$filename];
 }
 
-system( ($opt_diff ? ("diff", "-u") : "cj-guidiff"), map {$_->[1]} @tmpfiles);
+system(($opt_diff ? ("diff", "-u") : "cj-guidiff"),
+       map {$_->[1]} @tmpfiles);
 
 unlink0(@$_) for @tmpfiles;
