@@ -117,8 +117,8 @@ sub offsetter_for_TZ {
 }
 
 
-# Meetup.com, in their Emails, uses "PT" for Pacific time without DST
-# specification; deal with that.
+# Handle (inofficial?) time zone indicators without DST specification
+# (e.g. meetup.com, in their Emails, uses "PT" for Pacific time)
 our $nondst_zone_names= +{
     PT=> "America/Los_Angeles",
     # "Pacific Standard Time" (PST) when standard time is
