@@ -139,6 +139,8 @@ our $nondst_zone_names= +{
 
     BT=> 'Europe/London',
 
+    JT=> 'Asia/Tokyo',
+
     # We're now using country codes, really?
     CH=> 'Europe/Zurich',
     DE=> 'Europe/Berlin',
@@ -177,6 +179,7 @@ our $city2nondst_zone_name= +{
     "San Francisco"=> "PT",
     "San_Francisco"=> "PT",
     Portland=> "PT",
+    Tokyo=> 'JT',
 };
 
 # Used to accept e.g. 'Europe/Zurich'
