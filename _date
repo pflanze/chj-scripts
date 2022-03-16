@@ -22,8 +22,9 @@ BEGIN {
 }
 
 sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [options]
+    my $out = @_ ? *STDERR{IO} : *STDOUT{IO};
+    print $out map{"$_\n"} @_ if @_;
+    print $out "$myname [options]
 
   Print the current time as YYYY-MM-DD_HHMM in the current time zone
   (lexical sorting == time sorting, except when ambiguous...).
