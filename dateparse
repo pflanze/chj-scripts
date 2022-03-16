@@ -147,6 +147,8 @@ our $nondst_zone_names= +{
 
 our $city2nondst_zone_name= +{
     Zurich=> "CH",
+    "Zürich"=> "CH",
+    Bern=> "CH",
     Switzerland=> "CH",
     Berlin=> "DE",
     Germany=> "DE",
