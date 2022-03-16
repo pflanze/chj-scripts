@@ -1,7 +1,11 @@
 #!/usr/bin/perl -w
 
 # Thu 23 Jul 22:20:51 BST 2020
-(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+my $copyright= <<'COPYRIGHT';
+# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 use strict; use warnings FATAL => 'uninitialized';
 use utf8;
@@ -29,7 +33,7 @@ sub usage {
 
   Also see sleep-better.
 
-  (Christian Jaeger <$email>)
+  ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
