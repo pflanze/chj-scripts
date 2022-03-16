@@ -121,11 +121,13 @@ sub offsetter_for_TZ {
 # specification; deal with that.
 our $nondst_zone_names= +{
     PT=> "America/Los_Angeles",
+    Pacific=> "America/Los_Angeles",
     # "Pacific Standard Time" (PST) when standard time is
     # being observed (early November to mid-March)
     # "Pacific Daylight Time" (PDT) when daylight saving
     # time (mid-March to early November) is being observed.
     MT=> 'America/Phoenix', # MST
+    Mountain=> 'America/Phoenix', # MST
     # Mountain Time Zone, Mountain Daylight Time
     CT=> 'America/Chicago', # CDT
     # Central Time Zone, Central Daylight Time
