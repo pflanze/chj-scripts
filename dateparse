@@ -6,6 +6,10 @@
 use strict; use warnings FATAL => 'uninitialized';
 use utf8;
 
+use Getopt::Long;
+use Date::Parse;
+use Encode qw(decode_utf8);
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -30,7 +34,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
@@ -38,9 +41,6 @@ GetOptions("verbose"=> \$verbose,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 #usage unless @ARGV;
-
-use Date::Parse;
-use Encode qw(decode_utf8);
 
 
 sub european2us {
