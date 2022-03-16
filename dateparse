@@ -120,17 +120,37 @@ sub offsetter_for_TZ {
 
 # Handle (inofficial?) time zone indicators without DST specification
 # (e.g. meetup.com, in their Emails, uses "PT" for Pacific time)
+
+# Handle casing and space variants
+sub _Time {
+    my ($zonealias, $city)= @_;
+    my $lczonealias = lc $zonealias;
+    (
+     "$zonealias time"=> $city,
+     "$zonealias Time"=> $city,
+     "${zonealias}_time"=> $city,
+     "${zonealias}_Time"=> $city,
+
+     "$lczonealias time"=> $city,
+     "${lczonealias}_time"=> $city,
+    )
+}
+
 our $nondst_zone_names= +{
     PT=> "America/Los_Angeles",
+    _Time('Pacific'=> "America/Los_Angeles"),
     # "Pacific Standard Time" (PST) when standard time is
     # being observed (early November to mid-March)
     # "Pacific Daylight Time" (PDT) when daylight saving
     # time (mid-March to early November) is being observed.
     MT=> 'America/Phoenix', # MST
+    _Time('Mountain'=> 'America/Phoenix'),
     # Mountain Time Zone, Mountain Daylight Time
     CT=> 'America/Chicago', # CDT
+    _Time('Central'=> 'America/Chicago'),
     # Central Time Zone, Central Daylight Time
     ET=> "America/New_York",
+    _Time('Eastern'=> "America/New_York"),
     # Eastern Standard Time, when observing standard time
     # (autumn/winter) are five hours behind Coordinated
     # Universal Time (UTC−05:00).
