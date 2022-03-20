@@ -18,6 +18,9 @@ use FP::List qw(list array_to_list);
 use FP::Combinators qw(compose);
 use FP::Ops qw(the_method);
 use Chj::TEST ":all";
+use Chj::Logtimed;
+use Chj::xhome;
+
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -443,6 +446,11 @@ sub gen_hosts($is_start) {
 }
 
 sub writeit($is_start) {
+    {
+        my $log = Chj::Logtimed->open_priv(xhome."/log/concentrate.log");
+        $log->x($is_start ? "on" : "off");
+        $log->xclose;
+    }
     my $t = xtmpfile $hosts;
     $t->xprint(gen_hosts $is_start);
     $t->xclose;
