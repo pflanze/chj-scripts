@@ -33,7 +33,7 @@ my $blockfile = $hosts."-blocklist";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname start|stop
+    print "$myname start|stop|on|off|status
 
   Block entries from $blockfile via generation of $hosts file by
   appending those as localhost entries to the contents of the $hostsin
@@ -457,6 +457,8 @@ if ($opt_repl) {
     my $action = +{
         start=> sub { writeit 1 },
         stop=> sub { writeit 0 },
+        on=> sub { writeit 1 },
+        off=> sub { writeit 0 },
         restart=> sub { writeit 1 },
         status=> sub {
             my $cnt= xgetfile_utf8($hosts);
