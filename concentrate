@@ -36,7 +36,7 @@ my $blockfile = $hosts."-blocklist";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname start|stop|on|off|status
+    print "$myname start|stop|on|off|toggle|status
 
   Block entries from $blockfile via generation of $hosts file by
   appending those as localhost entries to the contents of the $hostsin
@@ -457,6 +457,23 @@ sub writeit($is_start) {
     $t->xputback(0644);
 }
 
+sub current_status {
+    my $cnt= xgetfile_utf8($hosts);
+    my ($startstop) = $cnt=~ /^#[^\n]*generated[^\n]*$myname (start|stop)/
+        or die "no match, bug?";
+    $startstop
+}
+
+sub startstop_to_boolean($startstop) {
+    if ($startstop eq "start") {
+        1
+    } elsif ($startstop eq "stop") {
+        0
+    } else {
+        die "invalid startstop value '$startstop'";
+    }
+}
+
 if ($opt_repl) {
     require FP::Repl::Trap;
     require FP::Repl;
@@ -467,11 +484,15 @@ if ($opt_repl) {
         stop=> sub { writeit 0 },
         on=> sub { writeit 1 },
         off=> sub { writeit 0 },
+        toggle=> sub {
+            my $current = startstop_to_boolean current_status;
+            writeit !$current;
+            my $startstop = current_status;
+            print "now: ${startstop}\n";
+        },
         restart=> sub { writeit 1 },
         status=> sub {
-            my $cnt= xgetfile_utf8($hosts);
-            my ($startstop) = $cnt=~ /^#[^\n]*generated[^\n]*$myname (start|stop)/
-                or die "no match, bug?";
+            my $startstop = current_status;
             print "${startstop}\n";
         }
     }->{$ARGV[0]}
