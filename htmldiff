@@ -100,7 +100,11 @@ sub diffprepare {
     $filename =~ s|.*/||s;
     $filename =~ s|\.\w+\z||;
     my $quotedfilename = url_encode($filename);
-    $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg;
+    # Firefox does not escape ' nor |, so:
+    $quotedfilename =~ s|%27|'|sg;
+    $quotedfilename =~ s|%7C|\||sg;
+    $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg
+        or warn "note: not found: '$quotedfilename'";
     # (^ any good way to have more precision?)
 
     $str=~ s/\s+/ /sg;
