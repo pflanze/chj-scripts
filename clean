@@ -1,15 +1,24 @@
 #!/bin/bash
 
-if [[ $# -gt 1 || $1 = "--help" || $1 = "-h" ]]; then
-    {
-	echo "`basename "$0"` [ directory ]"
-	echo "  Cleans the given directory or . from *~ files. (moves to trash)"
-    } >&2
-    exit 1
+set -eu
+
+if [[ $# -ge 1 ]]; then
+    if [[ $1 = "--help" || $1 = "-h" ]]; then
+        {
+            echo "`basename "$0"` [ directories ]"
+            echo "  Cleans the given directories or \`.\` from *~ files"
+            echo "  (it moves them to the trash)."
+        } >&2
+        exit 1
+    elif [[ $1 = "--" ]]; then
+        shift
+    fi
 fi
 
-if [ "$1" ]; then
-    exec trash -- "$1/"*~
+if [ $# -ge 1 ]; then
+    for d in "$@"; do
+        trash -- "$d/"*~
+    done
 else
     exec trash -- *~
 fi
