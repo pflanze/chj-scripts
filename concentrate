@@ -484,6 +484,8 @@ if ($opt_repl) {
         stop=> sub { writeit 0 },
         on=> sub { writeit 1 },
         off=> sub { writeit 0 },
+        yes=> sub { writeit 1 },
+        no=> sub { writeit 0 },
         toggle=> sub {
             my $current = startstop_to_boolean current_status;
             writeit !$current;
