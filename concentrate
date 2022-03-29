@@ -488,7 +488,7 @@ if ($opt_repl) {
             my $current = startstop_to_boolean current_status;
             writeit !$current;
             my $startstop = current_status;
-            print "now: ${startstop}\n";
+            print "${startstop}\n";
         },
         restart=> sub { writeit 1 },
         status=> sub {
