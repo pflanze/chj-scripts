@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+# Sat Jun 29 17:07:12 BST 2013
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use HTML::TreeBuilder;
+use Chj::xopen qw(glob_to_fh);
+#use Text::CSV;
+use Getopt::Long;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file
+
+  By default just prints the parsed HTML as XML.
+
+  Options:
+    --links   list the A href links instead: link test\\tURL
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+my $verbose=0;
+my $opt_links;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "links" => \$opt_links,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV==1;
+
+my ($path)=@ARGV;
+
+my $out= glob_to_fh(*STDOUT,"utf-8");
+
+sub print_links($csv, $el) {
+    if ($el->tag eq "a") {
+        my $txt = $el->as_text;
+        my $url = $el->attr("href");
+        $csv->say($out, [$txt, $url]);
+    }
+    if (my $c = $el->content) {
+        for my $n (@$c) {
+            if (UNIVERSAL::isa($n, "HTML::Element")) {
+                print_links($csv, $n);
+            }
+        }
+    }
+}
+
+
+my $t= HTML::TreeBuilder->new;
+$t->parse_file ($path);
+
+#use FP::Repl; repl;    
+
+if ($opt_links) {
+    require Text::CSV;
+    my $csv = Text::CSV->new({binary => 1 });
+    print_links($csv, $t);
+} else {
+    $out->xprint($t->as_XML);
+    $out->xclose;
+}
