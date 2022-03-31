@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+if [ $# -lt 1 -o "$1" = "-h" -o "$1" = "--help" ]; then
+    echo "usage: $0 prefix file(s)"
+    echo "  Rename the given files by prefixing them with prefix."
+    exit 1
+fi
+
+prefix=$1
+shift
+
+for f in "$@"; do
+    dn=$(dirname "$f")
+    bn=$(basename "$f")
+    mv -i -- "$f" "$dn/$prefix$bn"
+done
+
