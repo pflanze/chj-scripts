@@ -32,6 +32,7 @@ sub usage {
   Set TZ=UTC to get unambiguous output.
 
   Options:
+     --day              show day only
      --sec | --seconds  show seconds as well (-s currently works as well)
 
   ($email_full)
@@ -40,11 +41,17 @@ exit (@_ ? 1 : 0);
 }
 
 my $opt_sec = 0;
+my $opt_day = 0;
 
 while (@ARGV) {
     my $v = shift @ARGV;
     if ($v eq "-s" or $v eq "--sec" or $v eq "--seconds") {
         $opt_sec = 1;
+        $opt_day = 0;
+    }
+    elsif ($v eq "--day") {
+        $opt_sec = 0;
+        $opt_day = 1;
     }
     elsif ($v eq "-h" or $v eq "--help") {
         usage
@@ -58,10 +65,13 @@ usage if @ARGV;
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 
+my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
 
-printf("%04d-%02d-%02d_%02d%02d$SEC\n",
-       $year+1900, $mon+1, $mday, $hour, $min, ($opt_sec ? $sec : ()))
+printf("%04d-%02d-%02d$MIN$SEC\n",
+       $year+1900, $mon+1, $mday,
+       ($opt_day ? () :
+        ($hour, $min, ($opt_sec ? $sec : ()))))
     or die "stdout: $!";
 
 #use FP::Repl; repl;
