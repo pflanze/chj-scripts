@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+if [ $# -eq 1 ]; then
+    exec htmlparse --links -- "$@"
+else
+    echo "usage: $0 file"
+    echo "  run htmlparse --links and the given file"
+    exit 1
+fi
+

@@ -60,7 +60,8 @@ sub print_links($csv, $el) {
 
 
 my $t= HTML::TreeBuilder->new;
-$t->parse_file ($path);
+$t->parse_file ($path)
+    or die "parsing '$path': $!";
 
 #use FP::Repl; repl;    
 
