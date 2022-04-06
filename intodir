@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "usage: $0 filepath [new-filename]"
+    echo "  Replaces the file at filepath with a folder,"
+    echo "  and moves the file inside it with the same file name,"
+    echo "  or new-filename if given."
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" = -h -o "$1" = --help ]; then
+    usage
+fi
+
+if [ "$1" = "--" ]; then
+    shift
+fi
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ $# -gt 2 ]; then
+    usage
+fi
+
+filepath=$1
+bn=$(basename "$filepath")
+dn=$(dirname "$filepath")
+
+new_filename=${2-$bn}
+
+tmp=$(mktemp -d -p "$dn")
+
+tmp_filepath="$tmp/$new_filename"
+
+mv -i "$filepath" "$tmp_filepath"
+
+mv -i "$tmp" "$filepath"
+
