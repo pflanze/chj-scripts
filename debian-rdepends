@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 my $copyright= <<'COPYRIGHT';
-# Copyright 2008-2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Copyright 2008-2022 by Christian Jaeger <ch@christianjaeger.ch>
 # Published under the same terms as perl itself
 COPYRIGHT
 
@@ -64,7 +64,7 @@ package PFLANZE::Package {
     use FP::Ops qw(the_method);
     use FP::Struct ['packagename', 'is_or'];
     sub is_installed ($self) {
-        $main::opt_all ? 1 : $main::packagename_installed->{ $packagename }
+        $main::opt_all ? 1 : $main::packagename_installed->{ $self->packagename }
     }
     _END_
 }

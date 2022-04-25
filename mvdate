@@ -4,11 +4,15 @@
 
 use strict;
 
+use Chj::xperlfunc ":all";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname ..
+    print "$myname file(s) dirpath
+
+  Prefix the filename in dirpath with \`_date\` and move the files there.
 ";
 exit @_ ? 1 : 0;
 }
@@ -33,14 +37,15 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @files;
 
 my $dir= pop @files;
--d $dir or die "$myname: no such directory '$dir'.\n";
 
-use File::Basename;
-use Chj::xperlfunc;
+my $date=`_date`; chomp $date;
 
-my $date=`date_`; chomp $date;
+my $dn = dirname $dir;
+my $bn = basename $dir;
+my $newdir = "$dn/$date $bn";
 
-for my $path (@files) {
-    my $name= basename $path;
-    xsystem "mv","-i","--",$path, "$dir/${name}_$date";
-}
+mkdir $newdir
+    or -e $newdir
+    or die "mkdir '$newdir': $!";
+
+xsystem "mv", "-i", "--", @files, $newdir;
