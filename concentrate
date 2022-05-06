@@ -60,8 +60,9 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "repl"=> \$opt_repl,
 	   ) or exit 1;
-usage unless @ARGV == 1;
+usage unless (@ARGV == 1 or @ARGV == 2);
 
+my ($actionstr, $maybe_msg) = @ARGV;
 
 package concentrate::Expandable {
     use FP::Struct []
@@ -448,7 +449,9 @@ sub gen_hosts($is_start) {
 sub writeit($is_start) {
     {
         my $log = Chj::Logtimed->open_priv(xhome."/log/concentrate.log");
-        $log->x($is_start ? "on" : "off");
+        my $msg = $maybe_msg // "";
+        my $onoff = $is_start ? "on" : "off";
+        $log->x("$onoff\t$msg");
         $log->xclose;
     }
     my $t = xtmpfile $hosts;
@@ -497,7 +500,7 @@ if ($opt_repl) {
             my $startstop = current_status;
             print "${startstop}\n";
         }
-    }->{$ARGV[0]}
+    }->{$actionstr}
         or usage;
     $action->()
 }
