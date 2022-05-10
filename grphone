@@ -28,6 +28,8 @@ sub usage {
   Change the (partial) phonenumber into a regex and calls grep with it
   and the remaining arguments.
 
+  Oh, also see: 'telsearch'.
+
   ($email_full)
 ";
 exit (@_ ? 1 : 0);
