@@ -45,8 +45,6 @@ sub search {
     }
 }
 
-our $W= qr/[-. ]?/;
-
 sub telsearch {
     my ($num)=@_;
     $num=~ s/[^\d]//sg;
