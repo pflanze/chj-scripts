@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Fri Jun 17 17:10:00 EDT 2011
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname number
+
+  runs 'search' with regex to find number
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+use Chj::xperlfunc;
+
+sub search {
+    my ($re) = @_;
+    if ($verbose or $opt_dry) {
+        warn "+ search '$re'\n";
+    }
+    unless ($opt_dry) {
+        xxsystem "search", $re;
+    }
+}
+
+our $W= qr/[-. ]?/;
+
+sub telsearch {
+    my ($num)=@_;
+    $num=~ s/[^\d]//sg;
+    $num=~ s/^0//;
+    my $re= join '[-./, ]?', split //, $num;
+    search $re;
+}
+
+telsearch $_ for @ARGV
+
