@@ -46,6 +46,18 @@ use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
 use FP::Array ":all";
 use FP::PureArray ":all";
 
+sub suffix ($path) {
+    if (my ($suffix) = $path=~ m{\.(\w+)\z}) {
+        $suffix
+    } else {
+        ""
+    }
+}
+
+sub ignore_suffix($suff) {
+    # only one for now
+    lc($suff) eq "pdf"
+}
 
 my $fileset= do {
     my $fs= array_to_purearray scalar git_ls_files;
@@ -91,21 +103,29 @@ for my $regex (@ARGV) {
     # Might there be more paths to consider, via their contents?
     my $tocheckset= hashset_difference $fileset, $fileset2;
     # We promised Perl style regexes, deliver on that:
-    my $morefiles= array_to_hashset [ grep {
-        my $res;
-        eval {
-            my $cnt= xgetfile_utf8 $_;
-            $res= $cnt=~ /$re/;
-            1
-        } ? $res : do {
-            if ($@ =~ /ill-formed UTF-8/) {
-                warn "$myname: ignoring file in non-utf8 encoding: '$_'\n";
-            } else {
-                warn "$myname: ignoring file with error: '$_': $@";
-            }
-            0
-        }
-    } hashset_keys_unsorted $tocheckset ];
+    my $morefiles=
+        array_to_hashset
+        [
+         grep {
+             my $res;
+             eval {
+                 my $cnt= xgetfile_utf8 $_;
+                 $res= $cnt=~ /$re/;
+                 1
+             } ? $res : do {
+                 if ($@ =~ /ill-formed UTF-8/) {
+                     warn "$myname: ignoring file in non-utf8 encoding: '$_'\n";
+                 } else {
+                     warn "$myname: ignoring file with error: '$_': $@";
+                 }
+                 0
+             }
+         }
+         grep {
+             not ignore_suffix(suffix($_))
+         }
+         hashset_keys_unsorted $tocheckset
+        ];
     $fileset = hashset_union $fileset2, $morefiles;
 }
 
