@@ -54,9 +54,12 @@ sub suffix ($path) {
     }
 }
 
+my $ignored_suffix= +{
+    map { $_=> 1 }
+    qw(pdf bz2 zip gz rz png jpeg jpg gif)
+};
 sub ignore_suffix($suff) {
-    # only one for now
-    lc($suff) eq "pdf"
+    $ignored_suffix->{lc($suff)}
 }
 
 my $fileset= do {
