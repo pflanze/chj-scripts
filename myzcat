@@ -10,7 +10,8 @@ sub usage {
   cat's both gzipped and uncompressed files.
 
   Options:
-  -s|--sort  sort given arguments ascending on file mtime
+  -s|--sort  sort given arguments ascending on file mtime (default)
+  -S|--no-sort  do not sort given arguments ascending on file mtime
 
   cj Sun, 19 May 2002 21:32:32 +0200
 ";
@@ -18,7 +19,7 @@ exit @_;
 }
 
 my @files;
-my $opt_sort;
+my $opt_sort = 1;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -26,8 +27,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     } elsif ($_ eq '--') {
 	push @files, @ARGV[$i+1..$#ARGV];
 	last;
-    } elsif (/^--?s(ort)?/) {
-	$opt_sort=1;
+    } elsif (/^--?(no-)?s(ort)?$/) {
+	$opt_sort = !$1;
+    } elsif (/^--?S$/) {
+	$opt_sort = 0;
     } elsif (/^-/) {
 	warn "Unknown option '$_'\n";
 	usage(1)
@@ -35,6 +38,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	push @files, $_
     }
 }
+# warn "sort: ".($opt_sort ? "yes" : "no");
 usage unless @files;
 
 sub xdefined {
