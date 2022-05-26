@@ -3,9 +3,16 @@
 set -euo pipefail
 IFS=
 
+
+myname=$(basename "$0")
+
+lastfile_or_lastdir=${myname//with-/}
+lastfile_or_lastdir=${lastfile_or_lastdir//-in/}
+
 usage () {
     echo "with-lastfile-in dirpath proc [args]"
-    echo "  Call proc with args and \`lastfile --fullpath \$dirpath\` as "
+    echo "with-lastdir-in dirpath proc [args]"
+    echo "  Call proc with args and \`${lastfile_or_lastdir} --fullpath \$dirpath\` as "
     echo "  additional last argument."
     echo "  Also see: xlastfile, with-lastfile"
     exit 1
@@ -22,6 +29,6 @@ fi
 dirpath="$1"
 shift
 
-dirpath2=$(lastfile --fullpath "$dirpath")
+dirpath2=$("${lastfile_or_lastdir}" --fullpath "$dirpath")
 
 exec "$@" "$dirpath2"

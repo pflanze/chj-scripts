@@ -3,9 +3,14 @@
 set -euo pipefail
 IFS=
 
+myname=$(basename "$0")
+
+lastfile_or_lastdir=${myname//with-/}
+
 usage () {
     echo "with-lastfile proc [args]"
-    echo "  call \`with-lastfile-in . proc [ args ]\`."
+    echo "with-lastdir proc [args]"
+    echo "  call \`with-${lastfile_or_lastdir}-in . proc [ args ]\`."
     exit 1
 }
 
@@ -17,4 +22,4 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
     usage
 fi
 
-exec with-lastfile-in . "$@"
+exec with-${lastfile_or_lastdir}-in . "$@"
