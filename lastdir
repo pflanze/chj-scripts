@@ -1,11 +1,1 @@
-#!/bin/sh
-
-if [ $# -le 1 ]; then
-	find "${1-.}" -maxdepth 1 -a -type d -a '!' -name '.*' -a '!' -name '~*' -a '!' -name '*~' -a -print0 | xargs -0 ls -dt|head -1
-else
-	{
-		echo "`basename $0` directory"
-		echo "  Outputs name of the lasted modified folder which does not begin"
-		echo "  with a dot or ~ or end in ~ in given directory"
-	} >&2
-fi
+lastfile
