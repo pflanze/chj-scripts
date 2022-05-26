@@ -1,14 +1,19 @@
 #!/bin/bash
 
-# Depends: (lastfile )
+# Depends: (lastfile lastdir)
 
 set -euo pipefail
 IFS=
 
+myname=$(basename "$0")
+
+lastfile_or_lastdir=${myname//x/}
+
 usage () {
     echo "xlastfile proc [dirpaths]"
-    echo "  Call proc with dirpaths passed through \`lastfile --fullpath\`."
-    echo "  Without dirpaths, call proc with \`lastfile --fullpath .\`."
+    echo "xlastdir proc [dirpaths]"
+    echo "  Call proc with dirpaths passed through \`$lastfile_or_lastdir --fullpath\`."
+    echo "  Without dirpaths, call proc with \`$lastfile_or_lastdir --fullpath .\`."
     echo "  Also see: with-lastfile"
     exit 1
 }
@@ -26,7 +31,7 @@ shift
 
 lf () {
     local dir="$1"
-    lastfile --fullpath "$dir"
+    "$lastfile_or_lastdir" --fullpath "$dir"
 }
 
 if [ $# = 0 ]; then
