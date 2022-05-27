@@ -34,6 +34,7 @@ sub usage {
   Options:
      --day              show day only
      --sec | --seconds  show seconds as well (-s currently works as well)
+     --wday             show week day (3 letters in English)
 
   ($email_full)
 ";
@@ -42,6 +43,7 @@ exit (@_ ? 1 : 0);
 
 my $opt_sec = 0;
 my $opt_day = 0;
+my $opt_wday = 0;
 
 while (@ARGV) {
     my $v = shift @ARGV;
@@ -52,6 +54,9 @@ while (@ARGV) {
     elsif ($v eq "--day") {
         $opt_sec = 0;
         $opt_day = 1;
+    }
+    elsif ($v eq "--wday") {
+        $opt_wday = 1;
     }
     elsif ($v eq "-h" or $v eq "--help") {
         usage
@@ -67,8 +72,12 @@ my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 
 my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
+my $WDAY = $opt_wday ? do {
+    my @wday = qw(Sun Mon Tue Wed Thu Fri Sat);
+    '_'.$wday[$wday]
+} : '';
 
-printf("%04d-%02d-%02d$MIN$SEC\n",
+printf("%04d-%02d-%02d$MIN$SEC$WDAY\n",
        $year+1900, $mon+1, $mday,
        ($opt_day ? () :
         ($hour, $min, ($opt_sec ? $sec : ()))))
