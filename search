@@ -56,7 +56,7 @@ sub suffix ($path) {
 
 my $ignored_suffix= +{
     map { $_=> 1 }
-    qw(pdf bz2 zip gz rz png jpeg jpg gif)
+    qw(pdf bz2 zip gz rz png jpeg jpg gif ods odt doc docx xls)
 };
 sub ignore_suffix($suff) {
     $ignored_suffix->{lc($suff)}
