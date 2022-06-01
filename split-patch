@@ -8,6 +8,7 @@ use utf8;
 use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
+#use FP::Repl::Trap; ##
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -142,9 +143,11 @@ sub write_diff {
     if ($opt_hunks) {
 
         # Should really do some class(es), parse once, represent.
-        my ($diffline, $maybe_indexline, $minus, $plus, $rest)=
+        my ($diffline, $maybe_newfileline, $maybe_indexline,
+            $minus, $plus, $rest)=
             $diff=~ m{^
                       (diff\ [^\n]*)\n
+                      (?:(new\ file\ mode\ \d+)\n)?
                       (?:(index\ [^\n]*)\n)?
                       (---\ [^\n]*)\n
                       (\+\+\+\ [^\n]*)\n
@@ -162,6 +165,8 @@ sub write_diff {
         for my $hunk (@hunks) {
             my $diff = join("\n",
                             $diffline,
+                            (defined($maybe_newfileline) ?
+                             $maybe_newfileline : ()),
                             # $indexline, needed for perms? fix it?
                             $minus,
                             $plus,
