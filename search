@@ -38,6 +38,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
+use Encode;
 use Chj::Git::Functions qw(git_ls_files);
 use FP::HashSet ":all";
 use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
@@ -96,7 +97,8 @@ my $fileset= do {
         #XX should provide ->hashset on arraylikes
 };
 
-for my $regex (@ARGV) {
+for my $regex_raw (@ARGV) {
+    my $regex = Encode::decode("UTF-8", $regex_raw, Encode::FB_CROAK);
     my $re= $opt_i ? qr/$regex/i : qr/$regex/;
 
     my $fileset2 = array_to_hashset [ grep {
