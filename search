@@ -162,6 +162,9 @@ my $ignored_suffix= +{
 sub ignore_suffix($suff) {
     $ignored_suffix->{lc($suff)}
 }
+sub ignore($path) {
+    $path=~ m{^.METADATA-v2/} or ignore_suffix(suffix $path)
+}
 
 my $fileset= do {
     my $fs= array_to_purearray scalar git_ls_files;
@@ -213,7 +216,7 @@ for my $regex_raw (@ARGV) {
         parallel_filter(
              [
               grep {
-                  not ignore_suffix(suffix($_))
+                  not ignore($_)
               }
               hashset_keys_unsorted $tocheckset
              ],
