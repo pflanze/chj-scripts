@@ -7,6 +7,9 @@ use strict;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
+#use FP::Repl::Trap;#
+use Chj::Backtrace;#
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -38,11 +41,108 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
+#[[ use Chj::Parallel_for_each qw(Parallel_for_each);
+# no, need results, and   hu not even in fperl there's sth  ? ?
+
+use Chj::xperlfunc;
+use Chj::xpipe;
+use Chj::Linux::numcpus;
+
+our $Parallel_n= numcpus; # number of cpus to use
+
+use POSIX ();
+
+package parallel_map::Exception {
+    use FP::Struct ['string']
+        => qw(FP::Struct::Equal FP::Struct::Show);
+    _END_
+}
+
+# Return types can only be strings for now!
+sub parallel_map($vec, $proc) {
+    my @shifts= (0..($Parallel_n-1));
+    my $len= @$vec;
+    my @child= map {
+	my $shift=$_;
+        my ($piperead, $pipewrite) = xpipe;
+	if (my $pid= xfork) {
+            $pipewrite->xclose;
+	    [ $pid, $piperead ]
+	} else {
+            $piperead->xclose;
+	    for (my $i= $shift; $i< $len; $i+= $Parallel_n) {
+                my $res;
+		if (eval {
+                    $res = $proc->($$vec[$i]);
+                    1
+                    }) {
+                    $res=~ s/\\/\\\\/sg; 
+                    $res=~ s/\0/\\0/sg;
+                    $pipewrite->xprint("R$res\0");
+                } else {
+                    my $e = "$@";
+                    $e=~ s/\\/\\\\/sg; 
+                    $e=~ s/\0/\\0/sg;
+                    $pipewrite->xprint("E$e\0");
+                }
+	    }
+            $pipewrite->xclose;
+	    POSIX::_exit(0);
+	}
+    } @shifts;
+
+    # have to bring the results into the right order again (kinda
+    # sigh):
+    my @ress =
+        map {
+            my ($pid, $piperead) = @$_;
+            xxwaitpid $pid, 0;
+            my @ress= map {
+                my $type = substr $_, 0, 1;
+                my $val = substr $_, 1;
+                if ($type eq "E") {
+                    parallel_map::Exception->new($val)
+                } elsif ($type eq "R") {
+                    # XX utf-8 ! todo
+                    $val
+                } else {
+                    die "BUG"
+                }
+            } $piperead->xreadline0_chop;
+            $piperead->xclose;
+            \@ress
+    } @child;
+    my @res;
+    for (my $i= 0; $i< $len; $i+= 1) {
+        for (my $shift = 0; $shift < $Parallel_n; $shift++) {
+            my $slice = $ress[$shift];
+            last unless $i < @$slice;
+            push @res, $slice->[$i];
+        }
+    }
+    \@res
+}
+
+sub parallel_filter($vec, $proc) {
+    my $bools_and_exns = parallel_map($vec, $proc);
+    my @res;
+    for (my $i = 0; $i < @$vec; $i++) {
+        my $be= $bools_and_exns->[$i];
+        if (ref $be) {
+            die $be
+        }
+        push @res, $vec->[$i] if $be;
+    }
+    \@res
+}
+
+#]]
+
+
 use Encode;
 use Chj::Git::Functions qw(git_ls_files);
 use FP::HashSet ":all";
 use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
-
 # why use both array and purearray? XX hashset should be adapted.
 use FP::Array ":all";
 use FP::PureArray ":all";
@@ -110,27 +210,28 @@ for my $regex_raw (@ARGV) {
     # We promised Perl style regexes, deliver on that:
     my $morefiles=
         array_to_hashset
-        [
-         grep {
-             my $res;
-             eval {
-                 my $cnt= xgetfile_utf8 $_;
-                 $res= $cnt=~ /$re/;
-                 1
-             } ? $res : do {
-                 if ($@ =~ /ill-formed UTF-8/) {
-                     warn "$myname: ignoring file in non-utf8 encoding: '$_'\n";
-                 } else {
-                     warn "$myname: ignoring file with error: '$_': $@";
+        parallel_filter(
+             [
+              grep {
+                  not ignore_suffix(suffix($_))
+              }
+              hashset_keys_unsorted $tocheckset
+             ],
+             sub ($path) {
+                 my $res;
+                 eval {
+                     my $cnt= xgetfile_utf8 $path;
+                     $res= $cnt=~ /$re/;
+                     1
+                 } ? $res : do {
+                     if ($@ =~ /ill-formed UTF-8/) {
+                         warn "$myname: ignoring file in non-utf8 encoding: '$path'\n";
+                     } else {
+                         warn "$myname: ignoring file with error: '$path': $@";
+                     }
+                     0
                  }
-                 0
-             }
-         }
-         grep {
-             not ignore_suffix(suffix($_))
-         }
-         hashset_keys_unsorted $tocheckset
-        ];
+             });
     $fileset = hashset_union $fileset2, $morefiles;
 }
 
@@ -138,4 +239,3 @@ for my $path (hashset_keys $fileset) {
     xprintln $path;
 }
 
-#use FP::Repl::Trap;
