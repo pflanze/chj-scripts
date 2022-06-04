@@ -105,6 +105,12 @@ our $conv=
 	# Really, krst.
 	"$pound Avoirdupois pounds = about ".($pound * 0.454)." kg"
     },
+    cup=> sub {
+        my ($cup)= @_;
+        # 6 cup US = 1.42 l
+        my $l = $cup * 1.42/6;
+        "$cup cups = about $l l"
+    },
     do {
 	my $ounce= sub {
 	    my ($ounce)=@_;
