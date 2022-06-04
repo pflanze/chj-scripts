@@ -146,6 +146,7 @@ use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
 # why use both array and purearray? XX hashset should be adapted.
 use FP::Array ":all";
 use FP::PureArray ":all";
+use FP::Predicates qw(complement);
 
 sub suffix ($path) {
     if (my ($suffix) = $path=~ m{\.(\w+)\z}) {
@@ -163,12 +164,13 @@ sub ignore_suffix($suff) {
     $ignored_suffix->{lc($suff)}
 }
 sub ignore($path) {
-    $path=~ m{^.METADATA-v2/} or ignore_suffix(suffix $path)
+    $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path)
 }
 
 my $fileset= do {
     my $fs= array_to_purearray scalar git_ls_files;
-    my $pss= $fs->map(
+    my $pss= $fs->filter(complement \&ignore)
+        ->map(
         sub ($path) {
             if (my $s= Xlstat $path) {
                 [$path, $s]
@@ -214,27 +216,22 @@ for my $regex_raw (@ARGV) {
     my $morefiles=
         array_to_hashset
         parallel_filter(
-             [
-              grep {
-                  not ignore($_)
-              }
-              hashset_keys_unsorted $tocheckset
-             ],
-             sub ($path) {
-                 my $res;
-                 eval {
-                     my $cnt= xgetfile_utf8 $path;
-                     $res= $cnt=~ /$re/;
-                     1
-                 } ? $res : do {
-                     if ($@ =~ /ill-formed UTF-8/) {
-                         warn "$myname: ignoring file in non-utf8 encoding: '$path'\n";
-                     } else {
-                         warn "$myname: ignoring file with error: '$path': $@";
-                     }
-                     0
-                 }
-             });
+            [ hashset_keys_unsorted $tocheckset ],
+            sub ($path) {
+                my $res;
+                eval {
+                    my $cnt= xgetfile_utf8 $path;
+                    $res= $cnt=~ /$re/;
+                    1
+                } ? $res : do {
+                    if ($@ =~ /ill-formed UTF-8/) {
+                        warn "$myname: ignoring file in non-utf8 encoding: '$path'\n";
+                    } else {
+                        warn "$myname: ignoring file with error: '$path': $@";
+                    }
+                    0
+                }
+            });
     $fileset = hashset_union $fileset2, $morefiles;
 }
 
