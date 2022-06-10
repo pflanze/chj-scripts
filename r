@@ -66,7 +66,7 @@ sub maybe_trunc ( $ ) {
 
     # XX localized date strings are a pain; or, how to match a
     # unicode "wordy" character?
-    if ($str=~ /^\(?([\wäöüéè]{21,22}_\d{4})[ -\)~]/) {
+    if ($str=~ /^\(?([\wäöüéè]{21,22}_\d{4})[ \-\)~]/) {
 	$1
     } else {
 	undef
@@ -167,5 +167,3 @@ our @fixedargs=
 exec ($cmd, @fixedargs)
   or exit 127; # did I remember the correct code ?
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
