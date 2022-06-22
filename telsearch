@@ -11,7 +11,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname number
 
-  Run 'search' with a regex to find number.
+  Run 'search' with a regex to find the digits given in number.
+  Non-digits, and a leading 0 are ignored.
+
+  Do not specify a country code!
 
   Options:
       --verbose
