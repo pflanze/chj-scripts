@@ -24,6 +24,7 @@ sub usage {
   Options:
 
      -i | --insensitive   regex is matched insensitively
+     --sort-alpha         sort alphabetically instead of by mtime
 
   (Christian Jaeger <$email>)
 ";
@@ -34,9 +35,11 @@ use Getopt::Long;
 our $verbose=0;
 #our $opt_dry;
 my $opt_i;
+my $opt_sort_alpha;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "insensitive"=> \$opt_i,
+           "sort-alpha"=> \$opt_sort_alpha,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -148,6 +151,36 @@ use FP::Array ":all";
 use FP::PureArray ":all";
 use FP::Predicates qw(complement);
 
+sub hash_key_filter($hash, $pred) {
+    # only keep k=>v entries for which $pred->($k) is true
+    +{
+        map {
+            $pred->($_) ? ($_ => $hash->{$_}) : ()
+        } keys %$hash
+    }
+}
+# ^ XX hashset_key_filter ?
+
+# Hash to array of key-value tuples
+sub hash_kvs_unsorted($hash) {
+    [
+     map {
+         [ $_ => $hash->{$_} ]
+     }
+     keys %$hash
+    ]
+}
+
+# Array of key-value tuples to hash
+sub kvs_to_hash($kvs) {
+    +{
+        map {
+            $_->[0] => $_->[1]
+        }
+        @$kvs
+    }
+}
+
 sub suffix ($path) {
     if (my ($suffix) = $path=~ m{\.(\w+)\z}) {
         $suffix
@@ -167,57 +200,65 @@ sub ignore($path) {
     $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path)
 }
 
+# path => stat
 my $fileset= do {
     my $fs= array_to_purearray scalar git_ls_files;
-    my $pss= $fs->filter(complement \&ignore)
+    my $pss=
+        $fs
+        ->filter(complement \&ignore)
         ->map(
-        sub ($path) {
-            if (my $s= Xlstat $path) {
-                [$path, $s]
-            } else {
-                undef
-            }
-        })->filter(
-        sub ($ps) {
-            return 0 unless defined $ps;
-            my ($path, $stat)= @$ps;
-            not $stat->is_link
-        });
+            sub ($path) {
+                if (my $s= Xlstat $path) {
+                    [$path, $s]
+                } else {
+                    undef
+                }
+            })
+        ->filter(
+            sub ($ps) {
+                return 0 unless defined $ps;
+                my ($path, $stat)= @$ps;
+                not $stat->is_link
+            });
     my $filter= sub ($pred) {
-        $pss->filter(
+        $pss
+            ->filter(
             sub ($ps) {
                 my ($path, $stat)= @$ps;
                 $pred->($stat->is_dir)
-            })->map(
-            sub ($ps) {
-                my ($path, $stat)= @$ps;
-                $path
             })
     };
     $filter->(sub ($isdir) { $isdir })->for_each(
-        sub ($p) {
+        sub ($ps) {
+            my $p = $ps->[0];
             xprintln "NOTE: ignoring sub-repository: $p";
         });
-    array_to_hashset $filter->(sub ($isdir) { not $isdir })
-        #XX should provide ->hashset on arraylikes
+    my %s;
+    $filter->(sub ($isdir) { not $isdir })->for_each(
+        sub ($ps) {
+            my ($p, $s)= @$ps;
+            $s{$p} = $s;
+        });
+    \%s
 };
 
 for my $regex_raw (@ARGV) {
     my $regex = Encode::decode("UTF-8", $regex_raw, Encode::FB_CROAK);
     my $re= $opt_i ? qr/$regex/i : qr/$regex/;
 
-    my $fileset2 = array_to_hashset [ grep {
-        m/$re/
-    } hashset_keys_unsorted $fileset ];
+    my $fileset2 = hash_key_filter $fileset, sub ($path) {
+        $path =~ m/$re/
+    };
 
     # Might there be more paths to consider, via their contents?
     my $tocheckset= hashset_difference $fileset, $fileset2;
     # We promised Perl style regexes, deliver on that:
     my $morefiles=
-        array_to_hashset
+        kvs_to_hash
         parallel_filter(
-            [ hashset_keys_unsorted $tocheckset ],
-            sub ($path) {
+            hash_kvs_unsorted($tocheckset),
+            sub ($path_stat) {
+                my $path = $path_stat->[0];
                 my $res;
                 eval {
                     my $cnt= xgetfile_utf8 $path;
@@ -235,7 +276,15 @@ for my $regex_raw (@ARGV) {
     $fileset = hashset_union $fileset2, $morefiles;
 }
 
-for my $path (hashset_keys $fileset) {
+# always sort alphabetically, first (for stable sort order for entries
+# with identical mtime)
+my @k = hashset_keys $fileset;
+
+if (! $opt_sort_alpha) {
+    @k = sort { $fileset->{$a}->mtime <=> $fileset->{$b}->mtime } @k;
+}
+
+for my $path (@k) {
     xprintln $path;
 }
 
