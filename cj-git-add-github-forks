@@ -46,10 +46,16 @@ while (<>) {
 
 warn "Got ".@forks." fork declarations, adding them ...\n";
 
+my ($success, $fail) = (0, 0);
+
 for (@forks) {
     my ($nick,$repo)= @$_;
-    xxsystem "git", "remote", "add", "${nick}_$repo", "https://github.com/$nick/$repo";
+    if (0 == xsystem "git", "remote", "add", "${nick}_$repo", "https://github.com/$nick/$repo") {
+        $success++
+    } else {
+        $fail++
+    }
 }
 
-warn "Done.\n";
+warn "Done, $success successes, $fail failures.\n";
 
