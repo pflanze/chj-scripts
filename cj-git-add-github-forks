@@ -34,6 +34,7 @@ use Chj::xperlfunc;
 my @forks;
 while (<>) {
     chomp;
+    next if /^\s*$/;
     if (my ($nick1,$nick2,$repo)= /^\s*\@(\S+)\s+(\S+)\s*\/\s*(\S+)\s*$/s) {
         $nick1 eq $nick2
           or die "line has two non-identical nicks: '$_'";
