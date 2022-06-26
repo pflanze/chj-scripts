@@ -36,7 +36,9 @@ my $blockfile = $hosts."-blocklist";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname start|stop|on|off|toggle|status
+    print "$myname [start|stop|on|off|toggle|status]
+
+  If no non-option arguments are given, assumes the 'on' action.
 
   Block entries from $blockfile via generation of $hosts file by
   appending those as localhost entries to the contents of the $hostsin
@@ -60,9 +62,16 @@ GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "repl"=> \$opt_repl,
 	   ) or exit 1;
-usage unless (@ARGV == 1 or @ARGV == 2);
 
-my ($actionstr, $maybe_msg) = @ARGV;
+my ($actionstr, $maybe_msg) = do {
+    if (@ARGV == 1 or @ARGV == 2) {
+        @ARGV
+    } elsif (@ARGV == 0) {
+        ("on")
+    } else {
+        usage;
+    }
+};
 
 package concentrate::Expandable {
     use FP::Struct []
