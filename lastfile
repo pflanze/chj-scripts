@@ -88,22 +88,32 @@ sub showit {
     $dir=~ s|/+\z||s;
     # ^ for appending items, so that '/' still works for opendir.
 
-    my @items;
+    my $lastitem; # maybe [ $filename, $mtime, $possibly_fullpath ]
     while (defined ($_=readdir $in)){
 	next if ($_ eq "." or $_ eq "..");
 	next if (not $opt_a and (/^[.~]/ or /~\z/));
         next if $exclude{$_};
         my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
         if ($want_file ? -f _ : -d _) {
-	    push @items,[$opt_fullpath ? "$dir/$_" : $_,
-			 $s[9]];
+            my $t = $s[9];
+            my $lastt;
+            if (not defined $lastitem
+                or
+                do {
+                    $lastt = $lastitem->[1];
+                    $t > $lastt
+                }
+                or
+                ($t == $lastt
+                 and ($lastitem->[0] cmp $_) < 0)) {
+                $lastitem = [ $_, $t, ($opt_fullpath ? "$dir/$_" : $_) ];
+            }
 	}
     }
     closedir $in or die "close for '$dir': $!";
 
-    if (@items) {
-	print((sort { $b->[1] <=> $a->[1] } @items)[0]->[0],
-              "\n")
+    if (defined $lastitem) {
+	print($lastitem->[2], "\n")
             or die "stdout: $!";
     } else {
         die "$myname: directory does not contain any choosable files: '$dir'"
