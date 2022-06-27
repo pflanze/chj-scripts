@@ -5,7 +5,7 @@
 
 use strict;
 
-my @excludes= qw(HEUTE);
+my @excludes= qw(HEUTE CALENDAR);
 my %exclude = map {$_ => 1} @excludes;
 my $excludesstr= "[".join(
     ", ", map{ my $s = $_; $s=~ s/'/\\'/sg; "'$s'" } @excludes)."]";
