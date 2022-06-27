@@ -1,7 +1,10 @@
 #!/usr/bin/perl -w
 
-# Don Aug 19 00:23:44 MEST 2004
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+my $copyright= <<'COPYRIGHT';
+# Copyright 2004-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 use strict;
 
@@ -39,7 +42,7 @@ sub usage {
 
   [1] Also see: last$other_dir_or_file
 
-  (Christian Jaeger <$email>)
+  ($email_full)
 ";
 exit @_ ? 1 : 0;
 }
