@@ -105,7 +105,7 @@ sub showit {
                 }
                 or
                 ($t == $lastt
-                 and ($lastitem->[0] cmp $_) < 0)) {
+                 and ($lastitem->[0] cmp $_) > 0)) {
                 $lastitem = [ $_, $t, ($opt_fullpath ? "$dir/$_" : $_) ];
             }
 	}
