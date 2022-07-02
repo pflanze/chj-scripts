@@ -31,6 +31,11 @@ sub usage {
 
   If the TZ env var is set, adds the time zone name to the output.
 
+  Options:
+
+    --silent|--quiet   do not print warnings about chosen mappings
+                       for non-standard time zone names
+
   Also see sleep-better.
 
   ($email_full)
@@ -38,8 +43,11 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-our $verbose=0;
+my $verbose= 0;
+my $opt_silent= 0;
 GetOptions("verbose"=> \$verbose,
+           "silent"=> \$opt_silent,
+           "quiet"=> \$opt_silent,
 	   "help"=> sub{usage},
 	   ) or exit 1;
 
@@ -111,7 +119,8 @@ sub offsetter_for_TZ {
         $str=~ s/^ +//;
         $str=~ s/ \z//;
         my $TZstr = $tz->short_name_for_datetime ($dt);
-        warn "$str: assuming $TZstr\n";
+        warn "$str: assuming $TZstr\n"
+            unless $opt_silent;
         my $offset = $tz->offset_for_datetime($dt);
         $unixtime_parsedAsUTC - $offset
     }
