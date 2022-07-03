@@ -1,0 +1,122 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+# use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+$mydir =~ s{/$}{};
+my $inbase= "$mydir/../../bin/";
+my $outbase= "$mydir/../cache/";
+mkdir $outbase;
+
+my $linkstxt = "list-symlinks.txt";
+
+my $langs = [
+    [ "perl", "list-perl-language.txt" ],
+    [ "bash", "list-bash-language.txt" ],
+    [ "sh", "list-sh-language.txt" ],
+    ];
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    my $files = join ", ", map { $_->[1] } @$langs;
+    print "$myname
+
+  Generate the files
+     $linkstxt, $files
+  in $outbase
+  from the files in $inbase
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+
+use Chj::xopendir;
+use Chj::xopen qw(xopen_write);
+use Chj::xperlfunc qw(xgetfile_utf8);
+
+my $links = xopen_write "$outbase/$linkstxt";
+my $kind2fh = +{
+    map {
+        my ($kind, $filename)= @$_;
+        ($kind, scalar xopen_write "$outbase/$filename")
+    }
+    @$langs
+};
+
+sub rundir($subdir) {
+    my $dirpath = "$inbase/$subdir";
+    my $d = xopendir $dirpath;
+    while (defined (my $item = $d->xnread)) {
+        my $relpath = "$subdir/$item";
+        my $path = "$inbase/$relpath";
+        if (-l $path) {
+            $links->xprintln($relpath);
+        } elsif (-d _) {
+            rundir($relpath);
+        } else {
+            next if $path=~ /\.(pl|bash)$/; # lib. XX should move to perllib ?
+            # next unless -x _; # other non-exes
+            my $str= xgetfile_utf8($path);
+            if (my ($sbpath, $sbrest) = $str=~ /^#\! *(\S+)(.*)/) {
+                my $do = sub ($kind) {
+                    ($kind2fh->{$kind} // die "bug")->xprintln($relpath);
+                };
+                if ($sbpath=~ m{/perl$}) {
+                    $do->("perl");
+                } elsif ($sbpath=~ m{/sh$}) {
+                    $do->("sh");
+                } elsif ($sbpath=~ m{/bash$}) {
+                    $do->("bash");
+                } else {
+                    if ($sbrest=~ m{ perl$}) {
+                        $do->("perl");
+                    } elsif ($sbrest=~ m{ sh$}) {
+                        $do->("sh");
+                    } elsif ($sbrest=~ m{ bash$}) {
+                        $do->("bash");
+                    } else {
+                        warn "unknown shebang in '$relpath': '$sbpath' '$sbrest'";
+                    }
+                }
+            } else {
+                warn "file does not have a shebang line: '$relpath'";
+            }
+        }
+    }
+}
+
+rundir "";
+
+#use FP::Repl; repl;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+
