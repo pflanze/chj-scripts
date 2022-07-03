@@ -9,7 +9,7 @@ fi
 # shadow gcc:
 export ORIG_GCC
 ORIG_GCC=$(which gcc)
-PATH=/opt/chj/chj-bin/bin/gambit-expand-c-file-helpers:"$PATH"
+PATH=/opt/chj/chj-scripts/bin/gambit-expand-c-file-helpers:"$PATH"
 
 
 outfile="$1"_expanded.c

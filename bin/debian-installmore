@@ -53,7 +53,7 @@ mkdir -p /usr/local/lib/site_perl/Class
 ln -s /opt/chj/perllib/Class/Array.pm /usr/local/lib/site_perl/Class || true
 
 set +x
-export PATH=/opt/chj/chj-bin/bin:"$PATH"
+export PATH=/opt/chj/chj-scripts/bin:"$PATH"
 echo "please, as root, cd then  netoffer .git, then paste the code here"
 netfetch 192.168.2.196 14123
 #well, different ip in most cases....

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-PATH="/opt/chj/chj-bin/bin/_with-gpg-debian/b:$PATH" exec gpg-debian "$@"
+PATH="/opt/chj/chj-scripts/bin/_with-gpg-debian/b:$PATH" exec gpg-debian "$@"
 

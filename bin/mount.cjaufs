@@ -20,7 +20,7 @@ sub usage {
   -t x
 
   Note to installation: needs
-    lns /opt/chj/chj-bin/bin/mount.cjaufs /sbin/
+    lns /opt/chj/chj-scripts/bin/mount.cjaufs /sbin/
   to make \"mount -t cjaufs source dest\" work
 
   (Christian Jaeger <$email>)
