@@ -1,7 +1,0 @@
-# von Dc_gui ausgeführtes shellkommando: sh -c ....
-/sbin/ifconfig `netstat -rn | grep ^0.0.0.0 | awk '{print $8;}'` | fgrep inet | cut -d : -f 2 | awk '{print $1;}'
-
-
-# geht aber nur auf linuxen, auf solaris nich, da iss mehreres anders.
-# (getestet auf lombi,pfla,testwww)
-
