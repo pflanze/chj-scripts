@@ -6,6 +6,7 @@
 # added 'options' section to options. Amazing, seems those have been forgotten.
 
 use strict;
+use utf8;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;

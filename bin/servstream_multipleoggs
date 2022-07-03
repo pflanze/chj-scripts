@@ -5,6 +5,7 @@
 
 
 use strict;
+use utf8;
 
 my $PORT= $ENV{PORT}||1112;
 

@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);

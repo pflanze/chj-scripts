@@ -10,6 +10,7 @@
 # -2140 naja
 
 use strict;
+use utf8;
 use Chj::xopendir;
 use Chj::xperlfunc; # including xstat
 use Chj::xopen;

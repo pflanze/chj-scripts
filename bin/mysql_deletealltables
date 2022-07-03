@@ -6,6 +6,7 @@
 #ich MEINTE ich häte das schon so offt gewollt und auch scon mal gemacht?.
 
 use strict;
+use utf8;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);

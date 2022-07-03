@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 use Chj::xopen qw(xopen_read xopen_write);
 use Chj::IO::Command;
 

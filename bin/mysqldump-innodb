@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 my $slave_socket= "--socket=/var/run/mysqld/mysqld_safe.sock";
 

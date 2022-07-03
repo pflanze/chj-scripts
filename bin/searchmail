@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 #use Carp 'cluck';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 

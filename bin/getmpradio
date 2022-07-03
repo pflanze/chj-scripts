@@ -2,6 +2,7 @@
 # christian jaeger pflanze@gmx.ch 2001/03/05, 2001/03/24
 
 use strict;
+use utf8;
 use Socket;
 use Fcntl;
  

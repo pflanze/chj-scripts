@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+use utf8;
 use Chj::xopen qw(xopen_read);
 use Chj::xperlfunc;
 use Chj::xtmpfile;

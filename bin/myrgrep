@@ -5,6 +5,7 @@
 
 use Mmap;
 use strict;
+use utf8;
 
 my $regex=shift or die "Bitte Regex und Pfad (und evtl. filematchregex) angeben";
 my $path=shift or die "Bitte zusätzlich zur Regex Pfad (und evtl. filematchregex) angeben";

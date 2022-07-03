@@ -3,6 +3,7 @@
 #Fri, 31 May 2002 15:50:51 +0200
 #^--sigh, erst jetzt einen bug geflickt   bisher warn einzelne - in url nicht erkannt   weil es (-{2,}) war
 use strict;
+use utf8;
 use Chj::Web::FileescapeUrl (); #qw(fileescapeurl);
 sub fileescapeurl {
     my ($url_with_everything)=@_;

@@ -24,6 +24,7 @@
 # fix bug with -r mode in first outputtet line.
 
 use strict;
+use utf8;
 use Socket;
 
 my $MAXCHILDS= 15;

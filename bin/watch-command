@@ -4,6 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 our $interval=1.0;# seconds
 

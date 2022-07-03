@@ -7,6 +7,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 use Storable qw(nstore_fd fd_retrieve);
 use Chj::xperlfunc;
 use Chj::xperlfunc qw( xxcarefulrename);#xlinkunlink

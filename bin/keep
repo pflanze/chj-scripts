@@ -3,6 +3,7 @@
 # Die Dez 31 02:43:40 MET 2002
 
 use strict;
+use utf8;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;

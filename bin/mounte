@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 # how much older the next-older entry can be to still be automatically mounted
 our $auto_max_delay= 1; #seconds

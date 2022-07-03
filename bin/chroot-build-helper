@@ -4,6 +4,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 
 # btw HATTE ich nicht schon mal sowas gemacht."?".
 

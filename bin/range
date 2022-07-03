@@ -3,6 +3,7 @@
 # Sam Mai  3 23:24:40 MEST 2003
 
 use strict;
+use utf8;
 use Chj::IO::File;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 

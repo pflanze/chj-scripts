@@ -4,6 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 my $MINDELAY= 60;#sec
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";

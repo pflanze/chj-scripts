@@ -4,6 +4,7 @@
 # Thu,  9 Jan 2003 02:21:19 +0100 bug fixed. (vergass das Endteil bei fehlend END auch auf zunehmen)
 
 use strict;
+use utf8;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;

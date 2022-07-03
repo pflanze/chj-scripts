@@ -3,6 +3,7 @@
 # Fre Mär  7 22:17:23 MET 2003
 
 use strict;
+use utf8;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;

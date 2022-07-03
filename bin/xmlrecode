@@ -4,6 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 #use encoding "latin1"; # nötig damit preline-string einfügen nicht alles kaputt macht. ?
 use bytes; # hiermit tut es immer wieder iso machen. bis ich toFile verwendet hab
 

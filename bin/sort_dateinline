@@ -6,6 +6,7 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
 use Date::Parse;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
