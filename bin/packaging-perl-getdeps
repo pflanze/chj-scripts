@@ -33,6 +33,8 @@ exit (@_ ? 1 : 0);
 }
 
 
+my %core_module = map { $_=> 1} qw(strict warnings experimental utf8);
+
 our $verbose=0;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
@@ -50,6 +52,7 @@ sub add_deps ($file) {
     my $str= xslurp $file;
     while ($str=~ m/(?:^|\n) *(?:use|require) +($packagename)/g) {
         my $dep = $1;
+        next if $core_module{$dep};
         $dep{$dep}++
     }
 }
