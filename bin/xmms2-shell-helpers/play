@@ -1,9 +1,0 @@
-#!/usr/bin/perl -w
-
-use strict;
-
-$0=~ /(.*?)([^\/]+)\z/s or die "?";
-my ($mydir, $myname)=($1,$2);
-
-exec "xmms2", $myname, @ARGV
-  or exit 127; ##
