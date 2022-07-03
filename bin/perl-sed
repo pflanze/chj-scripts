@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+use strict;
+use utf8;
+
 sub usage {
 	die "$0 's/../../.'
   Takes one argument, something like a perl regular expression.

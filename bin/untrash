@@ -2,6 +2,9 @@
 
 #cjaeger14.9.2000
 
+use strict;
+use utf8;
+
 my $name= 'untrash';
 
 my $trash;

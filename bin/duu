@@ -7,6 +7,9 @@
 
 # Sun, 21 Nov 2004 20:15:04 +0100: lstat instead of stat. man.
 
+use strict;
+use utf8;
+
 our $default_blocksize=512;
 
 sub usage {
