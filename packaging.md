@@ -62,7 +62,7 @@ Finding all dependencies for a set of files consists of:
 
 ### (Partial) usage example:
 
-    $ cd /opt/chj/perllib
+    $ cd /opt/chj-scripts/perllib
     $ t=$(mktemp)
     $ perl-getdeps Chj/Transform/Xml2Sexpr.pm Chj/xtmpfile.pm | perl-namespace2path > "$t"
     $ # Modules which are part of chj-perllib:

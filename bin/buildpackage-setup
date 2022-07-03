@@ -30,7 +30,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage if @files;
 
-use lib "/opt/chj/perllib";
+use lib "/opt/chj-scripts/perllib";
 use Chj::fileutils qw(fetchfile writebackfile);
 
 use Chj::Mailfrom 'mailfromaddress';

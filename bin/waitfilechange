@@ -47,7 +47,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-use lib "/opt/chj/perllib";
+use lib "/opt/chj-scripts/perllib";
 use Chj::xperlfunc ":all"; # 'xlstat'; #or xstat ?
 $Chj::xperlfunc::time_hires=1;
 

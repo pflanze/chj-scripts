@@ -26,9 +26,9 @@ As root:
     cd chj
     git clone https://github.com/pflanze/chj-scripts.git bin
     git clone https://github.com/pflanze/chj-perllib.git perllib
-    ln -s /opt/chj/perllib/Chj /etc/perl/
+    ln -s /opt/chj-scripts/perllib/Chj /etc/perl/
     mkdir /etc/perl/Class
-    ln -s /opt/chj/perllib/Class/Array.pm /etc/perl/Class
+    ln -s /opt/chj-scripts/perllib/Class/Array.pm /etc/perl/Class
 
 Optional (alternatively just add /opt/chj-scripts/bin into your PATH
 environment variable):

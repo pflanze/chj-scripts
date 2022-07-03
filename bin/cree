@@ -37,7 +37,7 @@ unless ($ENV{EDITOR}){
   usage;
 }
 
-use lib "/opt/chj/perllib";
+use lib "/opt/chj-scripts/perllib";
 use Chj::fileutils "createfile";
 
 my $datetime= `date -R`; #`date`;? hm. -R gibts nur in Englisch offenbar.
