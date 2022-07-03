@@ -1,4 +1,7 @@
+#!/bin/sh
+
 settitle 'apachedoc'
+
 if checkhostport -q localhost; then
 	exec links-local http://localhost/doc/apache/manual/
 else

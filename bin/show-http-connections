@@ -1,3 +1,4 @@
+#!/bin/sh
 
 #netstat -n|grep -v -F 127.0.0.1|grep ':80'
 

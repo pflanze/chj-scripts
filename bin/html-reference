@@ -1,3 +1,4 @@
+#!/bin/sh
 settitle "HTML Reference"
 exec less "$0"
 
