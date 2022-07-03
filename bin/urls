@@ -15,7 +15,7 @@ use Getopt::Long;
 use HTML::Entities;
 # use FP::Repl::Trap; #
 
-# copy from urldecode from chj-bin:
+# copy from urldecode from chj-scripts:
 use URI;
 use Encode;
 sub url_decode {

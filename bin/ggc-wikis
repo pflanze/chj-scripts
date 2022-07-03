@@ -6,7 +6,7 @@ IFS=
 # shellcheck disable=SC2088
 wikis='~/*/*wiki/.git'
 
-# ggc from chj-bin is better (reorders arguments, too)
+# ggc from chj-scripts is better (reorders arguments, too)
 #ggc () {
 #    git grep --cached -E "$@" | cat  # avoid pager
 #}

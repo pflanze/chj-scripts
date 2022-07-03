@@ -7,7 +7,7 @@
 [chjize](https://github.com/pflanze/chjize) makes installation of this
 library easy. Follow its own installation instructions, then:
 
-    chjize chj-bin
+    chjize chj-scripts
 
 ### Manually
 
@@ -24,7 +24,7 @@ As root:
     cd /opt
     mkdir chj
     cd chj
-    git clone https://github.com/pflanze/chj-bin.git bin
+    git clone https://github.com/pflanze/chj-scripts.git bin
     git clone https://github.com/pflanze/chj-perllib.git perllib
     ln -s /opt/chj/perllib/Chj /etc/perl/
     mkdir /etc/perl/Class

@@ -1,7 +1,7 @@
 # Packaging
 
 (Some of) the files have metainformation to allow them to be packaged
-without including everything in chj-bin and its dependencies (a form
+without including everything in chj-scripts and its dependencies (a form
 of tree shaking / dead code elimination). The metadata is incomplete,
 patches are welcome.
 
@@ -56,7 +56,7 @@ Finding all dependencies for a set of files consists of:
     if not, check via the system packaging system or CPAN where it can
     be found.
 
- 1. Pack up the files from `chj-bin` (and `chj-perllib`, if that is
+ 1. Pack up the files from `chj-scripts` (and `chj-perllib`, if that is
     not packaged separately) that are needed, specify a dependency on
     the other packages needed.
 

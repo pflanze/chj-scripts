@@ -93,7 +93,7 @@ sub auto_detect_remote () {
 my $base= $opt_base // auto_detect_remote;
 
 sub github_url_for_path ($path) {
-    # -> https://github.com/pflanze/chj-bin/blob/master/0or1
+    # -> https://github.com/pflanze/chj-scripts/blob/master/0or1
     if ($path=~ m{^/}) {
         die "path is absolute, expecting relative from Git root: '$path'"
     }

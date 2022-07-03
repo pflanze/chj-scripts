@@ -41,7 +41,7 @@ dpkg-reconfigure locales || true
 
 mkdir -p /opt/chj
 cd /opt/chj
-gitclone https://github.com/pflanze/chj-bin.git bin
+gitclone https://github.com/pflanze/chj-scripts.git bin
 gitclone https://github.com/pflanze/chj-perllib.git perllib
 gitclone https://github.com/pflanze/chj-emacs.git emacs
 gitclone https://github.com/pflanze/fastrandom.git fastrandom
