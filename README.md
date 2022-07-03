@@ -28,33 +28,22 @@ As root:
     mkdir /etc/perl/Class
     ln -s /opt/chj-scripts/perllib/Class/Array.pm /etc/perl/Class
 
-Optional (alternatively just add /opt/chj-scripts/bin into your PATH
-environment variable):
+Optionally, get the files from
+[chj-home](https://github.com/pflanze/chj-home), which will set up the
+`PATH` env var to find the scripts. Alternatively just add
+`/opt/chj-scripts/bin` to your `PATH` environment variable yourself.
 
-As root:
+The process for that would be:
 
     cd
-    git clone https://github.com/pflanze/chj-root.git .
-    mv chj-root/.git .
-    rm -rf chj-root
+    git clone https://github.com/pflanze/chj-home
+    mv chj-home/.git .
+    rm -rf chj-home
 
 Now run `git status` and/or `git diff` to verify that you're not
 overwriting any files you want to keep. If you're sure you don't lose
 anything (otherwise consider running `git commit -a -m mystuff`, `git
 branch mystuff`, `git reset HEAD^` then proceeding)
-
-    git reset --hard
-    lesskey
-
-As normal user:
-
-    cd
-    git clone https://github.com/pflanze/chj-home-chris.git
-    mv chj-home-chris/.git .
-    rm -rf chj-home-chris
-
-And again check that you don't kill any files/changes you want to
-keep, before running:
 
     git reset --hard
     lesskey
