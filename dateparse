@@ -2,7 +2,7 @@
 
 # Thu 23 Jul 22:20:51 BST 2020
 my $copyright= <<'COPYRIGHT';
-# Copyright 2021 by Christian Jaeger <ch@christianjaeger.ch>
+# Copyright 2021-2022 by Christian Jaeger <ch@christianjaeger.ch>
 # Published under the same terms as perl itself
 COPYRIGHT
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
@@ -25,11 +25,14 @@ sub usage {
   If string contains some kind of dash or 'to', it will parse both
   start and end time and show them both with a minus inbetween.
 
-  Accepts locations in Continent/City format as well as some
-  abbreviated time zones without daylight savings information (PT,
-  ET, BT).
+  Accepts locations in Continent/City format (only those supported by
+  the timezone database) as well as some abbreviated time zones
+  without daylight savings information (PT, ET, CT, BT) which
+  automatically use daylight savings time depending on the date, as
+  well as some country codes and bare/additional city names.
 
-  If the TZ env var is set, adds the time zone name to the output.
+  If the TZ env var is set (preferably in Continent/City format), adds
+  the time zone name to the output.
 
   Options:
 
