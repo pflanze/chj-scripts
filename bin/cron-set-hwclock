@@ -18,7 +18,7 @@ if [ $# -ne 0 ]; then
     usage
 fi
 
-if /opt/chj/bin/is-clock-correct -q; then
+if /opt/chj/chj-bin/bin/is-clock-correct -q; then
     #echo "saving time" # if verbose.sgh
     $hwclock -w
 else

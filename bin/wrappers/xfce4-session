@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # dpkg-divert --local --rename /usr/bin/xfce4-session
-# ln -s /opt/chj/bin/wrappers/xfce4-session /usr/bin/
+# ln -s /opt/chj/chj-bin/bin/wrappers/xfce4-session /usr/bin/
 
 #set -euo pipefail
 #IFS=

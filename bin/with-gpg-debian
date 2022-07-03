@@ -12,5 +12,5 @@ if [ $# = 0 ]; then
     usage
 fi
 
-PATH="/opt/chj/bin/_with-gpg-debian/a:$PATH" exec "$@"
+PATH="/opt/chj/chj-bin/bin/_with-gpg-debian/a:$PATH" exec "$@"
 

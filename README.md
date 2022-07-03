@@ -30,7 +30,7 @@ As root:
     mkdir /etc/perl/Class
     ln -s /opt/chj/perllib/Class/Array.pm /etc/perl/Class
 
-Optional (alternatively just add /opt/chj/bin into your PATH
+Optional (alternatively just add /opt/chj/chj-bin/bin into your PATH
 environment variable):
 
 As root:
