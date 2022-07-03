@@ -8,4 +8,4 @@ PATH_add () {
     esac
 }
 
-PATH_add /opt/chj/chj-scripts/bin
+PATH_add /opt/chj-scripts/bin

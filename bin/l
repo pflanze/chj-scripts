@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec /opt/chj/chj-scripts/bin/ls -lrt --time-style=long-iso "$@"
+exec /opt/chj-scripts/bin/ls -lrt --time-style=long-iso "$@"

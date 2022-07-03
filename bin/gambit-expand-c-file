@@ -1,5 +1,5 @@
 #!/bin/bash
 
-source /opt/chj/chj-scripts/bin/gambit-expand-c-file-helpers/lib.sh
+source /opt/chj-scripts/bin/gambit-expand-c-file-helpers/lib.sh
 
 exec gsc-cc-o.bat

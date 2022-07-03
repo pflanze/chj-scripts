@@ -2,4 +2,4 @@
 
 # have to fully qualify open (it's a function in my normal bash
 # config)
-exec xlastfile /opt/chj/chj-scripts/bin/open "$@"
+exec xlastfile /opt/chj-scripts/bin/open "$@"
