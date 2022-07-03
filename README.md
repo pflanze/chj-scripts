@@ -62,5 +62,5 @@ keep, before running:
 ### Packaging
 
 There is some unfinished support for packaging, see
-[packaging](docs/packaging.md).
+[packaging](packaging.md).
 
