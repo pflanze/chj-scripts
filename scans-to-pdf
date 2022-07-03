@@ -6,6 +6,8 @@
 # Depends: (
 #  (debian imagemagick convert)
 #  (debian texlive-binaries pdflatex)
+#  (guix imagemagick convert)
+#  (guix texlive-bin pdflatex)
 # )
 
 use strict;
