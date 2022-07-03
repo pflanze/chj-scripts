@@ -4,6 +4,7 @@
 
 ### Via chjize
 
+If you're on Debian (or perhaps derivative),
 [chjize](https://github.com/pflanze/chjize) makes installation of this
 library easy. Follow its own installation instructions, then:
 
@@ -22,10 +23,7 @@ As root:
     # follow instructions in README.md to check fingerprint
     perl Makefile.PL && make install
     cd /opt
-    mkdir chj
-    cd chj
-    git clone https://github.com/pflanze/chj-scripts.git bin
-    git clone https://github.com/pflanze/chj-perllib.git perllib
+    git clone https://github.com/pflanze/chj-scripts.git
     ln -s /opt/chj-scripts/perllib/Chj /etc/perl/
     mkdir /etc/perl/Class
     ln -s /opt/chj-scripts/perllib/Class/Array.pm /etc/perl/Class
