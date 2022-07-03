@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+# Tue  3 Sep 19:37:00 BST 2019
+
+use strict; use warnings FATAL => 'uninitialized';
+
+use Chj::Mylock;
+use Chj::xperlfunc ":all";
+use Time::HiRes qw(time sleep);
+
+#local $Chj::Mylock::verbose =1;
+
+my $l= new_mylock;
+
+sub lock0 {
+    xmylock $l, 0.1, 1
+}
+sub lock {
+    xmylock $l, 2, 1
+}
+
+sub LOG {
+    print STDERR "$$: ", join(" ", map {
+        if (ref $_) {
+            "[".join(", ", @$_)."]"
+        } else {
+            $_ // "undef"
+        }
+    } @_), "\n"
+}
+
+sub run {
+    my $got= lock;
+    LOG "(((", $got;
+    sleep 0.1;
+    xmyunlock $l, $got;
+    LOG ")))";
+}
+
+lock0;
+lock0;
+
+my @pids=
+  (
+   (*xfork_)->(*run),
+   (*xfork_)->(*run),
+   (*xfork_)->(*run),
+   xfork_ { run; run},
+  );
+
+my @res= map { xwaitpid $_ } @pids;
+
+#use Chj::repl;repl;

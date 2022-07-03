@@ -1,0 +1,32 @@
+*~
+*.[1-9]
+*.[1-9][0-9]
+*.[1-9]_*
+*.[1-9][0-9]_*
+
+Chj/IO/Tempfile.pmORIG
+*.unison.bak
+
+.gitbck_*
+.log_post
+.log_pre
+
+
+# todo fix those (they don't load):
+
+Chj/DataStructure/Megalist
+Chj/Excel/GenXLS.pm
+Chj/FileStore/MIndex/Iterator.pm
+Chj/Format/Squirrelmailabook.pm
+Chj/Mailfilter.pm
+Chj/Parse/Braceexpand.pm
+Chj/Unix/DaemonFactory.pm
+Chj/Unix/File.pm
+Chj/Unix/Interfaces.pm
+Chj/Unix/UserAccount.pm
+Chj/Web/UrlUtils.pm
+Chj/loadconfig.pm
+Chj/xchase.pm
+
+# not tracked through this repository (from /root/Setup/, but writes it's result into our range)
+Chj/Cwd

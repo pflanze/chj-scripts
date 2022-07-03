@@ -1,0 +1,127 @@
+#!/usr/bin/perl -w
+
+# Sun May 11 16:09:24 CEST 2008
+(my $email='XXX%YYY,ch')=~ tr/%,/@./;
+
+use strict;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname ..
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+#usage unless @ARGV;
+
+use Chj::Fileutil ":all";
+
+
+# not yet using real test infrastructure sigh ~ just hacks ehr single
+# programs for now.
+
+use Chj::num_cpus;
+use Chj::xperlfunc;
+
+#my $msgfile_path="/tmp/$ENV{USER}/msgfiletest";
+
+my $msgfile_path="/dev/shm/msgfiletest";
+
+
+use Digest::MD5 qw(md5_hex);
+
+my $counter=0;
+sub msgfile_write ( $ ) {
+    my ($mark)=@_;
+    my $c= $counter++;
+    my $msg= $c."\n$mark\n".md5_hex ($c)."\n";
+    MsgfileWrite ($msgfile_path,
+		  $msg,
+		 );
+}
+
+sub msgfile_read {
+    my $msg= MsgfileRead ($msgfile_path,);
+    my ($c,$_foo,$hash)= split "\n",$msg;
+    my $realhash= md5_hex($c);
+    $counter++;
+    $realhash eq $hash
+      or die "INCONSISTENT at counter $counter: $realhash vs $hash "
+	."in message '$msg'";
+}
+
+sub xfork_thunk ( $ ) {
+    my ($thunk)=@_;
+    my $pid=xfork;
+    if ($pid) {
+	$pid
+    } else {
+	exit(&$thunk());
+    }
+}
+
+sub smp_msgfile {
+    num_cpus > 1
+      or warn "really need multi cpu machine for this test, "
+	."but running it anyway for now";
+    my $n=2e6;
+    msgfile_write ("init");
+    my $mk_sender= sub {
+	my ($msg)=@_;
+	sub {
+	    for (1..$n) {
+		msgfile_write($msg);
+	    }
+	    print "child $msg is finished\n";
+	    0
+	}
+    };
+    my ($pid1,$pid2);
+    $SIG{CHLD}= sub {
+	#die "SIGCHILD";
+	my $pid= xxwait; #ja! 2 x. aber ja das hab ich schon so intus.
+	if ($pid1 and $pid == $pid1) {
+	    undef $pid1
+	} elsif ($pid2 and $pid == $pid2) {
+	    undef $pid2
+	} else {
+	    die "?? pid $pid";
+	}
+	unless ($pid1 or $pid2) {
+	    die "END\n";
+	}
+    };
+    $pid1=xfork_thunk (&$mk_sender ("child 1"));
+    $pid2=xfork_thunk (&$mk_sender ("child 2"));
+
+    eval {
+	while (1) {
+	    for (1..$n) {
+		msgfile_read;
+	    }
+	}
+    };
+    if ($@ eq "END\n") {
+	print "ok\n"
+    } else {
+	print $@;
+	kill 9, $pid1,$pid2;
+	exit 1;
+    }
+}
+
+smp_msgfile;
+
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;

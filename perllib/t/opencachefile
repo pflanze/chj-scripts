@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+our ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use lib "$mydir/..";
+
+use Chj::TEST;
+use Chj::xtmpdir;
+use Chj::xperlfunc;
+use Chj::opencachefile;
+use Time::HiRes 'sleep';
+
+our $tmp= xtmpdir;
+$tmp->autoclean(2);
+our $path= "$tmp/foo";
+
+our $createcount=0;
+sub creat {
+    my $fh= opencachefile $path, sub {
+	my ($fh)=@_;
+	my $z=0; for (3..1e4) { $z++ };
+	print $fh "Hello World";
+	$createcount++;
+    };
+}
+
+our $deletecount=0;
+sub delet {
+    unlink $path and $deletecount++
+}
+
+sub lop {
+    for (1..1000) {
+	creat;
+	sleep 0.01;
+	delet;
+    }
+    print "$$: $createcount $deletecount\n";
+}
+
+if (xfork) {
+    lop;
+    wait;
+} else {
+    lop;
+    exit;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
