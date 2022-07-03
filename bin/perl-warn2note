@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Son Mär 13 23:38:03 CET 2005
+# Son MÃ¤r 13 23:38:03 CET 2005
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
@@ -59,7 +59,7 @@ use Chj::singlequote;
 
 for my $file (@args) {
     my $content= xopen_read($file)->xcontent;
-    if (my $n= $content=~ s/^(\s*(?:\#\s*)*)\bwarn\b/$1note/mg) { # für emacs muss ich in usage '..' nehmen und hier \ vor # und keine { } um 1 bei $1
+    if (my $n= $content=~ s/^(\s*(?:\#\s*)*)\bwarn\b/$1note/mg) { # fÃ¼r emacs muss ich in usage '..' nehmen und hier \ vor # und keine { } um 1 bei $1
 	my $tmp= xtmpfile $file;
 	$tmp->xprint($content);
 	$tmp->xclose;

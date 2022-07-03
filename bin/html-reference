@@ -302,7 +302,7 @@ FORMS  (generally require a script on your server)
        Input Box Size   <TEXTAREA ROWS=? COLS=?></TEXTAREA>
          Name of Box      <TEXTAREA NAME="***"></TEXTAREA>
 N2       Wrap Text        <TEXTAREA WRAP=OFF|HARD|SOFT></TEXTAREA>
-			(cj) für scrollbox ohne <form>: readonly='readonly'
+			(cj) fÃ¼r scrollbox ohne <form>: readonly='readonly'
 4.0    Group elements   <FIELDSET></FIELDSET>  
 4.0    Legend           <LEGEND></LEGEND>     (caption for fieldsets)
 4.0      Alignment        <LEGEND ALIGN="TOP|BOTTOM|LEFT|RIGHT"></LEGEND>

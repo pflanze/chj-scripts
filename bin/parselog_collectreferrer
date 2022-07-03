@@ -110,7 +110,7 @@ for (sort { @{$referrers{$b}} <=> @{$referrers{$a}} } keys %referrers) {
 
 __END__
 
-Algorithmus für "wann begann es"?
+Algorithmus fÃ¼r "wann begann es"?
   Der 5.Hit  oder die ersten 5% der hits abgeschlossen?   Wenn es sehr viele waren, mehr als 5 hits hintersichlassen? wirklich?
   oder wenn weniger, der letzte
 

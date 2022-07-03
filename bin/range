@@ -50,11 +50,11 @@ my $buf;
 my $pos=0;
 
 # Konzept :
-# Grösse des nächsten zu lesenden Blocks *beschränken* wenn er das Ende des dokus
-# erreichen wird//*kann*. Natürlich dann nochmals checken - eben immer beschrankt
+# GrÃ¶sse des nÃ¤chsten zu lesenden Blocks *beschrÃ¤nken* wenn er das Ende des dokus
+# erreichen wird//*kann*. NatÃ¼rlich dann nochmals checken - eben immer beschrankt
 # bis Ende.
-# *Nicht* beschränken bezüglich Erreichen des starts. Sondern drüberhinaus, dann
-# schneiden bei diesem ersten (ausser wenn zufällig grad auf Grenze d.h. substr 0 naja egal).
+# *Nicht* beschrÃ¤nken bezÃ¼glich Erreichen des starts. Sondern drÃ¼berhinaus, dann
+# schneiden bei diesem ersten (ausser wenn zufÃ¤llig grad auf Grenze d.h. substr 0 naja egal).
 
 
 my $flag_approaching_end;

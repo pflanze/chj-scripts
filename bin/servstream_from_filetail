@@ -8,10 +8,10 @@ fi
 
 if [ $# -ne 1 -o "H$1" == "H-h" ]; then
     echo "bitte filename angeben des files das tail'ed und served werden soll"
-    # gopf cat nöd echo
+    # gopf cat nÃ¶d echo
     cat <<EOF
-Das ist ein quickhack eines streaming servers, der für proxybetrieb gedacht ist.
-Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *während* des runterladens
+Das ist ein quickhack eines streaming servers, der fÃ¼r proxybetrieb gedacht ist.
+Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *wÃ¤hrend* des runterladens
 hiermit wieder offeriert werden. Als Port wird $PORT verwendet (per \$PORT overridebar).
 EOF
     exit 1

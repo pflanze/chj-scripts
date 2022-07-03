@@ -79,7 +79,7 @@ my $basepath= do {
     if (!defined $opt_b){
 	$opt_b
     } else {
-	"." ## çhmmm.?  ich brauche eine gute pfad liberary man
+	"." ## Ã§hmmm.?  ich brauche eine gute pfad liberary man
     }
 };
 

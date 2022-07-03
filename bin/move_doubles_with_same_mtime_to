@@ -87,7 +87,7 @@ for my $key (keys %items) {
 	    print "$n files with md5 $key2; ";
 	    my $kept= shift @{$md5s{$key2}};
 	    for my $file (@{$md5s{$key2}}) {
-		#die unless $opt_trash; ### einfach löschen isch gefährlich?
+		#die unless $opt_trash; ### einfach lÃ¶schen isch gefÃ¤hrlich?
 		xlinkunlink $file,"$trash/".filename_of($file);
 	    }
 	    print "kept '$kept'\n";

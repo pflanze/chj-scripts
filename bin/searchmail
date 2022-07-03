@@ -88,7 +88,7 @@ sub file_getmailhead {
     my $f= xsysopen $file,O_RDONLY;
     my ($lastbufendedwithnewline,$buf,@bufs);
     while ($f->xread($buf,$blocksize)>0) {
-	#push @bufs,$buf; # optimieren? erst dann in liste bevor neues gelesen wird.  aber, um rauszufinden obs was gibt brauch ich neuen puffer damits keine gefahr gibt alten zu überschreiben. also war nix.? Na: erst dann kopieren wenn ich weiss, dass ich neu lesen gehen werde! das ist es!
+	#push @bufs,$buf; # optimieren? erst dann in liste bevor neues gelesen wird.  aber, um rauszufinden obs was gibt brauch ich neuen puffer damits keine gefahr gibt alten zu Ã¼berschreiben. also war nix.? Na: erst dann kopieren wenn ich weiss, dass ich neu lesen gehen werde! das ist es!
 	if ($lastbufendedwithnewline and substr($buf,0,1) eq "\n") {
 	    #last;
 	    #return join("",@bufs);

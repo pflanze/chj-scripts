@@ -60,8 +60,8 @@ use Chj::xtmpfile;
 my $parser = XML::LibXML->new();
 my $stylesheet;
 {
-  my $style_doc= $parser->parse_file($xslfile);# or die "ERrorç";
-  $stylesheet= XML::LibXSLT->new->parse_stylesheet($style_doc) or die "ç";
+  my $style_doc= $parser->parse_file($xslfile);# or die "ERrorÃ§";
+  $stylesheet= XML::LibXSLT->new->parse_stylesheet($style_doc) or die "Ã§";
 }
 
 if (@files) {
@@ -71,7 +71,7 @@ if (@files) {
 	   $parser->parse_html_file($_)
 	   : $parser->parse_file($_))
 	    or die "error parsing file $_";
-	my $results= $stylesheet->transform($source) or die "çç";
+	my $results= $stylesheet->transform($source) or die "Ã§Ã§";
 	my $outfile= $_;
 	if ($opt_s) {
 	    $outfile=~ s/\..*//s;
@@ -100,7 +100,7 @@ else {
     local $/;
     my $source= $opt_html ? $parser->parse_html_string(<STDIN>) :
       $parser->parse_string(<STDIN>) or die "error parsing stdin";
-    my $results= $stylesheet->transform($source) or die "çç";
+    my $results= $stylesheet->transform($source) or die "Ã§Ã§";
     print $stylesheet->output_string($results)
       or die "Error writing to STDOUT: $!. Terminating";
 }

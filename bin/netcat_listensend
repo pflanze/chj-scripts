@@ -5,7 +5,7 @@
 if [ $# -ne 1 ]; then
     {
     echo "Usage: `basename $0` port < file"
-    echo "  hört auf port, und sendet dann data raus."
+    echo "  hÃ¶rt auf port, und sendet dann data raus."
     echo "  (macht keine md5 summe)"
     } >&2
     exit 1

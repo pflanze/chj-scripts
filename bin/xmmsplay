@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 
-# Frontend für xmms: macht aus Argumenten, welche mp2-Dateien sind ohne
-# Anhängsel, einen temp link und übergibts erst dann an xmms. Offenbar kann
-# man xmms nur so mitteilen was für data es ist?$
+# Frontend fÃ¼r xmms: macht aus Argumenten, welche mp2-Dateien sind ohne
+# AnhÃ¤ngsel, einen temp link und Ã¼bergibts erst dann an xmms. Offenbar kann
+# man xmms nur so mitteilen was fÃ¼r data es ist?$
 
 # Anfang von mp2-Dateien: fffd 9004
 
@@ -15,7 +15,7 @@ PS. endlich Hexkonversionen verstehen grrrrrrrrr
 - pack: versteh ich nicht. Nimmt eine LISTE, nicht einen String/Konstante.
 - hex: vor einen String vorangestellt "bewirkt das dass der String" als Zahl
   verstanden wird. OK. Meist will ich allerdings einen Binarystring
-  mit einem Hexzahlstring vergleichen. D.h. BEIDE müssen in eine Zahl
+  mit einem Hexzahlstring vergleichen. D.h. BEIDE mÃ¼ssen in eine Zahl
   konvertiert werden. Problematisch ist noch, dass ich nur vielleicht 1-4 bytes
   so vergleichen kann, sonst wirddie Zahl zu gross.
 - sprintf: will doch das Umgekehrte: IRGENDWAS jeweils als Ascii readable dar-
@@ -93,7 +93,7 @@ sub makelink {
 	my ($target,$tdir);
 	
 	$target= $tmpdir.$_[0].$_[1];
-		$target=~ s|\.\.\/||sg;##HMMMMMMM, sollte natürlich korrekte Pfadeumsetzung machen!!!
+		$target=~ s|\.\.\/||sg;##HMMMMMMM, sollte natÃ¼rlich korrekte Pfadeumsetzung machen!!!
 		$target=~ s|/{2,}|/|sg;#ja he, nicht einfach // durch / ersetzen sondern /+
 	print "TARGET: $target\n" if $debug;
 	$tdir=$target; 

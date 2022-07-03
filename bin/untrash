@@ -9,8 +9,8 @@ if ($ENV{TRASHCAN}) {
 	$trash= $ENV{TRASHCAN}
 } elsif (-e $ENV{HOME}."/Desktop/Trash/") {
 	$trash=$ENV{HOME}."/Desktop/Trash/";
-} elsif (-e $ENV{HOME}."/Desktop/Mülleimer/") {
-	$trash=$ENV{HOME}."/Desktop/Mülleimer/";
+} elsif (-e $ENV{HOME}."/Desktop/MÃ¼lleimer/") {
+	$trash=$ENV{HOME}."/Desktop/MÃ¼lleimer/";
 } elsif (-e $ENV{HOME}."/.trash/") {
     $trash=$ENV{HOME}."/.trash/";
 } elsif (-e $ENV{HOME}."/.Trash/") {

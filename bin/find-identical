@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Fre Mär  2 09:49:02 CET 2007
+# Fre MÃ¤r  2 09:49:02 CET 2007
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;

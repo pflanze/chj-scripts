@@ -66,7 +66,7 @@ sub xfork { my $pid=fork ; defined($pid) or croak "fork: $!"; $pid}
 sub xsysread ( * $ $ ) {
     my $rv= sysread $_[0],$_[1],$_[2];
     defined $rv or croak "sysread: $!";
-    ## noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+    ## noch auf EINTR prÃ¼fen ??? ist dann $rv undef oder 0 ?
     $rv
 }
 sub xsyswriteall ( * $ ) {
@@ -77,15 +77,15 @@ sub xsyswriteall ( * $ ) {
 	if ($written==0) {
 	    $rv=syswrite $_[0],$_[1];
 	} else {
-	    $rv=syswrite $_[0],substr($_[1],$written);# oder wär abschneiden nach getan effizienter? Na in C wärs klar wie machen.   Wann habe ich die Nase voll von syswriteall routinen schreiben?
+	    $rv=syswrite $_[0],substr($_[1],$written);# oder wÃ¤r abschneiden nach getan effizienter? Na in C wÃ¤rs klar wie machen.   Wann habe ich die Nase voll von syswriteall routinen schreiben?
 	}
 	defined $rv or croak "syswrite: $!";
-	## TODO noch auf EINTR prüfen ??? ist dann $rv undef oder 0 ?
+	## TODO noch auf EINTR prÃ¼fen ??? ist dann $rv undef oder 0 ?
 	$written+=$rv;
     } until ($written==$len);
 }
 
-# make the parent proxy signals.   Das wär ein grund, gleich im parent exec zu machen. Aber child signals? Well sollte nie geschehen. Umschreiben? Hm, stdin lesendes child wird halt dann nie enden solang stdin da ist; das ist in notty ein problem. Müsste halt auch umschreiben dass stdin lesendes child merkt wenn der output weg ist, d.h. nonblocking io.
+# make the parent proxy signals.   Das wÃ¤r ein grund, gleich im parent exec zu machen. Aber child signals? Well sollte nie geschehen. Umschreiben? Hm, stdin lesendes child wird halt dann nie enden solang stdin da ist; das ist in notty ein problem. MÃ¼sste halt auch umschreiben dass stdin lesendes child merkt wenn der output weg ist, d.h. nonblocking io.
 
 for my $sig (qw(QUIT TERM USR1 STOP CONT HUP INT)) {
     $SIG{$sig}= sub {
@@ -111,13 +111,13 @@ my $childy;
 #    $childy= $slave;
 #    $parenty= $slave;
 #    $childy= $pty;
-    #nee führt zu:    mesg: /dev/ptmx: Operation not permitted
+    #nee fÃ¼hrt zu:    mesg: /dev/ptmx: Operation not permitted
     $parenty= new IO::Pty;
     $childy= $parenty->slave;
 }
 
-# wer für was?
-# slave für den prozess?
+# wer fÃ¼r was?
+# slave fÃ¼r den prozess?
 
 my (%pid,$pid);
 
@@ -163,7 +163,7 @@ if ($pid==0) {
     # cmd child
     close STDIN or die $!;
     close STDOUT or die $!;
-    # leave STDERR as is? no. but leave it open for errmsgs until below. (wär eh ned nötig alle zu schliessen)
+    # leave STDERR as is? no. but leave it open for errmsgs until below. (wÃ¤r eh ned nÃ¶tig alle zu schliessen)
     undef $parenty;
     open STDIN,"<&".fileno($childy) or die $!;
     open STDOUT,">&".fileno($childy) or die $!;

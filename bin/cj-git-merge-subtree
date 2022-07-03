@@ -30,7 +30,7 @@ $ENV{LESSCHARSET}="latin1";
 my $less= Chj::IO::Command->new_receiver("less",#"-R"
 					);
 $less->xprint( <<'END');
-Für den Moment nur Hinweise:
+FÃ¼r den Moment nur Hinweise:
 
 $ git remote add -f ${Bproject} ${/path/to/B}
 #            With -f option, git fetch <name> is run immediately after
@@ -80,7 +80,7 @@ $ git commit -m "Merge B project as our subdirectory"
 #    die Datei ist immer noch dort,
 #    git-log --raw  zeigt aber keine Datei an.
 #  Der commit hat immer noch die beiden originalen commit id's: ah das erlaubt
-#  git dann später zu mergen vom originalen Ort (rename on the fly).
+#  git dann spÃ¤ter zu mergen vom originalen Ort (rename on the fly).
 
 #[
 $ git pull -s subtree ${Bproject} master
@@ -102,7 +102,7 @@ $ git pull -s subtree ${Bproject} master
 #bleibt unklarheit warum man im commit keine files sieht mit git-log --raw.
 #mit git version 1.5.6.1.2.g5fa3
 #mit 1.5.6.GIT ebenfalls; gitk aber, ja wie letztesmal, zeigt brauchbare sachen
-#an. (sogar patch für adden am neuen ort, obwohl einer der parent commits
+#an. (sogar patch fÃ¼r adden am neuen ort, obwohl einer der parent commits
 #ja das file schon hat, dieses removing zeigt es nid, nja is bissel
 #eigenartig.)
 
@@ -114,8 +114,8 @@ Danach removen des remotes:
 END
 
 #hmm wie ich das in git-svn rein krieg ?  muss dort dann faken und
-# jeden Pfad rückwirkend schon in jenes Directory schieben, gell?
-# weil sonst würd es auftauchen in einem Verzeichnis (toplevel) wo
+# jeden Pfad rÃ¼ckwirkend schon in jenes Directory schieben, gell?
+# weil sonst wÃ¼rd es auftauchen in einem Verzeichnis (toplevel) wo
 # andre sachen sind, gell.
 
 #use Chj::ruse;

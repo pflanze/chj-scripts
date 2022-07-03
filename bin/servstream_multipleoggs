@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # cj Fri, 17 Sep 2004 21:57:23 +0200
-# cj Sat, 01 Jan 2005 18:41:18 +0100 von ...multiplemp3s kopiert und mod für ogg, versuch jedenf.
-#   och mann es gibt eh Error opening fun.ogg using the oggvorbis module.  The file may be corrupted.   mann isch das zäh  --> also noch untested ob das ev geht mit guten ogg files. forget fm4 streams.
+# cj Sat, 01 Jan 2005 18:41:18 +0100 von ...multiplemp3s kopiert und mod fÃ¼r ogg, versuch jedenf.
+#   och mann es gibt eh Error opening fun.ogg using the oggvorbis module.  The file may be corrupted.   mann isch das zÃ¤h  --> also noch untested ob das ev geht mit guten ogg files. forget fm4 streams.
 
 
 use strict;
@@ -10,8 +10,8 @@ my $PORT= $ENV{PORT}||1112;
 
 if (! @ARGV or @ARGV==1 and $ARGV[0] eq "-h") {
     print "bitte filename angeben des files das tail'ed und served werden soll
-  Das ist ein quickhack eines streaming servers, der für proxybetrieb gedacht ist.
-  Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *während* des runterladens
+  Das ist ein quickhack eines streaming servers, der fÃ¼r proxybetrieb gedacht ist.
+  Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *wÃ¤hrend* des runterladens
   hiermit wieder offeriert werden. Als Port wird $PORT verwendet (per \$PORT overridebar).
 
   --radius   48 statt 44.1 input (eigentlich sollte es es von ogg's output selber lesen!!)
@@ -25,7 +25,7 @@ if (! @ARGV or @ARGV==1 and $ARGV[0] eq "-h") {
     exit 1
 }
 
-#nachträglicheingeführtes options prozessig:
+#nachtrÃ¤glicheingefÃ¼hrtes options prozessig:
 our $opt_radius;
 our $opt_48;
 our $opt_mono;
@@ -99,12 +99,12 @@ icy-aim: N/A
 		$r2->xclose;
 		$w2->xdup2(1);
 		$w2->xclose;
-		$w->xclose;#hm, not too fast? nö wenn forked dann ischer doch kept.
+		$w->xclose;#hm, not too fast? nÃ¶ wenn forked dann ischer doch kept.
 		#xxsystem qw(/usr/bin/mpg123 -w -),@ARGV;  falsch, wav ist zu kurz und drum lame fertig.
-		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann übersehen
+		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann Ã¼bersehen
 		# xxsystem qw(/usr/bin/mpg123 -s),@ARGV;
 		# #och  nun noch  jung at the beginning.
-		xxsystem qw(/usr/bin/ogg123 -d raw -f - ),@ARGV;#ps muss -d raw VOR -f angeben  fuck isch das mühsam.
+		xxsystem qw(/usr/bin/ogg123 -d raw -f - ),@ARGV;#ps muss -d raw VOR -f angeben  fuck isch das mÃ¼hsam.
 	    };
 	    if ($@) {
 		print STDERR $@;
@@ -127,7 +127,7 @@ icy-aim: N/A
 		# mensch man darf eben nicht resampling  verlangen  zusammen mit irgend einem von denen  buggy tool das.
 		xexec
 		  #"sox -t raw -x -s -w -r 48000 - -t raw -x -s -w -r 44100 - resample" WOOWOWOWWOOW  bis ich merke das s dies mono draus macht. und ersch no falsch wohl rechnet deswegen!!!!!
-		  #"sox -t raw -s -w -r 48000 - -t raw -s -w -r 44100 - resample" #(bzgl. -x: "(hör grad nix gross falsch aber wird schon falsch sein)")
+		  #"sox -t raw -s -w -r 48000 - -t raw -s -w -r 44100 - resample" #(bzgl. -x: "(hÃ¶r grad nix gross falsch aber wird schon falsch sein)")
 		  "sox -t raw -c 2 -x -s -w -r 48000 - -t raw -c 2 -x -s -w -r 44100 - resample" #so ist richtig.
 		  #."|sox -t raw -x -s -w -r 44100 - -t raw -x -s -w -r 44100 - flanger 0.5 0.5 3.0 0.6  1.4"
 		  #."|sox -t raw -x -s -w -r 44100 - -t raw -x -s -w -r 44100 - echo 0.5 0.5 60 0.6"

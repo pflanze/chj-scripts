@@ -64,7 +64,7 @@ WHOLE:{
     }
     $pos=0;
 
-    #ach, für 0 gibts noch keine lösung.
+    #ach, fÃ¼r 0 gibts noch keine lÃ¶sung.
     #if(defined($_=<STDIN>)) {
     #ach, einfach special case machen anyway.
 
@@ -80,7 +80,7 @@ WHOLE:{
 	# 	#    print..
 	# 	#}
 	#     }
-    #} print(shift @buf) or die "$myname: stdout: $!\n" if @buf;#grrr wieder n grenzfall.  aber wär auch wieder falsch.
+    #} print(shift @buf) or die "$myname: stdout: $!\n" if @buf;#grrr wieder n grenzfall.  aber wÃ¤r auch wieder falsch.
 	print $buf[$pos] or die "$myname: stdout: $!\n";
 	$buf[$pos]=$_;
 	$pos++;

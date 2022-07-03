@@ -23,11 +23,11 @@ $myname [user\@]host:sourcefile targetfile
   requires that $myname.server is installed on the server (by default
   at $SERVERPATH).
 
-  ps. sollte ich nonblocking io verwenden um paketgrössen optimal auszunutzen?
+  ps. sollte ich nonblocking io verwenden um paketgrÃ¶ssen optimal auszunutzen?
 
   todo:
   - check targetpath for -d first.
-  - umstellen down auf ebenfalls $myname.server. hmm, bidirektional nötig wenn filename per pipe rüber soll. IO::Command eben doch um was bidirektionales erweitern?.
+  - umstellen down auf ebenfalls $myname.server. hmm, bidirektional nÃ¶tig wenn filename per pipe rÃ¼ber soll. IO::Command eben doch um was bidirektionales erweitern?.
 
   (Christian Jaeger <$email>)
 ";
@@ -106,7 +106,7 @@ elsif ($mode eq 'up') {
     #   If you plan to use sendfile for sending files to a TCP socket,  but  need  to  send
     #   some  header  data in front of the file contents, please see the TCP_CORK option in
     #   tcp(7) to minimize the number of packets and to tune performance.
-    # Das müsste aber von ssh gesetzt werden. hum.
+    # Das mÃ¼sste aber von ssh gesetzt werden. hum.
     # $from->xsendfile_to($to);
     # also selber implementieren .
     my $starttime;

@@ -12,7 +12,7 @@ fi
 server="$1"
 port="$2"
 
-echo "  Vor Drücken von Enter (nach Eingabe der Keyphrase) auf dem Server"
+echo "  Vor DrÃ¼cken von Enter (nach Eingabe der Keyphrase) auf dem Server"
 echo "  'netcatreceive_md5 $port > ausgabedatei' eingeben!"
 
 #gpg -c -z 0 | multifeed --delayed '|' md5sum '&' netcat -q 1 "$server" "$port"

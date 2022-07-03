@@ -31,7 +31,7 @@ sub usage {
     --targetdir dir  instead of '$targetdir'
 
   Example:
-   glg paredit.el|grep ^commit|printfield 2|tac|» g-format-patches
+   glg paredit.el|grep ^commit|printfield 2|tac|Â» g-format-patches
 
   (Christian Jaeger <$email>)
 ";

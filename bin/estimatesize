@@ -4,7 +4,7 @@
 
 # oooooooh: du kann auch exclude-file.
 
-# Naa: sollte auch eher echte size zählen und n bissel für per-item overhead,
+# Naa: sollte auch eher echte size zÃ¤hlen und n bissel fÃ¼r per-item overhead,
 # statt blocks! !!
 
 # -2140 naja
@@ -91,7 +91,7 @@ if ($DEBUG){
 my $stay_device;
 
 my %tot_suffix_size;
-#my %tot_suffix_sizecomp;## dies ist eine unsinnige zahl da aus totalen rückrechenbar  und auch ohnehin rückrechenbar.
+#my %tot_suffix_sizecomp;## dies ist eine unsinnige zahl da aus totalen rÃ¼ckrechenbar  und auch ohnehin rÃ¼ckrechenbar.
 my %tot_suffix_count;
 my $tot_unknown_size;
 my $tot_unknown_count;
@@ -118,7 +118,7 @@ sub scandir {
 	    else {
 		eval {
 		    my $s= xlstat $path;
-		    #$sum+= $s->blocks; # well, der Fall wo er ignoriert wird wegen not om same fs müsste man nicht zählen.
+		    #$sum+= $s->blocks; # well, der Fall wo er ignoriert wird wegen not om same fs mÃ¼sste man nicht zÃ¤hlen.
 		    if (-d _) {
 			if (!$opt_l or $s->dev == $stay_device) {
 			    $sumblocks+= $s->blocks;

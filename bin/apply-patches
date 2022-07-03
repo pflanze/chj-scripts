@@ -177,7 +177,7 @@ sub run_on_dir {
 		if ($verbose) {
 		    print "  calling: ".Dumpcmd($p,$cmd)."\n";
 		}
-		my $status= xsystem_with_stdin_to ($p, $cmd);# mch ich mir mühe oben dann doch so.
+		my $status= xsystem_with_stdin_to ($p, $cmd);# mch ich mir mÃ¼he oben dann doch so.
 		if ($status) {
 		    $errors++;
 		    print "\n";
@@ -189,7 +189,7 @@ sub run_on_dir {
 	    } else {
 		#warn "ignoring un-mentioned file '$itemname'";
 		if (not exists $config->{$itemname}) {
-		    print "($myname) ignoring un-mentioned file '$itemname'\n";#eben schon schöner weil langer pfad zuskriptnicht. so passts auf eine zeile.
+		    print "($myname) ignoring un-mentioned file '$itemname'\n";#eben schon schÃ¶ner weil langer pfad zuskriptnicht. so passts auf eine zeile.
 		}
 	    }
 	}
@@ -209,5 +209,5 @@ print "finished".($errors? "":" successfully").".\n";
 __END__
 
 ideen / "not done":
-  - reihenfolge bzgl rekursion und auch überhaupt (in configfiles arrays verwenden wäre das eine, aber eben, rekursion first or not  oder wie soll das sein, "kreuz weise noch?")
-  - was wenn  im Falle von den qmail-mime patches,  verschiedene sets *aus* den files eines dirs genommen werden sollen?  name des option files eben wählbar machen wohl?.
+  - reihenfolge bzgl rekursion und auch Ã¼berhaupt (in configfiles arrays verwenden wÃ¤re das eine, aber eben, rekursion first or not  oder wie soll das sein, "kreuz weise noch?")
+  - was wenn  im Falle von den qmail-mime patches,  verschiedene sets *aus* den files eines dirs genommen werden sollen?  name des option files eben wÃ¤hlbar machen wohl?.

@@ -11,9 +11,9 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname ..
 
-  was es noch nicht kann, ist wenn dasselbe log weitergefüllt wird.
+  was es noch nicht kann, ist wenn dasselbe log weitergefÃ¼llt wird.
 
-  na und was es auch noch nicht kann ist überspringen.  ctl-c verwenden?
+  na und was es auch noch nicht kann ist Ã¼berspringen.  ctl-c verwenden?
 
   (Christian Jaeger <$email>)
 ";
@@ -68,7 +68,7 @@ sub waituntil {
 #	sleep $diff if $diff>0;#aha, if ist essentiell.
 # 	if ($flag_hit){
 # 	    $flag_hit=0;
-# 	    #hm und nun muss ich noch machen dass nexte eben nur diff auf jetzt sind. also log time schieben. na schön wäre auch ein stop. per term raw mode und nonblocking input, resp sleep hier durch select ersetzen.
+# 	    #hm und nun muss ich noch machen dass nexte eben nur diff auf jetzt sind. also log time schieben. na schÃ¶n wÃ¤re auch ein stop. per term raw mode und nonblocking input, resp sleep hier durch select ersetzen.
 # 	    last
 # 	}
 	$diff=0 if $diff <0;
@@ -99,8 +99,8 @@ sub waituntil {
 			# make that the target time of this waituntil call is reached just now. future waituntil calculations must base xyz
 			#a) diff von anfangs aufbehalten.  kommt echte zeit rein?
 			#mann sinds eh wirklich zwei verschiedene faelle?
-			#habe ich kein praktisches verständnis der mathematik oder was is los? (f*ckich war eh immer schleccht im )
-			# kann ich nicht ein flag setzen das beim nächsten mal ausgewertet wird wenn waituntil kommen soll? time-starttime+realstarttime=time().
+			#habe ich kein praktisches verstÃ¤ndnis der mathematik oder was is los? (f*ckich war eh immer schleccht im )
+			# kann ich nicht ein flag setzen das beim nÃ¤chsten mal ausgewertet wird wenn waituntil kommen soll? time-starttime+realstarttime=time().
 			$$virtualstarttimeref += $realtargettime - time;
 			return;
 		    } elsif ($char eq 'C') {

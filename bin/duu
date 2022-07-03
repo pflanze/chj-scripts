@@ -94,8 +94,8 @@ if (opendir DIR,$dir) {
                   and !$flag_blocksize_given;
             } else {
                 #warn "Hmm, stat $dir$item gave bytes=".(defined $bytes ? $bytes : "undef");
-                # heh, warum hab ich den Fall nicht früher getroffen? 24.3.03
-                # If the file is empty, we can't abschätzen was das für die Blockgrösse heisst well.
+                # heh, warum hab ich den Fall nicht frÃ¼her getroffen? 24.3.03
+                # If the file is empty, we can't abschÃ¤tzen was das fÃ¼r die BlockgrÃ¶sse heisst well.
                 # so just ignore
             }
         }

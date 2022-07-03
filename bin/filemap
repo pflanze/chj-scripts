@@ -42,7 +42,7 @@ sub usage {
   --dry|--dry-run     do not really move files in apply, only output notes.
 
 
-(Bei den inputs/outputs dachte ichzuerst: auch fileno geben können. doch: die shell hält dafür ja auch was übrig, also no fear. Und '-' ist neu fon xopen_* auch supportete.)
+(Bei den inputs/outputs dachte ichzuerst: auch fileno geben kÃ¶nnen. doch: die shell hÃ¤lt dafÃ¼r ja auch was Ã¼brig, also no fear. Und '-' ist neu fon xopen_* auch supportete.)
 
  Todo:  das programm sollte sich alle pfade mit dem selben key merken.
   und beim apply dann, wenn mehrere, den user fragen oder so. auchgleichsagen welche davon schon besetzt sind.
@@ -80,7 +80,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @args;
 
-#$|++; #! wie immer.  (well ob das auch auf '-' für hash out put geht? aber egal) well kanns ja nach unten schieben.
+#$|++; #! wie immer.  (well ob das auch auf '-' fÃ¼r hash out put geht? aber egal) well kanns ja nach unten schieben.
 
 sub readhash {
     my($file)=@_;
@@ -180,7 +180,7 @@ my %cmd=
    apply=>sub {
        @_==2 or croak "expecting 2 args";
        my ($filelistinput,$hashinput)=@_;
-       $|=1; #"! wie immer.  (well ob das auch auf '-' für hash out put geht? aber egal)       my $in=xopen_read($filelistinput);"
+       $|=1; #"! wie immer.  (well ob das auch auf '-' fÃ¼r hash out put geht? aber egal)       my $in=xopen_read($filelistinput);"
        my $in=xopen_read($filelistinput);
        my $h= readhash($hashinput);
        while(<$in>){

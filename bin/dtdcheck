@@ -75,13 +75,13 @@ my $dtd;
   if ($opt_iso_xsldoc){
     $doc= encodeToUTF8("iso-8859-1",$doc);
   }
-  $dtd= XML::LibXML::Dtd->parse_string($doc);#  or die "็";
+  $dtd= XML::LibXML::Dtd->parse_string($doc);#  or die "รง";
 }
 
 if (@files) {
   FILE:
   for (@files) {
-    #my $source= $parser->parse_file($_) or die "็";
+    #my $source= $parser->parse_file($_) or die "รง";
     my $source;
     {
       my $doc= ${fetchfile($_)};

@@ -56,8 +56,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 # SAWA-0.79.tar.gz27313 0 Platform-IndependentSource .gz
 # link -> http://prdownloads.sourceforge.net/sawa/SAWA-0.79.tar.gz?download
 
-# kommt l‰nderwahlseite:
-# select mirror.  aha ich hatte keinen mehr gew‰hlt in ,meinem browser kookie draussen?
+# kommt l√§nderwahlseite:
+# select mirror.  aha ich hatte keinen mehr gew√§hlt in ,meinem browser kookie draussen?
 
 # kommt seite mit:
 # Your download should begin shortly. If it does not, try
@@ -65,7 +65,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 # or choose a different mirror
 
 
-# Kˆnnte ich den direkt w‰hlen? jedenfalls geht letztere url mit wget.
+# K√∂nnte ich den direkt w√§hlen? jedenfalls geht letztere url mit wget.
 # ok das machen.
 
 sub transform {

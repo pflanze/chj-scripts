@@ -77,7 +77,7 @@ print SOCK "User-Agent: xmms/1.2.5$specialua\r\n\r\n";# letztes \r\n muss im sel
 
 
 my $buff;
-read SOCK,$buff,1000 or die "read: $!";# nochn timeout programmieren? oder wie fängt man netzwerkunterbrüche ab?
+read SOCK,$buff,1000 or die "read: $!";# nochn timeout programmieren? oder wie fÃ¤ngt man netzwerkunterbrÃ¼che ab?
 if ($buff=~ /^(.*?)\r\n\r\n/s) {
     my $head=$1;
     if ($head=~/\nLocation:\s*(\S+)/s){
@@ -88,7 +88,7 @@ if ($buff=~ /^(.*?)\r\n\r\n/s) {
 
 while (1) {
     my $res= read SOCK,$buff,1024*4;
-    defined $res or die "read: $!";# nochn timeout programmieren? oder wie fängt man netzwerkunterbrüche ab?
+    defined $res or die "read: $!";# nochn timeout programmieren? oder wie fÃ¤ngt man netzwerkunterbrÃ¼che ab?
     $res or die "read 0 bytes, i.e. finished?!\n";
     print $buff or die "write: $!";
 }

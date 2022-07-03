@@ -71,7 +71,7 @@ sub readfile ( $ $ $ ) {
 	} elsif (($time)=/^\s*\*\*\*\*.*END.*AT\s+(.*)/m) {
 	    my $endtime= str2time($time)
 	      or mydie "$myname: timestamp '$time' in file $qfile is unparseable. Bailing out.\n";
-	    # (für was parse ich den überhaupt??)
+	    # (fÃ¼r was parse ich den Ã¼berhaupt??)
 	    #push @lines,$_;
 	    if ($time_begin) {
 		$sections{$time_begin}= join("",@lines,$_,"\n");

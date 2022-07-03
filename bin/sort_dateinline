@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # Son Aug 24 00:56:12 CEST 2003
-# Fri, 10 Oct 2003 14:34:33 +0200 ergänzt mit _Mon_Sep_15_18-36-30_MEST_2003 format
+# Fri, 10 Oct 2003 14:34:33 +0200 ergÃ¤nzt mit _Mon_Sep_15_18-36-30_MEST_2003 format
 
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
@@ -54,8 +54,8 @@ sub appenditem {
     my $file=$line;
     $file=~ s{^.*/}{}s;
     if (# Mon_Sep__8_12-38-17_MEST_2003
-	     #$file=~ /([a-zA-Zäöü]{3}[_ ][a-zA-Zäöü]{3}[_ ]+\d+[_ ]+\d+[-:]\d+[-:]\d+[_ ]MEST[_ ]\d{4})/
-	     $file=~ /(([a-zA-Zäöü]{3})[_ ]([a-zA-Zäöü]{3})[_ ]+(\d+)[_ ]+(\d+)[-:](\d+)[-:](\d+)[_ ]MEST[_ ](\d{4}))/
+	     #$file=~ /([a-zA-ZÃ¤Ã¶Ã¼]{3}[_ ][a-zA-ZÃ¤Ã¶Ã¼]{3}[_ ]+\d+[_ ]+\d+[-:]\d+[-:]\d+[_ ]MEST[_ ]\d{4})/
+	     $file=~ /(([a-zA-ZÃ¤Ã¶Ã¼]{3})[_ ]([a-zA-ZÃ¤Ã¶Ã¼]{3})[_ ]+(\d+)[_ ]+(\d+)[-:](\d+)[-:](\d+)[_ ]MEST[_ ](\d{4}))/
 	    ) {
 	#my $str=$1;
 	#$str=~ tr/_-/ :/;

@@ -169,5 +169,5 @@ for my $file (@args) {
 
 exit ($res_notexist ? 1 : 0);
 
-#fürht hatl eben dazu dass bei no files  true gegeben wird  isch das logisch.?
+#fÃ¼rht hatl eben dazu dass bei no files  true gegeben wird  isch das logisch.?
 

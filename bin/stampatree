@@ -87,7 +87,7 @@ sub fmt_group {
 sub sformat_file {
     my ($s)=@_;
     "f\t".$s->size."\t".fmt_time($s->mtime)."\t".$s->ino."\t".fmt_mode($s->mode)."\t".fmt_user($s->uid)."\t".fmt_group($s->gid)
-      ## nlink/hardlink zeug mal weglassen?   mann   für was habe ich cd ding programmiert.
+      ## nlink/hardlink zeug mal weglassen?   mann   fÃ¼r was habe ich cd ding programmiert.
 }
 sub sformat_dir {
     my ($s)=@_;

@@ -131,12 +131,12 @@ WRITECNF: {
     my $cnfstr;
     if (-e $cnffilepath) {
 	if (maybe_askyn "Do you want me to update the file '$cnffilepath'?") {
-	    $cnfstr="HOLENZUERST dann updaten ็";
+	    $cnfstr="HOLENZUERST dann updaten รง";
 	} else {
 	    last WRITECNF;
 	}
     } elsif (maybe_askyn "Do you want me to create the file '$cnffilepath'?") {
-	$cnfstr=".....็";
+	$cnfstr=".....รง";
     } else {
 	last WRITECNF;
     }

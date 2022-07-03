@@ -70,7 +70,7 @@ sub extractsources_files {
 #     &$add_subpath ("/arch/".Force($arch));
 #     &$add_subpath ("/sound");
 #     &$add_subpath ("/usr");
-#     # krank. h‰tte n map  von paths machen sollen. liste dann durch.
+#     # krank. h√§tte n map  von paths machen sollen. liste dann durch.
 #     map {
 # 	&$add_subpath ($_)
 #     } (

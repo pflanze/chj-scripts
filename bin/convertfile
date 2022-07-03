@@ -105,7 +105,7 @@ my $call_=sub { # returns exit code from command
     if ($opt_pipe) {
 	my $newfh= $maybe_newfh||xopen_write($maybe_newpath);
 	my $in= xopen_read $path;
-	#hm. hab ich noch nix dafür? ok wrote Chj::xpiped now.
+	#hm. hab ich noch nix dafÃ¼r? ok wrote Chj::xpiped now.
 	xpiped $in, $newfh, [$cmd]
     } else {
 	my $newpath= $maybe_newpath||$maybe_newfh->path;

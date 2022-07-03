@@ -90,7 +90,7 @@ sub mailreduce {
 	    die "$myname: file '$bn' too old\n";
 	}
     }
-    #^- muss hier/an ort gehen wo filename überhaupt bekannt ist. ok könnte noch deliverydates in headers an schauen.
+    #^- muss hier/an ort gehen wo filename Ã¼berhaupt bekannt ist. ok kÃ¶nnte noch deliverydates in headers an schauen.
 
 
     local our $in= xopen_read $file;
@@ -98,7 +98,7 @@ sub mailreduce {
 
     #if (not $head->headers("received")) {
     #    die "$myname: file '$bn' is outgoing, or at least not incoming mail\n";
-    #^- so einfach dass ich keine klass dafür hah. --- doch dann doch nid. hah.
+    #^- so einfach dass ich keine klass dafÃ¼r hah. --- doch dann doch nid. hah.
     if ($detectoutgoing->head_is_outgoing($head)) {
 	die "$myname: file '$bn' is not incoming mail\n";
 	#todo: fix method name head_is_outgoing, since it can't detect outgoing, just if it's not real incoming.right?.

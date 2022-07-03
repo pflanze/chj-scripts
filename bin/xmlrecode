@@ -4,7 +4,7 @@
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 use strict;
-#use encoding "latin1"; # nötig damit preline-string einfügen nicht alles kaputt macht. ?
+#use encoding "latin1"; # nÃ¶tig damit preline-string einfÃ¼gen nicht alles kaputt macht. ?
 use bytes; # hiermit tut es immer wieder iso machen. bis ich toFile verwendet hab
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
@@ -100,7 +100,7 @@ my $i2m= new Text::Iconv "iso-8859-1","macintosh" if $opt_m;
 # 		   );
 # eh, siehe 2 zeilen weiter unten.
 
-# Apache::AxKit::CharsetConv wär ne alternative?  baud erwaehnts in #axk. hat aber keine doku un is xs.
+# Apache::AxKit::CharsetConv wÃ¤r ne alternative?  baud erwaehnts in #axk. hat aber keine doku un is xs.
 my $MACCHARS= join("",map{chr hex $_} qw( 8A 9A 9F 80 85 86 8D 8E 8F ));
 
 my $targetencodingname= $opt_u ? "UTF-8" : $opt_i ? "ISO-8859-1" : $opt_m ? "macintosh" : die "??";
@@ -168,9 +168,9 @@ for my $file (@args) {
     
 # Alt: preline so machen wie target encoding es will.
 #     # check preline:
-#     if ($content=~ sé^(\s*<\?xml[^?>]*\?>)é
+#     if ($content=~ sÃ©^(\s*<\?xml[^?>]*\?>)Ã©
 # 	my $all= $1;
-# 	if ($all=~ sè(\bencoding\s*=\s*["']([^"']*)["'])è
+# 	if ($all=~ sÃ¨(\bencoding\s*=\s*["']([^"']*)["'])Ã¨
 # 	    my ($all2,$enc)=($1,$2);
 # 	    if (lc($enc) eq lc($encodingname)) {
 # 		# ok
@@ -179,7 +179,7 @@ for my $file (@args) {
 # 		print STDERR ", changed preline";# (1)";
 # 		"encoding=\"$encodingname\""
 # 	    }
-# 	    èse) {
+# 	    Ã¨se) {
 # 	    # ok
 # 	} else {
 # 	    # preline without encoding
@@ -187,7 +187,7 @@ for my $file (@args) {
 # 	    print STDERR ", added encoding to preline";
 # 	}
 # 	$all
-# 	ése) {
+# 	Ã©se) {
 # 	# ok
 #     } else {
 # 	# no preline

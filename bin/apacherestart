@@ -92,7 +92,7 @@ for my $apachectl (@args) {
     while(is_running){
 	sleep 0.1;
     }
-    #sleep 0.2;#really needed? also vorher als ich nur -e file gemacht hab, war es nie nötig.
+    #sleep 0.2;#really needed? also vorher als ich nur -e file gemacht hab, war es nie nÃ¶tig.
 
     xsystem $apachectl,"start";
 

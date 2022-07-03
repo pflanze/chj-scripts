@@ -78,7 +78,7 @@ sub runps {
 	    $newseen->[$i]->{$pid}=$time;
 	}
     }
-    #$newseen; # & have to throw oldseen to the müll gegen wiederverwendeteipspids
+    #$newseen; # & have to throw oldseen to the mÃ¼ll gegen wiederverwendeteipspids
     for (my $i=0; $i<=$#re; $i++) {
 	# find out which prossesses died
 	for (keys %{$oldseen->[$i]}) {

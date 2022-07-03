@@ -53,7 +53,7 @@ sub unescapeurl {
 sub unescapeline__1 {
     my $v=shift;
     $v=~ s{^.*/}{}s;
-    $v=~ s{^.* }{}s; # bissel gef‰hrlich?
+    $v=~ s{^.* }{}s; # bissel gef√§hrlich?
     my $proto;
     if ($v=~ s{^.*\b(\w{3,6}:/*)}{}) {  ## eh, / sind eh nicht drin.  Hmm, eh mist. detection von multi slashes geht falsch, nmax wird einfach auf doppelzahl gesetzt. todo.
 	$proto=$1;

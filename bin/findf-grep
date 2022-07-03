@@ -5,7 +5,7 @@ usage() {
     echo "  Find all files (type f) in \$dir excluding backups files,"
     echo "  and run egrep \$regex to them."
     exit
-    # ohoh, -a für all? und solche spässe, müsst ich wieder zu perl greifen
+    # ohoh, -a fÃ¼r all? und solche spÃ¤sse, mÃ¼sst ich wieder zu perl greifen
 }
 
 if [ $# -lt 2 ]; then

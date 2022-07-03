@@ -17,7 +17,7 @@ sub usage {
   scans directory and hardlinks files that have the same permissions/metainfo
   and same content (does md5 sum check).
 
-  --report    do not actually link them, just report xxxçç
+  --report    do not actually link them, just report xxxÃ§Ã§
   --dry-run   do not actually link them, just report all the actions which would be taken if not given.
 
   (Christian Jaeger <$email>)
@@ -73,7 +73,7 @@ my %seeninodes;# so we only look at it once   aber: damit vergebe ich die chance
 
 sub addstatinfos {
     my ($path,$s)=@_;
-    my $key=join "\0",$s->size,$s->mode,$s->uid,$s->gid,$s->mtime; # natürlich wäres auch möglich nicht auf stat infos ausser size zu schauen  und dann hinweisen dass unifizierbar wenn auf das verzichten!.
+    my $key=join "\0",$s->size,$s->mode,$s->uid,$s->gid,$s->mtime; # natÃ¼rlich wÃ¤res auch mÃ¶glich nicht auf stat infos ausser size zu schauen  und dann hinweisen dass unifizierbar wenn auf das verzichten!.
     push @{ $map{$key}[0] }, $path;
 }
 
@@ -90,12 +90,12 @@ sub scan {
 	} elsif (-f _) {
 	    # so, und nun das dings alles infos speichern.
 	    # [ino? nein]
-	    # mode,  [nlink? hm, nöd würkli? höchstens warnung 'is prelinked']
+	    # mode,  [nlink? hm, nÃ¶d wÃ¼rkli? hÃ¶chstens warnung 'is prelinked']
 	    # uid, gid, [rdev: nein, nur normale files anschauen]
 	    # size JA
 	    # [atime hm?->warnung wenn unterschiedlich?,]
 	    # mtime, [ctime nein]
-	    # dev: na wenn der nicht gleich, eh grad aufhören.<- bei recurse.
+	    # dev: na wenn der nicht gleich, eh grad aufhÃ¶ren.<- bei recurse.
 	    if (exists $seeninodes{$s->ino}) {
 		warn "ignoring already seen inode of '$itempath'\n" if $verbose;
 	    } else {
@@ -125,7 +125,7 @@ use Data::Dumper;
 
 sub xlinkallthose { # args: paths to be merged. returns: number of deleted files
     # should all be on the same fs.
-    # hm, dann könnte noch stragegie kommen, von wo nach wo  wegen permissions auf directory.  also mal alle renamen zuerst well eh xlinkunlinken.
+    # hm, dann kÃ¶nnte noch stragegie kommen, von wo nach wo  wegen permissions auf directory.  also mal alle renamen zuerst well eh xlinkunlinken.
     my (@real_paths)=@_;
     my @moved_paths=@real_paths;
     my $sourcefile;
@@ -134,7 +134,7 @@ sub xlinkallthose { # args: paths to be merged. returns: number of deleted files
 	    and !defined $sourcefile) {
 	    $sourcefile= $_;
 	    $_=undef; # UND AUCH HIER!  aus anderem Grund?? Grund1 isch es kann nicht gemoved werden, Grund2 isch wir wollen es gar nicht moven weil es das letzte isch und keins vorkam das wir nicht moven konnten.
-	    #last;  gefährlich?
+	    #last;  gefÃ¤hrlich?
 	    next;
 	}
 	eval {
@@ -164,7 +164,7 @@ sub xlinkallthose { # args: paths to be merged. returns: number of deleted files
 		die $@;
 	    }
 	};
-	warn $@ if $@;# and $verbose; ? ##  weil nur dann relevant? aber eben, ev nochbuggy bei alle besetzt  wie reagiert denn dann der code? ç.
+	warn $@ if $@;# and $verbose; ? ##  weil nur dann relevant? aber eben, ev nochbuggy bei alle besetzt  wie reagiert denn dann der code? Ã§.
     }
     # ok, those that could be moved have different path now. funny solution.
     # find one file to use as source first.
@@ -203,7 +203,7 @@ sub xlinkallthose { # args: paths to be merged. returns: number of deleted files
 	    }
 	}
     }
-    # und am ende alle moved_paths löschen wenn obige xlinks alle gut gingen.
+    # und am ende alle moved_paths lÃ¶schen wenn obige xlinks alle gut gingen.
     my $count;
     for (@moved_paths) {
 	if (defined) {
@@ -232,7 +232,7 @@ for (keys %map) {
 	for (@$paths) {
 	    my $f= xopen_read $_;
 	    my $buf;
-	    $f->xsysread($buf,$readsize) == $readsize or die "?komisch, nicht genug lesen können, EINTR oder so was geschehen, bei '$_'; sys error?: $!";
+	    $f->xsysread($buf,$readsize) == $readsize or die "?komisch, nicht genug lesen kÃ¶nnen, EINTR oder so was geschehen, bei '$_'; sys error?: $!";
 	    push @{ $firstbytes{$buf} },$_;
 	}
 	# nun alle mit identischem firstbyte schauen:

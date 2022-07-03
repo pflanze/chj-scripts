@@ -35,7 +35,7 @@ while (<>) {
 	xprint "\n" unless $last_line_was_nonunwrappable;
 	xprint $_; # without checking whether it carries a newline at the end?
 	$last_line_was_nonunwrappable=1;
-    } elsif (/^[\wäöüÄÖÜ(]/) { # an unwrappable line
+    } elsif (/^[\wÃ¤Ã¶Ã¼Ã„Ã–Ãœ(]/) { # an unwrappable line
 	#chomp;
 	# hm and remove *any* trailing whitespace actually
 	s/\s+\z//s;

@@ -5,9 +5,9 @@ use strict;
 sub usage {
 die "
 # Mon,  4 Feb 2002 17:59:38 +0100
-# für Pastes von links oder make menuconfig runterzubrachen. (aus gnome-terminal)
+# fÃ¼r Pastes von links oder make menuconfig runterzubrachen. (aus gnome-terminal)
 # stdin->stdout
-# für nedit
+# fÃ¼r nedit
 
 Eintige Option:  -w weite_des_termfensters
 ";

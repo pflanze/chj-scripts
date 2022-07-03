@@ -73,7 +73,7 @@ use Chj::IO::Command;
 
 my ($read,$write)=xpipe;
 
-# wann beenden? wenn filehandle zugeht natürli, klar. aber (für fall dass er fh weitergibt?) auch signal betrachten? aber oh, doch nah.
+# wann beenden? wenn filehandle zugeht natÃ¼rli, klar. aber (fÃ¼r fall dass er fh weitergibt?) auch signal betrachten? aber oh, doch nah.
 
 if ($opt_s) {
     $SIG{CHLD}= sub { ### possibly only works up to perl 5.6 because of 5.8 safe signals?

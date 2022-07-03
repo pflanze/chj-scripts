@@ -59,9 +59,9 @@ sub checkauth ($ $ ) {
 					   #Timeout => 1, hiflt nicht
 					  )
       or die "new/connect: $!";
-    #$sock->timeout(1); #auch hier bei sender nützt das NICHTS. wahnsinn.
+    #$sock->timeout(1); #auch hier bei sender nÃ¼tzt das NICHTS. wahnsinn.
 
-    #$sock->connect; nicht nötig. oben mit drin?
+    #$sock->connect; nicht nÃ¶tig. oben mit drin?
     $sock->send ("check ".singlequote($user)." ".singlequote($pass)."\n")
       or die "send: $!";
     #sleep 30000;

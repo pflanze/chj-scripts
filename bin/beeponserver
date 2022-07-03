@@ -6,7 +6,7 @@ use Time::HiRes 'usleep';
 
 my $num=shift||1;
 
-sysopen STDOUT,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht öffnen: $!";
+sysopen STDOUT,"/dev/tty0", O_WRONLY or die "Konnte /dev/tty0 nicht Ã¶ffnen: $!";
 $|=1;
 for (1..$num) {
     print "\007";

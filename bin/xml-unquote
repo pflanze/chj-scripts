@@ -11,7 +11,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname ..
 
-  (gemacht um url's aus .galeon/session_crashed.xml files verwenden zu können)
+  (gemacht um url's aus .galeon/session_crashed.xml files verwenden zu kÃ¶nnen)
 
   (Christian Jaeger <$email>)
 ";

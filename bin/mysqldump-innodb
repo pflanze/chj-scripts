@@ -60,7 +60,7 @@ if ($opt_access_slave) {
 
 sub xexec {
     if ($DEBUG) {
-	print join (" ¦ ",@_),"\n"
+	print join (" Â¦ ",@_),"\n"
     } else {
 	exec @_ or exit 127;
     }
@@ -72,9 +72,9 @@ xexec
   #hehhh nicht mal so, noch mehr:
   qw(mysqldump -O single-transaction=TRUE --skip-lock-tables --add-drop-table --all  --extended-insert --quick --skip-add-locks ),@args;
 
-#JA das skip-lock-tables ist nötig damit er keine locks macht während backuppen (sichtbar dass bei mir auf elvis-5 "Access denied for user .. to database .. when using LOCK TABLES" kam).
+#JA das skip-lock-tables ist nÃ¶tig damit er keine locks macht wÃ¤hrend backuppen (sichtbar dass bei mir auf elvis-5 "Access denied for user .. to database .. when using LOCK TABLES" kam).
 
-# Nun, evtl stören die locks ja eine innodb-verwendende applikation gar nicht beim backuppen, weil diese eh keine lock statements benützen?. und für andere (wie horde) wäre es still safe. --safe option machen?
+# Nun, evtl stÃ¶ren die locks ja eine innodb-verwendende applikation gar nicht beim backuppen, weil diese eh keine lock statements benÃ¼tzen?. und fÃ¼r andere (wie horde) wÃ¤re es still safe. --safe option machen?
 
 
 #(alt cj: oder (mit mysql 4.1 gemacht)  --add-drop-table --all --extended-insert --quick --skip-add-locks --single-transaction ? )

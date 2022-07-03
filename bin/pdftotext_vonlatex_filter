@@ -38,9 +38,9 @@ use Chj::xsysopen; use Fcntl;
 
 # (LQI.KUXQJ
 # 28 4c 51 49 81 ...
-# Einführung
+# EinfÃ¼hrung
 # 45 69 6e 66 fc ...
-# meist 29 differenz. bei ü aber 123 differenz.
+# meist 29 differenz. bei Ã¼ aber 123 differenz.
 
 # Kleinbuchstaben:
 # 4c=i   latin: 69=i 61=a    also dezimal 68 ist das a vom latex
@@ -65,9 +65,9 @@ sub convert {
 	    # Ziffern
 	    $outline.=chr($a+29);
 	} elsif ($a==0x81) {
-	    $outline.="ü"
+	    $outline.="Ã¼"
 	} elsif ($a==0x7c) {
-	    $outline.="ö"
+	    $outline.="Ã¶"
 	} elsif ($a==0x11) {
 	    $outline.="."
 	} elsif ($a==0x0b) {
@@ -79,22 +79,22 @@ sub convert {
 	} elsif ($a==0x0f) {
 	    $outline.=","
 	} elsif ($a==ord("l")) {
-	    $outline.="ä"
+	    $outline.="Ã¤"
 	} elsif ($a==0x9c) {
 	    $outline.="*"
 	} elsif ($a==ord("\c]")) {
 	    $outline.=":"
 	} elsif ($a==ord("h")) {
-	    $outline.="Ü"
+	    $outline.="Ãœ"
 	} elsif ($a==ord("\cR")) {
 	    $outline.="/"
 	} elsif ($a==ord("\c^")) {
 	    $outline.=";"
 	} elsif ($a==ord("#")) {
 	    $outline.='@'
-	} elsif ($a==ord("²")) {
+	} elsif ($a==ord("Â²")) {
 	    $outline.="--"
-	} elsif ($a==ord("±")) {
+	} elsif ($a==ord("Â±")) {
 	    $outline.="--"
 	} else {
 	    $outline.=$c;

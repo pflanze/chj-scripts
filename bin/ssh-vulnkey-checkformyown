@@ -83,7 +83,7 @@ while (<$vulnkey>) {
 	}
     }
     else {
-	die "was ist das schon wieder für eine einstufung?: $_";
+	die "was ist das schon wieder fÃ¼r eine einstufung?: $_";
     }
 }
 

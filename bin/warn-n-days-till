@@ -157,7 +157,7 @@ my $now=time;
 my $targettime= eval $check;
 die "$myname: --check code gave error: $@" if ref $@ or $@;
 
-$targettime=~ /^\d*(?:\.\d+)?$/ or die "$myname: --check code didn't return a (positive) number: '$targettime'\n";#hmm, gefährlich?. todo gopf so fundamental.  string->number ehr sogar einfach number?
+$targettime=~ /^\d*(?:\.\d+)?$/ or die "$myname: --check code didn't return a (positive) number: '$targettime'\n";#hmm, gefÃ¤hrlich?. todo gopf so fundamental.  string->number ehr sogar einfach number?
 
 my $stamp= new Chj::FileStore::Stamp $store;
 my $oldstamp= $stamp->mtime;
@@ -166,7 +166,7 @@ warn "targettime is: ".localtime($targettime) if $DEBUG;
 warn "oldstamp is ".(defined($oldstamp)? localtime($oldstamp) : "undef") if $DEBUG;
 
 
-my @daytimestowarn; # isch das nöd ugly?
+my @daytimestowarn; # isch das nÃ¶d ugly?
 for my $t (@days) {
     my $point= $targettime - $t * 24*60*60;
     warn "in loop: $t days before targettime is ".localtime($point) if $DEBUG;

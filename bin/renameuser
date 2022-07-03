@@ -85,7 +85,7 @@ rename "/home/$old","/home/$new"
     my $num= $$gr=~ s/^([^:]*:[^:]*:[^:]*:(?:|.*,))\Q$old\E(,|$|\s)/$1$new$2/mg ||0;
     print "$myname: changed username in $num secondary group allocations.\n";
 
-    ##WELL: was wenn writeback fehlschlägt? sollte dann auch gesammelte Meldung bringen. @liste machen eben.
+    ##WELL: was wenn writeback fehlschlÃ¤gt? sollte dann auch gesammelte Meldung bringen. @liste machen eben.
     writebackfile $GRFILE,$gr, checkperms=>1,strictperms=>1,symlinks=>'deny';
 }
 

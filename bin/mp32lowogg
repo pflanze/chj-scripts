@@ -14,10 +14,10 @@ sub usage {
 Frage: soll man wirklich in alle programme eine map/batch funktion einbauen?
 In perl zu funktionen hab ich gesagt: nein.
 foreach * do fun -f ...
-a la myxargs.eh eben nöd.
+a la myxargs.eh eben nÃ¶d.
 (Vorteil von in skripte einbauen isch no dass errors automatisch abbruch, bei shell wrappers a la for f in *; do  muss man nicht vergessen set -e zu machen vorher)
 
-  NA aber hey: basically isches immer wie mv,cp etc.: also auch verzeichnis ziel angeben können.
+  NA aber hey: basically isches immer wie mv,cp etc.: also auch verzeichnis ziel angeben kÃ¶nnen.
   also eben doch legaler eh generaler wrapper besser. mal tun. optional perllib einbaubar in skripte.
 
   (Christian Jaeger <$email>)
@@ -80,11 +80,11 @@ if (defined $outfile){
 
 use Chj::xpipeline 'xxpipeline';
 
-# # mann so ein seich: mpg321 kann nicht von - lesen. tut zwar so als könnte er, produziert aber keinen output. mannstoll.
+# # mann so ein seich: mpg321 kann nicht von - lesen. tut zwar so als kÃ¶nnte er, produziert aber keinen output. mannstoll.
 # my $flag_unlinkfifo;
 # if ($infile eq '-') {
 #     my $fifo="/tmp/fifo.$>.$$.".int(rand(100000)).".mp3";
-#     #xxsystem "mkfifo", $fifo  #mannnn  mktempfifo  mannnnnnn. "unix" isch so ein seich  ah voll, mkfifo(3) kennt kein excl.  aber well müsste das denn sein?
+#     #xxsystem "mkfifo", $fifo  #mannnn  mktempfifo  mannnnnnn. "unix" isch so ein seich  ah voll, mkfifo(3) kennt kein excl.  aber well mÃ¼sste das denn sein?
 #     use POSIX 'mkfifo';
 #     mkfifo $fifo,0700;
 #     if (xfork){

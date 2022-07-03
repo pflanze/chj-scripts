@@ -51,7 +51,7 @@ usage unless @args;
 while (<>) {
     if (/^diff /) {
 	defined(my $n1= <>) or die $!;
-	defined(my $n2= <>) or die $!; #zum glück gibt perl warning.tja.
+	defined(my $n2= <>) or die $!; #zum glÃ¼ck gibt perl warning.tja.
 	$n1=~ /^---/ or die "invalid format, line following 'diff ' line is not '---': $n1";
 	$n2=~ /^\+\+\+/ or die "invalid format, line following 'diff ' line is not '+++': $n2";
 	#s{ (\S+)/}{ }s;

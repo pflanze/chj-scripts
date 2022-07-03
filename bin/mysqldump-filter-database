@@ -60,7 +60,7 @@ while(<STDIN>) {
 	# do not print
     } elsif (/^USE `(\w+)`;/) {
 	my $database=$1;
-	$before_any_database=0;#wenn supergenau sein wollen  würd man  bei ende von teil  wieder einschalten  aber es gibt glaub kein klares ende eines teils
+	$before_any_database=0;#wenn supergenau sein wollen  wÃ¼rd man  bei ende von teil  wieder einschalten  aber es gibt glaub kein klares ende eines teils
       quer:
 	if ($databases{$database}) {
 	    warn "entered section of database '$database'" if $DEBUG;

@@ -109,7 +109,7 @@ sub newpatches {
 			# patches that we have with the same
 			# author-date and title, or same title if none
 			# with same author-date
-			#็
+			#รง
 		    } else {
 			&$print($opt_all ? "NEED " : "");
 		    }

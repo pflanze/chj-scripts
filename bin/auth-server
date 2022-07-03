@@ -61,8 +61,8 @@ use Chj::singlequote;
 our $auth= Chj::Unix::Authenticate->new(service=>"login");#(the sole service supportded by that module)
 
 our $state= new Chj::FileStore::PIndex $statedir;
-# wenn successful, zwar numfails rücksetzen aber zeitpunkt der letzten failure nicht?
-# ps. für multiuser so  doch auch noch sleepen besser wohl.
+# wenn successful, zwar numfails rÃ¼cksetzen aber zeitpunkt der letzten failure nicht?
+# ps. fÃ¼r multiuser so  doch auch noch sleepen besser wohl.
 # also wenn mal n ok kommt, wieder zulassen .
 # hm number of failures isch egal?nein. nur wenn time kurz ist UND numfailures >= 3 ist, abblocken.
 
@@ -80,7 +80,7 @@ sub lastfailed_clear {
     my ($user)=@_;
     if (my ($numfails,$lastfail)= lastfailed_get($user)) {
 	$state->set($user,"0 $lastfail");  ##ehr was wollte ich ?   ich mein   bei erstem wiederfailure gleich wieder oder ehr  was wollte ich.  muss  damit ok durchkommt  ja eh warten. --sollte ich numfails lassen und lastfail auf 0 ??
-	# ps. parallelität? luckily bin ich singly hier.
+	# ps. parallelitÃ¤t? luckily bin ich singly hier.
     }
 }
 
@@ -148,7 +148,7 @@ sub parse_singlequote_from_buf {
 
 sub handle_conn {
     local our ($conn)=@_;
-    #$conn->timeout(1); #ok?  grrr warum nützt das nichts?????. weder auf senden noch lesen!!
+    #$conn->timeout(1); #ok?  grrr warum nÃ¼tzt das nichts?????. weder auf senden noch lesen!!
     #use Chj::repl;repl;
 
     my $buf;

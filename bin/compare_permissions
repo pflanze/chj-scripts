@@ -29,7 +29,7 @@ for (my $i=0; $i<@ARGV; $i++) {
 	} elsif ($ARGV[$i]=~ /^--?t(erse)?$/) {
 		$withuser=0; 
 	} elsif ($ARGV[$i]=~ /^--$/) {
-		push @paths,@ARGV[$i..$#ARGV]; # splice machts kaputt. -1 wär das letzte el, aber brauche ..;
+		push @paths,@ARGV[$i..$#ARGV]; # splice machts kaputt. -1 wÃ¤r das letzte el, aber brauche ..;
 		last;
 	} elsif ($ARGV[$i]=~ /^-/) {
 		usage
@@ -49,9 +49,9 @@ sub getlisting {
 	if ($path=~ m|^([^/:]+):(.+)|) { #remote	
 		my ($host,$path)=($1,$2);
 		#$res= xbacktick("ssh",$host,"perl","-e",'$ENV{LANG}="C";exec @ARGV',@LSCMD,$path);
-		# MANN ist das schade und mühsam, wieder mal KEIN richtig parm passing.
+		# MANN ist das schade und mÃ¼hsam, wieder mal KEIN richtig parm passing.
 		# und weiss der deibel wieso die folgeargs dann doch kommen.
-		# scheint das erste wird mit der sh ausgeführt, die folgenden dann sind args der sh
+		# scheint das erste wird mit der sh ausgefÃ¼hrt, die folgenden dann sind args der sh
 		# ODER des prgs's das exec't wird?
 		$res= xbacktick("ssh",$host,'perl -e \'$ENV{LANG}="C";exec @ARGV\'',@LSCMD,$path);
 	} else {
@@ -77,5 +77,5 @@ print diff( \ strip(getlisting($paths[0]),$withuser),
 __END__
 Fri, 17 May 2002 00:33:52 +0200
 Hm scheisse:
-- diff gruppiert zeilen immer, das ist u.U wäre das weniger konfus wenn 1zeile à zeile.
+- diff gruppiert zeilen immer, das ist u.U wÃ¤re das weniger konfus wenn 1zeile Ã  zeile.
 - weiss nicht mehr WO man ist. da das verzeichnis abgehauen wird.  ......

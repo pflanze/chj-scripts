@@ -72,7 +72,7 @@ use Chj::FP::lazy;
 sub parse_position {
     my ($str)=@_;
     if ($str=~ /^(\d+)\z/) {
-	# gar kein delay nötig wäre  nun jo eben?
+	# gar kein delay nÃ¶tig wÃ¤re  nun jo eben?
 	# hmmm  filehandle vorhanden sein muss also hier schon geben   schlecht? doch nicht sondern functions geben.--dann mit memoization maybe.
 	my $pos=$1;
 	sub {
@@ -158,7 +158,7 @@ if ($from) {# sendfile has an offset argument, but doesn't seem to be in a worki
 
 my $buf;
 
-#dafür sollte doch auch ne sendfile_partial methode existieren ?.
+#dafÃ¼r sollte doch auch ne sendfile_partial methode existieren ?.
 #AH das hat es sogar!
 
 our $out= bless *STDOUT{IO}, "Chj::IO::File";

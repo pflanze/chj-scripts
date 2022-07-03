@@ -46,7 +46,7 @@ my @apt_cmd=( "apt-get","source");
 sub source_and_check {
     my ($package_name)=@_;
     # muss rausfinden wie das file das es holt genau heisst.
-    # tja, dafür muss ich pipe machen und mit lesen, right ?
+    # tja, dafÃ¼r muss ich pipe machen und mit lesen, right ?
     # 'dpkg-source: extracting curl in curl-7.15.1'
     todo mal fertig machen  oderso  well schau in td file  ich nach schem versuch
 }

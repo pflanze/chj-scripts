@@ -3,7 +3,7 @@
 # Fre Jul  7 12:53:14 CEST 2006
 (my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
-#ich MEINTE ich häte das schon so offt gewollt und auch scon mal gemacht?.
+#ich MEINTE ich hÃ¤te das schon so offt gewollt und auch scon mal gemacht?.
 
 use strict;
 
@@ -76,7 +76,7 @@ usage "missing user" unless $user;
 my ($database)=@args;
 $database=~ /^(\w+)$/ or die "not matching kriteria: '$database'";
 $database=$1;
-##ps $host hab ich nich so nett geprüft!
+##ps $host hab ich nich so nett geprÃ¼ft!
 
 use DBI;
 use Chj::Util::AskPassword;
@@ -91,7 +91,7 @@ our $DB= DBI->connect("DBI:mysql:database=$database;host=$host".($port? ";port=$
 		      $pwd,
 		      {RaiseError => 1}) ; ##or die ; ?
 
-#$DB->begin;#well eh unnötz
+#$DB->begin;#well eh unnÃ¶tz
 
 our $sh= $DB->prepare("show tables");
 

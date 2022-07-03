@@ -46,7 +46,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 #our @lines= sort { $a <=> $b } @args;
 
 # oder sollen sie in der reihenfolge gegeben werden wie eben gegeben?
-# ah abr doch so schnell streamend wie möglich ? ?
+# ah abr doch so schnell streamend wie mÃ¶glich ? ?
 # :) was man immer machn kann...
 
 #well derzeit doch  reihenfolgeignored.

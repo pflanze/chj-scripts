@@ -15,7 +15,7 @@ usage if $ARGV[0]=~ /^--?h(elp)?/;
 
 my $regex=shift;
 
-eval "sub doreg { $regex }"; # Operiert auf $_; Vorsicht, natürlich auch alien code möglich.
+eval "sub doreg { $regex }"; # Operiert auf $_; Vorsicht, natÃ¼rlich auch alien code mÃ¶glich.
 
 die $@ if $@;
 

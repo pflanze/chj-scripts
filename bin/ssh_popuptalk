@@ -26,11 +26,11 @@ sub usage {
   damit eruieren koennen was ich sage was der andere.
   Oder aber eben timestamp mit escapes  und cursormovements verstehen fur zuordnung?
   oder beides
-  # pts allocation gestöre aber, oderso, oder kann ich ssh forcieren  oder isches eh
+  # pts allocation gestÃ¶re aber, oderso, oder kann ich ssh forcieren  oder isches eh
    egal?  nah muss dem sagen dass es auf der andern seite pts allozieren soll.
 
-  Das lustige an unverändertem log ist dass man mit cat oder fasttail einfach wiederspielen oder verfolgen kann.
-  Aber nicht zeitgemäss. Also für zeitgemässheit ev eher ein wrapper bieten der eben die timestamps versteht dann.
+  Das lustige an unverÃ¤ndertem log ist dass man mit cat oder fasttail einfach wiederspielen oder verfolgen kann.
+  Aber nicht zeitgemÃ¤ss. Also fÃ¼r zeitgemÃ¤ssheit ev eher ein wrapper bieten der eben die timestamps versteht dann.
   Also relative zeiten aufzeichnen vielleicht? und startmarker der auch absolute starteit beinhaltet. ach oder eben einfach immer 4 bytes anyway. aber login speziell markieren.
   \\n gilt als eine marker schicht, andere als andere eben
 
@@ -75,7 +75,7 @@ use Chj::xsysopen 'xsysopen_excl';
 BEGIN{*theopen=*xsysopen_excl}
 
 # warum habe ich immer schuld dass ich zuviel mache
-# oo? unvollständige oo.
+# oo? unvollstÃ¤ndige oo.
 # callbacks?
 use Chj::Log::Timed;
 

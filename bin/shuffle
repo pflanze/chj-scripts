@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Fre Mär  7 22:17:23 MET 2003
+# Fre MÃ¤r  7 22:17:23 MET 2003
 
 use strict;
 
@@ -33,7 +33,7 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage if @files;
 
-# könnte sicher besser sein hier einfach basics
+# kÃ¶nnte sicher besser sein hier einfach basics
 
 my @lines=map { /\n$/s ? $_ : "$_\n" } <STDIN>;
 

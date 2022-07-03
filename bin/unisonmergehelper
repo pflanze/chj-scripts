@@ -8,9 +8,9 @@ use Compress::Zlib;
 
 # Weil unison 3 parameter gibt aber tkdiff nur 2 handhaben kann.
 # Der einzige grosse Scheiss ist wohl nur dass unison wohl filenames nicht \' escaped resp.
-#   halt das wär nich mal korrekt. Sondern wohl eher \  whitespace escaped? Fuckthe hell mit the shell
+#   halt das wÃ¤r nich mal korrekt. Sondern wohl eher \  whitespace escaped? Fuckthe hell mit the shell
 
-die "Dies iss bloss n helper skript, für unison" unless @ARGV==3;
+die "Dies iss bloss n helper skript, fÃ¼r unison" unless @ARGV==3;
 
 my ($CURRENT1,$CURRENT2,$NEW)=@ARGV;
 
@@ -25,7 +25,7 @@ if ($CURRENT1=~ /\.gnumeric$/) {
 #	local ();
 #	
 #    };
-#    for ([$CURRENT1,*file1]  gahtnöd, isch nöd perl
+#    for ([$CURRENT1,*file1]  gahtnÃ¶d, isch nÃ¶d perl
     my $SIZE=1024*128;
     my $buf;
     my $schleus=sub{
@@ -56,7 +56,7 @@ if ($CURRENT1=~ /\.gnumeric$/) {
 }
 
 system "cj-guidiff", $file1, $file2;
-# wenn's zurückkehrt, wird es BITTE das file "$CURRENT1-merge" geschrieben haben.
+# wenn's zurÃ¼ckkehrt, wird es BITTE das file "$CURRENT1-merge" geschrieben haben.
 
 $file1=~ /(^.*?)(\.[^.]*)?$/;  ##ps. cj 25.2.04: sollte das nich [^.]+ sein? statt *
 my ($p1,$p2)=($1,defined $2 ? $2 : "");
@@ -90,7 +90,7 @@ if (-e "$p1-merge$p2") {
 	    $t->xrename($NEW);
 	} else {
 	    #xrename "$p1-merge$p2",$NEW;
-	    # "xrename(/home/chris/mnt/ethimdialog/app/start-merge, /root/.unison/#unisonmerged-start): Ungültiger Link über Gerätegrenzen hinweg at /root/bin/unisonmergehelper line 92"
+	    # "xrename(/home/chris/mnt/ethimdialog/app/start-merge, /root/.unison/#unisonmerged-start): UngÃ¼ltiger Link Ã¼ber GerÃ¤tegrenzen hinweg at /root/bin/unisonmergehelper line 92"
 	    xxsystem "mv","-f", "$p1-merge$p2",$NEW;
 	}
 } else {

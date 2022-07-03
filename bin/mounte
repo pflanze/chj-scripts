@@ -244,7 +244,7 @@ use Chj::IO::Command;
 
 #sub xxbacktick {##once more ~
 #ehr actually:  and hm multivalreturnnow 'hheh'x
-#wl vs multi verschiedene typen weisch echt immer !!! in diesen f‰llen ist immer das zweite meaningless!  ich mein: das andre. das *jeweils* andere! jw!
+#wl vs multi verschiedene typen weisch echt immer !!! in diesen f√§llen ist immer das zweite meaningless!  ich mein: das andre. das *jeweils* andere! jw!
 #((plainoldePerl6 hicktighchmeinheh))
 # und jo man wuerde requirement 2 wollenechtmensch ach  hask kanneven ach   .
 sub xbacktick {
@@ -487,7 +487,7 @@ sub mount_easily {
 		undef
 	    }
 	};
-	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber w‰hlen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
+	my $devicemapper_path= "/dev/mapper/".Force($id_); #ok diese id hier zu verwenden? well schon oder? oder sollte ich device name nehmen ?. well eben selber w√§hlen. manuell auch ein name.  - aber ja wenn manuell verwend ich den namen beim mount point wieder.
 	my $open= sub {
 	    my $cmd= sub {
 		my (@options)=@_;

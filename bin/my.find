@@ -98,7 +98,7 @@ my %options= (
 	      # end tests
 	      );
 
-exec "find",@ARGV unless @ARGV and exists $options{$ARGV[0]};# (macht das überhaupt noch sinn? Ziel ist dass man per normale Reihenfolge allfälligen Bugs hier ausweichen kann. Also ja, glaub isch immer noch sinnvoll handausf)
+exec "find",@ARGV unless @ARGV and exists $options{$ARGV[0]};# (macht das Ã¼berhaupt noch sinn? Ziel ist dass man per normale Reihenfolge allfÃ¤lligen Bugs hier ausweichen kann. Also ja, glaub isch immer noch sinnvoll handausf)
 
 my (@paths,@args);
 for (my $i=0; $i<=$#ARGV; $i++) {

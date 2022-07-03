@@ -57,7 +57,7 @@ our @pa;
 #while ($cnt=~ m{(?:^|\G|;)\s*use\b\s*([\w:]+)([^:]*)(?:;|\z)}sg) {
 #while ($cnt=~ m{\s*use\b\s*([\w:]+)([^:]*)(?:;|\z)}sg) {
 #while ($cnt=~ m{(?:^|\G|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
-#warum  häölle habe ich so iel probls lately damit
+#warum  hÃ¤Ã¶lle habe ich so iel probls lately damit
 #darf kein \G als anfang nehmen.
 #while ($cnt=~ m{(?:^|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
 #shit. how then.
@@ -95,7 +95,7 @@ while ($cnt=~ m{(?:;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
 # 	sleep 1;#hsz.
 #     }
 #     #while ($cnt=~ m{\G\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
-#     #och und jetzt nur \G spezen  geht natürlich dann nicht  wenn  zwischen zwei use  noch was liegt
+#     #och und jetzt nur \G spezen  geht natÃ¼rlich dann nicht  wenn  zwischen zwei use  noch was liegt
 #     #while ($cnt=~ m{(?:\G|;)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
 #     #loopt wiedr
 #     #while ($cnt=~ m{(?:;|\G)\s*use\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
@@ -126,7 +126,7 @@ while ($cnt=~ m{\buse\b\s*([\w:]+)([^;]*)(?:;|\z)}sg) {
 
 print join " ", (map {
     my ($package,$rawargs)=@$_;
-    #$rawargs entweder "string","string"  oder qw( ) irgendwas, *üblicherweise*
+    #$rawargs entweder "string","string"  oder qw( ) irgendwas, *Ã¼blicherweise*
     #ah kanns ja evalen?
     #my @args= defined($rawargs) ? do {my @a=eval $rawargs; die if (ref $@ or $@); @a} : ();
     #"-M$package=".join(",",@args);

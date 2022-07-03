@@ -10,7 +10,7 @@ my ($mydir, $myname)=($1,$2);
 #use Chj::Web::Fetch 'get_remote_file';  Encode.pm is not on ethlife/woody.
 use Chj::Web::SureFetch;
 use Chj::FileStore::PIndex;
-use Chj::Sendmail;# ACH, benötigt ebenfalls Encode.pm.
+use Chj::Sendmail;# ACH, benÃ¶tigt ebenfalls Encode.pm.
 use Chj::Mailfrom 'mailfrom';
 use Chj::Hostname 'hostname';
 use Chj::username;
@@ -94,8 +94,8 @@ my $mailto= @args? join(",",@args) : undef;
 
 *pindex_path_base= memoize_thunk sub {
     $configfile or return;
-    # sollte eine generelle path verkürzungs funktion haben.
-    # entweder url2pathname style,  oder: directory (und eben realpathed) hashen, filename lassen. und symlink eben directory auflösend.  (Wo hatte ich das? 2003 geschrieben? odernoch2002?nah)
+    # sollte eine generelle path verkÃ¼rzungs funktion haben.
+    # entweder url2pathname style,  oder: directory (und eben realpathed) hashen, filename lassen. und symlink eben directory auflÃ¶send.  (Wo hatte ich das? 2003 geschrieben? odernoch2002?nah)
     # ah: Chj::Web::FileescapeUrl hab ich schon ausgelagert!
     my $p= xrealpath $configfile;
     $p=~ s/^\Q$ENV{HOME}\E//s;
@@ -115,7 +115,7 @@ ref($config) eq "HASH" or usage "not a hash: $config";
 
 
 our %notify;# softwarename => array of 'usually'  [ $key, $oldversion, $version];
-sub notify{# könnte auch add_notify genannt werden
+sub notify{# kÃ¶nnte auch add_notify genannt werden
     @_>1 or die "zuwenig argumente, ".@_;
     my $softwarename=shift;
     push @{$notify{$softwarename}},@_;

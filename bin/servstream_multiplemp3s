@@ -7,8 +7,8 @@ my $PORT= $ENV{PORT}||1112;
 
 unless (@ARGV) {
     print "bitte filename angeben des files das tail'ed und served werden soll
-  Das ist ein quickhack eines streaming servers, der für proxybetrieb gedacht ist.
-  Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *während* des runterladens
+  Das ist ein quickhack eines streaming servers, der fÃ¼r proxybetrieb gedacht ist.
+  Ein File, das per getmpradio runtergezogen wird, kann (*muss*) *wÃ¤hrend* des runterladens
   hiermit wieder offeriert werden. Als Port wird $PORT verwendet (per \$PORT overridebar).
 
   --radius   48 statt 44.1 input (eigentlich sollte es es von ogg's output selber lesen!!)
@@ -23,7 +23,7 @@ unless (@ARGV) {
     exit 1
 }
 
-#nachträglicheingeführtes options prozessig:
+#nachtrÃ¤glicheingefÃ¼hrtes options prozessig:
 my $opt_radius;
 my $opt_48;
 {
@@ -85,9 +85,9 @@ icy-aim: N/A
 		$r2->xclose;
 		$w2->xdup2(1);
 		$w2->xclose;
-		$w->xclose;#hm, not too fast? nö wenn forked dann ischer doch kept.
+		$w->xclose;#hm, not too fast? nÃ¶ wenn forked dann ischer doch kept.
 		#xxsystem qw(/usr/bin/mpg123 -w -),@ARGV;  falsch, wav ist zu kurz und drum lame fertig.
-		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann übersehen
+		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann Ã¼bersehen
 		#xxsystem qw(/usr/bin/mpg123 -s),@ARGV;
 		#och  nun noch  jung at the beginning.
 

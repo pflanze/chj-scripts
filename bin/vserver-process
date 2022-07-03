@@ -78,7 +78,7 @@ sub show_a_pid {
 
 if ($opt_all) {
     #hm loop hier selber programmieren ?  sollte doch auch oben rein irgendwo. ja.
-    #ok Sat, 03 Sep 2005 22:46:11 +0200: (it took genau 16 minuten für jene lib)
+    #ok Sat, 03 Sep 2005 22:46:11 +0200: (it took genau 16 minuten fÃ¼r jene lib)
     my $s= Chj::System::Processes->new;
     $s->set_callback(\&show_a_pid);
     $s->run;

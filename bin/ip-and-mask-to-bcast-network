@@ -62,7 +62,7 @@ if (@args==1) {
 
 
 sub mydie { die "$myname: @_\n" }
-# eigentlich lame, sollte xipv4str2ui bieten, oder/und errno artige rückgabe o.ä
+# eigentlich lame, sollte xipv4str2ui bieten, oder/und errno artige rÃ¼ckgabe o.Ã¤
 defined(my $ip= ipv4str2ui $ipstr) or mydie "ip ".singlequote($ipstr)." is not in ipv4 dotted format";
 #defined(my $mask= ipv4str2ui $maskstr) or mydie "mask ".singlequote($maskstr)." is not in ipv4 dotted format";
 
@@ -105,7 +105,7 @@ po "ip",$ip;
 po "mask",$mask,sub{my($bin)=@_; $bin=~/^1+0+\z/ };
 
 # herausfinden  wo das letzte bit ist in mask.
-# damit dort dann alles füllen für broadcast.
+# damit dort dann alles fÃ¼llen fÃ¼r broadcast.
 
 # aber: evtl ist dies sogar korrekter? konvalent (ehr?wiesgm) nehmen
 

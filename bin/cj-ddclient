@@ -438,7 +438,7 @@ sub nic_dyndns2_update_CHECK ($ $ ) {
 	    # 		    success("updating %s: %s: IP address set to %s", $h, $status, $ip);
 	    #$state->host($h)->set_ip ($ip);
 	    #oder eher n function mmit multi values ??
-	    #kür fein kurry
+	    #kÃ¼r fein kurry
 	    $state->($h,'ip',$ip);
 	    $state->($h,'mtime',$now);
 	    # multikall versus commits         ?.

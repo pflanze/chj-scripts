@@ -62,7 +62,7 @@ my $i=0;
 #while ($cnt=~ s#^(.{30000}.*</?\w+[^<>]*>)##s) {
 while (length($cnt) and $cnt=~ s#^(.{0,30000})##s) {
     # echt schwierig ist, dass ich sowohl auf 30000 begrenzen will als aber auch sicherstellen dass da drin dann noch ein Tag ist   .
-    # hm, auf < 30000 schauen?  aber was wenn das huere teil über 30'000 whitespaces hat vor dem ersten Tag?. NA dann isches eh ein PROBLEM.
+    # hm, auf < 30000 schauen?  aber was wenn das huere teil Ã¼ber 30'000 whitespaces hat vor dem ersten Tag?. NA dann isches eh ein PROBLEM.
     my ($blub)= $1;
     if (length($blub) == 30000) { # more to come.
         my $rb=reverse $blub;

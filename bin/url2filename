@@ -35,13 +35,13 @@ if (@ARGV) {
 
 sub escapeline {
     my ($line)=@_;
-    $line=~ sé(?:http|ftp|telnet|gopher|https)://([^\s]+)é
+    $line=~ sÃ©(?:http|ftp|telnet|gopher|https)://([^\s]+)Ã©
       fileescapeurl($1);
-    ée
+    Ã©e
       or
-    $line=~ sé(www\.[^\s]+)é
+    $line=~ sÃ©(www\.[^\s]+)Ã©
       fileescapeurl($1);
-    ée
+    Ã©e
       or
     $line= fileescapeurl($line);
     $line

@@ -1,23 +1,23 @@
 #!/usr/bin/perl -w
 
-# Fre Mär  7 13:35:51 MET 2003
+# Fre MÃ¤r  7 13:35:51 MET 2003
 
 # Tue, 16 Dec 2003 01:05:58 +0100
 # hm, reinhacken von cache. sigh?.
 # neue sub, so ziemlich genau vor waitchildevaluate. lieber als dort reinhacken.
-# aber???   prinzip : ips an children nur dann geben wenn sie nich bekannt sind. auch nicht waitchildevaluate dann danach?(??).  sonst shortcuttig wie bei waitchild in die datenstruktur einfüllen?. na, datenstruktur könnt ich gleich bei deren kreierung einfüllen.
+# aber???   prinzip : ips an children nur dann geben wenn sie nich bekannt sind. auch nicht waitchildevaluate dann danach?(??).  sonst shortcuttig wie bei waitchild in die datenstruktur einfÃ¼llen?. na, datenstruktur kÃ¶nnt ich gleich bei deren kreierung einfÃ¼llen.
 ## my $listent= [ undef, $line, $ip ];
 ## $listindex{$ip}{$listent}= $listent;
-# hm, noch einen schritt weiter gehen, und nicht erst wenn parent die antwort hat sondern bereits beim rausschicken vermerken was bereits geschickt wurde? aber dann müsst ich wirklich  noch schräg? na antwort brauch ich ja keine mehr.   ab nE eben:  antwort hab ich noch ned.  aber  ja  ein child das antwortet sollte reichen.   exists aber undef als marker?
-# was ist der wert für "gibts nicht"? ah "-".
-# hm  nie weg von on the way.  nie eingetragen.  nur ein listent aufgelöst. der erste offenbar. aha, müsste multiple   logo, also eintragen muss ma ihn schohn  oder so. nur in dem waiting case.
-# listindex{resip}  für alle diese   wird listent->[3] auf resname gesetzt.  warum 3  und nicht 0 ?????
+# hm, noch einen schritt weiter gehen, und nicht erst wenn parent die antwort hat sondern bereits beim rausschicken vermerken was bereits geschickt wurde? aber dann mÃ¼sst ich wirklich  noch schrÃ¤g? na antwort brauch ich ja keine mehr.   ab nE eben:  antwort hab ich noch ned.  aber  ja  ein child das antwortet sollte reichen.   exists aber undef als marker?
+# was ist der wert fÃ¼r "gibts nicht"? ah "-".
+# hm  nie weg von on the way.  nie eingetragen.  nur ein listent aufgelÃ¶st. der erste offenbar. aha, mÃ¼sste multiple   logo, also eintragen muss ma ihn schohn  oder so. nur in dem waiting case.
+# listindex{resip}  fÃ¼r alle diese   wird listent->[3] auf resname gesetzt.  warum 3  und nicht 0 ?????
 # oh shit das iss der list knopf?.
 # och, warum kommt nun immer noch 
 #listent ARRAY(0x8171564) is for ip 80.218.18.160, already on the way
 #listent ARRAY(0x81715a0) is for ip 80.218.18.160, already on the way
 # obwohl das ding im cache ist nun? wurde es nicht in ipcache geschrieben? aber das wirds doch gleich bei resp= ausgabe.
-# komisch: wenn schon bisher alle ausgefüllt wurden, warum  was wurde dann mit den uberflussigen kids gemacht?.
+# komisch: wenn schon bisher alle ausgefÃ¼llt wurden, warum  was wurde dann mit den uberflussigen kids gemacht?.
 
 # Sun, 28 Dec 2003 00:53:32 +0100
 # grr, added or die to all print statements. grrr.
@@ -160,7 +160,7 @@ sub cleanprintlist {
 	    print "$line\t$name\n" or die $!;
 	}
 	delete $listindex{$ip}{$listhead};
-	delete $listindex{$ip} unless keys %{$listindex{$ip}}; ## sollte eigentlich ein "aufräume $hashref" sein!!
+	delete $listindex{$ip} unless keys %{$listindex{$ip}}; ## sollte eigentlich ein "aufrÃ¤ume $hashref" sein!!
 	$listhead= $listhead->[0];
         last unless defined $listhead;
     }
@@ -239,7 +239,7 @@ while (defined (my $line=<STDIN>)) {
 	    $listtail=$listent;
 	    unless (defined $name) {
 		#push @{ $listindex{$ip}{$listent} }, $listent;
-		# eh, dös isch n verschachtelter hash bereits.  (funny, weiss sinn nich mehr)
+		# eh, dÃ¶s isch n verschachtelter hash bereits.  (funny, weiss sinn nich mehr)
 		$listindex{$ip}{$listent}= $listent;
 	    }
 	    unless ($flag_onthewayorknown) {

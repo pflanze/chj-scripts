@@ -5,10 +5,10 @@
 if [ $# -lt 1 ]; then
     {
     echo "Usage: `basename $0` server [port] > outfile"
-    echo "  ruft (möglicherweise chiffriertes) zeugs ab und berechnet"
+    echo "  ruft (mÃ¶glicherweise chiffriertes) zeugs ab und berechnet"
     echo "  gleichzeitig md5 summe des outputs und schreibt ihn raus."
     echo "  (port is some default+uid by default) oder setze die"
-    echo " envirementvariable PORT auf den gewünschten Port."
+    echo " envirementvariable PORT auf den gewÃ¼nschten Port."
     } >&2
     exit 1
 fi

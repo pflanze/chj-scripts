@@ -51,7 +51,7 @@ usage unless @args>=1;
 
 use Chj::xopen qw(xopen_read);
 
-# my %entries; # key -> undef   dann während 2.fileanschau inc, danach drübergehen und alle removen die noch bei undef sind.
+# my %entries; # key -> undef   dann wÃ¤hrend 2.fileanschau inc, danach drÃ¼bergehen und alle removen die noch bei undef sind.
 # # erstes mal ist es ausnahme (komicsh?), nicht da heisst nicht es is nich erlaubt sondern wir sind die ersten.
 
 # sub kreuze {
@@ -63,7 +63,7 @@ use Chj::xopen qw(xopen_read);
 # 	    $entries{$item}=undef;
 # 	} else {
 # 	    if (exists $entries{item}) {
-# 		$entries{item}++; ## well, könnt auch in 2. hash tun (während kuck auf 1). Dann wenn 1 scannen auf 2 kucken.
+# 		$entries{item}++; ## well, kÃ¶nnt auch in 2. hash tun (wÃ¤hrend kuck auf 1). Dann wenn 1 scannen auf 2 kucken.
 		
 # }
 

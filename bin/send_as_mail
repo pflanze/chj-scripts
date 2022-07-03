@@ -123,7 +123,7 @@ FILE: for my $file (@ARGV) {
 	if ($args{'message-id'}) {
 	    warn "Using given message-id '$args{'message-id'}'\n";
 	} else {
-	    my $messageid= # könnt hostname nehmen aber: from besser.
+	    my $messageid= # kÃ¶nnt hostname nehmen aber: from besser.
 	      do {
 		  my $s= $args{from};
 		  $s=~ s/^.*\@//s;
@@ -132,8 +132,8 @@ FILE: for my $file (@ARGV) {
 	      };
 	    warn "Using new message-id '$messageid'\n";
 	    $args{'message-id'}= $messageid;
-	    # könnte, wenn ich wirklich wollte, noch messageid an den
-	    # filenamen beim rename anhängen. doch wird ev gefahrlich
+	    # kÃ¶nnte, wenn ich wirklich wollte, noch messageid an den
+	    # filenamen beim rename anhÃ¤ngen. doch wird ev gefahrlich
 	    # m laenge.
 	}
 	unless ($args{to}) {

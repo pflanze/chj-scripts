@@ -420,7 +420,7 @@ sub print_spans {
 	my $what= $maybe_what || "end of observation period";
 	#print "$kind ".localtime($from)." - ".localtime($to)." till $what\n" or die $!;
 	if (not($opt_pron) or $kind eq 'on') {
-	    print((not($opt_pron) ? (($kind eq 'on' ? 'on--»»' : $kind), "\t") : ()),
+	    print((not($opt_pron) ? (($kind eq 'on' ? 'on--Â»Â»' : $kind), "\t") : ()),
 		  round_2(($to-$from)/60), "\t",
 		  scalar localtime($from), "-", scalar localtime($to), "  until ",
 		  $what,

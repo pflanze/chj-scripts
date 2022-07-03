@@ -37,7 +37,7 @@ our @othercores= glob '/sys/devices/system/cpu/cpu?*/online';
 use Chj::Fileutil ":all";
 
 our $mkswitch=sub {
-    my ($on)=@_; #ein super Fall wo "?" wirklich passen würde. nicht p. he. !!
+    my ($on)=@_; #ein super Fall wo "?" wirklich passen wÃ¼rde. nicht p. he. !!
     sub {
 	my $wish= $on ? "1" : "0";
 	for my $f (@othercores) {

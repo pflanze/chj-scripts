@@ -20,7 +20,7 @@ sub usage {
  - ldd des main binaries, wenn der nicht im strace gelandet ist; manuell pfade rausholen.
 
  danach:
- - prüfen dass alles absolute pfade sind: grep -v ^/ completelist
+ - prÃ¼fen dass alles absolute pfade sind: grep -v ^/ completelist
  - tar -cz --no-recursion --files-from completelist  -f pack.tgz
  - cdnewdir t; tar xzf ../pack.tgz; ANALYSIEREN ob nichts drin gelandet ist was nicht darf (etc/shadow, gpg/ssl keys,..)
 
@@ -95,7 +95,7 @@ while (<STDIN>) {
     }
     print "$_\n";
     if ($s->is_dir) {
-	#nüt
+	#nÃ¼t
     } else {
 	my $f= $_;
 	$f=~ s|/[^/]+$||;
@@ -109,12 +109,12 @@ while (<STDIN>) {
 __END__
 
 root@elvis root# tar -cz --no-follow --files-from richlis  -f ntpdpack.tgz
-tar: Unbekannte Option »--no-follow«
+tar: Unbekannte Option Â»--no-followÂ«
 ,tar --help' zeigt weitere Informationen.
 grr
 eh no-recurse
 root@elvis root# tar -cz --no-recurse --files-from richlis  -f ntpdpack.tgz
-tar: Unbekannte Option »--no-recurse«
+tar: Unbekannte Option Â»--no-recurseÂ«
 ,tar --help' zeigt weitere Informationen.
 root@elvis root# tar -cz --no-recursion --files-from richlis  -f ntpdpack.tgz
 tar: Removing leading `/' from member names

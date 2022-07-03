@@ -104,7 +104,7 @@ sub mogrify_file {
     my ($path)=@_;
     print "Editing file '$path'..\n";
     my $cnt= xCatfile $path;
-    $cnt=~ sé^(From: .*<)([^\s\@<>]+\@[^\s\@<>]+)(>.*)é
+    $cnt=~ sÃ©^(From: .*<)([^\s\@<>]+\@[^\s\@<>]+)(>.*)Ã©
       my ($pre,$orig_email,$post)=($1,$2,$3);
       my $email= mogrify_email ($orig_email);
       if ($email ne $orig_email) {
@@ -113,7 +113,7 @@ sub mogrify_file {
 	  print "From: leave it at '$email'.\n";
       }
       $pre.$email.$post
-    éme;
+    Ã©me;
     xWritefileln( $cnt,$path);
     #print "done.\n\n";
 }

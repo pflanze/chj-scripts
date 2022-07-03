@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Sam Mär 15 23:21:53 MET 2003
+# Sam MÃ¤r 15 23:21:53 MET 2003
 # pflanze@gmx.ch
 
 use strict;
@@ -14,7 +14,7 @@ sub usage {
   (ls -l), and emits the item names cleaned from rest of stuff.
 
   Vorerst wirklich bloss mal abschneiden vorne.
-  Könnte:  checken obs die files wirklich gibt, und ob datum und so stimmt.
+  KÃ¶nnte:  checken obs die files wirklich gibt, und ob datum und so stimmt.
   heuristik um kaputte pastings trotzdem zu matchen.
 
   Options:
@@ -84,7 +84,7 @@ while (<STDIN>){
 	if (length($fn)>0){
 	    if ($fn eq '.' or $fn eq '..') {
 		warn "$myname: ignoring '$fn' item.\n";
-		# well, manchmal will man diese ja, z.b. für chown oder so?
+		# well, manchmal will man diese ja, z.b. fÃ¼r chown oder so?
 	    } else {
 		print "$fn\n"
 	    }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Don Mär 18 14:20:56 MET 2004
+# Don MÃ¤r 18 14:20:56 MET 2004
 (my $email='jaeger%ethlife,ethz,ch')=~ tr/%,/@./;
 
 use strict;
@@ -22,8 +22,8 @@ sub usage {
   Options:
   -i -f    interactive and force flags. Gegengesetzt. Das letzte
            Auftreten bestimmt den Wert. Wenn weder noch angegeben wird,
-           ist es undef, was der dritte mögliche Wert ist: weder nachfragen
-           noch forcieren, d.h. in solchen Fällen abbrechen.
+           ist es undef, was der dritte mÃ¶gliche Wert ist: weder nachfragen
+           noch forcieren, d.h. in solchen FÃ¤llen abbrechen.
            interactive= nachfragen
            force= einfach machen
   If move across filesystem boundaries is confirmed or forced,
@@ -95,7 +95,7 @@ my $gids= [ split / /,$) ];
 sub xcheckperms {
     my ($path,$parents)=@_; # path may be both dir or file. parents is stat object of parent dir.
     my $s=xlstat $path;
-    if (not(-l _) and -d _) { # ist der linkcheck nötig? ist wegen lstat -d wirklich durchscheinend?
+    if (not(-l _) and -d _) { # ist der linkcheck nÃ¶tig? ist wegen lstat -d wirklich durchscheinend?
 	my $d=xopendir $path;
 	while(defined(my$item=$d->xnread)){
 	    xcheckperms( "$path/$item",$s);
@@ -133,10 +133,10 @@ sub xcheckperms {
 #     while(defined(my$item=$d->xnread)){
 # 	my $path="$dir/$item";
 # 	my $s=xlstat $path;
-# 	if (not(-l _) and -d _) { # ist der linkcheck nötig? ist wegen lstat -d wirklich durchscheinend?
+# 	if (not(-l _) and -d _) { # ist der linkcheck nÃ¶tig? ist wegen lstat -d wirklich durchscheinend?
 # 	    #if (! $s->writable_by_uid_gids($uid,$gids)) {
 # 	    #die "will not be able to move  eh unlink?
-# 	    # nein wär falsch: kann zwar solchen Ordner nicht moven, aber unlinken schon wenn er leer ist (oder?).
+# 	    # nein wÃ¤r falsch: kann zwar solchen Ordner nicht moven, aber unlinken schon wenn er leer ist (oder?).
 # 	    xcheckperms($path,$s);
 # 	} else {
 # 	    if ($parents->uid == $uid) {
@@ -179,7 +179,7 @@ sub xmove { # does xrename and if it's a cross boundary, asksetc and checks and 
     if ($! == EXDEV) {
 	require Chj::Util::AskYN;
 	if ($interactive) {
-	    return unless Chj::Util::AskYN::maybe_askyn("$myname: verschieben von »$from« nach »$to« über Dateisystemgrenzen hinweg forcieren?");##ps bei undef returnwert abbrechen? oder gibt das eine exception?
+	    return unless Chj::Util::AskYN::maybe_askyn("$myname: verschieben von Â»$fromÂ« nach Â»$toÂ« Ã¼ber Dateisystemgrenzen hinweg forcieren?");##ps bei undef returnwert abbrechen? oder gibt das eine exception?
 	} elsif (! defined $interactive) {
 	    die "xmove: won't move across filesystem boundaries without -f flag or interactive confirmation";
 	}
@@ -210,21 +210,21 @@ sub move {
 	# gleiche filenamen. check das parentdir
 	my $realfromparent= xrealpath $from[0];## naja, fehlermeldung wird etwas doof sein.
 	my $realtoparent= xrealpath $to[0];# zumindest das dir muss ja existieren.
-	die "»»$from«« und »»$to«« sind die gleiche Datei" if $realfromparent eq $realtoparent;
+	die "Â»Â»$fromÂ«Â« und Â»Â»$toÂ«Â« sind die gleiche Datei" if $realfromparent eq $realtoparent;
     }
-    if ($interactive and lstat($to)) { # könnt auch ein ln machen, aber nur bei files, nicht bei dirs.
+    if ($interactive and lstat($to)) { # kÃ¶nnt auch ein ln machen, aber nur bei files, nicht bei dirs.
 	require Chj::Util::AskYN;
 	#return unless (maybe_askyn("$myname: overwrite '$to'?"));
-	return unless (Chj::Util::AskYN::maybe_askyn("$myname: »$to« überschreiben?"));
+	return unless (Chj::Util::AskYN::maybe_askyn("$myname: Â»$toÂ« Ã¼berschreiben?"));
     }
     xmove $from,$to;
-    print "»$from« -> »$to«\n" if $verbose;
+    print "Â»$fromÂ« -> Â»$toÂ«\n" if $verbose;
 }
 
 
 eval {
     if ($targetpath) {
-	## hier noch source prüfen auf end-/ wie unten?
+	## hier noch source prÃ¼fen auf end-/ wie unten?
 	move($args[0],$targetpath);
     } else {
 	for my $source (@args) {
@@ -245,7 +245,7 @@ eval {
     }
 };
 if ($@) {
-    $@=~ s| at \S+ line \d+\.?||; # lustig, bei XS carp wird . angefügt, sonst nicht.
+    $@=~ s| at \S+ line \d+\.?||; # lustig, bei XS carp wird . angefÃ¼gt, sonst nicht.
     # kooomisch, neuerdings krieg ich: my.mv: xmove: rename(chris,c): Datei oder Verzeichnis nicht gefunden, <STDIN> line 1.
     $@=~ s|, <STDIN> line \d+||;# . bleibt drin  well isch doch ok
     die "$myname: $@";
@@ -256,34 +256,34 @@ __END__
 
 differences there are still compared with gnu mv:
 
-lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fox -> fun
-lrwxrwxr-x    1 chris    chris           7 21. Mär 23:10 fox2 -> dfsdfdf
+lrwxrwxr-x    1 chris    chris           3 21. MÃ¤r 22:41 fox -> fun
+lrwxrwxr-x    1 chris    chris           7 21. MÃ¤r 23:10 fox2 -> dfsdfdf
 
 chris@lombi chris > mv -i  fox fox2
-my.mv: »fox2« überschreiben? 
+my.mv: Â»fox2Â« Ã¼berschreiben? 
 chris@lombi chris > /bin/mv -i  fox fox2
-/bin/mv: Überschreiben von »fox2«, über Modus 0775 hinwegsetzen? 
+/bin/mv: Ãœberschreiben von Â»fox2Â«, Ã¼ber Modus 0775 hinwegsetzen? 
 
   komischerweise scheint mv bissel zu spinnen wegen fehlendem link target.
 
-lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fun2 -> fun
--r--r--r--    1 chris    chris           0 21. Mär 23:13 fun
+lrwxrwxr-x    1 chris    chris           3 21. MÃ¤r 22:41 fun2 -> fun
+-r--r--r--    1 chris    chris           0 21. MÃ¤r 23:13 fun
 chris@lombi chris > mv -i fun2 fun
-my.mv: »fun« überschreiben? 
+my.mv: Â»funÂ« Ã¼berschreiben? 
 chris@lombi chris > /bin/mv -i fun2 fun
-/bin/mv: »»fun2«« und »»fun«« sind die gleiche Datei
+/bin/mv: Â»Â»fun2Â«Â« und Â»Â»funÂ«Â« sind die gleiche Datei
 
-  so heiss, grad nochmals ein echter bug diesmal. denn es täte ja doch nur symlink verschieben.
+  so heiss, grad nochmals ein echter bug diesmal. denn es tÃ¤te ja doch nur symlink verschieben.
 
-lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 fun2 -> fun
--r--r--r--    1 chris    chris           0 21. Mär 23:13 fox
+lrwxrwxr-x    1 chris    chris           3 21. MÃ¤r 22:41 fun2 -> fun
+-r--r--r--    1 chris    chris           0 21. MÃ¤r 23:13 fox
 
 chris@lombi chris > mv fun2 fox
-my.mv: »fox« überschreiben? 
+my.mv: Â»foxÂ« Ã¼berschreiben? 
 chris@lombi chris > /bin/mv -i fun2 fox
-/bin/mv: Überschreiben von »fox«, über Modus 0444 hinwegsetzen? 
+/bin/mv: Ãœberschreiben von Â»foxÂ«, Ã¼ber Modus 0444 hinwegsetzen? 
 
-über modus hinwegsetzen - wirklich spezialmeldung bringen, bringt das was?
+Ã¼ber modus hinwegsetzen - wirklich spezialmeldung bringen, bringt das was?
 
 chris@lombi chris > /bin/mv fun2 fox
 chris@lombi chris > 
@@ -291,14 +291,14 @@ chris@lombi chris >
 weil es bringt sie ja doch bloss wenn -i gegeben.
 
 
-lrwxrwxr-x    1 chris    chris           3 21. Mär 22:41 chris/strou -> fun
+lrwxrwxr-x    1 chris    chris           3 21. MÃ¤r 22:41 chris/strou -> fun
 
 chris@lombi tmp > mv chris///strou /tmp/chris/strou/
-my.mv: »»chris///strou«« und »»/tmp/chris/strou/«« sind die gleiche Datei
+my.mv: Â»Â»chris///strouÂ«Â« und Â»Â»/tmp/chris/strou/Â«Â« sind die gleiche Datei
 chris@lombi tmp > /bin/mv -i chris///strou /tmp/chris/strou/
-/bin/mv: Erzeugen der symbolischen Verknüpfung »/tmp/chris/strou/strou« nicht möglich: Datei oder Verzeichnis nicht gefunden
+/bin/mv: Erzeugen der symbolischen VerknÃ¼pfung Â»/tmp/chris/strou/strouÂ« nicht mÃ¶glich: Datei oder Verzeichnis nicht gefunden
 
-  dumme meldung, "erzeugen" einer symbolischen verknüpfung.
+  dumme meldung, "erzeugen" einer symbolischen verknÃ¼pfung.
   aber ok isch wohl ein bug meinerseits.
 
   mit slash am ende  nimmt gnu mv an dass ein dir gemeint ist und appended namen anyway
@@ -306,12 +306,12 @@ chris@lombi tmp > /bin/mv -i chris///strou /tmp/chris/strou/
 
 
 
-hmm, noch die tricks mit / am ende um symlink zu dereferenzieren (wie ls sie hat) ein bauen? hat die gnu mv überhaupt?
+hmm, noch die tricks mit / am ende um symlink zu dereferenzieren (wie ls sie hat) ein bauen? hat die gnu mv Ã¼berhaupt?
 sinn find ich zweifelhaft. lasse es mal.
 
 
 chris@lombi t > mv /tmp/chris/t/. ../u/fa
-my.mv: xrename(/tmp/chris/t/., ../u/fa): Das Gerät oder die Ressource ist belegt at /root/bin/my.mv line 99
+my.mv: xrename(/tmp/chris/t/., ../u/fa): Das GerÃ¤t oder die Ressource ist belegt at /root/bin/my.mv line 99
 chris@lombi t > mv /tmp/chris/t ../u/fa
 hat funktionniert.
 chris@lombi t > mv -i /tmp/chris/t/ ../u/fa
@@ -319,17 +319,17 @@ auch.
 hmm. bissel komisch.
  vergleiche:
 chris@lombi t > /bin/mv -i /tmp/chris/t/. ../u/fa
-/bin/mv: Weder ».« noch »..« kann gelöscht werden
-/bin/mv: Entfernen von »/tmp/chris/t/.« nicht möglich
+/bin/mv: Weder Â».Â« noch Â»..Â« kann gelÃ¶scht werden
+/bin/mv: Entfernen von Â»/tmp/chris/t/.Â« nicht mÃ¶glich
 #und dann hats DOCH wieder mal ne kopie gemacht das tubelteil
 
 
 Thu,  1 Apr 2004 21:16:35 +0200
   wegen $binmv invoke idee:
 immerhin checken ob es gehen KANN?
-  wann geht es? bei root immer. ansonsten: wenn unlinked werden kann  (warnung geben wenn uid's nicht behalten werden können!)
-Rekursiv, warnung aufzeichnen oder gleich ausgeben.  Abbruch wenn ein unmöglich detected wird.
-unmöglichkeit  wird nur an folder angesehen oder? ausser grsec. und immutable.
+  wann geht es? bei root immer. ansonsten: wenn unlinked werden kann  (warnung geben wenn uid's nicht behalten werden kÃ¶nnen!)
+Rekursiv, warnung aufzeichnen oder gleich ausgeben.  Abbruch wenn ein unmÃ¶glich detected wird.
+unmÃ¶glichkeit  wird nur an folder angesehen oder? ausser grsec. und immutable.
 na an folder und file wenn sticky.
 
 

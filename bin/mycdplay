@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use constant PRIO_PROCESS=> 0; #ç wo könnt ich das holen?
+use constant PRIO_PROCESS=> 0; #Ã§ wo kÃ¶nnt ich das holen?
 use Time::HiRes qw(time sleep);
 my $MINTIMEDIFF=0.3;
 
@@ -9,17 +9,17 @@ my $MINTIMEDIFF=0.3;
 setpriority PRIO_PROCESS,$$,-20 or die $!;
 
 # drop priviledges?
-# nee gar nicht nötig, fork (resp. exec?) übernimmts nicht wenn ich nicht realuserid ändere.
+# nee gar nicht nÃ¶tig, fork (resp. exec?) Ã¼bernimmts nicht wenn ich nicht realuserid Ã¤ndere.
 
 
-# OH doch nötig. in der neuen version. da sonst das *child* root bleibt! lustig komisch. war doch vorher schon so ?!!
+# OH doch nÃ¶tig. in der neuen version. da sonst das *child* root bleibt! lustig komisch. war doch vorher schon so ?!!
 $>=$<;
 
 # Fri, 26 Dec 2003 00:22:54 +0100: (vorher war: 1. Jun 2001  mycdplay)
 # umstellung auf cdparanoia. hm, sollt ich symlink implementationswahl eben zulassen.
 # (wie bei firewalling oder debian alternatives.)
 
-# grr, das is echt ärgerlich. relative pfade gehen nicht wegen setuid. dabei wird eh gedroppt bei exec. oder eben nur bei fork ? ?
+# grr, das is echt Ã¤rgerlich. relative pfade gehen nicht wegen setuid. dabei wird eh gedroppt bei exec. oder eben nur bei fork ? ?
 
 #my $cdparanoia= `/usr/bin/which cdparanoia`; chomp $cdparanoia;
 #my $swapendianness= `/usr/bin/which swapendianness`; chomp $swapendianness;
@@ -29,7 +29,7 @@ $>=$<;
 }
 
 # FUNNY: nice useful bug: when giving multiple ranges:
-# ..could not open /dev/dsp: Das Gerät oder die Ressource ist belegt at /root/bin/mycdplay line 58.
+# ..could not open /dev/dsp: Das GerÃ¤t oder die Ressource ist belegt at /root/bin/mycdplay line 58.
 # and:
 # chris     2946  0.0  0.3  3904 1880 pts/13   S<   00:58   0:00 /usr/bin/perl -w /dev/fd/3//root/bin/mycdplay 2 3 4
 # chris     2948  0.7  0.2  3448 1216 pts/13   S<   00:58   0:03 swapendianness
@@ -79,7 +79,7 @@ for my $span (@args) {
 # 		my $starttime=time;
 # 		#while(<READ2>){
 # 		#my $buf;
-# 		#while(read READ2,$buf,1) {###erstmals dass ich merk dass ich in perl wenn ich grossen buffer angeb den gar nicht zurückkrieg unless er voll wurde????
+# 		#while(read READ2,$buf,1) {###erstmals dass ich merk dass ich in perl wenn ich grossen buffer angeb den gar nicht zurÃ¼ckkrieg unless er voll wurde????
 # 		#print$buf;next;
 # 		    #next unless /read/;
 # 		    /^##.*\[wrote\] \@ (\d+)$/ or next;
@@ -115,7 +115,7 @@ for my $span (@args) {
 			my $duration=$to_seconds-$from_seconds;
 			#print "Es geht von $from_seconds bis $to_seconds, Dauer $duration\n";
 			#print "the great fake display:\n";
-			# na ich tubel müsste halt in den datastrom einfädeln der zum bfr fliesst , wär schon besser   also scheiss isch jetzt dass next stuck : mein counter lauf weiter obwohl noch nich mal letztes stuck vertig isch und bfp eh wartet mit spielen. sollte bfp modifizieren dass es angibt wo es mit schreiben isch.    NA isches derzeit nich so schlimm fangt mein counter doch ersch an wenn ripper begonnen hat. immerhin. aber das warten des rippers nach füllen des buffers, das reflektoeere ich doch nicht. komisch dass es dann doch bei 1.2 restsekunden exit gemacht hat?
+			# na ich tubel mÃ¼sste halt in den datastrom einfÃ¤deln der zum bfr fliesst , wÃ¤r schon besser   also scheiss isch jetzt dass next stuck : mein counter lauf weiter obwohl noch nich mal letztes stuck vertig isch und bfp eh wartet mit spielen. sollte bfp modifizieren dass es angibt wo es mit schreiben isch.    NA isches derzeit nich so schlimm fangt mein counter doch ersch an wenn ripper begonnen hat. immerhin. aber das warten des rippers nach fÃ¼llen des buffers, das reflektoeere ich doch nicht. komisch dass es dann doch bei 1.2 restsekunden exit gemacht hat?
 			# ach  zwischenstuck bruche stimmts nicht
 			# ach und too long stimmts auch nimme => wohl anderes outputformat manf*
 			if (@opt_q) {
@@ -144,7 +144,7 @@ for my $span (@args) {
 		close READ2;
 		open STDOUT,">&WRITE" or die "dupping error: $!";
 		open STDERR,">&WRITE2" or die "dupping error 2: $!";
-		#exec qw(cdparanoia),@opt_q,qw(-e --force-read-speed 8 --output-raw --),$span,"-";# scheint wieder zu gehen. nötig? sigh. ps. 8 auf 10 ist mega unterschied glaub? ah ne nur 7 auf 8
+		#exec qw(cdparanoia),@opt_q,qw(-e --force-read-speed 8 --output-raw --),$span,"-";# scheint wieder zu gehen. nÃ¶tig? sigh. ps. 8 auf 10 ist mega unterschied glaub? ah ne nur 7 auf 8
 		exec qw(cdparanoia),qw(--force-read-speed 8 --output-raw --),$span,"-";
 		# MANN wenn stderr ne pipe isch scheint dass kein > anzeiger mehr kommt mann.
 		exit 127;
@@ -154,10 +154,10 @@ for my $span (@args) {
 	    # child
 	    close WRITE;
 	    open STDIN,"<&READ" or die "dupping error: $!";
-#	    open STDOUT,">/dev/dsp" or die "could not open /dev/dsp: $!"; # ps. ohne > öffnen gibt bad file descriptor, d.h. wird von perl *doch nicht* gleich gemacht!! 
+#	    open STDOUT,">/dev/dsp" or die "could not open /dev/dsp: $!"; # ps. ohne > Ã¶ffnen gibt bad file descriptor, d.h. wird von perl *doch nicht* gleich gemacht!! 
 	    #exec qw(swapendianness);
-	    #system "nice -n 2 bfr | swapendianness";##todo  fehlerreporting.. (und nicelevel könnt ich beim einen auch noch runter. well das geht auch per shell)
-	    #system "nice -n 2 bfr";#cj 26.7.04 für Cohen CD. na für alle. na shit. scheint kernel 2.6 hab ich noch nie benutzt?
+	    #system "nice -n 2 bfr | swapendianness";##todo  fehlerreporting.. (und nicelevel kÃ¶nnt ich beim einen auch noch runter. well das geht auch per shell)
+	    #system "nice -n 2 bfr";#cj 26.7.04 fÃ¼r Cohen CD. na fÃ¼r alle. na shit. scheint kernel 2.6 hab ich noch nie benutzt?
 	    #system "nice -n 2 bfr | play -r 41200 -f s -";
 	    system "nice -n 5 swapendianness|nice -n 2 bfp";
 	    exit;
@@ -169,4 +169,4 @@ for my $span (@args) {
 
 __END__
   todo:
-exit 0 isch natürli scheisse.   wenn fehler sollte aufgefangene error message gegeben werden.
+exit 0 isch natÃ¼rli scheisse.   wenn fehler sollte aufgefangene error message gegeben werden.

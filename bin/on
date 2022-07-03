@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Son M‰r 18 18:10:25 CET 2007
+# Son M√§r 18 18:10:25 CET 2007
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
@@ -104,7 +104,7 @@ sub Map_tmpfile ($ $ ) { # "strict"
     xxRun ($fn, $f,$o);
     $f->xclose; #wir sind im parent da war das garantiert noch offen.
     #$o->xclose; #dito. gell?. ah nein, wollen wir ja lesen davon ?
-    $o->xrewind; #actually w¸rde flush reichen theoretisch--NEIN! denn child wirkt sich auch auf parent aus. in-kernel structure.niduserspace.
+    $o->xrewind; #actually w√ºrde flush reichen theoretisch--NEIN! denn child wirkt sich auch auf parent aus. in-kernel structure.niduserspace.
     $o
 }
 
