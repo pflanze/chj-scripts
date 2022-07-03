@@ -75,7 +75,7 @@ sub instantiate {
 			     ->loop;
 		       #_exit 0;
 		       # XX unless we initiated things like
-		       # perllib/Chj/xopengzip.pm cache that does not
+		       # Chj/xopengzip.pm cache that does not
 		       # have structures stored on disk, or more to
 		       # the point, use per-process stuff, and need
 		       # cleanup:

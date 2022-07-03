@@ -5,7 +5,7 @@
 
 ### This is a COPY from the file in the repository at
 ### https://github.com/pflanze/Class-Array with the sole purpose to
-### make it easier to use chj-perllib; see original repo for the
+### make it easier to use chj-scripts; see original repo for the
 ### complete thing including docs.
 
 package Class::Array;
