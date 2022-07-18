@@ -206,34 +206,37 @@ sub con_file($path, $ignore_nonimg_files) {
     if ($p2 =~ s{\.(jpg|jpeg|png|pnm)$}{.webp}i
         or !$ignore_nonimg_files) {
         if (-e $p2) {
-            warn "$myname: target already exists: '$p2'\n";
-        } else {
-            eval {
-                my $s = xlstat $path;
-                if ($s->is_symlink) {
-                    warn "$myname: source is a symlink: '$path'\n";
+            warn "$myname: NOTE: target already exists: '$p2'\n";
+            $p2 = $p2 . "-tmp".rand.".webp";
+            if (-e $p2) {
+                die "BUG?"
+            }
+        }
+        eval {
+            my $s = xlstat $path;
+            if ($s->is_symlink) {
+                warn "$myname: source is a symlink: '$path'\n";
+            } else {
+                my $origsize = $s->size;
+                if ($origsize < $minorigsize) {
+                    warn "$myname: ignoring file of only $origsize bytes, < $minorigsize: '$path'\n";
                 } else {
-                    my $origsize = $s->size;
-                    if ($origsize < $minorigsize) {
-                        warn "$myname: ignoring file of only $origsize bytes, < $minorigsize: '$path'\n";
+                    xxsystem "convert", $path, $p2;
+                    my $t = xlstat $p2;
+                    my $factor = $t->size / $s->size;
+                    if ($factor < $mincompression) {
+                        xxsystem "trash", $path;
+                        xrename $p2, $path;
+                        push @converted_paths, $path;
                     } else {
-                        xxsystem "convert", $path, $p2;
-                        my $t = xlstat $p2;
-                        my $factor = $t->size / $s->size;
-                        if ($factor < $mincompression) {
-                            xxsystem "trash", $path;
-                            xrename $p2, $path;
-                            push @converted_paths, $path;
-                        } else {
-                            xunlink $p2;
-                            warn "$myname: ignoring file compressing only ".(1/$factor)." x, < ".(1/$mincompression).": '$path'\n";
-                        }
+                        xunlink $p2;
+                        warn "$myname: ignoring file compressing only ".(1/$factor)." x, < ".(1/$mincompression).": '$path'\n";
                     }
                 }
-                1
-            } or do {
-                warn "$myname: skipping '$path': $@";
             }
+            1
+        } or do {
+            warn "$myname: skipping '$path': $@";
         }
     }
 }
