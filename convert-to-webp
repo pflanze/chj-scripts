@@ -27,7 +27,7 @@ BEGIN {
 
 my $minorigsize = 100000;
 my $mincompression= 0.7;
-my $convlistname = ".${myname}-converted-files.txt";
+my $convlistname = "${myname}-converted-files.txt";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
