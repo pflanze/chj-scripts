@@ -215,7 +215,7 @@ sub con_file($path, $ignore_nonimg_files) {
                 } else {
                     my $origsize = $s->size;
                     if ($origsize < $minorigsize) {
-                        warn "$myname: file is only $origsize bytes, < $minorigsize: '$path'\n";
+                        warn "$myname: ignoring file of only $origsize bytes, < $minorigsize: '$path'\n";
                     } else {
                         xxsystem "convert", $path, $p2;
                         my $t = xlstat $p2;
@@ -226,7 +226,7 @@ sub con_file($path, $ignore_nonimg_files) {
                             push @converted_paths, $path;
                         } else {
                             xunlink $p2;
-                            warn "$myname: file compressed only $factor x, < $mincompression: '$path'\n";
+                            warn "$myname: ignoring file compressing only $factor x, < $mincompression: '$path'\n";
                         }
                     }
                 }
