@@ -54,7 +54,9 @@ use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 use Getopt::Long;
-# use FP::Repl::Trap; #
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -81,10 +83,6 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-
-#use FP::Repl; repl;
-#use Chj::ruse;
-#use Chj::Backtrace; 
 
 END
         ;
