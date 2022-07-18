@@ -226,7 +226,7 @@ sub con_file($path, $ignore_nonimg_files) {
                             push @converted_paths, $path;
                         } else {
                             xunlink $p2;
-                            warn "$myname: ignoring file compressing only $factor x, < $mincompression: '$path'\n";
+                            warn "$myname: ignoring file compressing only ".(1/$factor)." x, < ".(1/$mincompression).": '$path'\n";
                         }
                     }
                 }
