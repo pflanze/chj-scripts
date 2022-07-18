@@ -11,8 +11,10 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
+use lib "/opt/functional-perl/lib"; ##
+
 use Getopt::Long;
-# use FP::Repl::Trap; #
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -25,6 +27,7 @@ BEGIN {
 
 my $minorigsize = 100000;
 my $mincompression= 0.7;
+my $convlistname = ".${myname}-converted-files.txt";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
@@ -34,9 +37,12 @@ sub usage {
   suffix!), moving the original file into the trash via `trash`, but
   only if the source file is larger than $minorigsize and the
   compressed file is actually smaller than $mincompression times the
-  original.
+  original. Creates a file $convlistname at the top folder of all
+  paths that lists all sub-paths that have been converted.
 
   Used to save space in saved web pages.
+
+  --test  run test suite
 
   ($email_full)
 ";
@@ -44,14 +50,161 @@ exit (@_ ? 1 : 0);
 }
 
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
+our $opt_test;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
+	   "test"=> \$opt_test,
 	   ) or exit 1;
-usage unless @ARGV;
+usage unless (@ARGV or $opt_test);
 
 use Chj::xperlfunc ":all";
+use Chj::xtmpfile;
+use Chj::TEST;
+
+# ------------------------------------------------------------------
+# path library...
+
+sub path_segments($path) {
+    if ($path=~ m{^/+\z}) {
+        # Sigh, special case, can't allow split to drop the "item
+        # after the /" in this case.
+        [ "" ]
+    } else {
+        [ grep { not $_ eq "." } split m{/+}, $path ]
+    }
+}
+
+TEST { path_segments "/foo//bar/" } [ "", "foo", "bar"];
+TEST { path_segments "foo//bar/" } [ "foo", "bar"];
+TEST { path_segments "./foo/./bar/" } [ "foo", "bar"];
+TEST { path_segments "./foo/./bar/." } [ "foo", "bar" ];
+TEST { path_segments "/foo" } [ "", "foo" ];
+TEST { path_segments "/" } [ "" ]; # special case, sigh
+TEST { path_segments "///" } [ "" ]; # special case, sigh
+TEST { path_segments "" } [ ]; # hmm ?
+TEST { path_segments ".///" } [ ]; # hmm ?
+TEST { path_segments "foo" } [ "foo" ];
+
+sub trie_set_path_segments($h, $path) {
+    my $segs = path_segments $path;
+    my $subhash = {};
+    while (@$segs) {
+        my $seg = shift @$segs;
+        $h->{$seg} //= $subhash;
+        $h = $h->{$seg};
+        $subhash = {};
+    }
+    $h->{"\0"} = undef;
+}
+
+sub trie_base_segments($h) {
+    my @s;
+    while (%$h == 1) {
+        my ($h2) = values %$h;
+        if (defined $h2) {
+            push @s, keys %$h;
+            $h = $h2;
+        } else {
+            last
+        }
+    }
+    \@s
+}
+
+TEST {
+    my $t = {};
+    trie_set_path_segments $t, "/fuu/bar";
+    trie_set_path_segments $t, "/fuu/bar/bam";
+    [$t, trie_base_segments $t]
+}
+[
+ +{'' => +{fuu => +{bar => +{"\0" => undef, bam => +{"\0" => undef}}}}},
+ ['', 'fuu', 'bar']
+];
+
+TEST {
+    my $t = {};
+    trie_set_path_segments $t, "/fuu/bar";
+    trie_set_path_segments $t, "fuu/bar/bam";
+    [$t, trie_base_segments $t]
+}
+[
+ +{
+     '' => +{fuu => +{bar => +{"\0" => undef}}},
+     fuu => +{bar => +{bam => +{"\0" => undef}}}
+ },
+ []
+];
+
+sub trie_maybe_base_path($h) {
+    # Careful, returns "" for "/" !
+    my $ss = trie_base_segments $h;
+    if (@$ss) {
+        my $b = join "/", @$ss;
+        length $b ? $b :
+            ($h->{''} ? "" : ".") # "" . "/" . ... will give absolute 
+    } else {
+        if ($h->{''}) {
+            # mix of absolute and relative paths given
+            undef
+        } else {
+            "."
+        }
+    }
+}
+
+sub paths_maybe_top($paths) {
+    my $t = {};
+    trie_set_path_segments $t, $_ for @$paths;
+    trie_maybe_base_path($t)
+}
+
+TEST { paths_maybe_top [qw(/bc /de)] } '';
+TEST { paths_maybe_top [qw(/bc /de/x)] } '';
+TEST { paths_maybe_top [qw(/ /de)] } '';
+TEST { paths_maybe_top [qw(/bc /bc/x)] } '/bc';
+TEST { paths_maybe_top [qw(bc de)] } '.';
+TEST { paths_maybe_top [qw(bc de/x)] } '.';
+TEST { paths_maybe_top [qw(bc /bc)] } undef;
+TEST { paths_maybe_top [qw(./bc de)] } '.';
+TEST { paths_maybe_top [qw(./bc bc/de)] } 'bc';
+TEST { paths_maybe_top [qw(b b)] } 'b';
+
+sub path_maybe_drop_top($path, $topdir) {
+    # Returns "" when both paths are the same!
+    my ($p, $t) = (path_segments($path), path_segments($topdir));
+    while (@$p and @$t) {
+        my $p = shift @$p;
+        my $t = shift @$t;
+        $p eq $t or return;
+    }
+    @$t and return;
+    join "/", @$p
+}
+
+TEST { path_maybe_drop_top qw(bc bc/de) } undef;
+TEST { path_maybe_drop_top qw(bc/de bc) } "de";
+TEST { path_maybe_drop_top qw(bc/de ./bc//de/) } "";
+TEST { path_maybe_drop_top qw(bc/de ba) } undef;
+TEST { path_maybe_drop_top qw(a/b/c a/x) } undef;
+
+if ($opt_test) {
+    exit Chj::TEST::run_tests(__PACKAGE__)->exit_code;
+}
+
+# ------------------------------------------------------------------
+
+my $topdir = paths_maybe_top([ map { dirname $_ } @ARGV]) //
+    die "$myname: can't take the top path of a mix of relative and absolute paths\n";
+
+my $convlistpath = "$topdir/$convlistname";
+if (-e $convlistpath) {
+    die "$myname: conversion with this topdir was already run, file exists: '$convlistpath'\n"
+}
+
+my @converted_paths;
 
 sub con($path) {
     my $p2 = $path;
@@ -73,6 +226,7 @@ sub con($path) {
                 if ($factor < $mincompression) {
                     xxsystem "trash", $path;
                     xrename $p2, $path;
+                    push @converted_paths, $path;
                 } else {
                     xunlink $p2;
                     warn "$myname: file compressed only $factor x, < $mincompression: '$path'\n";
@@ -84,7 +238,14 @@ sub con($path) {
 
 con $_ for @ARGV;
 
-#use FP::Repl; repl;
-#use Chj::ruse;
-#use Chj::Backtrace; 
+my $out = xtmpfile $convlistpath;
+$out->xprintln($_) for (
+    map {
+      path_maybe_drop_top($_, $topdir) // die "bug"  
+    } @converted_paths
+    );
+$out->xclose;
+$out->xputback(0644);
+
+warn "$myname: done, created '$convlistpath'\n";
 
