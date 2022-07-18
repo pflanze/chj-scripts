@@ -31,16 +31,18 @@ my $convlistname = "${myname}-converted-files.txt";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname file..
+    print "$myname file-or-dir..
 
-  Convert file to .webp, over the existing file (yes, using the wrong
-  suffix!), moving the original file into the trash via `trash`, but
-  only if the source file is larger than $minorigsize and the
-  compressed file is actually smaller than $mincompression times the
-  original. Creates a file $convlistname at the top folder of all
-  paths that lists all sub-paths that have been converted.
+  Convert file (or the image files contained in dir) to .webp, over
+  the existing file (yes, using the wrong suffix!), moving the
+  original file into the trash via `trash`, but only if the source
+  file is larger than $minorigsize and the compressed file is actually
+  smaller than $mincompression times the original. Creates a file
+  $convlistname (with .\$n appended if already exists) at the top
+  folder of all paths that lists all sub-paths that have been
+  converted.
 
-  Used to save space in saved web pages.
+  Used to save space for saved web pages.
 
   --test  run test suite
 
@@ -61,6 +63,7 @@ usage unless (@ARGV or $opt_test);
 
 use Chj::xperlfunc ":all";
 use Chj::xtmpfile;
+use Chj::xopendir;
 use Chj::TEST;
 
 # ------------------------------------------------------------------
@@ -196,52 +199,76 @@ if ($opt_test) {
 
 # ------------------------------------------------------------------
 
-my $topdir = paths_maybe_top([ map { dirname $_ } @ARGV]) //
-    die "$myname: can't take the top path of a mix of relative and absolute paths\n";
-
-my $convlistpath = "$topdir/$convlistname";
-if (-e $convlistpath) {
-    die "$myname: conversion with this topdir was already run, file exists: '$convlistpath'\n"
-}
-
 my @converted_paths;
 
-sub con($path) {
+sub con_file($path, $ignore_nonimg_files) {
     my $p2 = $path;
-    $p2 =~ s{\.\w+$}{.webp};
-    if (-e $p2) {
-        warn "$myname: target already exists: '$p2'\n";
-    } else {
-        eval {
-            my $s = xlstat $path;
-            if ($s->is_symlink) {
-                warn "$myname: source is a symlink: '$path'\n";
-            } else {
-                my $origsize = $s->size;
-                if ($origsize < $minorigsize) {
-                    warn "$myname: file is only $origsize bytes, < $minorigsize: '$path'\n";
+    if ($p2 =~ s{\.(jpg|jpeg|png|pnm)$}{.webp}i
+        or !$ignore_nonimg_files) {
+        if (-e $p2) {
+            warn "$myname: target already exists: '$p2'\n";
+        } else {
+            eval {
+                my $s = xlstat $path;
+                if ($s->is_symlink) {
+                    warn "$myname: source is a symlink: '$path'\n";
                 } else {
-                    xxsystem "convert", $path, $p2;
-                    my $t = xlstat $p2;
-                    my $factor = $t->size / $s->size;
-                    if ($factor < $mincompression) {
-                        xxsystem "trash", $path;
-                        xrename $p2, $path;
-                        push @converted_paths, $path;
+                    my $origsize = $s->size;
+                    if ($origsize < $minorigsize) {
+                        warn "$myname: file is only $origsize bytes, < $minorigsize: '$path'\n";
                     } else {
-                        xunlink $p2;
-                        warn "$myname: file compressed only $factor x, < $mincompression: '$path'\n";
+                        xxsystem "convert", $path, $p2;
+                        my $t = xlstat $p2;
+                        my $factor = $t->size / $s->size;
+                        if ($factor < $mincompression) {
+                            xxsystem "trash", $path;
+                            xrename $p2, $path;
+                            push @converted_paths, $path;
+                        } else {
+                            xunlink $p2;
+                            warn "$myname: file compressed only $factor x, < $mincompression: '$path'\n";
+                        }
                     }
                 }
+                1
+            } or do {
+                warn "$myname: skipping '$path': $@";
             }
-            1
-        } or do {
-            warn "$myname: skipping '$path': $@";
         }
     }
 }
 
-con $_ for @ARGV;
+sub con($path, $ignore_nonimg_files) {
+    my $s = xstat $path;
+    if ($s->is_dir) {
+        my $d = xopendir $path;
+        while (defined (my $item = $d->xnread)) {
+            con("$path/$item", 1);
+        }
+        $d->xclose;
+    } else {
+        con_file($path, $ignore_nonimg_files)
+    }
+}
+
+con $_, 0 for @ARGV;
+
+
+my $topdir = paths_maybe_top([ map { dirname $_ } @converted_paths ]) //
+    die "$myname: can't take the top path of a mix of relative and absolute paths\n";
+
+my $_convlistpath = "$topdir/$convlistname";
+my $convlistpath = $_convlistpath;
+{
+    my $n = 0;
+    while (-e $convlistpath) {
+        $n++;
+        if ($n > 10) {
+            die "too many '$_convlistpath'*";
+        }
+        $convlistpath = $_convlistpath.".$n";
+    }
+}
 
 my $out = xtmpfile $convlistpath;
 $out->xprintln($_) for (
