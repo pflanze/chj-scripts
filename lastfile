@@ -8,10 +8,8 @@ my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 use strict;
 
-my @excludes= qw(HEUTE CALENDAR);
-my %exclude = map {$_ => 1} @excludes;
-my $excludesstr= "[".join(
-    ", ", map{ my $s = $_; $s=~ s/'/\\'/sg; "'$s'" } @excludes)."]";
+my %file_exclude = map {$_ => 1} qw(HEUTE CALENDAR);
+my %dir_exclude = map {$_ => 1} qw(.git .METADATA-v2);
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -24,8 +22,15 @@ my %dir_or_file = do { my $i = 0; map { $_=> $i++ } @dir_or_file };
 my $want_file = $dir_or_file{$dir_or_file};
 my $other_dir_or_file = $dir_or_file[! $want_file];
 
+my $exclude = $want_file ? \%file_exclude : \%dir_exclude;
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
+    my $excludesstr= "[".join(
+        ", ",
+        map { my $s = $_; $s=~ s/'/\\'/sg; "'$s'" }
+        sort keys %$exclude
+        )."]";
     print "$myname [directory [directory2 ..]]
   Outputs the name of the last modified *$dir_or_file*[1] in the given directory
   that does not begin with a dot or ~ or end in ~, or matches one of
@@ -36,6 +41,7 @@ sub usage {
   --fullpath     full path (including directory) is output, not just
                  the filename.
   -a|--all       don't ignore dot files
+  --no-ignore    don't ignore special items like .git
   --allow-empty  if a directory has no files after filtering, continue
                  without showing a result (the default is to stop with
                  an error).
@@ -52,6 +58,7 @@ my $DEBUG=0;
 my $opt_fullpath;
 my $opt_allow_empty;
 my $opt_a;
+my $opt_no_ignore;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -63,6 +70,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$DEBUG=1;
     } elsif (/^--?a(ll)?$/) {
 	$opt_a=1;
+    } elsif (/^--no-ignore$/) {
+	$opt_no_ignore= 1;
     } elsif (/^--?allow-empty?$/) {
 	$opt_allow_empty=1;
     } elsif (/^--?full(?:-?path(?:=(.*))?)?$/) {
@@ -92,7 +101,7 @@ sub showit {
     while (defined ($_=readdir $in)){
 	next if ($_ eq "." or $_ eq "..");
 	next if (not $opt_a and (/^[.~]/ or /~\z/));
-        next if $exclude{$_};
+        next if (! $opt_no_ignore and $exclude->{$_});
         my @s=lstat "$dir/$_" or die "lstat '$dir/$_': $!";
         if ($want_file ? -f _ : -d _) {
             my $t = $s[9];
@@ -116,7 +125,7 @@ sub showit {
 	print($lastitem->[2], "\n")
             or die "stdout: $!";
     } else {
-        die "$myname: directory does not contain any choosable files: '$dir'"
+        die "$myname: directory does not contain any non-ignored items: '$dir'"
             unless $opt_allow_empty;
     }
 }
