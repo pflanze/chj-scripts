@@ -29,6 +29,9 @@ sub usage {
   changes, if a change happens, run cmd (which is run using perl's
   system call thus can be shell code).
 
+  NOTE: it doesn't pick up newly created files matching the
+  regex. (Why not?)
+
   Options:
    -a  also run before waiting
    -t  show time stamp before running cmd
@@ -73,6 +76,12 @@ use Time::HiRes 'sleep';
 use File::ChangeNotify;
 use Chj::xperlfunc;# 'xstat';
 use Chj::Unix::Exitcode 'exitcode';
+
+# Use Linux::Inotify2 directly instead?
+# https://lwn.net/Articles/605128/
+# Filesystem notification, part 2 A deeper investigation of inotify [LWN.net].html
+# But no, not going to deal with inotify directly now, no time.
+
 
 my ($cmd, $regex, @dirs)= @args;
 
