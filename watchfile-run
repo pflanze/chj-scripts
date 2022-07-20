@@ -47,12 +47,6 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_t=1;
     } elsif (/^--?v(erbose)?$/) {
 	$verbose=1;
-#     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
-#         if (defined $1) {
-#             $XXX=$1
-#         } else {
-#             $XXX=$ARGV[++$i] or usage "missing argument for '$_' option";
-#         }
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -68,7 +62,7 @@ use Chj::Unix::Exitcode 'exitcode';
 our $cmd=shift @args;
 our @files= @args;
 
-our @stats= map { scalar xstat $_ } @files; #vergiss das scalar nicht ach isch prl shit.
+our @stats= map { scalar xstat $_ } @files;
 
 $|++;
 
@@ -90,12 +84,8 @@ while (1) {
   CHECK: {
 	for (my $i=0; $i<@files; $i++) {
 	    local our $s= xstat $files[$i];
-	    # hm wieder mal stat vergleich hm  gibts da  was dort schon von mir ?
-	    #use Chj::repl;repl;
-	    #nein.~sgh. ok now.
 	    if ($s->equal ($stats[$i])) {
 		# no change
-		#print "'$files[$i]' has not changed\n" if $DEBUG;
 	    } else {
 		print "--- ".localtime().": '$files[$i]' has changed -------------\n" if $verbose;
 		$stats[$i]=$s;
