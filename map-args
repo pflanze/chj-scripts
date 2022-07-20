@@ -1,0 +1,54 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+# Depends: ()
+
+use strict;
+#use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+#use experimental 'signatures';
+
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname perlcode cmd args
+
+  Run <perlcode> on <args> before passing them on to <cmd>.
+
+  <Perlcode> should modify \$_.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV >= 2;
+
+my ($perlcode, $cmd, @args) = @ARGV;
+
+my $proc = eval "sub { $perlcode }";
+die "$myname: $@" if $@;
+
+for (@args) {
+    &$proc
+}
+
+exec $cmd, @args
+    or exit 127;
+
