@@ -34,8 +34,8 @@ sub usage {
     print "$myname cmd filename_regex dir(s)
 
   Watch <dir(s)> for files whose basename match <filename_regex> for
-  changes, if a change happens, run cmd (which is run using perl's
-  system call thus can be shell code).
+  changes, if a change happens, run cmd with the paths that changed as
+  arguments.
 
   Notes: $myname does not recurse into dirs (currently).  It *does*
   pick up newly created files matching the regex, no need to restart
@@ -46,8 +46,7 @@ sub usage {
    -a  also run before waiting
    -t  show time stamp before running cmd
 
-  Also see: 'C' and 'lambda' for building 'cmd' (but can use shell,
-  too)
+  Also see: 'C' and 'lambda' for building 'cmd'.
 
   ($email_full)
 ";
@@ -85,7 +84,7 @@ usage unless @args >= 3;
 use Time::HiRes 'sleep';
 use Chj::xperlfunc;# 'xstat';
 use Chj::Unix::Exitcode 'exitcode';
-
+use Chj::xopendir;
 use Linux::Inotify2;
 # https://lwn.net/Articles/605128/
 # Filesystem notification, part 2 A deeper investigation of inotify [LWN.net].html
@@ -96,18 +95,36 @@ my ($cmd, $regex, @dirs)= @args;
 
 $|++;
 
-sub runit {
+sub run_with(@paths) {
     if ($opt_t) {
         print "--".localtime()."-------------------------------------\n";
     }
-    xsystem $cmd;
+    xsystem_safe $cmd, @paths;
     if ($opt_t) {
         print(("-"x63)."\r");
     }
 }
 
-runit
-    if $opt_a;
+sub path_please_report($path) {
+    my $n = $path;
+    $n=~ s{^.*/}{};
+    $n=~ /$regex/ and not ignored($n)
+}
+
+if ($opt_a) {
+    my @paths;
+    for my $dir (@dirs) {
+        my $d = xopendir $dir;
+        push @paths, grep {
+            path_please_report $_
+        } map {
+            "$dir/$_"
+        } $d->xnread;
+        $d->xclose
+    }
+    my %paths = map { $_=> undef} @paths;
+    run_with(sort keys %paths);
+}
 
 sub any_changes($path2maybe_stat) {
     my $changed = 0;
@@ -164,9 +181,7 @@ while (1) {
         warn "\nchanges reported on: ".join(", ", map { ipath $_ } @_events);
     }
     my @events = grep {
-        my $n = ipath $_;
-        $n=~ s{^.*/}{};
-        $n=~ /$regex/ and not ignored($n)
+        path_please_report(ipath $_)
     } @_events;
     next unless @events;
     if ($verbose) {
@@ -195,7 +210,7 @@ while (1) {
         sleep $sleeptime;
     } while (any_changes($path2maybe_stat));
     do {
-        runit;
+        run_with(sort keys %$path2maybe_stat);
         sleep $sleeptime;
     } while (any_changes($path2maybe_stat));
 }
