@@ -5,22 +5,25 @@
 
 use strict;
 
-our $sleeptime= 0.3;
+my $sleeptime= 0.1; # how long to sleep between change verifications
+my @excludes = qw(./.git );  # sigh, must be paths! Pretty useless.
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname cmd file(s)
+    print "$myname cmd filename_regex dir(s)
 
-  watch given file(s) for changes, if a change happens, run cmd (which is
-  run using perl's system call thus can contain shell stuff).
+  Watch <dir(s)> for files whose basename match <filename_regex> for
+  changes, if a change happens, run cmd (which is run using perl's
+  system call thus can be shell code).
 
   Options:
    -a  also run before waiting
    -t  show time stamp before running cmd
 
-  Also see: 'C' and 'lambda' for building 'cmd'
+  Also see: 'C' and 'lambda' for building 'cmd' (but can use shell,
+  too)
 
   (Christian Jaeger <$email>)
 ";
@@ -53,16 +56,14 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	push @args, $_
     }
 }
-usage unless @args>1;
+usage unless @args >= 3;
 
 use Time::HiRes 'sleep';
+use File::ChangeNotify;
 use Chj::xperlfunc;# 'xstat';
 use Chj::Unix::Exitcode 'exitcode';
 
-our $cmd=shift @args;
-our @files= @args;
-
-our @stats= map { scalar xstat $_ } @files;
+my ($cmd, $regex, @dirs)= @args;
 
 $|++;
 
@@ -79,19 +80,70 @@ sub runit {
 runit
     if $opt_a;
 
-while (1) {
-    sleep $sleeptime;
-  CHECK: {
-	for (my $i=0; $i<@files; $i++) {
-	    local our $s= xstat $files[$i];
-	    if ($s->equal ($stats[$i])) {
-		# no change
-	    } else {
-		print "--- ".localtime().": '$files[$i]' has changed -------------\n" if $verbose;
-		$stats[$i]=$s;
-                runit;
-                last CHECK;
-	    }
-	}
+sub any_changes {
+    my ($path2maybe_stat)= @_;
+    my $changed = 0;
+    for my $path (sort keys %$path2maybe_stat) {
+        my $olds= $path2maybe_stat->{$path};
+        my $s= Xlstat $path;
+        if (not defined $olds and not defined $s) {
+            # continue
+        } else {
+            if (defined $olds and defined $s) {
+                if ($s->equal($olds)) {
+                    # continue
+                } else {
+                    $path2maybe_stat->{$path} = $s;
+                    $changed = 1;
+                }
+            } else {
+                $path2maybe_stat->{$path} = $s;
+                $changed = 1;
+            }
+        }
     }
+    warn "any_changes => $changed" if $verbose;
+    $changed
+}
+
+my $watcher =
+    File::ChangeNotify->instantiate_watcher(
+        directories => \@dirs,
+        # filter      => qr/./,
+        #  no, do own filtering (debuggable, and can do filename patterns)
+        exclude     => \@excludes,
+    );
+
+while (my @_events = $watcher->wait_for_events) {
+    if ($verbose) {
+        warn "changes on: ".join(", ", map { $_->path } @_events);
+    }
+    my @events = grep {
+        my $n = $_->path;
+        $n=~ s{^.*/}{};
+        $n=~ /$regex/
+    } @_events;
+    next unless @events;
+    if ($verbose) {
+        warn "interesting changes on: ".join(", ", map { $_->path } @events);
+    }
+    
+    my $path2maybe_stat = +{
+        map {
+            $_=> scalar Xlstat $_
+        } map {
+            # $_->type eq "delete" ? () : $_->path
+            # no, verify delete events, too
+            $_->path
+        } @events
+    };
+    # Wait till filehandles are closed and don't change anymore: (no
+    # way to get that from File::ChangeNotify)
+    do {
+        sleep $sleeptime;
+    } while (any_changes($path2maybe_stat));
+    do {
+        runit;
+        sleep $sleeptime;
+    } while (any_changes($path2maybe_stat));
 }
