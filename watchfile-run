@@ -7,6 +7,17 @@ use strict;
 
 my $sleeptime= 0.1; # how long to sleep between change verifications
 my @excludes = qw(./.git );  # sigh, must be paths! Pretty useless.
+my @ignore_re = (
+    qr/^\.#/ # Emacs lock files
+    );
+
+sub ignored {
+    my ($filename)= @_;
+    for my $re (@ignore_re) {
+        return 1 if $filename=~ /$re/
+    }
+    0
+}
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -126,7 +137,7 @@ while (my @_events = $watcher->wait_for_events) {
     my @events = grep {
         my $n = $_->path;
         $n=~ s{^.*/}{};
-        $n=~ /$regex/
+        $n=~ /$regex/ and not ignored($n)
     } @_events;
     next unless @events;
     if ($verbose) {
