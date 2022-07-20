@@ -114,9 +114,14 @@ my $watcher =
         exclude     => \@excludes,
     );
 
+# Need to carry $path2maybe_stat over since $watcher returns more
+# events that came before our cmd finishes (or we do our own polling),
+# we need to ignore those:
+my $path2maybe_stat;
+
 while (my @_events = $watcher->wait_for_events) {
     if ($verbose) {
-        warn "changes on: ".join(", ", map { $_->path } @_events);
+        warn "\nchanges reported on: ".join(", ", map { $_->path } @_events);
     }
     my @events = grep {
         my $n = $_->path;
@@ -125,10 +130,17 @@ while (my @_events = $watcher->wait_for_events) {
     } @_events;
     next unless @events;
     if ($verbose) {
-        warn "interesting changes on: ".join(", ", map { $_->path } @events);
+        warn "    after filtering: ".join(", ", map { $_->path } @events);
+    }
+
+    if ($path2maybe_stat) {
+        if (not any_changes($path2maybe_stat)) {
+            warn "   ignoring duplicate report" if $verbose;
+            next;
+        }
     }
     
-    my $path2maybe_stat = +{
+    $path2maybe_stat = +{
         map {
             $_=> scalar Xlstat $_
         } map {
