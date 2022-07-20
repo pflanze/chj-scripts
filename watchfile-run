@@ -1,9 +1,18 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
 # Fre Sep  7 11:43:44 CEST 2007
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
+my $copyright= <<'COPYRIGHT';
+# Copyright 2007-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
 
 my $sleeptime= 0.1; # how long to sleep between change verifications
 my @excludes = qw(./.git );  # sigh, must be paths! Pretty useless.
@@ -11,8 +20,7 @@ my @ignore_re = (
     qr/^\.#/ # Emacs lock files
     );
 
-sub ignored {
-    my ($filename)= @_;
+sub ignored($filename) {
     for my $re (@ignore_re) {
         return 1 if $filename=~ /$re/
     }
@@ -29,8 +37,10 @@ sub usage {
   changes, if a change happens, run cmd (which is run using perl's
   system call thus can be shell code).
 
-  NOTE: it doesn't pick up newly created files matching the
-  regex. (Why not?)
+  Notes: $myname does not recurse into dirs (currently).  It *does*
+  pick up newly created files matching the regex, no need to restart
+  the script. It currently does not end when the dirs are (re)moved
+  (TODO?).
 
   Options:
    -a  also run before waiting
@@ -39,7 +49,7 @@ sub usage {
   Also see: 'C' and 'lambda' for building 'cmd' (but can use shell,
   too)
 
-  (Christian Jaeger <$email>)
+  ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
@@ -73,14 +83,13 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 usage unless @args >= 3;
 
 use Time::HiRes 'sleep';
-use File::ChangeNotify;
 use Chj::xperlfunc;# 'xstat';
 use Chj::Unix::Exitcode 'exitcode';
 
-# Use Linux::Inotify2 directly instead?
+use Linux::Inotify2;
 # https://lwn.net/Articles/605128/
 # Filesystem notification, part 2 A deeper investigation of inotify [LWN.net].html
-# But no, not going to deal with inotify directly now, no time.
+
 
 
 my ($cmd, $regex, @dirs)= @args;
@@ -100,8 +109,7 @@ sub runit {
 runit
     if $opt_a;
 
-sub any_changes {
-    my ($path2maybe_stat)= @_;
+sub any_changes($path2maybe_stat) {
     my $changed = 0;
     for my $path (sort keys %$path2maybe_stat) {
         my $olds= $path2maybe_stat->{$path};
@@ -126,31 +134,43 @@ sub any_changes {
     $changed
 }
 
-my $watcher =
-    File::ChangeNotify->instantiate_watcher(
-        directories => \@dirs,
-        # filter      => qr/./,
-        #  no, do own filtering (debuggable, and can do filename patterns)
-        exclude     => \@excludes,
-    );
+my $inotify = new Linux::Inotify2
+    or die "unable to create new inotify object: $!";
+
+my $watch_mask =
+    IN_MODIFY|IN_MOVED_FROM|IN_MOVED_TO|IN_CREATE|IN_DELETE
+    |IN_DELETE_SELF # |IN_MOVE_SELF no
+    |IN_DONT_FOLLOW;
+
+sub iwatch($path) {
+    $inotify->watch ($path, $watch_mask)
+        or die "watch creation failed";
+}
+
+iwatch($_) for @dirs;
+
+sub ipath($event) {
+    $event->w->name . "/" . $event->name
+}
 
 # Need to carry $path2maybe_stat over since $watcher returns more
 # events that came before our cmd finishes (or we do our own polling),
 # we need to ignore those:
 my $path2maybe_stat;
 
-while (my @_events = $watcher->wait_for_events) {
+while (1) {
+    my @_events = $inotify->read;
     if ($verbose) {
-        warn "\nchanges reported on: ".join(", ", map { $_->path } @_events);
+        warn "\nchanges reported on: ".join(", ", map { ipath $_ } @_events);
     }
     my @events = grep {
-        my $n = $_->path;
+        my $n = ipath $_;
         $n=~ s{^.*/}{};
         $n=~ /$regex/ and not ignored($n)
     } @_events;
     next unless @events;
     if ($verbose) {
-        warn "    after filtering: ".join(", ", map { $_->path } @events);
+        warn "    after filtering: ".join(", ", map { ipath $_ } @events);
     }
 
     if ($path2maybe_stat) {
@@ -166,7 +186,7 @@ while (my @_events = $watcher->wait_for_events) {
         } map {
             # $_->type eq "delete" ? () : $_->path
             # no, verify delete events, too
-            $_->path
+            ipath $_
         } @events
     };
     # Wait till filehandles are closed and don't change anymore: (no
