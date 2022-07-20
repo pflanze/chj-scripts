@@ -30,8 +30,9 @@ sub usage {
     print "$myname perlcode cmd args
 
   Run <perlcode> on <args> before passing them on to <cmd>.
-
-  <Perlcode> should modify \$_.
+  <Perlcode> should read the value from \$_, and return the desired
+  value(s) (it's run in list context). As usual, without a 'return'
+  statement, the value(s) of the last expression are used.
 
   ($email_full)
 ";
@@ -45,10 +46,6 @@ my ($perlcode, $cmd, @args) = @ARGV;
 my $proc = eval "sub { $perlcode }";
 die "$myname: $@" if $@;
 
-for (@args) {
-    &$proc
-}
-
-exec $cmd, @args
+exec $cmd, map { &$proc } @args
     or exit 127;
 
