@@ -80,18 +80,17 @@ fi
 # now with '_' replaced with positional argument references:
 my $i=1;
 for (@ARGV) {
-    $t->xprint
-      (
-       do {
-	   if ($_ eq "_") {
-	       '"$'.($i++).'"'
-	   } else {
-	       possibly_singlequote_sh $_
-	   }
-       },
-       " "
-      );
+    $t->xprint(
+        do {
+            if ($_ eq "_") {
+                '"$'.($i++).'"'
+            } else {
+                possibly_singlequote_sh $_
+            }
+        },
+        " ");
 }
+
 if ($is_CC) {
     # Get the slice of $@ after the elements used to replace '_'s:
     # (mis-setting slice len to just $# but hey, so what, is it not OK
@@ -99,6 +98,7 @@ if ($is_CC) {
     # cases? `arr=("$@")` would allow arr to be accessed by $n.).
     $t->xprint('"${@:'.($n + 1).':$#}"');
 }
+
 $t->xprintln;
 $t->xclose;
 $t->autoclean(0);
