@@ -11,7 +11,9 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 #use experimental 'signatures';
 
-# use FP::Repl::Trap; #
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
@@ -22,38 +24,36 @@ BEGIN {
 }
 
 sub usage {
-    my $out = @_ ? *STDERR{IO} : *STDOUT{IO};
-    print $out map{"$_\n"} @_ if @_;
-    print $out "$myname [options]
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
 
-  Print the current time as YYYY-MM-DD_HHMM in the current time zone
-  (lexical sorting == time sorting, except when ambiguous...).
-
+  Print the current date as YYYYMMDD in the current time zone.
+  
   Set TZ=UTC to get unambiguous output.
 
   Options:
-     --day              show day only
-     --sec | --seconds  show seconds as well (-s currently works as well)
 
-  Also see: dat, date_
+    --time|--min  append _HHMM
+    --sec         append _HHMMSS (implies --time)
+
+  Also see: _date, date_
 
   ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
 
+my $opt_time = 0;
 my $opt_sec = 0;
-my $opt_day = 0;
 
 while (@ARGV) {
     my $v = shift @ARGV;
     if ($v eq "-s" or $v eq "--sec" or $v eq "--seconds") {
         $opt_sec = 1;
-        $opt_day = 0;
+        $opt_time = 1;
     }
-    elsif ($v eq "--day") {
-        $opt_sec = 0;
-        $opt_day = 1;
+    elsif ($v eq "--time" or $v eq "--min") {
+        $opt_time = 1;
     }
     elsif ($v eq "-h" or $v eq "--help") {
         usage
@@ -67,13 +67,10 @@ usage if @ARGV;
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 
-my $MIN = $opt_day ? '' : '_%02d%02d';
+my $MIN = $opt_time ? '_%02d%02d' : '';
 my $SEC = $opt_sec ? '%02d' : '';
 
-printf("%04d-%02d-%02d$MIN$SEC\n",
+printf("%04d%02d%02d$MIN$SEC\n",
        $year+1900, $mon+1, $mday,
-       ($opt_day ? () :
-        ($hour, $min, ($opt_sec ? $sec : ()))))
+       ($opt_time ? ($hour, $min, ($opt_sec ? $sec : ())) : ()))
     or die "stdout: $!";
-
-#use FP::Repl; repl;
