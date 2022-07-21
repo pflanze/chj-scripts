@@ -1,7 +1,11 @@
 #!/usr/bin/perl -w
 
 # Tue May  4 07:00:03 EDT 2010
-(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+my $copyright= <<'COPYRIGHT';
+# Copyright 2010-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 use strict;
 
@@ -11,13 +15,22 @@ use Chj::xperlfunc 'xchmod';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+my $is_CC = $myname eq "CC";
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname cmd [args] _ [other args [ _ [further args]]]
 
-  shortcut for: lambda 'cmd args \"\$1\" other args \"\$2\" further args'
+  Returns the path to a script that when called replaces the '_' with
+  the script arguments in the same order.  I.e. the same as: \$(lambda
+  'cmd args \"\$1\" other args \"\$2\" further args').
 
-  (Christian Jaeger <$email>)
+  When called as 'C', the generated script will not accept further
+  arguments. When called as 'CC', the script passes further arguments
+  as additional arguments to cmd.
+
+  ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
@@ -43,7 +56,17 @@ my $n = do {
 # replaced by positional argument references
 my $origcode= join(" ", map{possibly_singlequote_sh $_} @ARGV);
 
-$t->xprint('#/bin/sh
+if ($is_CC) {
+    $t->xprint('#/bin/bash
+set -eu
+if [ $# -lt '.$n.' ]; then
+    echo "$0 ("'.possibly_singlequote_sh($origcode).'"): '.
+	   'got $# arguments, expecting at least '.$n.'"
+    exit 1
+fi
+');
+} else {
+    $t->xprint('#/bin/bash
 set -eu
 if [ $# -ne '.$n.' ]; then
     echo "$0 ("'.possibly_singlequote_sh($origcode).'"): '.
@@ -51,7 +74,8 @@ if [ $# -ne '.$n.' ]; then
     exit 1
 fi
 ');
-
+}
+    
 
 # now with '_' replaced with positional argument references:
 my $i=1;
@@ -67,6 +91,13 @@ for (@ARGV) {
        },
        " "
       );
+}
+if ($is_CC) {
+    # Get the slice of $@ after the elements used to replace '_'s:
+    # (mis-setting slice len to just $# but hey, so what, is it not OK
+    # to let the C code cap that?). Also, @ is 1-based (?! the special
+    # cases? `arr=("$@")` would allow arr to be accessed by $n.).
+    $t->xprint('"${@:'.($n + 1).':$#}"');
 }
 $t->xprintln;
 $t->xclose;
