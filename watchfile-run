@@ -132,16 +132,26 @@ sub any_changes($path2maybe_stat) {
         my $olds= $path2maybe_stat->{$path};
         my $s= Xlstat $path;
         if (not defined $olds and not defined $s) {
+            warn "any_changes: file neither existed before or now: '$path'"
+                if $verbose;
             # continue
         } else {
             if (defined $olds and defined $s) {
                 if ($s->equal($olds)) {
+                    warn "any_changes: file is unchanged: '$path'"
+                        if $verbose;
                     # continue
                 } else {
+                    warn "any_changes: file has changed: '$path'"
+                        if $verbose;
                     $path2maybe_stat->{$path} = $s;
                     $changed = 1;
                 }
             } else {
+                warn "any_changes: file existence has changed ("
+                    .($s ? "now exists" : "disappeared")
+                    ."): '$path'"
+                    if $verbose;
                 $path2maybe_stat->{$path} = $s;
                 $changed = 1;
             }
