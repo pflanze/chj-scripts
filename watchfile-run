@@ -126,6 +126,24 @@ if ($opt_a) {
     run_with(sort keys %paths);
 }
 
+# Compare old and new stat hash:
+sub stathash_equal($h1, $h2) {
+    if (join("\0", sort keys %$h1) eq join("\0", sort keys %$h2)) {
+        for my $k (sort keys %$h1) {
+            $h1->{$k}->equal($h2->{$k}) or do {
+                warn "stathash_equal: non-equal stat for '$k'" if $verbose;
+                return 0;
+            }
+        }
+        warn "stathash_equal: equal" if $verbose;
+        1
+    } else {
+        warn "stathash_equal: non-equal keys" if $verbose;
+        0
+    }
+}
+
+# Compare with on-disk situation:
 sub any_changes($path2maybe_stat) {
     my $changed = 0;
     for my $path (sort keys %$path2maybe_stat) {
@@ -197,15 +215,8 @@ while (1) {
     if ($verbose) {
         warn "    after filtering: ".join(", ", map { ipath $_ } @events);
     }
-
-    if ($path2maybe_stat) {
-        if (not any_changes($path2maybe_stat)) {
-            warn "   ignoring duplicate report" if $verbose;
-            next;
-        }
-    }
     
-    $path2maybe_stat = +{
+    my $new_path2maybe_stat = +{
         map {
             $_=> scalar Xlstat $_
         } map {
@@ -214,6 +225,16 @@ while (1) {
             ipath $_
         } @events
     };
+
+    if ($path2maybe_stat) {
+        if (stathash_equal $path2maybe_stat, $new_path2maybe_stat) {
+            warn "   ignoring duplicate report" if $verbose;
+            next;
+        }
+    }
+
+    $path2maybe_stat = $new_path2maybe_stat;
+
     # Wait till filehandles are closed and don't change anymore: (no
     # way to get that from File::ChangeNotify)
     do {
