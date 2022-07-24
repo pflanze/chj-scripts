@@ -130,8 +130,17 @@ if ($opt_a) {
 sub stathash_equal($h1, $h2) {
     if (join("\0", sort keys %$h1) eq join("\0", sort keys %$h2)) {
         for my $k (sort keys %$h1) {
-            $h1->{$k}->equal($h2->{$k}) or do {
-                warn "stathash_equal: non-equal stat for '$k'" if $verbose;
+            my $s1 = $h1->{$k};
+            my $s2 = $h2->{$k};
+            if (defined $s1 and defined $2) {
+                $s1->equal($s2) or do {
+                    warn "stathash_equal: non-equal stat for '$k'" if $verbose;
+                    return 0;
+                }
+            } elsif (!defined $s1 and !defined $2) {
+                # equal
+            } else {
+                warn "stathash_equal: non-equal stat (definedness) for '$k'" if $verbose;
                 return 0;
             }
         }
