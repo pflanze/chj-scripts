@@ -8,7 +8,7 @@ use strict; use warnings FATAL => 'uninitialized';
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
-    print STDERR map{"$_\n"} @_ if @_;
+    print STDERR map{"$myname: $_\n"} @_ if @_;
     print "$myname [-i] name-regex
 
   Find directories used by items in the current Git repository.
@@ -29,7 +29,7 @@ GetOptions("verbose"=> \$verbose,
            "i"=> \$opt_i,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV == 1;
+usage "expecting 1 non-option argument" unless @ARGV == 1;
 
 my ($regex)= @ARGV;
 
