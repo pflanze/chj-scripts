@@ -294,24 +294,6 @@ my $fileset_with_links= do {
     \%s
 };
 
-# -> ($set_links, $set_nonlinks)
-sub fileset_split_is_link($set) {
-    my %set_links;
-    my %set_nonlinks;
-    for my $k (keys %$set) {
-        my $info = $set->{$k};
-        if ($info->is_link) {
-            $set_links{$k} = $info
-        } else {
-            $set_nonlinks{$k} = $info
-        }
-    }
-    (\%set_links, \%set_nonlinks)
-}
-
-# my ($set_links, $set_nonlinks) = fileset_split_is_link($fileset_with_links);
-# easier to split on each step ? XX
-
 
 # -> (contentkey//"") => path => Info
 sub by_contentkey($set) {
