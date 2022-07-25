@@ -216,6 +216,11 @@ package APP::search::Info {
         $self->{lstat}->is_dir
     }
     
+    sub is_file($self) {
+        # directly
+        $self->{lstat}->is_file
+    }
+
     sub mtime($self) {
         # OK to use lstat's mtime here?
         $self->{lstat}->mtime
@@ -307,6 +312,18 @@ sub fileset_split_is_link($set) {
 # my ($set_links, $set_nonlinks) = fileset_split_is_link($fileset_with_links);
 # easier to split on each step ? XX
 
+
+# -> contentkey => path => Info
+sub by_contentkey($set) {
+    my %h;
+    for my $k (keys %$set) {
+        my $info = $set->{$k};
+        $h{$info->maybe_contentkey}{$info->path} = $info;
+    }
+    \%h
+}
+
+
 my $fileset = $fileset_with_links;
 
 for my $regex_raw (@ARGV) {
@@ -328,14 +345,7 @@ for my $regex_raw (@ARGV) {
     # First build an index of inodes, to avoid duplicate loading
     # (hard- and symlinks):
     # contentkey => path => Info
-    my $checkable_by_contentkey = do {
-        my %h;
-        for my $k (keys %$checkableset) {
-            my $info = $checkableset->{$k};
-            $h{$info->maybe_contentkey}{$info->path} = $info;
-        }
-        \%h
-    };
+    my $checkable_by_contentkey = by_contentkey $checkableset;
     # Run the checks:
     my $checked =  # [[contentkey, {path=>info}]..]
         parallel_filter(
@@ -372,6 +382,30 @@ for my $regex_raw (@ARGV) {
     };
     $fileset = hashset_union $fileset2, $morefiles;
 }
+
+# For the same content, only take one path; take the first
+# (alphabetically) path to a plain file if present, otherwise the
+# first path at all (a symlink):
+$fileset = do {
+    my $cset = by_contentkey $fileset;
+    my %h;
+    for my $ckey (keys %$cset) {
+        my $path_info = $cset->{$ckey};
+        # Take the first plain file item, if any, otherwise the first path:
+        my $path_to_take;
+        for my $path (sort keys %$path_info) {
+            if ($path_info->{$path}->is_file) {
+                $path_to_take = $path;
+                last;
+            }
+            $path_to_take //= $path;
+        }
+        $h{$path_to_take}= $path_info->{$path_to_take};
+    }
+    \%h
+    
+};
+
 
 # always sort alphabetically, first (for stable sort order for entries
 # with identical mtime)
