@@ -7,6 +7,7 @@ use strict;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
+use lib "/opt/functional-perl/lib"; ## tmp
 #use FP::Repl::Trap;#
 use Chj::Backtrace;#
 
@@ -23,8 +24,9 @@ sub usage {
 
   Options:
 
-     -i | --insensitive   regex is matched insensitively
-     --sort-alpha         sort alphabetically instead of by mtime
+     -i | --insensitive      regex is matched insensitively
+     --sort-alpha            sort alphabetically instead of by mtime
+     --warn-broken-symlinks  warn about broken symlinks
 
   (Christian Jaeger <$email>)
 ";
@@ -36,10 +38,12 @@ our $verbose=0;
 #our $opt_dry;
 my $opt_i;
 my $opt_sort_alpha;
+my $opt_warn_broken;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "insensitive"=> \$opt_i,
            "sort-alpha"=> \$opt_sort_alpha,
+           "warn-broken-symlinks"=> \$opt_warn_broken,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -150,16 +154,7 @@ use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
 use FP::Array ":all";
 use FP::PureArray ":all";
 use FP::Predicates qw(complement);
-
-sub hash_key_filter($hash, $pred) {
-    # only keep k=>v entries for which $pred->($k) is true
-    +{
-        map {
-            $pred->($_) ? ($_ => $hash->{$_}) : ()
-        } keys %$hash
-    }
-}
-# ^ XX hashset_key_filter ?
+use FP::Hash;
 
 # Hash to array of key-value tuples
 sub hash_kvs_unsorted($hash) {
@@ -200,47 +195,119 @@ sub ignore($path) {
     $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path)
 }
 
-# path => stat
-my $fileset= do {
+package APP::search::Info {
+    use Chj::xperlfunc qw(Xstat);
+    
+    use FP::Struct [
+        "path",
+        "lstat",
+        # only for symlinks which stopped to match on their own; "$!"
+        # if can't stat:
+        "maybe_stat_or_err",
+        ]
+        => qw(FP::Struct::Equal FP::Struct::Show);
+
+    sub is_link($self) {
+        $self->{lstat}->is_link
+    }
+
+    sub is_dir($self) {
+        # directly (i.e. git submodules; not symlinks to dirs)
+        $self->{lstat}->is_dir
+    }
+    
+    sub mtime($self) {
+        # OK to use lstat's mtime here?
+        $self->{lstat}->mtime
+    }
+
+    sub maybe_contentkey($self) {
+        # "$devicenumber:$inode", if file, or if target exists
+        exists $self->{_maybe_contentkey} ? $self->{_maybe_contentkey} :
+            $self->{_maybe_contentkey} = do {
+                my $s = $self->{lstat};
+                if ($s->is_file) {
+                    $s->dev . ":" . $s->ino
+                } elsif ($s->is_link) {
+                    my $s = $self->{maybe_stat_or_err} //= (
+                        Xstat($self->{path}) // do {
+                            warn "$myname: note, broken symlink: '$self->{path}'\n"
+                                if $opt_warn_broken;
+                            "$!"
+                        }
+                        );
+                    if (ref($s)) {
+                        if ($s->is_file) {
+                            $s->dev . ":" . $s->ino
+                        } else {
+                            # it was a symlink to a directory (or device file or something)
+                            undef
+                        }
+                    } else {
+                        # target doesn't exist
+                        undef
+                    }
+                } else {
+                    die "XX directory?";# should already have been weeded out ?
+                }
+        }
+    }
+    
+    _END_ "main"
+}
+
+# path => Info, including symlinks
+my $fileset_with_links= do {
     my $fs= array_to_purearray scalar git_ls_files;
-    my $pss=
+    my $infos=
         $fs
         ->filter(complement \&ignore)
         ->map(
             sub ($path) {
                 if (my $s= Xlstat $path) {
-                    [$path, $s]
+                    Info($path, $s)
                 } else {
                     undef
                 }
-            })
-        ->filter(
-            sub ($ps) {
-                return 0 unless defined $ps;
-                my ($path, $stat)= @$ps;
-                not $stat->is_link
             });
     my $filter= sub ($pred) {
-        $pss
+        $infos
             ->filter(
-            sub ($ps) {
-                my ($path, $stat)= @$ps;
-                $pred->($stat->is_dir)
+            sub ($info) {
+                $pred->($info->is_dir)
             })
     };
     $filter->(sub ($isdir) { $isdir })->for_each(
-        sub ($ps) {
-            my $p = $ps->[0];
-            xprintln "NOTE: ignoring sub-repository: $p";
+        sub ($info) {
+            xprintln "NOTE: ignoring sub-repository: ".$info->path;
         });
     my %s;
     $filter->(sub ($isdir) { not $isdir })->for_each(
-        sub ($ps) {
-            my ($p, $s)= @$ps;
-            $s{$p} = $s;
+        sub ($info) {
+            $s{$info->path} = $info;
         });
     \%s
 };
+
+# -> ($set_links, $set_nonlinks)
+sub fileset_split_is_link($set) {
+    my %set_links;
+    my %set_nonlinks;
+    for my $k (keys %$set) {
+        my $info = $set->{$k};
+        if ($info->is_link) {
+            $set_links{$k} = $info
+        } else {
+            $set_nonlinks{$k} = $info
+        }
+    }
+    (\%set_links, \%set_nonlinks)
+}
+
+# my ($set_links, $set_nonlinks) = fileset_split_is_link($fileset_with_links);
+# easier to split on each step ? XX
+
+my $fileset = $fileset_with_links;
 
 for my $regex_raw (@ARGV) {
     my $regex = Encode::decode("UTF-8", $regex_raw, Encode::FB_CROAK);
@@ -251,14 +318,32 @@ for my $regex_raw (@ARGV) {
     };
 
     # Might there be more paths to consider, via their contents?
-    my $tocheckset= hashset_difference $fileset, $fileset2;
-    # We promised Perl style regexes, deliver on that:
-    my $morefiles=
-        kvs_to_hash
+    # We promised Perl style regexes, deliver on that.
+    my $_tocheckset= hashset_difference $fileset, $fileset2;
+    # Only plain files, and symlinks to plain files, can be checked /
+    # can match, exclude anything else:
+    my $checkableset = hash_value_filter $_tocheckset, sub ($info) {
+        defined $info->maybe_contentkey
+    };
+    # First build an index of inodes, to avoid duplicate loading
+    # (hard- and symlinks):
+    # contentkey => path => Info
+    my $checkable_by_contentkey = do {
+        my %h;
+        for my $k (keys %$checkableset) {
+            my $info = $checkableset->{$k};
+            $h{$info->maybe_contentkey}{$info->path} = $info;
+        }
+        \%h
+    };
+    # Run the checks:
+    my $checked =  # [[contentkey, {path=>info}]..]
         parallel_filter(
-            hash_kvs_unsorted($tocheckset),
-            sub ($path_stat) {
-                my $path = $path_stat->[0];
+            hash_kvs_unsorted($checkable_by_contentkey),
+            sub ($contentkey_path_info) {
+                my ($contentkey, $path_info) = @$contentkey_path_info;
+                # This might be a symlink, but it has been checked to resolve, so what:
+                my $path = (keys %$path_info)[0];
                 my $res;
                 eval {
                     my $cnt= xgetfile_utf8 $path;
@@ -273,6 +358,18 @@ for my $regex_raw (@ARGV) {
                     0
                 }
             });
+    my $morefiles= do {
+        # hash_values_flatten ?
+        my %h;
+        for (@$checked) {
+            my ($_contentkey, $path_info) = @$_;
+            for my $path (keys %$path_info) {
+                my $info = $path_info->{$path};
+                $h{$path}= $info;
+            }
+        }
+        \%h
+    };
     $fileset = hashset_union $fileset2, $morefiles;
 }
 
