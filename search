@@ -8,7 +8,7 @@ use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 use lib "/opt/functional-perl/lib"; ## tmp
-#use FP::Repl::Trap;#
+#use FP::Repl; use FP::Repl::Trap;#
 #use Chj::Backtrace;#
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -26,6 +26,8 @@ sub usage {
 
      -i | --insensitive      regex is matched insensitively
      --sort-alpha            sort alphabetically instead of by mtime
+     --ignore-filename  regex    ignore filenames that match regex;
+                                 can be given multiple times
      --warn-broken-symlinks  warn about broken symlinks
 
   (Christian Jaeger <$email>)
@@ -39,10 +41,15 @@ our $verbose=0;
 my $opt_i;
 my $opt_sort_alpha;
 my $opt_warn_broken;
+my @opt_ignore_filename;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "i"=> \$opt_i,
            "insensitive"=> \$opt_i,
            "sort-alpha"=> \$opt_sort_alpha,
+           "ignore-filename=s"=> sub {
+               push @opt_ignore_filename, $_[1];
+           },
            "warn-broken-symlinks"=> \$opt_warn_broken,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
@@ -51,7 +58,7 @@ usage unless @ARGV;
 #[[ use Chj::Parallel_for_each qw(Parallel_for_each);
 # no, need results, and   hu not even in fperl there's sth  ? ?
 
-use Chj::xperlfunc;
+use Chj::xperlfunc ":all";
 use Chj::xpipe;
 use Chj::Linux::numcpus;
 
@@ -192,7 +199,15 @@ sub ignore_suffix($suff) {
     $ignored_suffix->{lc($suff)}
 }
 sub ignore($path) {
-    $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path)
+    $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path) or do {
+        my $filename = basename $path;
+        sub {
+            for (@opt_ignore_filename) {
+                return 1 if $filename=~ /$_/
+            }
+            0
+        }->()
+    }
 }
 
 package APP::search::Info {
