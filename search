@@ -313,12 +313,12 @@ sub fileset_split_is_link($set) {
 # easier to split on each step ? XX
 
 
-# -> contentkey => path => Info
+# -> (contentkey//"") => path => Info
 sub by_contentkey($set) {
     my %h;
     for my $k (keys %$set) {
         my $info = $set->{$k};
-        $h{$info->maybe_contentkey}{$info->path} = $info;
+        $h{$info->maybe_contentkey // ""}{$info->path} = $info;
     }
     \%h
 }
