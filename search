@@ -295,12 +295,14 @@ my $fileset_with_links= do {
 };
 
 
-# -> (contentkey//"") => path => Info
+# -> (contentkey//:path) => path => Info
+# (For broken symlinks, use a fake contentkey, ensuring each symlink
+# only has one entry, thus it will survive.)
 sub by_contentkey($set) {
     my %h;
     for my $k (keys %$set) {
         my $info = $set->{$k};
-        $h{$info->maybe_contentkey // ""}{$info->path} = $info;
+        $h{$info->maybe_contentkey // ":".$info->path}{$info->path} = $info;
     }
     \%h
 }
