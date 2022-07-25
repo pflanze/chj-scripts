@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Depends: (_date)
+
+set -euo pipefail
+IFS=
+
+exec _date --day "$@"
