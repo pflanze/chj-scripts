@@ -9,7 +9,7 @@ use experimental 'signatures';
 
 use lib "/opt/functional-perl/lib"; ## tmp
 #use FP::Repl::Trap;#
-use Chj::Backtrace;#
+#use Chj::Backtrace;#
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
