@@ -29,6 +29,9 @@ sub usage {
      --ignore-filename  regex    ignore filenames that match regex;
                                  can be given multiple times
      --warn-broken-symlinks  warn about broken symlinks
+     --warn-deleted          warn about files recorded in the Git index
+                             but not existing
+     --warn                  turn on all the warnings
 
   (Christian Jaeger <$email>)
 ";
@@ -40,7 +43,7 @@ our $verbose=0;
 #our $opt_dry;
 my $opt_i;
 my $opt_sort_alpha;
-my $opt_warn_broken;
+my ($opt_warn_broken, $opt_warn_deleted);
 my @opt_ignore_filename;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
@@ -51,6 +54,10 @@ GetOptions("verbose"=> \$verbose,
                push @opt_ignore_filename, $_[1];
            },
            "warn-broken-symlinks"=> \$opt_warn_broken,
+           "warn-deleted"=> \$opt_warn_deleted,
+           "warn"=> sub {
+               ($opt_warn_broken, $opt_warn_deleted)=(1,1);
+           },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -282,12 +289,14 @@ my $fileset_with_links= do {
     my $infos=
         $fs
         ->filter(complement \&ignore)
-        ->map(
+        ->filtermap(
             sub ($path) {
                 if (my $s= Xlstat $path) {
                     Info($path, $s)
                 } else {
-                    undef
+                    warn "$myname: file in index but not in working dir: '$path'\n"
+                        if $opt_warn_deleted;
+                    ()
                 }
             });
     my $filter= sub ($pred) {
