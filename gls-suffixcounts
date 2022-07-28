@@ -6,13 +6,21 @@ IFS=
 usage () {
     echo "usage: $0 [gls-options]"
     echo "  \`git ls-files\` distilled down to suffix statistics"
+    echo "  Options:"
+    echo "    -a|--all  show files without suffix, too, via full path"
     exit 1
 }
 
 
+export opt_a=0
+
 if [ $# -gt 0 ]; then
     if [ "$1" = "-h" -o "$1" = "--help" ]; then
         usage
+    fi
+    if [ "$1" = "-a" -o "$1" = "--all" ]; then
+        opt_a=1
+        shift
     fi
 fi
 
@@ -20,7 +28,10 @@ git ls-files -z "$@"| perl -wn0e '
 chomp;
 if (m{([^/]+)\.([^.\s\)\"\!\?]+)$}) {
     $suffix{$2}++
+} elsif ($ENV{opt_a}) {
+    $suffix{"./$_"}++
 }
+
 END {
     for (sort { $suffix{$a} <=> $suffix{$b} or $a cmp $b } keys %suffix) {
         print "$suffix{$_}\t$_\n" or die "stdout: $!"
