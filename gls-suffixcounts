@@ -16,7 +16,7 @@ if [ $# -gt 0 ]; then
     fi
 fi
 
-gls "$@"| perl -wne '
+git ls-files -z "$@"| perl -wn0e '
 chomp;
 if (m{([^/]+)\.([^.\s\)\"\!\?]+)$}) {
     $suffix{$2}++
@@ -24,7 +24,7 @@ if (m{([^/]+)\.([^.\s\)\"\!\?]+)$}) {
 }
 END {
     for (sort { $suffix{$a} <=> $suffix{$b} or $a cmp $b } keys %suffix) {
-        print "$suffix{$_}\t$_\n"
+        print "$suffix{$_}\t$_\n" or die "stdout: $!"
     }
 }
 '
