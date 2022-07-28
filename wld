@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Depends: (with-lastdir)
+
+exec with-lastdir "$@"

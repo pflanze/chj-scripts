@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Depends: (with-lastfile)
+
+exec with-lastfile "$@"
