@@ -20,7 +20,6 @@ git ls-files -z "$@"| perl -wn0e '
 chomp;
 if (m{([^/]+)\.([^.\s\)\"\!\?]+)$}) {
     $suffix{$2}++
-       unless $1 eq "my";
 }
 END {
     for (sort { $suffix{$a} <=> $suffix{$b} or $a cmp $b } keys %suffix) {
