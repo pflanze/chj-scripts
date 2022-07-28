@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Depends: (e)
+
+set -euo pipefail
+IFS=
+
+e "$@" &
