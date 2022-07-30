@@ -203,7 +203,7 @@ my @converted_paths;
 
 sub con_file($path, $ignore_nonimg_files) {
     my $p2 = $path;
-    if ($p2 =~ s{\.(jpg|jpeg|png|pnm)$}{.webp}i
+    if ($p2 =~ s{\.(jpg|jpeg|png|pnm|tif|tiff)$}{.webp}i
         or !$ignore_nonimg_files) {
         if (-e $p2) {
             warn "$myname: NOTE: target already exists: '$p2'\n";
