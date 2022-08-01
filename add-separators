@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Depends: (interleave separator-lines)
+
+set -euo pipefail
+IFS=
+
+exec interleave - <(separator-lines)
+
