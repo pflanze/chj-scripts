@@ -1,0 +1,69 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname inputs..
+
+  Print the sequence of the first line in each input file, then the
+  second etc. Stops when the first sequence runs out.
+
+  '-' is treated as stdin.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   ) or exit 1;
+
+
+sub any_undef($items) {
+    do { return 1 if ! defined $_ }
+        for @$items;
+    0
+}
+
+use Chj::xopen qw(xopen_read glob_to_fh);
+
+my @inputs = map { xopen_read $_ } @ARGV;
+
+my $out = glob_to_fh(*STDOUT);
+
+while (1) {
+    my @lines = map { scalar $_->xreadline } @inputs;
+    last if any_undef \@lines;
+    for (@lines) {
+        chomp;
+        $out->xprintln($_);
+    }
+}
+
+$_->xclose for @inputs;
+
