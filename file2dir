@@ -1,0 +1,89 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Chj::xperlfunc qw(xlstat);
+use Chj::singlequote qw(singlequote_sh);
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname filepath filename
+
+  Rename filepath to filepath/filename, creating filepath as a
+  directory.
+
+  Options:
+
+    --no-check  do not check whether filepath is in fact a regular
+                file (and not a dir, symlink, device file, fifo)
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+my $do_check = 1;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+           "no-check"=> sub {
+               $do_check = 0
+           },
+	   ) or exit 1;
+usage "2 arguments needed" unless @ARGV == 2;
+
+
+my ($filepath, $filename) = @ARGV;
+
+if ($do_check) {
+    my $s = xlstat $filepath;
+    unless ($s->is_file) {
+        die "$myname: not a regular file: ".singlequote_sh($filepath)."\n"
+    }
+}
+
+my $e;
+defined(my $dirpath = sub {
+    for (1..5) {
+        my $dirpath = $filepath . rand;
+        if (mkdir $dirpath) {
+            return $dirpath;
+        } else {
+            $e = "$!";
+        }
+    }
+    undef
+}->()) or 
+    die "could not create directory ".singlequote_sh($filepath)." with random number appended: $e";
+
+my $newpath = "$dirpath/$filename";
+
+rename $filepath, $newpath
+    or die "could not rename ".singlequote_sh($filepath)." to ".singlequote_sh($newpath).": $!";
+
+rename $dirpath, $filepath
+    or die "could not rename directory ".singlequote_sh($dirpath)." to ".singlequote_sh($filepath).": $!";
+
