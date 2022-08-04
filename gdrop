@@ -79,7 +79,8 @@ our ($maybe_subname, $maybe_reset_to_commit)=@ARGV;
 our $subname_= ((defined ($maybe_subname))# and length ($maybe_subname))
 		? $maybe_subname."_" : "");
 
-our $date_= `_date --tz`; chomp $date_; #hum.
+defined (our $date_= `_date --tz`) or exit 127;
+chomp $date_; #hum.
 our $tagname=
   ($opt_base ? "base_" : ($opt_no_prefix ? "" : "drop_"))
   .$subname_.$date_;
