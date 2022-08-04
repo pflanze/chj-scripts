@@ -34,6 +34,7 @@ sub usage {
   Options:
      --day              show day only
      --sec | --seconds  show seconds as well (-s currently works as well)
+     --tz               show time zone
 
   Also see: dat, date_
 
@@ -44,6 +45,7 @@ exit (@_ ? 1 : 0);
 
 my $opt_sec = 0;
 my $opt_day = 0;
+my $opt_tz;
 
 while (@ARGV) {
     my $v = shift @ARGV;
@@ -55,6 +57,9 @@ while (@ARGV) {
         $opt_sec = 0;
         $opt_day = 1;
     }
+    elsif ($v eq "--tz") {
+        $opt_tz = 1;
+    }
     elsif ($v eq "-h" or $v eq "--help") {
         usage
     }
@@ -65,12 +70,20 @@ while (@ARGV) {
 
 usage if @ARGV;
 
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+my $t = time;
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t);
 
 my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
+my $TZ = $opt_tz ? do {
+    require DateTime;
+    require DateTime::TimeZone;
+    my $tz = DateTime::TimeZone->new(name=> "local");
+    my $dt = DateTime->from_epoch(epoch=> $t);
+    "_" . $tz->short_name_for_datetime( $dt )
+} : '';
 
-printf("%04d-%02d-%02d$MIN$SEC\n",
+printf("%04d-%02d-%02d$MIN$SEC$TZ\n",
        $year+1900, $mon+1, $mday,
        ($opt_day ? () :
         ($hour, $min, ($opt_sec ? $sec : ()))))
