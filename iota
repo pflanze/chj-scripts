@@ -1,0 +1,77 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Getopt::Long;
+use Chj::singlequote qw(singlequote_sh);
+
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [n [start]]
+
+  Print the integer series, infinitely (well, Perl will start using
+  floating point numbers at some point!), or 'n' numbers, starting
+  from 0, or 'start'. An empty 'n' string means infinite.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage "accepting up to 2 arguments" unless @ARGV <= 2;
+
+sub xnat0($str, $what) {
+    $str=~ /^\d+\z/
+        or die "$myname: given $what argument is not a non-negative integer: ".singlequote_sh($str)."\n";
+    $str + 0
+}
+
+my ($maybe_n, $start) = do {
+    my ($maybe_n, $maybe_start) = @ARGV;
+
+    ( (defined $maybe_n and length $maybe_n) ? xnat0($maybe_n, "n") : undef,
+      defined ($maybe_start) ? xnat0($maybe_start, "start") : 0)
+};
+
+if (defined $maybe_n) {
+    my $n = $maybe_n;
+    my $i = $start;
+    while ($n > 0) {
+        print $i++, "\n"
+            or die "stdout: $!";
+        $n--;
+    }
+} else {
+    my $i = $start;
+    while (1) {
+        print $i++, "\n"
+            or die "stdout: $!";
+    }
+}
