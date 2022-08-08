@@ -80,7 +80,7 @@ GetOptions("verbose"=> \$verbose,
 	my ($s)=@_;
 	if (defined (my $v= $s->maybe_header("from"))) {
 	    if (my ($addr)= $v=~ /<(.*?)>/s) {
-		if ($addr eq 'info@meetup.com') {
+		if ($addr =~ /^info\@(email\.)?meetup\.com\z/) {
 		    # HACK: this address is used for too many things,
 		    # so use the name instead
 		    $v=~ s/<(.*?)>//;
