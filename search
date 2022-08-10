@@ -11,6 +11,15 @@ use lib "/opt/functional-perl/lib"; ## tmp
 #use FP::Repl; use FP::Repl::Trap;#
 #use Chj::Backtrace;#
 
+
+# COPY from meta/bin/update-database
+use Encode;
+sub utf8decode($str) {
+    Encode::decode("UTF-8", $str, Encode::FB_CROAK);
+}
+
+
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
@@ -163,7 +172,8 @@ sub parallel_filter($vec, $proc) {
 use Encode;
 use Chj::Git::Functions qw(git_ls_files);
 use FP::HashSet ":all";
-use Chj::xperlfunc qw(xprintln Xlstat xgetfile_utf8);
+use Chj::xperlfunc qw(Xlstat xgetfile_utf8);
+use Chj::xopen qw(glob_to_fh);
 # why use both array and purearray? XX hashset should be adapted.
 use FP::Array ":all";
 use FP::PureArray ":all";
@@ -207,7 +217,7 @@ sub ignore_suffix($suff) {
 }
 sub ignore($path) {
     $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path) or do {
-        my $filename = basename $path;
+        my $filename = utf8decode basename $path;
         sub {
             for (@opt_ignore_filename) {
                 return 1 if $filename=~ /$_/
@@ -292,7 +302,7 @@ my $fileset_with_links= do {
         ->filtermap(
             sub ($path) {
                 if (my $s= Xlstat $path) {
-                    Info($path, $s)
+                    Info(utf8decode($path), $s)
                 } else {
                     warn "$myname: file in index but not in working dir: '$path'\n"
                         if $opt_warn_deleted;
@@ -308,7 +318,7 @@ my $fileset_with_links= do {
     };
     $filter->(sub ($isdir) { $isdir })->for_each(
         sub ($info) {
-            xprintln "NOTE: ignoring sub-repository: ".$info->path;
+            warn "NOTE: ignoring sub-repository: ".$info->path."\n";
         });
     my %s;
     $filter->(sub ($isdir) { not $isdir })->for_each(
@@ -335,7 +345,7 @@ sub by_contentkey($set) {
 my $fileset = $fileset_with_links;
 
 for my $regex_raw (@ARGV) {
-    my $regex = Encode::decode("UTF-8", $regex_raw, Encode::FB_CROAK);
+    my $regex = utf8decode $regex_raw;
     my $re= $opt_i ? qr/$regex/i : qr/$regex/;
 
     my $fileset2 = hash_key_filter $fileset, sub ($path) {
@@ -423,7 +433,10 @@ if (! $opt_sort_alpha) {
     @k = sort { $fileset->{$a}->mtime <=> $fileset->{$b}->mtime } @k;
 }
 
+my $out = glob_to_fh *STDOUT;
+$out->xbinmode(":utf8");
+
 for my $path (@k) {
-    xprintln $path;
+    $out->xprintln($path);
 }
 
