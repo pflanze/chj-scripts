@@ -53,7 +53,6 @@ GetOptions(
 
 
 use Chj::Git::Functions qw(git_ls_files);
-use Chj::FP::HashSet;
 use Chj::xperlfunc qw(xprint);
 
 my %items=
