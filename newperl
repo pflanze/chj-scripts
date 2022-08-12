@@ -53,11 +53,6 @@ use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
-use Getopt::Long;
-#use Chj::ruse;
-#use Chj::Backtrace; 
-#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
-
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 my ($mydir, $myname);
@@ -65,6 +60,11 @@ BEGIN {
     $0=~ /(.*?)([^\/]+)\z/s or die "?";
     ($mydir, $myname)=($1,$2);
 }
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
