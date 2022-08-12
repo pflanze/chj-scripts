@@ -26,6 +26,7 @@ sub usage {
                    regex
     -i | --insensitive  change regexen to be case insensitive
     -z             terminate printed items with '\0' instead of '\n'
+    --no-dot       do not print the \".\" entry
 
   (Christian Jaeger <$email>)
 ";
@@ -41,15 +42,17 @@ my $opt_dirs;
 my $opt_path;
 my $opt_name;
 my $opt_i;
+my $opt_no_dot;
 GetOptions(
-           "help"=> sub{usage},
-           "z"=> \$opt_z,
-           "files"=> \$opt_files,
-           "dirs"=> \$opt_dirs,
-           "path=s"=> \$opt_path,
-           "name=s"=> \$opt_name,
-           "insensitive"=> \$opt_i,
-          ) or exit 1;
+    "help"=> sub{usage},
+    "z"=> \$opt_z,
+    "files"=> \$opt_files,
+    "dirs"=> \$opt_dirs,
+    "path=s"=> \$opt_path,
+    "name=s"=> \$opt_name,
+    "insensitive"=> \$opt_i,
+    "no-dot"=> \$opt_no_dot,
+    ) or exit 1;
 
 
 use Chj::Git::Functions qw(git_ls_files);
@@ -57,7 +60,7 @@ use Chj::xperlfunc qw(xprint);
 
 my %items=
     (
-     ("."=> 'd'),
+     $opt_no_dot ? () : ("."=> 'd'),
      map {
          die "didn't expect absolute paths"
              if /^\//;
