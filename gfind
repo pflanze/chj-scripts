@@ -25,6 +25,7 @@ sub usage {
     --name regex   only show items whose names match this Perl
                    regex
     -i | --insensitive  change regexen to be case insensitive
+    -z             terminate printed items with '\0' instead of '\n'
 
   (Christian Jaeger <$email>)
 ";
