@@ -25,7 +25,7 @@ BEGIN {
 }
 
 
-my $minorigsize = 100000;
+my $minorigsize = 20000;
 my $mincompression= 0.7;
 my $convlistname = "${myname}-converted-files.txt";
 
