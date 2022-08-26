@@ -42,7 +42,7 @@ sub usage {
   folder of all paths that lists all sub-paths that have been
   converted.
 
-  Retains the file mtime.
+  Retains the file mtime and atime.
 
   Used to save space for saved web pages.
 
@@ -228,7 +228,7 @@ sub con_file($path, $ignore_nonimg_files) {
                     my $factor = $t->size / $s->size;
                     if ($factor < $mincompression) {
                         xxsystem "trash", $path;
-                        xutime time, $s->mtime, $p2;
+                        xutime $s->atime, $s->mtime, $p2;
                         xrename $p2, $path;
                         push @converted_paths, $path;
                     } else {
