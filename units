@@ -123,6 +123,30 @@ our $conv=
 	 "oz."=> $ounce)
     },
     do {
+        my $psi2pa= sub {
+            my ($psi)= @_;
+            $psi * 6.894757e3
+        };
+        my $atm2pa= sub {
+            my ($atm)= @_;
+            $atm * 101325
+        };
+        my $toall= sub {
+            my ($given2pa)= @_;
+            sub {
+                my ($given)= @_;
+                my $Pa = $given2pa->($given);
+                my $psi = $Pa / 6.894757e3;
+                my $atm = $Pa / 101325;
+                "$given $myname = $Pa Pa, $atm atm, $psi psi"
+            }
+        };
+        (psi=> &$toall($psi2pa),
+         atm=> &$toall($atm2pa),
+         Pa=> &$toall(sub{$_[0]})
+        )
+    },
+    do {
         my $convert = sub {
             my ($amount) = @_;
             my $from = $myname;
