@@ -561,7 +561,7 @@ sub mount_easily {
     {
 	# fsck: (as a side effect, thus in a sub scope.)
 	my $fstype = $opt_type || do {
-	    my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem/;
+	    my ($fstype)= $device_fileinfo=~ /\b(\w+) filesystem/i;
 	    $fstype
 	};
 	if ($fstype) {
