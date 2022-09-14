@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for file in "$@"; do
+    xml-to-sexpr < "$file" | gsi -:tE,dar,t8,f8,-8 -e '
+(define (last l)
+   (let ((r (cdr l)))
+       (if (null? r)
+           (car l)
+           (last r))))
+(let* ((doc (read))
+       ;; cheap out, just take last, it should be a (trk )
+       (trk (last doc))
+       (trkseg (last trk))
+       (trkpt (last trkseg))
+       (atts (cdr (cadr trkpt)))
+       ;; assume lat then lon, as saved by OSRM website
+       (coords (map cadr atts)))
+   (display (car coords))
+   (display ", ")
+   (display (cadr coords))
+   (newline))
+'
+done
