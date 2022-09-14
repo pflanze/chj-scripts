@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+for file in "$@"; do
+    ## todo: do not escape unicode.
+    xml-to-sexpr < "$file" | gsi -:tE,dar,t8,f8,-8 -e '(pretty-print (read))'
+done
