@@ -250,7 +250,7 @@ sub _pr {
             if (@replacements==0) {
                 # check if cities are mentioned:
                 my @replacements = map {
-                    my $n = $str=~ s/\b$_\b/UTC/sgi;
+                    my $n = $str=~ s/(?:\b|(?!\d))$_(?:\b|(?=\d))/ UTC /sgi;
                     # UTC is the hack so that we can do offset
                     # ourselves, right?
                     if ($n) {
