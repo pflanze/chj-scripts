@@ -17,12 +17,17 @@ sub usage {
 
     ".join("\n    ", @keyrings)."
 
+  Options:
+    -v | --verbose
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
 usage if (@ARGV and $ARGV[0] =~ /^--?h(elp)?$/);
+my $verbose = (@ARGV and $ARGV[0] =~ /^--?v(erbose)?$/);
+shift @ARGV if $verbose;
 
 use Chj::xperlfunc ':all';
 use Chj::xhome;
@@ -56,7 +61,7 @@ for my $path (@keyrings) {
     }
 }
 
-xexec(
+my @cmd = (
      "gpg",
      (
       map {
@@ -66,3 +71,8 @@ xexec(
      @ARGV
     );
 
+if ($verbose) {
+    print STDERR "+ @cmd\n";
+}
+
+xexec @cmd;
