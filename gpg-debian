@@ -4,55 +4,25 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
+my @keyrings= glob "/usr/share/keyrings/*.gpg";
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname $myname [keyindex,...] args...
+    print "$myname $myname args...
 
-  invoke gpg with all the keyrings that Debian (as of >etch) provides.
+  Invoke gpg with all the keyrings that Debian (as of >etch) provides
+  and which are installed on the running system, which are:
 
-  By giving a comma separated list of numbers you can choose which
-  ones to take; by default all of them are taken.
+    ".join("\n    ", @keyrings)."
 
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
 }
 
-my @indexes= do {
-    if (@ARGV) {
-	my $first= $ARGV[0];
-	if ($first=~ /^(?:\d+,)*\d+\z/) {
-	    shift @ARGV;
-	    split /,/,$first
-	} else {
-	    ()
-	}
-    } else {
-	()
-    }
-};
-
 usage if (@ARGV and $ARGV[0] =~ /^--?h(elp)?$/);
-
-
-my @debian_keyrings=
-  (
-   ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
-   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
-   ["debian-keyring"=> "/usr/share/keyrings/debian-role-keys.gpg"],
-   ["debian-keyring"=> "/usr/share/keyrings/debian-nonupload.gpg"],
-   ["debian-maintainers"=> "/usr/share/keyrings/debian-maintainers.gpg"],
-   ["debian-keyring"=> "/usr/share/keyrings/debian-keyring.gpg"],
-  );
-
-if (@indexes) {
-    @debian_keyrings= @debian_keyrings[@indexes];
-    use Data::Dumper;
-    print "taking keys:\n".Dumper(\@debian_keyrings);
-}
-
 
 use Chj::xperlfunc ':all';
 use Chj::xhome;
@@ -71,10 +41,7 @@ sub copy {
     xxsystem "cp","--",$from,$to
 }
 
-for (@debian_keyrings) {
-    my ($pack,$path)=@$_;
-    -r $path
-      or die "can't read keyring '$path': $!; please apt-get install $pack";
+for my $path (@keyrings) {
     my $cpath= path2copypath $path;
     my $a= xstat $path;
     if (my $b= Xlstat $cpath) {
@@ -93,9 +60,8 @@ xexec(
      "gpg",
      (
       map {
-	  my ($pack,$path)=@$_;
-	  ("--keyring", path2copypath($path))
-      } @debian_keyrings
+	  ("--keyring", path2copypath($_))
+      } @keyrings
      ),
      @ARGV
     );
