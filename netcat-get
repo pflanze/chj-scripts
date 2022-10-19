@@ -18,7 +18,9 @@ elif have nc.openbsd; then
     # nc.openbsd neither works without -q option nor supports -q-1,
     # nor does -q0 mean infinite, thus need to use a big enough number
     # of seconds
-    nc.openbsd -q999999999 "$@"
+    # Wed 19 Oct 22:31:29 CEST 2022: now -q999999999 doesn't work anymore.
+    # Have they fixed it? In a backwards incompatible way?
+    nc.openbsd "$@"
 else
     echo "cannot find nc.traditional nor nc.openbsd" >&2
     exit 1
