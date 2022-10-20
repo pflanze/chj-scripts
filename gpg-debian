@@ -18,7 +18,7 @@ sub usage {
     ".join("\n    ", @keyrings)."
 
   Options:
-    -v | --verbose
+    --verbose
 
   (Christian Jaeger <$email>)
 ";
@@ -26,7 +26,7 @@ exit (@_ ? 1 : 0);
 }
 
 usage if (@ARGV and $ARGV[0] =~ /^--?h(elp)?$/);
-my $verbose = (@ARGV and $ARGV[0] =~ /^--?v(erbose)?$/);
+my $verbose = (@ARGV and $ARGV[0] =~ /^--verbose$/);
 shift @ARGV if $verbose;
 
 use Chj::xperlfunc ':all';
