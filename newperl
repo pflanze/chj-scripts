@@ -5,7 +5,7 @@
 
 use strict;
 use warnings FATAL => 'uninitialized';
-use experimental 'signatures';
+#use experimental 'signatures';
 
 my ($mydir, $myname);
 BEGIN {
@@ -41,7 +41,7 @@ use Chj::xperlfunc qw(xexec);
 
 my $email_full= email_full();
 
-sub script_template () {
+sub script_template {
     my $main= <<'END'
 my $copyright= <<'COPYRIGHT';
 $COPY
@@ -92,7 +92,8 @@ END
     join("\n", shebang(), $main)
 }
 
-sub newperl ($path) {
+sub newperl {
+    my ($path)= @_;
     if (-f $path) {
         warn "$myname: file already exists, leave unchanged: '$path'\n";
         return
