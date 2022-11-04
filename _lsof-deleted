@@ -24,6 +24,13 @@ sub usage {
   own stat calls, too, see source) and ignoring uninteresting paths,
   too.)
 
+  Options:
+    --verbose
+    --more     Show cases of deleted files which could not have been
+               touched by system package upgrades, too (e.g. in
+               home directories). By default only cases caused by system
+               upgrades are considered.
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
@@ -31,8 +38,10 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+my $opt_more=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "more"=> sub { $opt_more++ },
 	   ) or exit 1;
 #usage unless @ARGV;
 
@@ -108,6 +117,7 @@ sub process_entry {
 	or $path=~ m{^/home/\w+/\.(config|cache)/dconf/user$}
 	or $path=~ m{^/memfd:}
 	or $path=~ m{^/usr/share/.*\.cache$}
+        or ($path=~ m{^/home/} and not $opt_more)
        ) {
 	# suppress
     } else {
