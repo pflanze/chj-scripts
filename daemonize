@@ -36,7 +36,7 @@ our $logfile;
 our $opt_quiet;
 our $opt_no_error_if_running;
 our $signal=15; # SIGTERM
-our ($opt_STOP, $opt_CONT);
+our ($opt_STOP, $opt_CONT, $opt_KILL);
 our $opt_hash_input;
 our $opt_list;
 our $opt_multilog;
@@ -44,7 +44,7 @@ our $opt_multilog_n= 1000;
 our $opt_multilog_s= 40000;
 our $opt_shorthelp;
 
-my @actions= qw(help --help -h stop kill start restart status STOP CONT cont);
+my @actions= qw(help --help -h stop kill start restart status KILL STOP CONT cont);
 my %is_action= map{$_=>1} @actions;
 
 sub parse_action {
@@ -63,6 +63,8 @@ sub parse_action {
 	$opt_status=1;
     } elsif ($a eq 'STOP') {
 	$opt_STOP=1;
+    } elsif ($a eq 'KILL') {
+	$opt_KILL=1;
     } elsif ($a eq 'CONT' or $a eq 'cont') {
 	$opt_CONT=1;
     } else {
@@ -248,9 +250,9 @@ unless ($usage) { # no defined: only avoid if an *error* parsing the
 	$a + $b
     };
     my $n= array_fold $add, 0,
-      [map { $_ ? 1 : 0 } ($opt_stop, $opt_STOP, $opt_CONT)];
+      [map { $_ ? 1 : 0 } ($opt_stop, $opt_STOP, $opt_CONT, $opt_KILL)];
     if ($n > 1) {
-	$usage = "can only take one of --stop, --STOP, and --CONT at a time"
+	$usage = "can only take one of --stop, --KILL, --STOP, and --CONT at a time"
     }
 }
 
@@ -292,7 +294,8 @@ sub usage {
   -l|--list      show all running daemons
 
   --signal N  use signal N instead of default $signal
-  --STOP      send SIGSTOP (and no SIGKILL afterwards)
+  --STOP      send SIGSTOP
+  --KILL      send SIGKILL right away
   --CONT|--cont  send SIGCONT
 
   --action <actionname>
@@ -457,10 +460,14 @@ sub stop {
     }
 }
 
-sub STOP_or_CONT {
+sub SIGNAL {
     my ($user,$hostname,$ip,$pid)=
-      Chj::Unix::DaemonRunfile->new($runfile)->readfile;
-    my $signal= $opt_STOP ? 19 : 18; # XXX Linux specific. Derive from names.
+        Chj::Unix::DaemonRunfile->new($runfile)->readfile;
+    # XXX todo Linux specific. Derive from names.
+    my $signal=
+        $opt_STOP ? 19 :
+        $opt_KILL ? 9 :
+        18;
     xkill -$signal,$pid;
 }
 
@@ -585,8 +592,8 @@ if ($opt_stop) {
     stop if is_running; # XXX: of course that's bad, since there's a
                         # race window to get an exception!
     start;
-} elsif ($opt_STOP or $opt_CONT) {
-    STOP_or_CONT;
+} elsif ($opt_STOP or $opt_CONT or $opt_KILL) {
+    SIGNAL;
 } elsif ($opt_status) {
     my $stat= do {
 	if (is_running) {
