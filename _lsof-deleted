@@ -30,6 +30,8 @@ sub usage {
                touched by system package upgrades, too (e.g. in
                home directories). By default only cases caused by system
                upgrades are considered.
+    --style-friendly  show in a grouped manner (default)
+    --style-lsof      show in an lsof-like style ('denormalized' in lines)
 
   (Christian Jaeger <$email>)
 ";
@@ -37,11 +39,14 @@ exit (@_ ? 1 : 0);
 }
 
 use Getopt::Long;
-our $verbose=0;
-my $opt_more=0;
+our $verbose = 0;
+my $opt_more = 0;
+my $style = "friendly";
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "more"=> sub { $opt_more++ },
+           "style-lsof" => sub { $style = "lsof" },
+           "style-friendly" => sub { $style = "friendly" },
 	   ) or exit 1;
 #usage unless @ARGV;
 
@@ -98,7 +103,9 @@ our $ignore=
      '/SYSV00000000',
      '/drm mm object',
      perhaps_chase ('/usr/share/icons/hicolor/icon-theme.cache'),
-   };
+};
+
+our %friendly_us; # u => c => p => path => undef
 
 sub process_entry {
     my ($h)=@_;
@@ -121,16 +128,24 @@ sub process_entry {
        ) {
 	# suppress
     } else {
-	my $report= sub {
-	    xprint( JustifyLeft(15, $$h{c}),
-		    " ",
-		    JustifyRight(7, $$h{p}),
-		    " ",
-		    JustifyLeft(15, Username($$h{u})),
-		    " ",
-		    $path,
-		    "\n");
-	};
+        my $report= (
+            $style eq "lsof" ?
+            sub {
+                xprint( JustifyLeft(15, $$h{c}),
+                        " ",
+                        JustifyRight(7, $$h{p}),
+                        " ",
+                        JustifyLeft(15, Username($$h{u})),
+                        " ",
+                        $path,
+                        "\n");
+            } :
+            $style eq "friendly" ?
+            sub {
+                # record for grouped display at the end
+                $friendly_us{$$h{u}}{$$h{c}}{$$h{p}}{$path} = undef;
+            } :
+            die "bug");
 	if ($rely_on_lsof_DEL) {
 	    if ($$f{f} eq "DEL") {
 		&$report;
@@ -200,6 +215,28 @@ while (<$in>) {
 }
 
 $in->xxfinish; # yeah gell better than in the shell where this is verschluckt.
+
+
+if ($style eq "friendly") {
+    for my $u (sort keys %friendly_us) {
+        xprint "User: $u\n";
+        my $cs = $friendly_us{$u};
+        for my $c (sort keys %$cs) {
+            xprint "  Program: $c\n";
+            my $ps = $cs->{$c};
+            for my $p (sort { $a <=> $b } keys %$ps) {
+                xprint "    Process ID: $p\n";
+                my $paths = $ps->{$p};
+                for my $path (sort keys %$paths) {
+                    xprint "      $path\n";
+                }
+            }
+        }
+    }
+    #use Data::Dumper; print Dumper(\%friendly_cs);
+    #use FP::Repl; repl;
+}
+
 
 #use Chj::ruse;
 #use Chj::Backtrace; use Chj::repl; repl;
