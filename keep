@@ -70,14 +70,14 @@ my $inbetween=".";
 sub xrename($$) {
     my ($a,$b)=@_;
     -e $b and die "target '$b' exists, will not overwrite!\n";
-    # obiges is zwar raceconditionprone aber easier als mit temporary hardlinks, weil sons gehts nich mit directories, right?.
     rename $a,$b or die "could not rename '$a' to '$b': $!\n";
 }
 sub xcopy($$) {
     my ($a,$b)=@_;
     -e $b and die "target '$b' exists, will not overwrite!\n";
     if ($opt_t) {
-	#xlinkunlink $a,$b; shit that doesn't work with paranoid grsecurity. and since we already checked target path anyway, we just do:
+	# xlinkunlink $a, $b; doesn't work with grsecurity.
+        # We already checked target path, so can ~safely do:
 	xrename $a,$b;
 	xxsystem "/bin/cp","-a","--",$b,$a;
     } else {
@@ -87,18 +87,13 @@ sub xcopy($$) {
 }
 sub _cleaneditem {
     my ($item)=@_; # might also be a dir
-    #$item=~ s|/+$||s; # strip ending slash
-    #$item= "./$item" unless $item=~ m|/|; ###soviel zu portabilität.
-    #-e $item or die "item '$item' does not exist\n";
-    #$item
     xrealpath $item;
 }
 
 sub rotate($) {
     my $item= _cleaneditem(@_);
-    my $dir=FolderOfThisFile($item); ###btw should be called FolderOfThisItem !!!!
-    ###und filename auch gleich liefern ey.
-    my $itemname= Filename($item); ### sollte Itemname heissen!!!
+    my $dir=FolderOfThisFile($item);
+    my $itemname= Filename($item);
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my %takennumbers;
     while (defined (local $_=readdir DIR)){
@@ -116,11 +111,8 @@ sub rotate($) {
 	$oldname=$newname=$takennumbers{$_};
 	my $newnumber= $_+1;
 	$newname=~ s/(\Q$itemname\E\.)\d+(.*)/$1$newnumber$2/s or die "BUG";
-	#xrename "$item.$_","$item.".($_+1);
 	xrename $oldname,$newname;
     }
-    #xrename $item, "$item.1"; ## well, sollte ich null verwenden?
-    #xcopy "$item.1",$item;
     xcopy $item,"$item.1$opt_append";
 }
 
@@ -131,8 +123,7 @@ sub keep($) {
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my $usenumber=1;
     while (defined (local $_=readdir DIR)){
-	#if (/^\Q$itemname\E\.(\d)(?:[_ :-]|$)/s) { ## auch fortführung möglich
-	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) { ## auch fortführung möglich
+	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) {
 	    # found a backup item.
 	    if ($1 >= $usenumber){
 		$usenumber= $1+1;
@@ -146,11 +137,3 @@ for(@files){
     $opt_r ? rotate($_) : keep($_);
 }
 
-__END__
-
-Brauchts nun auch ein 'unkeep', für wenn fehler gemacht?
-Und eben norm nich rotate son raufzahl.
-
-	 Idee:
-	 Flag "-n" für explizite Nummervergabe. Trotzdem alle files durchgehn
-	 als Kontrolle.  UND: zuerst ALLE Items durchkontrollieren und erst DANN die Aktion erledigen wenn alles ok scheint. Transaktig.
