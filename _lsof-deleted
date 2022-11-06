@@ -51,12 +51,37 @@ GetOptions("verbose"=> \$verbose,
 #usage unless @ARGV;
 
 
-sub Username {
+sub uid_to_possibly_username {
     my ($uid)=@_;
     if(my $nam= getpwuid($uid)) {# [is this slow?shouldIcache?]
 	$nam
     } else {
-	"<$uid>" #wl.or just $uid?
+	$uid # "<$uid>" ?
+    }
+}
+
+
+sub pid_to_programname_orelse {
+    my ($pid, $orelse)= @_;
+    # /proc/2710/exe -> /usr/libexec/gvfs-udisks2-volume-monitor
+    # /proc/3061/exe -> /usr/bin/emacs-gtk
+    # or
+    # cat /proc/2710/cmdline |tr '\0' '\n'|head -1  =>  same
+    # cat /proc/3061/cmdline |tr '\0' '\n'|head -1  => emacs
+    my ($_pid) = $pid=~ /^(\d+)\z/ or die "bug";
+    if (open my $in, "<", "/proc/$_pid/cmdline") {
+        local $/ = "\0";
+        my $cmd0 = <$in>;
+        chomp $cmd0;
+        close $in or die $!;
+        $cmd0=~ s{.*/}{}s;
+        if (defined (my $l = readlink "/proc/$_pid/exe")) {
+            "$cmd0 ($l)"
+        } else {
+            $cmd0
+        }
+    } else {
+        $orelse
     }
 }
 
@@ -135,7 +160,7 @@ sub process_entry {
                         " ",
                         JustifyRight(7, $$h{p}),
                         " ",
-                        JustifyLeft(15, Username($$h{u})),
+                        JustifyLeft(15, uid_to_possibly_username($$h{u})),
                         " ",
                         $path,
                         "\n");
@@ -143,7 +168,15 @@ sub process_entry {
             $style eq "friendly" ?
             sub {
                 # record for grouped display at the end
-                $friendly_us{$$h{u}}{$$h{c}}{$$h{p}}{$path} = undef;
+                $friendly_us{
+                    uid_to_possibly_username $$h{u}
+                }{
+                    pid_to_programname_orelse($$h{p}, $$h{c})
+                }{
+                    $$h{p}
+                }{
+                    $path
+                } = undef;
             } :
             die "bug");
 	if ($rely_on_lsof_DEL) {
@@ -225,10 +258,10 @@ if ($style eq "friendly") {
             xprint "  Program: $c\n";
             my $ps = $cs->{$c};
             for my $p (sort { $a <=> $b } keys %$ps) {
-                xprint "    Process ID: $p\n";
+                xprint "    Process: $p\n";
                 my $paths = $ps->{$p};
                 for my $path (sort keys %$paths) {
-                    xprint "      $path\n";
+                    xprint "      File: $path\n";
                 }
             }
         }
