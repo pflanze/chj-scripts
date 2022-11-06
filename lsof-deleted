@@ -3,6 +3,6 @@
 set -euo pipefail
 IFS=
 
-_lsof-deleted "$@" | once | less --quit-if-one-screen
+_lsof-deleted "$@" | less --quit-if-one-screen
 
 # Was once really needed? Can't replicate duplication case right now.
