@@ -4,8 +4,12 @@
 
 use strict;
 
+use Chj::Cwd::realpath qw(xrealpath);
+use Chj::xperlfunc qw(xlinkunlink xxsystem dirname basename xprintln);
+
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
+
 sub usage {
     print "$myname file(s)
   Keeps a version of the mentioned file(s).
@@ -25,7 +29,7 @@ sub usage {
   With -r, if there are holes in the numbering chain, it doesn't matter,
   it will move the numbers all the same.
 ";
-exit @_;
+    exit @_;
 }
 
 my @files;
@@ -34,7 +38,7 @@ my $opt_r;
 my $opt_append="";
 my $opt_t;
 our $verbose;
-for (my $i=0; $i<=$#ARGV; $i++) {
+for (my $i=0; $i <= $#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
     	usage
@@ -60,31 +64,35 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @files;
 
-use Chj::Cwd::realpath qw(xrealpath);
-use Chj::xperlfunc qw(xlinkunlink xxsystem dirname basename);
-
-my $inbetween=".";
+my $inbetween= ".";
 
 sub xrename($$) {
-    my ($a,$b)=@_;
-    -e $b and die "target '$b' exists, will not overwrite!\n";
-    rename $a,$b or die "could not rename '$a' to '$b': $!\n";
+    my ($a, $b)= @_;
+    if (-e $b) {
+        die "target '$b' exists, will not overwrite!\n";
+    }
+    rename $a, $b
+        or die "could not rename '$a' to '$b': $!\n";
 }
+
 sub xcopy($$) {
-    my ($a,$b)=@_;
-    -e $b and die "target '$b' exists, will not overwrite!\n";
+    my ($a, $b)= @_;
+    if (-e $b) {
+        die "target '$b' exists, will not overwrite!\n";
+    }
     if ($opt_t) {
 	# xlinkunlink $a, $b; doesn't work with grsecurity.
         # We already checked target path, so can ~safely do:
-	xrename $a,$b;
-	xxsystem "/bin/cp","-a","--",$b,$a;
+	xrename $a, $b;
+	xxsystem "/bin/cp", "-a", "--", $b, $a;
     } else {
-	xxsystem "/bin/cp","-a","--",$a,$b;
+	xxsystem "/bin/cp", "-a", "--", $a, $b;
     }
-    print $b,"\n" or die "printing to stdout: $!" if $verbose;
+    xprintln $b if $verbose;
 }
+
 sub _cleaneditem {
-    my ($item)=@_; # might also be a dir
+    my ($item)= @_; # might also be a dir
     xrealpath $item;
 }
 
@@ -92,35 +100,38 @@ sub rotate($) {
     my $item= _cleaneditem(@_);
     my $dir= dirname($item);
     my $itemname= basename($item);
-    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    opendir DIR, $dir
+        or die "could not open dir '$dir' for reading: $!";
     my %takennumbers;
-    while (defined (local $_=readdir DIR)){
+    while (defined (local $_= readdir DIR)) {
 	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) {
 	    # found a (probable) backup item.
 	    if (exists $takennumbers{$1}) {
-		die "Problem: '$_' uses same backup number as '$takennumbers{$1}'. Terminating.\n";
+		die "'$_' uses same backup number as '$takennumbers{$1}'";
 	    }
 	    $takennumbers{$1}= $_;
 	}
     }
     closedir DIR or die "error closing dir: $!";
-    for (sort {$b<=>$a} keys %takennumbers) {
-	my ($newname,$oldname);
-	$oldname=$newname=$takennumbers{$_};
+    for (sort { $b <=> $a } keys %takennumbers) {
+	my ($newname, $oldname);
+	$oldname= $newname= $takennumbers{$_};
 	my $newnumber= $_+1;
-	$newname=~ s/(\Q$itemname\E\.)\d+(.*)/$1$newnumber$2/s or die "BUG";
-	xrename $oldname,$newname;
+	$newname=~ s/(\Q$itemname\E\.)\d+(.*)/$1$newnumber$2/s
+            or die "BUG";
+	xrename $oldname, $newname;
     }
-    xcopy $item,"$item.1$opt_append";
+    xcopy $item, "$item.1$opt_append";
 }
 
 sub keep($) {
     my $item= _cleaneditem(@_);
     my $dir= dirname($item);
     my $itemname= basename($item);
-    opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
+    opendir DIR, $dir
+        or die "could not open dir '$dir' for reading: $!";
     my $usenumber=1;
-    while (defined (local $_=readdir DIR)){
+    while (defined (local $_= readdir DIR)) {
 	if (/^\Q$itemname\E\.(\d{1,4})(?:_|\z)/s) {
 	    # found a backup item.
 	    if ($1 >= $usenumber){
@@ -128,10 +139,10 @@ sub keep($) {
 	    }
 	}
     }
-    xcopy $item,"$item.$usenumber$opt_append";
+    xcopy $item, "$item.$usenumber$opt_append";
 }
 
-for(@files){
+for (@files) {
     $opt_r ? rotate($_) : keep($_);
 }
 
