@@ -60,10 +60,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 }
 usage unless @files;
 
-use lib "/opt/chj/perllib";
-use Filepaths;
-use Chj::Cwd::realpath;
-use Chj::xperlfunc qw(xlinkunlink xxsystem);
+use Chj::Cwd::realpath qw(xrealpath);
+use Chj::xperlfunc qw(xlinkunlink xxsystem dirname basename);
 
 my $inbetween=".";
 
@@ -92,8 +90,8 @@ sub _cleaneditem {
 
 sub rotate($) {
     my $item= _cleaneditem(@_);
-    my $dir=FolderOfThisFile($item);
-    my $itemname= Filename($item);
+    my $dir= dirname($item);
+    my $itemname= basename($item);
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my %takennumbers;
     while (defined (local $_=readdir DIR)){
@@ -118,8 +116,8 @@ sub rotate($) {
 
 sub keep($) {
     my $item= _cleaneditem(@_);
-    my $dir=FolderOfThisFile($item);
-    my $itemname= Filename($item);
+    my $dir= dirname($item);
+    my $itemname= basename($item);
     opendir DIR,$dir or die "could not open dir '$dir' for reading: $!";
     my $usenumber=1;
     while (defined (local $_=readdir DIR)){
