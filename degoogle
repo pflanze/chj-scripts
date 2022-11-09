@@ -53,7 +53,8 @@ sub degoogle {
     if (($encurl)= $str=~ m/(?:(?:url|redirect)\?|&)q=([^&].*?)(?:\&|$)/) {
         # redirect is for youtube
 	decode_print $encurl;
-    } elsif (($encurl)= $str=~ m/(?:url\?|&)url=([^&].*?)(?:\&|$)/) {
+    } elsif (($encurl)= $str=~ m/[?&](?:url|uddg)=([^&].*?)(?:\&|$)/) {
+        # uddg is for DDG
 	decode_print $encurl;
     } else {
 	if ($opt_passthrough) {
