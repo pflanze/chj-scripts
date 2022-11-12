@@ -15,7 +15,8 @@ use Chj::username;
 sub usage {
     print "$myname
 
-  Adds an entry to debian/changelog with the current username, email, time.
+  Adds an entry to debian/changelog with the current username, email, time,
+  and the current release name from deb-src in the apt sources.list.
 ";
 exit @_;
 }
@@ -69,9 +70,25 @@ $firstline=~ s/^([^()]*\([^()]*)\)/$1.$initials\)/
 
 my $date= `date -R`;
 
+my $release= $ENV{DEBIAN_RELEASE} || do {
+    my @release = (
+        map {
+            my @f = split /\s+/;
+            $f[2]
+        }
+        grep {
+            /^deb-src\s/
+        }
+        split /\n/,
+        xgetfile_utf8 "/etc/apt/sources.list");
+    @release == 1 ?
+        $release[0]
+        : die "expecting exactly one deb-src line in /etc/apt/sources.list, but got ".@release."; please provide DEBIAN_RELEASE env var with the release name instead";
+};
+
 $a= "$firstline
 
-  * recompiled from testing
+  * recompiled from $release
 
  -- $userfullname <$email>  $date
 $a";
