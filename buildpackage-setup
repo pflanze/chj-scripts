@@ -6,36 +6,36 @@ use strict;
 
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
+
+use Chj::xIOUtil qw(xgetfile_utf8 xputfile_utf8);
+use Chj::Mailfrom 'mailfromaddress';
+use Chj::userfullname;
+use Chj::username;
+
 sub usage {
-	print "$myname
-  Setzt den usernamen und email und so ins debian/changelog rein.
+    print "$myname
+
+  Adds an entry to debian/changelog with the current username, email, time.
 ";
 exit @_;
 }
 
 my @files;
 for (my $i=0; $i<=$#ARGV; $i++) {
-	local $_=$ARGV[$i];
-	if (/^--?h(elp)?$/) {
-		usage
-	} elsif ($_ eq '--') {
-		push @files, @ARGV[$i+1..$#ARGV];
-		last;
-	} elsif (/^-/) {
-		warn "Unknown option '$_'\n";
-		usage(1)
-	} else {
-		push @files, $_
-	}
+    local $_=$ARGV[$i];
+    if (/^--?h(elp)?$/) {
+        usage
+    } elsif ($_ eq '--') {
+        push @files, @ARGV[$i+1..$#ARGV];
+        last;
+    } elsif (/^-/) {
+        warn "Unknown option '$_'\n";
+        usage(1)
+    } else {
+        push @files, $_
+    }
 }
 usage if @files;
-
-use lib "/opt/chj/perllib";
-use Chj::fileutils qw(fetchfile writebackfile);
-
-use Chj::Mailfrom 'mailfromaddress';
-use Chj::userfullname;
-use Chj::username;
 
 our $userfullname= userfullname;
 our $initials= do {
@@ -48,32 +48,33 @@ our $initials= do {
 our $email= mailfromaddress;
 
 
-my $a= fetchfile "debian/changelog";
+my $a= xgetfile_utf8 "debian/changelog";
 
-$$a=~ /^(.*)(?:\n\S|$)/s or die "Strange format in changelog";
+my ($first) = $a=~ /^(.*)(?:\n\S|$)/s
+    or die "Strange format in changelog";
 
-my $first=$1;
+my ($firstuser) = $first=~ /\n -- ([^\n]*)/
+    or die "invalid format";
 
-$first=~ /\n -- ([^\n]*)/ or die "invalid format";
-my $firstuser=$1;
 if ($firstuser=~ /$userfullname/) {
-  die "Scheint bereits angepasst worden zu sein. Breche ab.\n";
+    warn "debian/changelog seems to already have been changed, cancelling.\n";
+    exit 0;
 }
 
-$$a=~ /^([^\n]+)/s or die "invalid format";
+my ($firstline) = $a=~ /^([^\n]+)/s
+    or die "invalid format";
 
-my $firstline= $1;
-
-$firstline=~ s/^([^()]*\([^()]*)\)/$1.$initials\)/ or die "invalid format: vermisse versionsangabe in klammern";
+$firstline=~ s/^([^()]*\([^()]*)\)/$1.$initials\)/
+    or die "invalid format: missing version in parens";
 
 my $date= `date -R`;
 
-$$a= "$firstline
+$a= "$firstline
 
   * recompiled from testing
 
  -- $userfullname <$email>  $date
-$$a";
+$a";
 
-writebackfile("debian/changelog",$a);
+xputfile_utf8 "debian/changelog", $a;
 
