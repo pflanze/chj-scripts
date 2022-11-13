@@ -287,7 +287,10 @@ sub usage {
   -b|--bg     do not wait for the daemon to terminate
   --start     same as --bg but don't print pid
   --wait      wait until the app (started in a different $myname invocation)
-              has stopped
+              has stopped, which is immediately if it's not running or
+              has never been started (Note: this will *not* run it
+              afterwards, unless --start is also given;
+              i.e. foreground default behaviour is turned off)
   --waitstart wait until the app has stopped, then start it
   -s|--stop|-k|--kill
               stop the previously started daemon; you have to give
@@ -641,7 +644,13 @@ if ($opt_stop) {
 } elsif ($opt_list) {
     list_daemons;
 } else {
-    possibly_wait;
-    start;
+    if ($opt_wait) {
+        possibly_wait;
+        if ($opt_start) {
+            start;
+        }
+    } else {
+        start;
+    }
 }
 
