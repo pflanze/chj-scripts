@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2004-2021 Christian Jaeger, published under the same terms
+# Copyright 2004-2022 Christian Jaeger, published under the same terms
 # as Perl 5
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
@@ -27,8 +27,8 @@ use Chj::xtmpfile;
 use Chj::xhome;
 
 my $usage;
-my ($opt_stop, $opt_start, $opt_bg, $opt_nice, $opt_restart, $opt_status,
-    $opt_noask);
+my ($opt_stop, $opt_start, $opt_wait, $opt_restart, $opt_status,
+    $opt_bg, $opt_nice, $opt_noask);
 my $runbase="(only calculated if cmd/arguments given)";
 my $basedir= xhome."/.daemonize-run";
 our $maxwait=3;#seconds
@@ -44,7 +44,8 @@ our $opt_multilog_n= 1000;
 our $opt_multilog_s= 40000;
 our $opt_shorthelp;
 
-my @actions= qw(help --help -h stop kill start restart status KILL STOP CONT cont);
+my @actions= qw(help --help -h stop kill start wait waitstart
+                restart status KILL STOP CONT cont);
 my %is_action= map{$_=>1} @actions;
 
 sub parse_action {
@@ -56,6 +57,11 @@ sub parse_action {
     } elsif ($a eq 'stop' or $a eq 'kill') {
 	$opt_stop=1;
     } elsif ($a eq 'start') {
+	$opt_start=1;
+    } elsif ($a eq 'wait') {
+	$opt_wait=1;
+    } elsif ($a eq 'waitstart') {
+	$opt_wait=1;
 	$opt_start=1;
     } elsif ($a eq 'restart') {
 	$opt_restart=1;
@@ -280,6 +286,9 @@ sub usage {
 
   -b|--bg     do not wait for the daemon to terminate
   --start     same as --bg but don't print pid
+  --wait      wait until the app (started in a different $myname invocation)
+              has stopped
+  --waitstart wait until the app has stopped, then start it
   -s|--stop|-k|--kill
               stop the previously started daemon; you have to give
               the exact same arguments.
@@ -460,6 +469,31 @@ sub stop {
     }
 }
 
+sub possibly_wait {
+    if ($opt_wait) {
+
+        # XX Shouldn't this rely on the lock instead? (Same above in
+        # `stop`). Pending rewrite of the whole thing? (Is kill or the
+        # lock more reliable, though?)
+        eval {
+            my ($user,$hostname,$ip,$pid)=
+                Chj::Unix::DaemonRunfile->new($runfile)->readfile;
+            my $sleeptime = 0.05;
+            while ((kill 0,$pid) # for portability only, if it helps even
+                        or
+                   (kill 0,-$pid)) {
+                sleep $sleeptime;
+                $sleeptime *= 1.005;
+                #warn "sleeptime= $sleeptime";#
+            }
+            1
+        } || do {
+            my $e = $@;
+            die $e unless ($e=~ /not currently locked|No such file or directory/i);
+        }
+    }
+}
+
 sub SIGNAL {
     my ($user,$hostname,$ip,$pid)=
         Chj::Unix::DaemonRunfile->new($runfile)->readfile;
@@ -607,6 +641,7 @@ if ($opt_stop) {
 } elsif ($opt_list) {
     list_daemons;
 } else {
+    possibly_wait;
     start;
 }
 
