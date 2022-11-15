@@ -1,5 +1,9 @@
 #!/bin/bash
 
-for f in "$@"; do
-    xxd < "$f" | less
-done
+if [ $# -eq 0 ]; then
+    xxd | less
+else
+    for f in "$@"; do
+        xxd < "$f" | less
+    done
+fi
