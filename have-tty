@@ -1,0 +1,3 @@
+#!/bin/bash
+
+{ echo -n > /dev/tty; } 2> /dev/null
