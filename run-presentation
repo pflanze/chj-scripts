@@ -41,6 +41,12 @@ usage unless @ARGV;
 system("init-xscreensaver", "stop");
 system("init-xwrits-mine", "stop");
 
+my $lightlocker_pid = fork; defined $lightlocker_pid or die "fork: $!";
+unless ($lightlocker_pid) {
+    exec "light-locker-command", "--inhibit";
+    exit 1;
+}
+
 {
     local $^F = 999999;
     pipe(R, W)
@@ -61,8 +67,13 @@ if ($pid) {
     setsid or die "setsid: $!";
     my $_firstline = <R>;
     # This might be EOF, or "done\n", but in either case:
+
+    # Restore
+
+    kill "INT", $lightlocker_pid;
     system("init-xscreensaver", "start");
     system("init-xwrits-mine", "start");
+
     # warn "done";
     exit(0);
 }
