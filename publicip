@@ -18,11 +18,14 @@ sub usage {
   May return 0 but still no ip: if all checked interfaces were
   ok but none of them didn't look like a private net.
 
+  Exits with an error if no IP could be given.
+
   Options:
 
   -f   If given, and no non-privetly looking ip is found, the first
        privately looking ip is printed.
   -a   All found ips are shown, not just publicly looking ones.
+       In this case, no error is reported if no IP was given.
   -i   Show interface name(s) instead of ip(s)
 ";
 exit;
@@ -60,6 +63,7 @@ if ($opt_a) {
 	print "$res\n";
 	exit 0;
     } else {
-	exit Chj::Net::Publicip::last_best_exitcode;
+        my $code= Chj::Net::Publicip::last_best_exitcode;
+        exit($code == 0 ? 1 : $code);
     }
 }
