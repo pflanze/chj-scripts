@@ -26,17 +26,25 @@ BEGIN {
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname -- cmd args...
+  Block screen locking and similar for the duration of running cmd
+  with args.
+
+  Options:
+    -a    run without arguments (i.e. command), kill run-presentation
+          via ctl-c to stop the locker block instead.
 
   ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
 
+my $opt_a;
 our $verbose=0;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "a"=> \$opt_a,
 	   ) or exit 1;
-usage unless @ARGV;
+usage unless @ARGV xor $opt_a;
 
 system("init-xscreensaver", "stop");
 system("init-xwrits-mine", "stop");
@@ -57,11 +65,17 @@ my $pid = fork; defined $pid or die "fork: $!";
 
 if ($pid) {
     close R or die $!;
-    my $status = system(@ARGV);
-    print W "done\n" or die $!;
-    # $w->xflush; sleep 1; -- yes, works
-    close W or die $!;
-    exit($status == 0 ? 0 : 1);
+    if ($opt_a) {
+        while (1) {
+            sleep 9999999;
+        }
+    } else {
+        my $status = system(@ARGV);
+        print W "done\n" or die $!;
+        # $w->xflush; sleep 1; -- yes, works
+        close W or die $!;
+        exit($status == 0 ? 0 : 1);
+    }
 } else {
     close W or die $!;
     setsid or die "setsid: $!";
