@@ -1,0 +1,90 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my $opt_days = 1;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Like apt-get clean, but
+   - only removes files in /var/cache/apt/archives/ and
+     /var/cache/apt/archives/partial/ which are older than $opt_days
+     days
+       (so that it won't disturb ongoing manual action)
+   - leaves alone the *.bin files in /var/cache/apt
+       (for the same reason)
+
+  Options:
+    --days x   instead of the default of $opt_days
+    --verbose  do not swallow stat and unlink errors, and say which
+               files were removed
+    --dry-run  do not actually remove
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "days=f"=> \$opt_days,
+	   "dry-run"=> \$opt_dry,
+    ) or exit 1;
+usage if @ARGV;
+
+# Check that $opt_days is not negative? OK to silently accept?
+
+sub note {
+    print STDERR "$myname: ", @_, "\n";
+    # swallow print errors
+}
+
+for my $path (
+    glob("/var/cache/apt/archives/*.deb"),
+    glob("/var/cache/apt/archives/partial/*.deb")
+    ) {
+    if (defined (my $c = -C $path)) {
+        if ($c > $opt_days) {
+            if ($opt_dry) {
+                note "would remove file '$path'";
+            } else {
+                if (unlink $path) {
+                    note "removed file '$path'"
+                        if $verbose;
+                } else {
+                    note "could not remove file '$path': $!"
+                        if $verbose;
+                } 
+            }
+        }
+    } else {
+        note "could not stat '$path': $!"
+            if $verbose;
+    }
+}
