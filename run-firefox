@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+# An action that is suitable to be run from a (xfce4) panel button
+
+status="$(init-firefox start 2>&1)"
+
+if [[ "$status" = "daemon already running" ]]; then
+    firefox "$@"
+else
+    :
+    # XX do we have to handle arguments? If so, sleep until firefox is
+    # up, then run firefox "$@", too? But how long is that?
+fi
