@@ -34,15 +34,17 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [options]
 
-  By default, queries the path '$registerpath' to see whether there's
-  a need to reboot the computer. This can be checked at convenient
-  times to act upon it. Upon reboot, the flag is automatically
-  cleared.
+  By default and when --print is given, queries the path
+  '$registerpath' to see whether there's a need to reboot the
+  computer. By default, exits with 0 if a reboot is needed. This can
+  be checked at convenient times to act upon. Upon reboot, the flag is
+  automatically cleared.
 
   Currently the flag can only be changed (or even read) by root.
 
   Options:
     --set|-s 1|0   1 meaning yes, need reboot, 0 to remove the flag
+    --print        print 1 meaning yes, 0 meaning no, exit 0.
 
   ($email_full)
 ";
@@ -51,10 +53,12 @@ exit (@_ ? 1 : 0);
 
 our $verbose = 0;
 my $opt_set = undef;
+my $opt_print;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "set=s"=> \$opt_set,
+           "print"=> \$opt_print,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage if @ARGV;
@@ -84,6 +88,11 @@ if (defined $opt_set) {
         unlink $registerpath;
     }
 } else {
-    print(((-f $registerpath) ? 1 : 0)."\n")
-        or die "stdout: $!";
+    my $need_reboot = (-f $registerpath) ? 1 : 0;
+    if ($opt_print) {
+        print $need_reboot, "\n"
+            or die "stdout: $!";
+    } else {
+        exit($need_reboot ? 0 : 1);
+    }
 }
