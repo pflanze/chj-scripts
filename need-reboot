@@ -1,0 +1,89 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Chj::xtmpfile;
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+my $registerpath = "/root/.$myname";
+# Not using /var/run/ or /var/lock/ since those are on tmpfs which
+# uses RAM. (Well. There's ton of stuff in there, some of which
+# probably shouldn't either.)
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [options]
+
+  By default, queries the path '$registerpath' to see whether there's
+  a need to reboot the computer. This can be checked at convenient
+  times to act upon it. Upon reboot, the flag is automatically
+  cleared.
+
+  Currently the flag can only be changed (or even read) by root.
+
+  Options:
+    --set|-s 1|0   1 meaning yes, need reboot, 0 to remove the flag
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose = 0;
+my $opt_set = undef;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "set=s"=> \$opt_set,
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage if @ARGV;
+
+
+# Design: put a file to /tmp (assumption: xtmpfile does that), as that
+# is usually *not* on tmpfs, since on systems without swap (or even
+# anyway?), tmpfs would be somewhat wasteful. Assume that /tmp is
+# going to be cleaned out on boot. Register that file at $registerpath.
+
+# Nice things we get:
+# - mtime is time of request
+# - /tmp/-opt-chj-bin-need-reboot* is a trail of all requests since boot
+
+if (defined $opt_set) {
+    $opt_set=~ /^[01]\z/
+        or usage "invalid value passed to --set, need 0|1";
+    if ($opt_set) {
+        my $f = xtmpfile;
+        $f->autoclean(0);
+        unlink $registerpath;
+        symlink $f->path, $registerpath
+            or die "could not symlink to '$registerpath': $!";
+        # ^ possible race condition
+    } else {
+        # let the tmp file leak.
+        unlink $registerpath;
+    }
+} else {
+    print(((-f $registerpath) ? 1 : 0)."\n")
+        or die "stdout: $!";
+}
