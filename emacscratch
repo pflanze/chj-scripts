@@ -18,7 +18,7 @@ else
     fi
 
     start () {
-	e -- "$DIR/`date|tr ' ' '_'|sed 's/://g'`"
+	exec e -- "$DIR/`date|tr ' ' '_'|sed 's/://g'`"
     }
     
     if tty >/dev/null; then
