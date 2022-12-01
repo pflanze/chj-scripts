@@ -1,13 +1,24 @@
 #!/usr/bin/perl -w
 
 # Fre Nov 24 00:04:59 CET 2006
-(my $email='pflanze%gmx,ch')=~ tr/%,/@./;
 
 # Funny that this tool doesn't exist already ?  touch doesn't do
 # that. And my mksparse script will do this either (not even with the
 # --truncate option..).
 
+my $copyright= <<'COPYRIGHT';
+# Copyright 2006-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
 use strict;
+use utf8;
+use warnings;
+# To promote 'Argument "foo" isn't numeric in truncate' into an exception:
+use warnings FATAL => 'all';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -17,7 +28,7 @@ sub usage {
 
   Truncate the files down to the newlen (in bytes).
 
-  (Christian Jaeger <$email>)
+  ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
@@ -43,7 +54,9 @@ usage unless @args;
 
 my $newlen= shift @args;
 
-# To promote 'Argument "foo" isn't numeric in truncate' into an exception:
-use warnings FATAL=>qw(all);
+sub my_truncate($path) {
+    truncate $path, $newlen
+        or die "truncate('$path', $newlen): $!";
+}
 
-(truncate $_,$newlen or die "truncate('$_',$newlen): $!") for @args;
+my_truncate $_ for @args;
