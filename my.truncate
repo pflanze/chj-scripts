@@ -18,6 +18,8 @@ use warnings;
 use warnings FATAL => 'all';
 use experimental 'signatures';
 
+use Chj::xperlfunc qw(xstat);
+
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
@@ -26,7 +28,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname newlen file(s)
 
-  Truncate the files down to the newlen (in bytes).
+  Change the length of the file(s) to newlen (in bytes).
+
+  Options:
+     --truncate  Allow to reduce the size. (Default: do not allow)
 
   ($email_full)
 ";
@@ -35,6 +40,7 @@ exit (@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+my $opt_truncate;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -44,6 +50,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--truncate$/) {
+	$opt_truncate= 1;
     } elsif (/^-./) {
     	usage("Unknown option '$_'\n");
     } else {
@@ -55,6 +63,14 @@ usage unless @args;
 my $newlen= shift @args;
 
 sub my_truncate($path) {
+    unless ($opt_truncate) {
+        my $s = xstat $path;
+        if ($newlen < $s->size) {
+            warn "$myname: file is longer than the given len, skipping (provide --truncate to force): '$path'\n";
+            return;
+        }
+    }
+    
     truncate $path, $newlen
         or die "truncate('$path', $newlen): $!";
 }
