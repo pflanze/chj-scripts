@@ -3,7 +3,7 @@
 use strict; use warnings FATAL => 'uninitialized';
 
 my @files=
-  (sub {
+  (sub { # <- boundary for `return`
        my @orig_argv= @ARGV;
        my @pre;
        while (@ARGV) {
@@ -32,6 +32,10 @@ if ($n > 8) {
 	("$0: got $n arguments, do you really want to open so many windows?");
     exit 1
 	unless $yn;
+}
+
+if ($n == 1) {
+    exec "_e-gnu", @files or exit 127;
 }
 
 for (@files) {
