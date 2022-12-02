@@ -5,21 +5,18 @@
 
 use strict; use warnings FATAL => 'uninitialized';
 
-# $0=~ /(.*?)([^\/]+)\z/s or die "?";
-# my ($mydir, $myname)=($1,$2);
-
 use Chj::xperlfunc;
 use Chj::xpipe;
 use Chj::xsysopen;
 use POSIX qw(setsid);
 
-# Protect emacscratch from ctl-c (and other signals?), but still wait
+# Protect emacsclient from ctl-c (and other signals?), but still wait
 # for it to finish, and submit result code and outputs (but stripped
 # from stuff we don't want to see)
 
 my $alternate_editor= $ENV{EMACS_ALTERNATE_EDITOR} // "";
 
-my ($sigr,$sigw)= xpipe;
+my ($sigr, $sigw)= xpipe;
 if (my $daemonizerpid= xfork) {
     xwaitpid $daemonizerpid;
     $sigw->xclose;
@@ -40,34 +37,25 @@ if (my $daemonizerpid= xfork) {
 } else {
     $sigr->xclose;
     setsid; # prevent signals from crossing over (stop ctl-c)
-    my ($streamr,$streamw)= xpipe;
+    my ($streamr, $streamw)= xpipe;
     if (my $pid= xfork) {
 	$streamw->xclose;
 	{
-	    # path OK?
-	    my $log= xsysopen "$ENV{HOME}/._e-gnu.log", O_CREAT|O_WRONLY|O_APPEND,
-		0600;
-
-	    #my $buf;
-	    #while (xsysread $streamr,$buf,1) {
-	    #    print $buf;
-	    #}
+	    my $log= xsysopen("$ENV{HOME}/._e-gnu.log",
+                              O_CREAT|O_WRONLY|O_APPEND,
+                              0600);
 
 	    # It appears that emacsclient does buffering if it sees
 	    # stdout/err not to be connected to a terminal. And it
 	    # doesn't have an option, so, sigh. Well, makes filtering
 	    # easier.
-
-	    my $z=0;
 	    while (<$streamr>) {
 		s/^Waiting for Emacs\.\.\.//;
 		unless (/^$/) {
-		    $z++;
 		    # print $_;
 		    $log->syswrite(localtime()."  ".$_);
 		}
 	    }
-	    # print $log "Wrote $z messages.\n";
 	    $log->close;
 	}
 	xwaitpid $pid;
@@ -80,13 +68,10 @@ if (my $daemonizerpid= xfork) {
 	$streamw->xdup2(1);
 	$streamw->xdup2(2);
 	$streamw->xclose;
-	xexec "emacsclient",
-	    "-c",
-	    "--alternate-editor=$alternate_editor",
-	    @ARGV;
+	xexec("emacsclient",
+              "-c",
+              "--alternate-editor=$alternate_editor",
+              @ARGV);
     }
 }
 
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
