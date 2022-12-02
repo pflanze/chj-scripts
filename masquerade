@@ -1,36 +1,40 @@
 #!/bin/bash
 
-masq_() {
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "$0 on|off ip/netmask..."
+    echo "  Add or remove iptables rules for masquerading the given network(s)."
+    exit 1
+}
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+onoff="$1"
+shift
+
+masq() {
     iptables -t nat "$1" POSTROUTING -p all -s "$2" '!' -d "$2" -j MASQUERADE
 }
 
-masq() {
-    # $1 == -D/-A
-    # masq_ "$1" 192.168.0.0/255.255.0.0 would be too broad if
-    # e.g. 192.168.1.1 is the upstream router outside this computer
-    masq_ "$1" 192.168.2.0/255.255.255.0
-    masq_ "$1" 192.168.3.0/255.255.255.0
-    masq_ "$1" 192.168.4.0/255.255.255.0
-    masq_ "$1" 192.168.66.0/255.255.255.0 # qemu
-    masq_ "$1" 192.168.67.0/255.255.255.0 # qemu
-    masq_ "$1" 192.168.68.0/255.255.255.0 # qemu
-    masq_ "$1" 192.168.199.0/255.255.255.0 # dnscache on servi
-    masq_ "$1" 192.168.253.0/255.255.255.0
-    masq_ "$1" 192.168.254.0/255.255.255.0
-    masq_ "$1" 192.168.255.0/255.255.255.0
-    masq_ "$1" 10.0.1.0/255.255.255.0
-}
+if [ "$onoff" == "on" ]; then
 
-if [ "$1" == "on" ]; then
-    masq -A
+    for ipmask in "$@"; do
+        masq -A "$ipmask"
+    done
     echo 1 > /proc/sys/net/ipv4/ip_forward
 
-elif [ "$1" == "off" ]; then
-    masq -D
+elif [ "$onoff" == "off" ]; then
+
     echo 0 > /proc/sys/net/ipv4/ip_forward
+    for ipmask in "$@"; do
+        masq -D "$ipmask"
+    done
 
 else
-    echo "usage: $0 on|off"
-
+    usage
 fi
 
