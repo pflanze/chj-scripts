@@ -63,7 +63,7 @@ if (my $daemonizerpid= xfork) {
 		s/^Waiting for Emacs\.\.\.//;
 		unless (/^$/) {
 		    $z++;
-		    print $_;
+		    # print $_;
 		    $log->syswrite(localtime()."  ".$_);
 		}
 	    }
