@@ -102,16 +102,16 @@ sub github_url_for_path ($path) {
     "$base/blob/master/$path"
 }
 
-sub wg() {
-    my $cmd= quotemeta($mydir)."/wg";
-    my $p= `$cmd`; $? == 0 or die "wg exited with $? (maybe you are not inside a Git checkout?)";
+sub whichgit() {
+    my $cmd= quotemeta($mydir)."/whichgit";
+    my $p= `$cmd`; $? == 0 or die "whichgit exited with $? (maybe you are not inside a Git checkout?)";
     chomp $p;
     $p
 }
 
 unless ($opt_noassert) {
-    my $wg= wg;
-    $wg eq ".git" or die "$myname: you don't appear to be in the root of a Git checkout, as we're expecting wg to be at .git but it's at: '$wg'\n";
+    my $whichgit= whichgit;
+    $whichgit eq ".git" or die "$myname: you don't appear to be in the root of a Git checkout, as we're expecting whichgit to be at .git but it's at: '$whichgit'\n";
 }
 
 for (@ARGV) {
