@@ -47,7 +47,7 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV xor $opt_a;
 
 system("init-xscreensaver", "stop");
-system("init-xwrits-mine", "stop");
+system("init-xwrits", "stop");
 
 my $lightlocker_pid = fork; defined $lightlocker_pid or die "fork: $!";
 unless ($lightlocker_pid) {
@@ -86,7 +86,7 @@ if ($pid) {
 
     kill "INT", $lightlocker_pid;
     system("init-xscreensaver", "start");
-    system("init-xwrits-mine", "start");
+    system("init-xwrits", "start");
 
     # warn "done";
     exit(0);
