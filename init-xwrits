@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+logdir=~/log/xwrits
+
+private mkdir -p "$logdir"
+
+daemonize --action "$1" --multilog "$logdir" _xwrits

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+exec xwrits break=3 flashtime=:2 after=10 flashtime=:03
