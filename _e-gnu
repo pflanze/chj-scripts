@@ -49,11 +49,15 @@ if (my $daemonizerpid= xfork) {
 	    # stdout/err not to be connected to a terminal. And it
 	    # doesn't have an option, so, sigh. Well, makes filtering
 	    # easier.
+            my $have_written = 0;
 	    while (<$streamr>) {
 		s/^Waiting for Emacs\.\.\.//;
 		unless (/^$/) {
-		    # print $_;
 		    $log->syswrite(localtime()."  ".$_);
+		    if (not $have_written) {
+                        warn "starting Emacs instance\n";
+                        $have_written = 1;
+                    }
 		}
 	    }
 	    $log->close;
