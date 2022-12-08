@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -euo pipefail
-IFS=
-
-logdir=~/log
-mkdir -p "$logdir"
-
-daemonize --multilog "$logdir"/xwrits --action "$1" xwrits-mine
