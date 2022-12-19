@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "$0 [..]"
+    echo "  Runs find-git with the given arguments, and for each"
+    echo "  repository found, runs git gc in it."
+}
+
+find-git "$@" | while read d; do ( cd "$d" && git gc ); done
+
