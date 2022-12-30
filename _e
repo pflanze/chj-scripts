@@ -1,335 +1,53 @@
 #!/usr/bin/perl -w
 
-use strict;
-use Chj::xrealpath 'realpath';
-use Chj::xsysopen 'xsysopen_append'; use Fcntl ':flock';
-use Chj::oerr;
-sub xfork {
-    my $p=fork;
-    defined $p or die "Could not fork: $!";
-    $p
+use strict; use warnings FATAL => 'uninitialized';
+
+my @files=
+  (sub { # <- boundary for `return`
+       my @orig_argv= @ARGV;
+       my @pre;
+       while (@ARGV) {
+	   local $_= shift @ARGV;
+	   if ($_ eq "--") {
+	       if (@pre) {
+		   warn "$0: can't currently deal with options, falling back to single call\n";
+		   exec "_e-gnu", @orig_argv or exit 127;
+	       } else {
+		   # no arguments before "--"
+		   return @ARGV
+	       }
+	   }
+	   push @pre, $_;
+       }
+       @pre
+   })->();
+
+
+my @pid;
+
+my $n= @files;
+if ($n > 8) {
+    require Chj::Util::AskYN;
+    my $yn= Chj::Util::AskYN::maybe_askyn
+	("$0: got $n arguments, do you really want to open so many windows?");
+    exit 1
+	unless $yn;
 }
 
-sub tty {
-    my $s= `tty`;
-    chomp $s;
-    $s
+if ($n == 1) {
+    exec "_e-gnu", @files or exit 127;
 }
 
-
-$|++;
-
-my $emacs= $ENV{EMACS_FLAVOUR} || "xemacs21";
-my $gnuclient= "/usr/bin/gnuclient.$emacs";
-# (There's also emacsclient.emacs21, part of emacs21 package; but that
-# doesn't work on terminals afaik, or at least not in mixed X and
-# terminal situations.)
-
-my $TIMEOUT=40;
-our $TIME_TO_GIVE_XEMACS= oerr($ENV{TIME_TO_GIVE_XEMACS},5);
-# seconds before we let any other 'e' call send anything to our
-# beloved and hell of buggy xemacs 21.4 (patch 6)
-
-our $verbose= $ENV{VERBOSE} ? 1 : 0;
-
-$0=~ /([^\/]+)$/s or die "?";
-my $myname=$1;
-sub usage {
-    print "$myname [ options ] [ files ]
-  This is a wrapper around $emacs, gnuclient and screen, that starts
-  one $emacs process with gnuserv if not already running and then
-  uses gnuclient to attach to it.
-  It allows to use just this one command to use $emacs comfortably.
-
-  options: see options in the gnuclient manpage.
-
-  For verbosity, set the VERBOSE environment variable to true.
-  For changing the time to let xemacs alone from $TIME_TO_GIVE_XEMACS
-  to something else, set the TIME_TO_GIVE_XEMACS env var accordingly.
-
- (This might work for all emacsen (but probably not). You may set the
- \$EMACS_FLAVOUR env var to something like 'emacs' or 'emacs-21.1';
- the default is 'xemacs21'.
-  The current values are:
-    emacs: '$emacs'
-    gnuclient: '$gnuclient'
- ->well, actually it only works for xemacs afaik)
-";
-exit @_;
-}
-
-##move to library?
-
-sub retry_after ( $ $ $ ) { # works on boolean return values, not exceptions
-    my ($normal, $fixup, $except)=@_;
-    # if fixup fails, don't retry normal! But run except if either
-    # fails (careful!).
-    &$normal || (&$fixup && &$normal) or &$except
-}
-
-sub simple_dirname { # always correct?
-    my ($path)=@_;
-    $path=~ s|[^/]+\z||;
-    $path
-}
-
-##/library
-
-my $lockfilebase= "$ENV{HOME}/.xemacs/.e-lck.d";
-if (not -d $lockfilebase) {
-    retry_after (sub {
-		     mkdir $lockfilebase
-		 },
-		 sub {
-		     my $d= simple_dirname $lockfilebase;
-		     length($d) and do {
-			 mkdir $d;
-			 warn "created '$d'";
-			 1
-		     }
-		 },
-		 sub {
-		     die "$0: could not create lock dir '$lockfilebase': ".
-		       "$!\n";
-		 }
-		);
-}
-my $startuplock_path= $lockfilebase."/.startuplock";
-my $startuplockfh= do {
-    local $^F=0;
-    xsysopen_append ($startuplock_path, 0600);
-};
-use Carp;
-sub startup_lock {
-    carp "$$: trying to get lock" if $verbose;
-    flock $startuplockfh,LOCK_EX
-      or die "locking: $!";
-    carp "$$: got lock" if $verbose;
-}
-sub startup_unlock {
-    carp "$$: releasing lock" if $verbose;
-    flock $startuplockfh,LOCK_UN or die "??unlock: $!";
-}
-
-my $maxargs= 30;
-
-my $nw;
-my $opt_f;
-my @ARGS;
-for (my $i=0; $i<=$#ARGV; $i++) {
-    local $_=$ARGV[$i];
-    if (/^--?h(elp)?$/) {
-        usage
-    } elsif (/^--force-e$/) {
-	$opt_f=1;
-    } elsif (/^-nw$/) {
-        $nw=1;
-	push @ARGS, $_;
+for (@files) {
+    my $pid= fork; defined $pid or die "fork: $!";
+    if ($pid) {
+	push @pid, $pid
     } else {
-	push @ARGS, $_;
+	exec "_e-gnu", $_ or exit 127;
     }
 }
 
-
-
-if (!$opt_f and @ARGS > $maxargs) {
-    die "$myname: more than $maxargs arguments (".@ARGS."). ".
-      "Add --force-e option to go through.\n"
-}
-
-
-
-sub reachable {
-    warn "$$ checking reachability.." if $verbose;
-    my $p=xfork;
-    my $res= do {
-	if ($p){
-	    wait;
-	    $? == 0;
-	} else {
-	    unless ($verbose) {
-		open STDOUT,">/dev/null";
-		open STDERR,">/dev/null";
-	    }
-	    alarm 3; # does this hold over to after the exec? yes.
-	    exec $gnuclient, qw(-batch -eval t);
-	    exit 2;
-	}
-    };
-    warn "$$ reachability check gave ".($res ? "true":"false") if $verbose;
-    $res
-}
-
-sub rungnuclientwithargs {
-    # This is the normal run routine (always taken) after xemacs has
-    # been started up in the background.
-    alarm 0; # switch off previously set up alarms. #hacky?
-    my @args;
-    for (@ARGS) {
-	push @args, do {
-	    if (/^-/) {
-		$_;
-	    } else {
-		realpath($_) or $_
-	    }
-	};
-    }
-    # do a double fork and capture the first child exit so that we
-    # don't risk delivering a sigchild to the gnuclient. whatever.
-    pipe PID_READ, PID_WRITE
-      or die "pipe: $!";
-    my $p=xfork;
-    if ($p) {
-	# wait for the intermediate child:
-	wait; $? == 0 or die "hm, first child gave $?";
-	# send our pid to the doubly forked child:
-	close PID_READ or die "close: $!";
-	print PID_WRITE $$ or die "print: $!";
-	close PID_WRITE or die "close: $!";
-	exec $gnuclient, @args
-	  or die $!;
-    } else {
-	if (xfork) {
-	    exit 0;
-	} else {
-	    # In the doubly forked child:
-	    close PID_WRITE or die "close: $!";
-	    my $parentpid= <PID_READ>; chomp $parentpid;
-	    close PID_READ or die "close: $!";
-	    # now either we return soon enough to justify holding on to
-	    # the lock, or just unlock after that certain time:
-	    for (1..$TIME_TO_GIVE_XEMACS) {
-		last unless kill 0, $parentpid;
-		sleep 1;
-	    }
-	    startup_unlock;
-	    exit 0;
-	}
-    }
-}
-
-sub perhaps_uniq {
-    my @v=@_;
-    if (@v) {
-	my $v0= shift @v;
-	for (@v) {
-	    return () unless $_ eq $v0
-	}
-	return $v0
-    } else {
-	()
-    }
-}
-
-if (!$ENV{DISPLAY} or $nw) {
-    $ENV{TERM}="linux";
-    # check/create display lock file: (this is independent from
-    # startup lock!)
-    unless (-d $lockfilebase) {
-	mkdir $lockfilebase,0700
-	  or die "$myname: could not create base dir for lock files ".
-	    "'$lockfilebase': $!\n";
-    }
-    my $ttypath= do {
-	# The `tty` tool simply reports what stdin is connected to,
-	# not the controlling tty. And reopening /dev/tty does not
-	# work for gnuclient for some reason (huh). So, check all 3
-	# std filehandles in the hopes to find the original.
-	my @paths=
-	  map {
-	      my $path= "/proc/self/fd/$_";
-	      if (defined (my $devpath = readlink $path)) {
-		  if ($devpath =~ m|^/dev/pts|) {
-		      $devpath
-		  } else {
-		      ()
-		  }
-	      } else {
-		  ()
-	      }
-	  } 0,1,2;
-
-	if (my ($path)= perhaps_uniq @paths) {
-	    $path
-	} else {
-	    $ENV{SSH_TTY} || tty || "no controlling tty?";
-	    # XX `ps -h -o tty -p $$` seems to be another way. Really
-	    # use it? How does it work?
-	}
-    };
-
-    open STDIN, "<", $ttypath
-      or die "$ttypath: $!";
-    open STDOUT, ">", $ttypath
-      or die "$ttypath: $!";
-    open STDERR, ">&1"
-      or die "redirecting stderr: $!";
-
-    my $linkfile= do {
-	my $s= $ttypath;
-	$s=~ s/\//-/sg;
-	"$lockfilebase/$s"
-    };
-    if (my $pid=readlink $linkfile){
-	if (kill 0,$pid){
-	    die "$myname: you have already an emacs frame running ".
-	      "on this terminal.\n";
-	} else {
-	    unlink $linkfile
-	      or die "$myname: could not unlink stale '$linkfile': $!\n";
-	}
-    }
-    if (! -f "$lockfilebase/.lastcleanup" or  -M _ > 1/100) { # 100 per day
-	opendir DIR,$lockfilebase  or die "opendir: $!";
-	while (defined ($_=readdir DIR)){
-	    next if $_=~/^\./;
-	    my $l= "$lockfilebase/$_";
-	    if (my $pid=readlink $l){
-		if (kill 0,$pid){
-		    # leave it there
-		} else {
-		    unlink $l
-		      or warn "$myname: could not unlink stale '$l': $!\n";
-		}
-	    }
-	}
-	closedir DIR;
-	open OUT,">$lockfilebase/.lastcleanup"
-	  or die $!; print OUT "~";close OUT;
-    }
-    symlink "$$",$linkfile
-      or die "$myname: could not create symlink $linkfile: $!\n";
-}
-
-$SIG{ALRM}= sub {
-    die "ALRM\n";
-};
-alarm $TIMEOUT;
-eval {
-    startup_lock;
-    if (reachable) {
-	rungnuclientwithargs;
-    } else {
-	require Chj::ulimit;
-	Chj::ulimit::ulimit("-S","-v",200000);
-	0==system "screen","-d","-m",$emacs,"-nw","-f","gnuserv-start"
-	  or die "screen returned exit code $?";
-	my $z=0;
-	do {
-	    sleep 1;
-	    $z++ > ($TIMEOUT - 5)
-	      and die "Timeout waiting for $emacs to start up. ".
-		"Maybe you can still attach to it with screen -r .. ".
-		  "(screen -ls for the list of screens).\n";
-	} until reachable;
-	rungnuclientwithargs;
-    }
-};
-if (ref $@ or $@) {
-    if ($@ eq "ALRM\n") {
-	die "$myname ($$): timed out waiting for lock (another process ".
-	  "supposedly starting up xemacs)\n";
-    } else {
-	die $@
-    }
+for (@pid) {
+    waitpid $_, 0 or die "waitpid $_: $!";
+    $? == 0 or die "pid $_ exited with code $?";
 }
