@@ -32,7 +32,8 @@ sub usage {
   well as some country codes and bare/additional city names.
 
   If the TZ env var is set (preferably in Continent/City format), adds
-  the time zone name to the output.
+  the time zone name to the output. If it isn't, tries to set it from
+  the value of '/etc/localtime'.
 
   Options:
 
@@ -83,6 +84,17 @@ sub tzname_of_location_for_t {
     $tz->short_name_for_datetime ($dt)
 }
 
+sub maybe_localtime_TZ {
+    if (defined (my $targ = readlink "/etc/localtime")) {
+        my @p= split "/", $targ;
+        my $n = pop @p;
+        my $m = pop @p;
+        "$m/$n"
+    } else {
+        undef
+    }
+}
+
 sub pars {
     my ($tz_offsetter, $str)=@_;
     my $usstr= european2us($str);
@@ -90,7 +102,7 @@ sub pars {
         or die "Date::Parse::str2time failed for: '$usstr'";
     my $t= $tz_offsetter->($t_possibly_UTC, $str);
     my $lt= localtime $t;
-    if (my $TZ= $ENV{TZ}) {
+    if (my $TZ= ($ENV{TZ} or maybe_localtime_TZ)) {
         my $tzname= tzname_of_location_for_t $TZ, $t;
         $lt=~ s/ (\d{4})\z/ $tzname $1/
             or die "could not find year at the end of: '$lt'";
