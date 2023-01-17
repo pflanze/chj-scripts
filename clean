@@ -1,51 +1,100 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-set -eu
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
 
-opt_r=0
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
-lp() {
-    if [[ $# -ge 1 ]]; then
-        if [[ $1 = "--help" || $1 = "-h" ]]; then
-            {
-                echo "`basename "$0"` [ directories ]"
-                echo "  Cleans the given directories or \`.\` of *~ files"
-                echo "  (moving them to the trash)."
-            } >&2
-            exit 1
-        elif [[ $1 = "-r" ]]; then
-            opt_r=1
-            shift
-            lp
-        elif [[ $1 = "--" ]]; then
-            shift
-        fi
-    fi
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
 }
 
-lp
+use Chj::xperlfunc ":all";
+use Chj::IO::Command;
+use Chj::singlequote qw(singlequote_sh_many);
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
-clean_r() {
-    dir="$1"
-    find "$dir" -name "*~" |» trash --
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    xprintln "$myname [ directories ]";
+    xprintln "  Cleans the given directories or \`.\` of *~ files";
+    xprintln "  (moving them to the trash).";
+    xprintln "  Options:
+  -r     descent into subdirs, too
+  --dry  show actions instead of running them
+
+  ($email_full)";
+    exit (@_ ? 1 : 0);
 }
 
-if [[ $opt_r = 1 ]]; then
-    if [ $# -ge 1 ]; then
-        for d in "$@"; do
-            clean_r "$d"
-        done
-    else
-        clean_r .
-    fi
-    
-else
-    if [ $# -ge 1 ]; then
-        for d in "$@"; do
-            trash -- "$d/"*~
-        done
-    else
-        exec trash -- *~
-    fi
+my $opt_dry = 0;
+my $opt_r = 0;
 
-fi
+sub lp() {
+    if (@ARGV) {
+        my $a = $ARGV[0];
+        if ($a eq "--help" or $a eq "-h") {
+            usage
+        } elsif ($a eq "-r") {
+            $opt_r = 1;
+            shift @ARGV;
+            lp();
+        } elsif ($a eq "--dry") {
+            $opt_dry = 1;
+            shift @ARGV;
+            lp();
+        } elsif ($a eq "--") {
+            shift @ARGV;
+        }
+    }
+}
+
+lp;
+
+
+sub _xxsystem {
+    if ($opt_dry) {
+        xprintln "+ ", singlequote_sh_many(@_);
+    } else {
+        xxsystem_safe @_;
+    }
+}
+
+sub clean_r($dir) {
+    my $in = Chj::IO::Command->new_sender("find", $dir, "-name", "*~",
+                                          "-a", "-print0");
+    local $/ = "\0";
+    my @paths = map { chomp; $_ } $in->xreadline;
+    $in->xxfinish;
+    _xxsystem "trash", "--", @paths;
+}
+
+if ($opt_r) {
+    if (@ARGV) {
+        for my $d (@ARGV) {
+            clean_r $d
+        }
+    } else {
+        clean_r "."
+    }
+} else {
+    if (@ARGV) {
+        for my $d (@ARGV) {
+            _xxsystem "trash", "--", glob "$d/*~";
+        }
+    } else {
+        _xxsystem "trash", "--", glob "*~";
+    }
+}
