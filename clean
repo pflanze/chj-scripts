@@ -6,8 +6,8 @@ if [[ $# -ge 1 ]]; then
     if [[ $1 = "--help" || $1 = "-h" ]]; then
         {
             echo "`basename "$0"` [ directories ]"
-            echo "  Cleans the given directories or \`.\` from *~ files"
-            echo "  (it moves them to the trash)."
+            echo "  Cleans the given directories or \`.\` of *~ files"
+            echo "  (moving them to the trash)."
         } >&2
         exit 1
     elif [[ $1 = "--" ]]; then
