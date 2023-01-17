@@ -2,24 +2,50 @@
 
 set -eu
 
-if [[ $# -ge 1 ]]; then
-    if [[ $1 = "--help" || $1 = "-h" ]]; then
-        {
-            echo "`basename "$0"` [ directories ]"
-            echo "  Cleans the given directories or \`.\` of *~ files"
-            echo "  (moving them to the trash)."
-        } >&2
-        exit 1
-    elif [[ $1 = "--" ]]; then
-        shift
+opt_r=0
+
+lp() {
+    if [[ $# -ge 1 ]]; then
+        if [[ $1 = "--help" || $1 = "-h" ]]; then
+            {
+                echo "`basename "$0"` [ directories ]"
+                echo "  Cleans the given directories or \`.\` of *~ files"
+                echo "  (moving them to the trash)."
+            } >&2
+            exit 1
+        elif [[ $1 = "-r" ]]; then
+            opt_r=1
+            shift
+            lp
+        elif [[ $1 = "--" ]]; then
+            shift
+        fi
     fi
-fi
+}
 
-if [ $# -ge 1 ]; then
-    for d in "$@"; do
-        trash -- "$d/"*~
-    done
+lp
+
+clean_r() {
+    dir="$1"
+    find "$dir" -name "*~" |» trash --
+}
+
+if [[ $opt_r = 1 ]]; then
+    if [ $# -ge 1 ]; then
+        for d in "$@"; do
+            clean_r "$d"
+        done
+    else
+        clean_r .
+    fi
+    
 else
-    exec trash -- *~
-fi
+    if [ $# -ge 1 ]; then
+        for d in "$@"; do
+            trash -- "$d/"*~
+        done
+    else
+        exec trash -- *~
+    fi
 
+fi
