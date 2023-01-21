@@ -237,7 +237,7 @@ my $dstr= do {
     sprintf '%02dh %02dm %02ds', $h, $m, $s
 };
 
-warn "$myname: sleeping $dstr until $t = ".localtime($t)."\n"
+warn "$myname: $dstr until $t = ".localtime($t)."\n"
     if $verbose;
 
 sleepUntil $t;
