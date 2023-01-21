@@ -4,7 +4,13 @@ if [ $# -eq 1 ]; then
     if test -f "$1"; then
 	echo "File $1 existiert bereits!" >&2
     else
-	echo -n -e '#!/bin/bash\n\nset -euo pipefail\nIFS=\n\n'> "$1"
+	echo -n '#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+'> "$1"
 	if [ "$EDITOR" = "nc" ]; then
 	    echo >> "$1"   # nedit overwrites the selected line upon typing
 	fi
