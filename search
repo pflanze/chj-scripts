@@ -266,13 +266,18 @@ package APP::search::Info {
                 if ($s->is_file) {
                     $s->dev . ":" . $s->ino
                 } elsif ($s->is_link) {
-                    my $s = $self->{maybe_stat_or_err} //= (
-                        Xstat($self->{path}) // do {
-                            warn "$myname: note, broken symlink: '$self->{path}'\n"
-                                if $opt_warn_broken;
+                    my $s = $self->{maybe_stat_or_err} //= do {
+                        eval {
+                            Xstat($self->{path}) // do {
+                                warn "$myname: note, broken symlink: '$self->{path}'\n"
+                                    if $opt_warn_broken;
+                                "$!"
+                            }
+                        } // do {
+                            # hard error, well, currently including EPERM on link target
                             "$!"
                         }
-                        );
+                    };
                     if (ref($s)) {
                         if ($s->is_file) {
                             $s->dev . ":" . $s->ino
