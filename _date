@@ -24,10 +24,11 @@ BEGIN {
 sub usage {
     my $out = @_ ? *STDERR{IO} : *STDOUT{IO};
     print $out map{"$_\n"} @_ if @_;
-    print $out "$myname [options]
+    print $out "$myname [options] [unixtime]
 
-  Print the current time as YYYY-MM-DD_HHMM in the current time zone
-  (lexical sorting == time sorting, except when ambiguous...).
+  Print the current time, or unixtime if given, as YYYY-MM-DD_HHMM in
+  the current time zone (lexical sorting == time sorting, except when
+  ambiguous...).
 
   Set TZ=UTC to get unambiguous output.
 
@@ -47,6 +48,8 @@ my $opt_sec = 0;
 my $opt_day = 0;
 my $opt_tz;
 
+my $t;
+
 while (@ARGV) {
     my $v = shift @ARGV;
     if ($v eq "-s" or $v eq "--sec" or $v eq "--seconds") {
@@ -64,14 +67,23 @@ while (@ARGV) {
         usage
     }
     else {
-        usage "unknown argument '$v'";
+        if (defined $t) {
+            usage "unknown argument '$v'";
+        } else {
+            $v=~ /^\d+\z/
+                or usage("invalid time argument '$v', must be unixtime ".
+                         "(seconds since epoch)");
+            $t = $v;
+        }
     }
 }
 
-usage if @ARGV;
+usage if @ARGV; # needed? see algo above
 
-my $t = time;
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t);
+$t //= time;
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t)
+    or die "invalid time";
 
 my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
