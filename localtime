@@ -2,9 +2,9 @@
 
 use strict;
 
-our $arithmatch= qr{^[\d()+\-*/\s]+\z};
+our $arithmatch= qr{^[\d.()+\-*/\s]+\z};
 # ^wow is not parsed at that point (or unparsing is not done from the
-# parsed tree): mentioning some char multuple times is carried over to
+# parsed tree): mentioning some char multiple times is carried over to
 # the printing.
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
