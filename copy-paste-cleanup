@@ -4,4 +4,8 @@ set -euo pipefail
 set -m
 IFS=
 
-inplace $(cmd perl -wne 's/ *$//; print') "$@"
+if [ $# -gt 0 ]; then
+    inplace $(cmd perl -wne 's/ *$//; print or die $!') "$@"
+else
+    perl -wne 's/ *$//; print or die $!'
+fi
