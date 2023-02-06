@@ -4,7 +4,7 @@ if [ $# -eq 1 ]; then
     if test -f "$1"; then
 	echo "File '$1' already exists" >&2
     else
-	echo -n -e '#!/usr/bin/env python\n\nimport sys\n\ndef main():\n\nif __name__ == '\''__main__'\'':\n    main()\n\n'> "$1"
+	echo -n -e '#!/usr/bin/env python3\n\nimport sys\n\ndef main():\n    pass\n\nif __name__ == '\''__main__'\'':\n    main()\n\n'> "$1"
 	chmod +x "$1"
 	if [ "$EDITOR" ]; then
 	    if [ "$EDITOR" = "nc" ]; then 
