@@ -76,6 +76,7 @@ sub pid_to_programname_orelse {
         close $in or die $!;
         $cmd0=~ s{.*/}{}s;
         if (defined (my $l = readlink "/proc/$_pid/exe")) {
+            $l=~ s/ \(deleted\)$//;
             "$cmd0 ($l)"
         } else {
             $cmd0
