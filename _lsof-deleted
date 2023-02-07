@@ -268,6 +268,10 @@ if ($style eq "friendly") {
     }
     #use Data::Dumper; print Dumper(\%friendly_cs);
     #use FP::Repl; repl;
+} elsif ($style eq "lsof") {
+    # already printed
+} else {
+    die "bug"
 }
 
 
