@@ -3,7 +3,10 @@
 # Wed  4 Sep 06:47:39 BST 2019
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
-use strict; use warnings FATAL => 'uninitialized';
+use strict;
+use utf8;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -84,8 +87,7 @@ my $match= sub {
 
 if ($opt_files) {
     my $oldmatch= $match;
-    $match= sub {
-        my ($path)= @_;
+    $match= sub ($path) {
         &$oldmatch($path) and
             $items{$path} eq 'i'
     };
@@ -93,8 +95,7 @@ if ($opt_files) {
 
 if ($opt_dirs) {
     my $oldmatch= $match;
-    $match= sub {
-        my ($path)= @_;
+    $match= sub ($path) {
         &$oldmatch($path) and
             $items{$path} eq 'd'
     };
@@ -102,8 +103,7 @@ if ($opt_dirs) {
 
 if ($opt_path) {
     my $oldmatch= $match;
-    $match= sub {
-        my ($path)= @_;
+    $match= sub ($path) {
         &$oldmatch($path) and
             ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
     };
@@ -111,8 +111,7 @@ if ($opt_path) {
 
 if ($opt_name) {
     my $oldmatch= $match;
-    $match= sub {
-        my ($path)= @_;
+    $match= sub ($path) {
         &$oldmatch($path) and do {
             $path=~ s|^.*/||s;
             ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
