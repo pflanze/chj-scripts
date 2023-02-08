@@ -9,10 +9,10 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname [-i] name-regex
+    print "$myname [-i] name-regex...
 
   Find items in the current Git repository, including parent directory
-  paths of them, whose name matches the given regex.
+  paths of them, whose name matches the given regex(es/en).
 
   (Wrapper around gfind, see docs there.)
 
@@ -30,9 +30,7 @@ GetOptions("verbose"=> \$verbose,
            "i"=> \$opt_i,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV == 1;
+usage unless @ARGV;
 
-my ($regex)= @ARGV;
-
-exec "gfind", ($opt_i ? "-i" : ()), "--name", $regex;
+exec "gfind", ($opt_i ? "-i" : ()), map { ("--name", $_) } @ARGV;
 

@@ -24,9 +24,9 @@ sub usage {
     --files        only show files and symlinks
     --dirs         only show dirs
     --path regex   only show items whose paths match this Perl
-                   regex
+                   regex (can be given multiple times)
     --name regex   only show items whose names match this Perl
-                   regex
+                   regex (can be given multiple times)
     -i | --insensitive  change regexen to be case insensitive
     -z             terminate printed items with '\0' instead of '\n'
     --no-dot       do not print the \".\" entry
@@ -38,12 +38,18 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 
+sub adding_to($var) {
+    sub ($_optname, $val) {
+        push @$var, $val
+    }
+}
+
 Getopt::Long::Configure("pass_through");
 my $opt_z;
 my $opt_files;
 my $opt_dirs;
-my $opt_path;
-my $opt_name;
+my @opt_path;
+my @opt_name;
 my $opt_i;
 my $opt_no_dot;
 GetOptions(
@@ -51,8 +57,8 @@ GetOptions(
     "z"=> \$opt_z,
     "files"=> \$opt_files,
     "dirs"=> \$opt_dirs,
-    "path=s"=> \$opt_path,
-    "name=s"=> \$opt_name,
+    "path=s"=> adding_to(\@opt_path),
+    "name=s"=> adding_to(\@opt_name),
     "insensitive"=> \$opt_i,
     "no-dot"=> \$opt_no_dot,
     ) or exit 1;
@@ -88,7 +94,7 @@ my $match= sub {
 if ($opt_files) {
     my $oldmatch= $match;
     $match= sub ($path) {
-        &$oldmatch($path) and
+        $oldmatch->($path) and
             $items{$path} eq 'i'
     };
 }
@@ -96,23 +102,27 @@ if ($opt_files) {
 if ($opt_dirs) {
     my $oldmatch= $match;
     $match= sub ($path) {
-        &$oldmatch($path) and
+        $oldmatch->($path) and
             $items{$path} eq 'd'
     };
 }
 
-if ($opt_path) {
+for (@opt_path) {
+    my $opt_path = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
-        &$oldmatch($path) and
+        warn "opt_path=$opt_path, path=$path";
+        $oldmatch->($path) and
             ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
     };
 }
 
-if ($opt_name) {
+for (@opt_name) {
+    my $opt_name = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
-        &$oldmatch($path) and do {
+        warn "opt_name=$opt_name, path=$path";
+        $oldmatch->($path) and do {
             $path=~ s|^.*/||s;
             ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
         }
@@ -120,7 +130,7 @@ if ($opt_name) {
 }
 
 for (sort keys %items) {
-    if (&$match ($_)) {
+    if ($match->($_)) {
         xprint $_, $sep
     }
 }
