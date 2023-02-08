@@ -107,25 +107,25 @@ if ($opt_dirs) {
     };
 }
 
-for (@opt_path) {
+for (reverse @opt_path) {
     my $opt_path = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
         warn "opt_path=$opt_path, path=$path";
-        $oldmatch->($path) and
-            ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
+        ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
+            and $oldmatch->($path)
     };
 }
 
-for (@opt_name) {
+for (reverse @opt_name) {
     my $opt_name = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
         warn "opt_name=$opt_name, path=$path";
-        $oldmatch->($path) and do {
+        do {
             $path=~ s|^.*/||s;
             ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
-        }
+        } and $oldmatch->($path)
     };
 }
 
