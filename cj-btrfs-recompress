@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+compression=zstd
+
+recompress() {
+    d="$1"
+    echo "=== recompressing '$d' ======================================="
+    (
+        set -euo pipefail
+        set -x
+
+        df "$d"
+        time btrfs filesystem defragment -r -c"$compression" "$d"
+        df "$d"
+    )
+}
+
+usage() {
+    echo "$0 [fsmountdir(s)]"
+    echo "  Defragment/recompress btrfs on given mount points."
+    echo
+    echo "  Options:"
+    echo "   -a   recompress all mounted btrfs filesystems (ignoring bind mounts)"
+    exit 1
+}
+
+if [ $# -eq 1 ] && [ "$1" = "-a" ]; then
+    cat /proc/mounts | grep ' btrfs ' | perl -wne '
+        @f = split /\s+/;
+        next if $seen{$f[0]};
+        $seen{$f[0]}++;
+        print "$f[1]\n" or die $!
+    ' | \
+        while read d; do
+            recompress "$d"
+        done
+else
+    if [ $# -ge 1 ]; then
+        for d in "$@"; do
+            recompress "$d"
+        done
+    else
+        usage
+    fi
+fi
