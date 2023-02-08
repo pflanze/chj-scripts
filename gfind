@@ -111,7 +111,6 @@ for (reverse @opt_path) {
     my $opt_path = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
-        warn "opt_path=$opt_path, path=$path";
         ($opt_i ? $path=~ /$opt_path/i : $path=~ /$opt_path/)
             and $oldmatch->($path)
     };
@@ -121,7 +120,6 @@ for (reverse @opt_name) {
     my $opt_name = $_;
     my $oldmatch= $match;
     $match= sub ($path) {
-        warn "opt_name=$opt_name, path=$path";
         do {
             $path=~ s|^.*/||s;
             ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
