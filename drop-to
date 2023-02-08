@@ -71,10 +71,10 @@ our $do= do {
 use Chj::Random::Formatted 'random_passwd_string';
 
 sub xpermcheck {
-    my ($path, $str)=@_;
+    my ($path, @acceptable_str)=@_;
     my $p= xstat ($path)->permissions_oct;
-    $p eq $str
-      or die "permissions on '$path' are not $str (but '$p')";
+    do { return if $p eq $_ } for @acceptable_str;
+    die "permissions on '$path' are not any of: @acceptable_str (but '$p')";
 }
 
 
@@ -92,7 +92,7 @@ our $targetbase=
     }
   : "/home/$user_or_dir/DROP"; # XX do it right (with getpwnam)?
 
-xpermcheck $targetbase, "3733";
+xpermcheck $targetbase, "3733", "3730";
 
 our $targetsubdir= $targetbase."/".random_passwd_string (16);
 xmkdir $targetsubdir;
