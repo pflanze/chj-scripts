@@ -91,22 +91,6 @@ my $match= sub {
     1
 };
 
-if ($opt_files) {
-    my $oldmatch= $match;
-    $match= sub ($path) {
-        $oldmatch->($path) and
-            $items{$path} eq 'i'
-    };
-}
-
-if ($opt_dirs) {
-    my $oldmatch= $match;
-    $match= sub ($path) {
-        $oldmatch->($path) and
-            $items{$path} eq 'd'
-    };
-}
-
 for (reverse @opt_path) {
     my $opt_path = $_;
     my $oldmatch= $match;
@@ -126,6 +110,21 @@ for (reverse @opt_name) {
         } and $oldmatch->($path)
     };
 }
+
+if ($opt_files) {
+    my $oldmatch= $match;
+    $match= sub ($path) {
+        $items{$path} eq 'i' and $oldmatch->($path)
+    };
+}
+
+if ($opt_dirs) {
+    my $oldmatch= $match;
+    $match= sub ($path) {
+        $items{$path} eq 'd' and $oldmatch->($path)
+    };
+}
+
 
 for (sort keys %items) {
     if ($match->($_)) {
