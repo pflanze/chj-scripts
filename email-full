@@ -11,6 +11,16 @@ usage () {
     exit 1
 }
 
+opt_copy=0
+if [ $# -gt 0 ]; then
+    if [ "$1" = "-c" ]; then
+        opt_copy=1
+        shift
+    else
+        usage
+    fi
+fi
+
 if [ $# -ne 0 ]; then
     usage
 fi
@@ -21,4 +31,13 @@ if [ "${EMAIL_FULL_CLEAN-0}" = 1 ]; then
     fullname=$(printf '%s' "$fullname" | perl -wne 's/\s*\([^()]*\)\s*/ /s; s/\s+\z//; print')
 fi
 
-echo "$fullname <$EMAIL>"
+printit() {
+    echo "$fullname <$EMAIL>"
+}
+
+if [ $opt_copy = 1 ]; then
+    printit | xsel -i
+else
+    printit
+fi
+
