@@ -11,7 +11,7 @@ size=${RXVT_UNICODE_FONTSIZE:-18}
 
 usage () {
     {
-        echo "usage: $0 n|+|-"
+        echo "usage: $0 n|+|-|+n|-n"
         echo "  sets font size in current rxvt-unicode window to n pixels"
         echo "  or increase/decrease it from the current size $size (RXVT_UNICODE_FONTSIZE)"
         echo "  using font $font (RXVT_UNICODE_FONT)"
@@ -45,6 +45,10 @@ case "$1" in
     *)
         if echo "$1" | egrep -q '^[0-9]+$'; then
             size="$1"
+        elif rel=$(echo "$1" | sed 's/^\+//'); then
+            size=$(( $size + $rel ))
+        elif rel=$(echo "$1" | sed 's/^-//'); then
+            size=$(( $size - $rel ))
         else
             usage
         fi
