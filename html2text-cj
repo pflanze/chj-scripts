@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+for f in "$@"; do
+    lynx -dump "$1" |less
+done
