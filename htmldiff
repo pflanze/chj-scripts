@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 my $copyright= <<'COPYRIGHT';
-# Copyright 2003-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Copyright 2003-2023 by Christian Jaeger <ch@christianjaeger.ch>
 # Published under the same terms as perl itself
 COPYRIGHT
 
@@ -23,6 +23,7 @@ sub usage {
                 tags lowercase and reorder attributes alphabetically.
   -t|--text   remove all html tags (by regex, hack?)
   --diff      run diff -u instead of tkdiff
+  --worddiff  wrap on whitespace
 ";
 exit @_ ? 1 : 0;
 }
@@ -33,6 +34,7 @@ my (
     $opt_clean,
     $opt_text,
     $opt_diff,
+    $opt_worddiff,
     );
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -49,6 +51,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_text=1;
     } elsif (/^--diff$/) {
 	$opt_diff=1;
+    } elsif (/^--worddiff$/) {
+	$opt_worddiff=1;
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -112,6 +116,11 @@ sub diffprepare {
     $str=~ s/\. /.\n/sg;
     $str=~ s/\n\n/\n/sg; # why is this necessary?
     $str=~ s/^\n//s; # and why that?
+
+    if ($opt_worddiff) {
+        $str=~ s/\s+/\n/sg;
+    }
+
     $str
 }
 
