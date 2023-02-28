@@ -71,15 +71,40 @@ sub pid_to_programname_orelse {
     my ($_pid) = $pid=~ /^(\d+)\z/ or die "bug";
     if (open my $in, "<", "/proc/$_pid/cmdline") {
         local $/ = "\0";
-        my $cmd0 = <$in>;
-        chomp $cmd0;
+        my @cmd = <$in>;
         close $in or die $!;
+        chomp @cmd;
+        my ($cmd0) = @cmd;
         $cmd0=~ s{.*/}{}s;
+        my $progname = do {
+            if ($cmd0 =~ /^(python|perl|lua|ruby)/) {
+                # an interpreter; instead try to find the script argument
+                # (either literal code, or path): simply skip all options
+                # (how quickly will this fail?).
+                my @args = @cmd;
+                shift @args;
+                while (@args) {
+                    if ($args[0]=~ /^-/) {
+                        shift @args
+                    } else {
+                        last
+                    }
+                }
+                if (@args) {
+                    $args[0]
+                } else {
+                    # fall back (maybe running as a repl?)
+                    $cmd0
+                }
+            } else {
+                $cmd0
+            }
+        };
         if (defined (my $l = readlink "/proc/$_pid/exe")) {
             $l=~ s/ \(deleted\)$//;
-            "$cmd0 ($l)"
+            "$progname ($l)"
         } else {
-            $cmd0
+            "$progname ($cmd[0])"
         }
     } else {
         $orelse
