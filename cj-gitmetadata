@@ -30,9 +30,9 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname save|restore [files to restore]
+    print "$myname save|store | restore [files to restore]
 
-  save: create a directory '$metadatadir' which contains metadata
+  save|store: create a directory '$metadatadir' which contains metadata
   information for all files in the current repository except for the
   '$metadatadir' dir itself and, if present, the files listed in
   '$metadataignorepath' (it does *not* git-add or commit it
@@ -405,136 +405,141 @@ sub ignore_path {
 }
 
 
+sub store {
+    usage "save cannot take path arguments"
+      if @args;
+
+    mkdir $metadatadir;
+
+    my $outdir=
+      $opt_optimize ? $metadatadir : xtmpdir $metadatadir;
+
+    my $now_files= git_ls_files;
+
+    my ($seen_r, $seen_w);
+    my $deletepid;
+    if ($opt_optimize) {
+        # collect seen paths from all subprocesses, in a
+        # subprocess, then delete the now unused entries in the
+        # metadatadir
+
+        ($seen_r, $seen_w)= xpipe;
+        $seen_w->autoflush(1);
+
+        if ($deletepid= xfork) {
+            $seen_r->xclose;
+        } else {
+            $seen_w->xclose;
+
+            my %new_path;
+            # children are sending in parallel, *counting on the
+            # OS* not mixing them up. XXX safety?
+            while (defined (my $v= $seen_r->xreadline0_chop)) {
+                # actually existing path, i.e. path newly saved
+                # into $metadatadir, i.e. what we must not delete.
+                $new_path{$v}=1;
+            }
+            $seen_r->xclose;
+
+            xchdir $metadatadir;
+
+            my $files_of_type= sub {
+                my ($type)=@_;
+                my $c= Chj::IO::Command->new_sender
+                  ("/usr/bin/find", "-type", $type, "-print0");
+                map {
+                    $_ eq "." ? () : do {
+                        s|^\./|| or die "path not starting with ./: '$_'";
+                        $_
+                    }
+                }
+                  $c->xreadline0_chop
+            };
+
+            # This also yields new paths
+            for (&$files_of_type ("f")) {
+                unless ($new_path{$_}) {
+                    xunlink $_
+                }
+            }
+
+            # (try to) remove (possibly) stale dirs
+            for (reverse sort &$files_of_type ("d")) {
+                rmdir $_
+            }
+
+            exit 0;
+        }
+    }
+
+    Parallel_for_each
+      ($now_files,
+       sub {
+           my ($path)=@_;
+           if (not ignore_path($path)) {
+               if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
+                   $seen_w->xprint($path,"\0");
+                   my $content= $metadata->stringify."\n";
+                   my $path= "$outdir/$path";
+                   my $oldcontent;
+                   if ($opt_optimize
+                       and defined ($oldcontent= XContent($path))
+                       and $oldcontent eq $content) {
+                       # do nothing
+                   } else {
+                       xPutfile($path, $content);
+                   }
+               } else {
+                   warn "path '$path' doesn't exist (anymore)\n";
+               }
+           }
+       });
+
+    $seen_w->xclose;
+
+    if ($opt_optimize) {
+        xxwaitpid $deletepid
+    } else {
+        xxsystem ("rm","-rf","--",$metadatadir);
+        $outdir->autoclean(0);
+        xrename "$outdir", $metadatadir;
+    }
+}
+
+sub restore {
+    -d $metadatadir
+        or die "$myname: missing metadata directory at path '$metadatadir'\n";
+    my $metadatapaths= @args ?
+      [
+       map {
+           "$metadatadir/$_"
+       } @args
+      ]
+        : git_ls_files($metadatadir);
+
+    Parallel_for_each
+      ($metadatapaths,
+       sub {
+           my ($metadatapath)=@_;
+           my $path= substr($metadatapath,length ($metadatadir) + 1);
+           eval {
+               local our $metadata= CHJ::Metadata->new_from_path_string
+                 ($path, xContent($metadatapath));
+               my $path= $metadata->path;
+               local our $s= xlstat $path;
+               $metadata->restore($s);
+           };
+           if (ref $@ or $@) {
+               print STDERR "warn: '$path': $@";
+           }
+       });
+}
+               
 our $commands=
   +{
-    save=> sub {
-	usage "save cannot take path arguments"
-	  if @args;
-	
-	mkdir $metadatadir;
-
-	my $outdir=
-	  $opt_optimize ? $metadatadir : xtmpdir $metadatadir;
-
-	my $now_files= git_ls_files;
-
-	my ($seen_r, $seen_w);
-	my $deletepid;
-	if ($opt_optimize) {
-	    # collect seen paths from all subprocesses, in a
-	    # subprocess, then delete the now unused entries in the
-	    # metadatadir
-
-	    ($seen_r, $seen_w)= xpipe;
-	    $seen_w->autoflush(1);
-
-	    if ($deletepid= xfork) {
-		$seen_r->xclose;
-	    } else {
-		$seen_w->xclose;
-
-		my %new_path;
-		# children are sending in parallel, *counting on the
-		# OS* not mixing them up. XXX safety?
-		while (defined (my $v= $seen_r->xreadline0_chop)) {
-		    # actually existing path, i.e. path newly saved
-		    # into $metadatadir, i.e. what we must not delete.
-		    $new_path{$v}=1;
-		}
-		$seen_r->xclose;
-		
-		xchdir $metadatadir;
-
-		my $files_of_type= sub {
-		    my ($type)=@_;
-		    my $c= Chj::IO::Command->new_sender
-		      ("/usr/bin/find", "-type", $type, "-print0");
-		    map {
-			$_ eq "." ? () : do {
-			    s|^\./|| or die "path not starting with ./: '$_'";
-			    $_
-			}
-		    }
-		      $c->xreadline0_chop
-		};
-
-		# This also yields new paths
-		for (&$files_of_type ("f")) {
-		    unless ($new_path{$_}) {
-			xunlink $_
-		    }
-		}
-
-		# (try to) remove (possibly) stale dirs
-		for (reverse sort &$files_of_type ("d")) {
-		    rmdir $_
-		}
-
-		exit 0;
-	    }
-	}
-
-	Parallel_for_each
-	  ($now_files,
-	   sub {
-	       my ($path)=@_;
-	       if (not ignore_path($path)) {
-		   if (my $metadata= CHJ::Metadata->maybe_new_from_path ($path)) {
-		       $seen_w->xprint($path,"\0");
-		       my $content= $metadata->stringify."\n";
-		       my $path= "$outdir/$path";
-		       my $oldcontent;
-		       if ($opt_optimize
-			   and defined ($oldcontent= XContent($path))
-			   and $oldcontent eq $content) {
-			   # do nothing
-		       } else {
-			   xPutfile($path, $content);
-		       }
-		   } else {
-		       warn "path '$path' doesn't exist (anymore)\n";
-		   }
-	       }
-	   });
-
-	$seen_w->xclose;
-
-	if ($opt_optimize) {
-	    xxwaitpid $deletepid
-	} else {
-	    xxsystem ("rm","-rf","--",$metadatadir);
-	    $outdir->autoclean(0);
-	    xrename "$outdir", $metadatadir;
-	}
-    },
-    restore=> sub {
-        -d $metadatadir
-            or die "$myname: missing metadata directory at path '$metadatadir'\n";
-	my $metadatapaths= @args ?
-	  [
-	   map {
-	       "$metadatadir/$_"
-	   } @args
-	  ]
-	    : git_ls_files($metadatadir);
-
-	Parallel_for_each
-	  ($metadatapaths,
-	   sub {
-	       my ($metadatapath)=@_;
-	       my $path= substr($metadatapath,length ($metadatadir) + 1);
-	       eval {
-		   local our $metadata= CHJ::Metadata->new_from_path_string
-		     ($path, xContent($metadatapath));
-		   my $path= $metadata->path;
-		   local our $s= xlstat $path;
-		   $metadata->restore($s);
-	       };
-	       if (ref $@ or $@) {
-		   print STDERR "warn: '$path': $@";
-	       }
-	   });
-    }
+    save=> \&store,
+    store=> \&store,
+    restore=> \&restore,
    };
 if (my $c= $$commands{$command}) {
     &$c
