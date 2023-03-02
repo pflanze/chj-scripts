@@ -508,6 +508,8 @@ our $commands=
 	}
     },
     restore=> sub {
+        -d $metadatadir
+            or die "$myname: missing metadata directory at path '$metadatadir'\n";
 	my $metadatapaths= @args ?
 	  [
 	   map {
