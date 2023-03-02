@@ -9,7 +9,7 @@ usage () {
     echo "  without arguments works."
     echo
     echo "  Options:"
-    echo "    -a      run from root of working directory even if not there"
+    echo "    -a      cd to root of working directory when not there"
     echo "    -m, -c  passed to git commit"
     exit 1
 }
