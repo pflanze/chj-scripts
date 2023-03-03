@@ -98,8 +98,11 @@ sub maybe_localtime_TZ {
 sub pars {
     my ($tz_offsetter, $str)=@_;
     my $usstr= european2us($str);
-    my $t_possibly_UTC= Date::Parse::str2time $usstr
-        or die "Date::Parse::str2time failed for: '$usstr'";
+    my $t_possibly_UTC= do {
+        Date::Parse::str2time $usstr
+            or ($usstr=~ s/\sat\s/ /sg
+                and Date::Parse::str2time $usstr)
+        } or die "Date::Parse::str2time failed for: '$usstr'";
     my $t= $tz_offsetter->($t_possibly_UTC, $str);
     my $lt= localtime $t;
     if (my $TZ= ($ENV{TZ} or maybe_localtime_TZ)) {
