@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+usage () {
+    echo "$0 mailfile"
+    echo "  Appends mailfile (maildir format, i.e. bare mail file) to"
+    echo "  the current user's /var/mail/ file."
+    exit 1
+}
+
+if [ $# = 0 ];
+then
+    usage
+fi
+
+# Using whoami would be *more* dangerous? If EUID!=UID, using $USER
+# will fail safely, so, better?
+spool=/var/mail/"$USER"
+
+inject() {
+    d="$(date '+%a %b %d %H:%M:%S %Y')"
+    mailcontents="$(cat "$1")"
+    # Is there any kind of locking required? XX I'm sure there is.
+    {
+        echo "From $USER@$HOSTNAME $d"
+        echo "$mailcontents"
+        echo
+        echo
+    } >> "$spool"
+}
+
+
+for file in "$@"; do
+    inject "$file"
+done
