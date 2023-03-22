@@ -71,12 +71,23 @@ sub _auto_detect_remote {
         my ($name, $url, $mode)= @$_;
         $url=~ /^https:/;
     } @r;
+    my @r_ssh= grep  {
+        my ($name, $url, $mode)= @$_;
+        $url=~ /^\w+\@\w+/;
+    } @r;
 
     if (@r) {
         if (@r_https) {
-            $r_https[0]
+            $r_https[0][1]
+        } elsif (@r_ssh) {
+            my $r = $r_ssh[0][1];
+            my ($uname, $dom, $rest) = $r=~ /^(\w+)\@([^:]+):(.*)/s
+                or die "can't parse this purported ssh location: '$r'";
+            $uname eq "git"
+                or die "username in ssh location is not 'git': '$r'";
+            "https://$dom/$rest"
         } else {
-            die "converting ssh urls to https is not done yet"; # XX
+            die "missing https or ssh location";
         }
     } else {
         die "$myname: none of the remotes in the current repository is named origin or github and refers to a github url\n";
@@ -84,7 +95,7 @@ sub _auto_detect_remote {
 }
 
 sub auto_detect_remote () {
-    my $url= _auto_detect_remote->[1];
+    my $url= _auto_detect_remote;
     $url=~ s/\.git.*//;
     $url
 }
