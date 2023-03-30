@@ -1,0 +1,75 @@
+#!/usr/bin/perl -w
+
+# Thu Jan  2 05:23:03 GMT 2014
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict;
+
+our $days= 61;
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [days]
+
+  Options:
+    --start 'datestr'  instead of current time
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+our $opt_start;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   "start=s"=> \$opt_start,
+	   ) or exit 1;
+usage unless @ARGV <=2;
+
+($days)= @ARGV if @ARGV;
+
+##lib
+sub xprintln {
+    print @_, "\n" or die $!
+}
+
+use Date::Parse 'str2time';
+
+our $start= $opt_start ? (str2time($opt_start)
+			  or die "unparseable start '$opt_start'")
+  : time;
+
+#use Time::localtime;
+use Chj::xperlfunc 'xlocaltime';
+use Time::Local;
+
+use Chj::Parse::Date::days '%shortday_list_by_locale';
+use Chj::Parse::Date::months '%shortmonth_list_by_locale';
+
+our $t= xlocaltime ($start) ->set_hour(12)->unixtime;
+
+our $wdays= $shortday_list_by_locale{en};
+our $months= $shortmonth_list_by_locale{en};
+
+for (1..$days) {
+    my $l= xlocaltime ($t);
+    my $wday= $l->wDay;
+    xprintln( ($wday == 0 ? "=" : "-")x72);
+    xprintln sprintf('%s %2d %s %s',
+                     $$wdays[$wday],
+                     $l->mday,
+                     $$months[$l->mon],
+                     $l->Year_and_iso_week_number);
+    #use FP::Repl::Trap; use FP::Repl;repl;
+    xprintln;
+    $t+= 24*60*60;
+}
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
