@@ -3,5 +3,5 @@
 set -euo pipefail
 IFS=
 
-id=$(passwdgen)
+id=$(passwdgen 6)
 echo https://meet.jit.si/"$id"
