@@ -34,6 +34,7 @@ usage "expecting 1 non-option argument" unless @ARGV == 1;
 my ($regex)= @ARGV;
 
 exec "gfind",
+    "--path", "^(?!\.METADATA-v2)",
     ($opt_i ? "-i" : ()),
     "--name", $regex,
     "--dirs";

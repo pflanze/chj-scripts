@@ -33,6 +33,7 @@ GetOptions("verbose"=> \$verbose,
 usage unless @ARGV;
 
 exec "gfind",
+    "--path", "^(?!\.METADATA-v2)",
     ($opt_i ? "-i" : ()),
     map { ("--name", $_) } @ARGV;
 
