@@ -32,5 +32,7 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage unless @ARGV;
 
-exec "gfind", ($opt_i ? "-i" : ()), map { ("--name", $_) } @ARGV;
+exec "gfind",
+    ($opt_i ? "-i" : ()),
+    map { ("--name", $_) } @ARGV;
 
