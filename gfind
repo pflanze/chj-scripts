@@ -105,8 +105,9 @@ for (reverse @opt_name) {
     my $oldmatch= $match;
     $match= sub ($path) {
         do {
-            $path=~ s|^.*/||s;
-            ($opt_i ? $path=~ /$opt_name/i : $path=~ /$opt_name/)
+            my $name= $path;
+            $name=~ s|^.*/||s;
+            ($opt_i ? $name=~ /$opt_name/i : $name=~ /$opt_name/)
         } and $oldmatch->($path)
     };
 }
