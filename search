@@ -14,8 +14,10 @@ use lib "/opt/functional-perl/lib"; ## tmp
 
 # COPY from meta/bin/update-database
 use Encode;
-sub utf8decode($str) {
-    Encode::decode("UTF-8", $str, Encode::FB_CROAK);
+sub utf8decode($context, $str) {
+    eval {
+        Encode::decode("UTF-8", $str, Encode::FB_CROAK)
+    } // die "utf8decode: $context: $@"
 }
 
 
@@ -217,7 +219,7 @@ sub ignore_suffix($suff) {
 }
 sub ignore($path) {
     $path=~ m{(?:^|/)\.METADATA-v2/} or ignore_suffix(suffix $path) or do {
-        my $filename = utf8decode basename $path;
+        my $filename = utf8decode "filename of path '$path'", basename $path;
         sub {
             for (@opt_ignore_filename) {
                 return 1 if $filename=~ /$_/
@@ -307,7 +309,7 @@ my $fileset_with_links= do {
         ->filtermap(
             sub ($path) {
                 if (my $s= Xlstat $path) {
-                    Info(utf8decode($path), $s)
+                    Info(utf8decode("path", $path), $s)
                 } else {
                     warn "$myname: file in index but not in working dir: '$path'\n"
                         if $opt_warn_deleted;
@@ -350,7 +352,7 @@ sub by_contentkey($set) {
 my $fileset = $fileset_with_links;
 
 for my $regex_raw (@ARGV) {
-    my $regex = utf8decode $regex_raw;
+    my $regex = utf8decode "regex argument '$regex_raw'", $regex_raw;
     my $re= $opt_i ? qr/$regex/i : qr/$regex/;
 
     my $fileset2 = hash_key_filter $fileset, sub ($path) {
