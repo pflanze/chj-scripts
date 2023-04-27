@@ -491,20 +491,22 @@ if ($opt_repl) {
     require FP::Repl;
     FP::Repl::repl();
 } else {
+    my $start = sub { writeit 1 };
+    my $stop = sub { writeit 0 };
     my $action = +{
-        start=> sub { writeit 1 },
-        stop=> sub { writeit 0 },
-        on=> sub { writeit 1 },
-        off=> sub { writeit 0 },
-        yes=> sub { writeit 1 },
-        no=> sub { writeit 0 },
+        start=> $start,
+        stop=> $stop,
+        on=> $start,
+        off=> $stop,
+        yes=> $start,
+        no=> $stop,
         toggle=> sub {
             my $current = startstop_to_boolean current_status;
             writeit !$current;
             my $startstop = current_status;
             print "${startstop}\n";
         },
-        restart=> sub { writeit 1 },
+        restart=> $start,
         status=> sub {
             my $startstop = current_status;
             print "${startstop}\n";
