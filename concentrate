@@ -12,7 +12,7 @@ use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 use Getopt::Long;
-use Chj::xperlfunc qw(xgetfile_utf8);
+use Chj::xperlfunc qw(xgetfile_utf8 xlocaltime);
 use Chj::xtmpfile;
 use FP::List qw(list array_to_list);
 use FP::Combinators qw(compose);
@@ -492,7 +492,23 @@ if ($opt_repl) {
     FP::Repl::repl();
 } else {
     my $start = sub { writeit 1 };
-    my $stop = sub { writeit 0 };
+    my $stop = sub {
+        my $t = xlocaltime(time);
+        my $wday = $t->wday;
+        my $hour = $t->hour;
+        my $is_weekend = 
+            ($wday == 5 and $hour >= 18) ?
+            "Friday evening" : 
+            ($wday == 6) ?
+            "Saturday" :
+            0;
+        if ($is_weekend) {
+            warn "It's $is_weekend, so you're allowed\n";
+            writeit 0
+        } else {
+            die "not today";
+        }
+    };
     my $action = +{
         start=> $start,
         stop=> $stop,
