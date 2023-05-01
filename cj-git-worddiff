@@ -1,0 +1,3 @@
+#!/bin/bash
+
+GIT_EXTERNAL_DIFF=_cj-git-diff CJ_GIT_DIFF_CMD=worddiff PAGER=cat git diff "$@"
