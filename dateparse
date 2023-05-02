@@ -360,6 +360,8 @@ sub pr {
 	$str_=~ s/_/ /sg;
 	# cj-tim (Emacs) style format:
 	$str_=~ s/\{(?:mtime)?(.+?)\}/$1/sg;
+        # '@' is now used in emails from meetup.com:
+        $str_=~ s/\@/ /sg;
 	if ($str eq $str_) {
 	    die $e1
 	} else {
