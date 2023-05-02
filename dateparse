@@ -193,6 +193,8 @@ our $nondst_zone_names= +{
     CH=> 'Europe/Zurich',
     DE=> 'Europe/Berlin',
     SE=> 'Europe/Stockholm',
+    UK=> 'Europe/London',
+    GB=> 'Europe/London',
 };
 
 our $city2nondst_zone_name= +{
