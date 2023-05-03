@@ -496,14 +496,16 @@ if ($opt_repl) {
         my $t = xlocaltime(time);
         my $wday = $t->wday;
         my $hour = $t->hour;
-        my $is_weekend = 
+        my $is_ok = 
             ($wday == 5 and $hour >= 18) ?
             "Friday evening" : 
             ($wday == 6) ?
             "Saturday" :
+            ($wday == 3) ?
+            "Wednesday" :
             0;
-        if ($is_weekend) {
-            warn "It's $is_weekend, so you're allowed\n";
+        if ($is_ok) {
+            warn "It's $is_ok, so you're allowed\n";
             writeit 0
         } else {
             die "not today";
