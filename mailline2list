@@ -58,19 +58,26 @@ our $part2filename= do {
     \%h
 };
 
+my %chosen_t; # t => undef
+
 while (<STDIN>) {
     chomp;
     if (my ($t)= /^(\d{10})\s/) { # sync with above
-	if (defined (my $fns= $part2filename->{$t})) {
-	    my @fns = sort keys %{$fns};
-	    if (@fns > 1) {
-		warn "warning: choosing multiple files for '$t': ".join(", ", map { "'$_'" } @fns)."\n";
-	    }
-	    for my $fn (@fns) {
-		xprintln $fn;
-	    }
+	if (exists $chosen_t{$t}) {
+	    # already printed those
 	} else {
-	    warn "no file for '$t'";
+	    if (defined (my $fns= $part2filename->{$t})) {
+		my @fns = sort keys %{$fns};
+		if (@fns > 1) {
+		    warn "warning: choosing multiple files for '$t': ".join(", ", map { "'$_'" } @fns)."\n";
+		}
+		for my $fn (@fns) {
+		    xprintln $fn;
+		}
+	    } else {
+		warn "no file for '$t'";
+	    }
+	    $chosen_t{$t} = undef;
 	}
     } else {
 	warn "ignoring line: '$_'";
