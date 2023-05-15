@@ -46,17 +46,13 @@ sub filenamepart {
 our $part2filename= do {
     my $d= xopendir(".");
     my %h;
-    while (defined (my $item= $d->xnread)) { # and y  still   laurent
-	if ($item=~ /^(\d{10})\b/) { # XX keep in sync with '/^(\d{10})\s/' below
-	    my $p= filenamepart $item;
-	    if (exists $h{$p}) {
-		warn "duplicate entries for key '$p': '$h{$p}' and '$item'"
-	    } else {
-		$h{$p}= $item
-	    }
+    while (defined (my $fn= $d->xnread)) { # and y  still   laurent
+	if ($fn=~ /^(\d{10})\b/) { # XX keep in sync with '/^(\d{10})\s/' below
+	    my $p= filenamepart $fn;
+	    $h{$p}{$fn} = undef;
 	} else {
-	    warn "ignoring directory entry '$item'"
-	      unless $item eq "seen"; # my marker hack
+	    warn "ignoring directory entry '$fn'"
+	      unless ($fn eq "seen" or $fn eq "looking"); # my marker hacks
 	}
     }
     \%h
@@ -65,8 +61,14 @@ our $part2filename= do {
 while (<STDIN>) {
     chomp;
     if (my ($t)= /^(\d{10})\s/) { # sync with above
-	if (defined (my $fn= $$part2filename{$t})) {
-	    xprintln $fn;
+	if (defined (my $fns= $part2filename->{$t})) {
+	    my @fns = sort keys %{$fns};
+	    if (@fns > 1) {
+		warn "warning: choosing multiple files for '$t': ".join(", ", map { "'$_'" } @fns)."\n";
+	    }
+	    for my $fn (@fns) {
+		xprintln $fn;
+	    }
 	} else {
 	    warn "no file for '$t'";
 	}
