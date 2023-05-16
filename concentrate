@@ -501,8 +501,8 @@ if ($opt_repl) {
             "Friday evening" : 
             ($wday == 6) ?
             "Saturday" :
-            ($wday == 3) ?
-            "Wednesday" :
+            ($wday == 2) ?
+            "Tuesday" :
             0;
         if ($is_ok) {
             warn "It's $is_ok, so you're allowed\n";
