@@ -43,7 +43,8 @@ sub usage {
      --warn-deleted          warn about files recorded in the Git index
                              but not existing
      --warn-encoding         report each file that does not decode as
-                             UTF-8 (a summary will be printed in any case)
+                             UTF-8 (a summary will be printed in any case
+                             --actually it won't, BUG/BROKEN)
      --warn                  turn on all the warnings
 
   (Christian Jaeger <$email>)
