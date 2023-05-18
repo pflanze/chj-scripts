@@ -42,6 +42,8 @@ sub usage {
      --warn-broken-symlinks  warn about broken symlinks
      --warn-deleted          warn about files recorded in the Git index
                              but not existing
+     --warn-encoding         report each file that does not decode as
+                             UTF-8 (a summary will be printed in any case)
      --warn                  turn on all the warnings
 
   (Christian Jaeger <$email>)
@@ -54,7 +56,7 @@ our $verbose=0;
 #our $opt_dry;
 my $opt_i;
 my $opt_sort_alpha;
-my ($opt_warn_broken, $opt_warn_deleted);
+my ($opt_warn_broken, $opt_warn_deleted, $opt_warn_encoding);
 my @opt_ignore_filename;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
@@ -66,8 +68,9 @@ GetOptions("verbose"=> \$verbose,
            },
            "warn-broken-symlinks"=> \$opt_warn_broken,
            "warn-deleted"=> \$opt_warn_deleted,
+           "warn-encoding"=> \$opt_warn_encoding,
            "warn"=> sub {
-               ($opt_warn_broken, $opt_warn_deleted)=(1,1);
+               ($opt_warn_broken, $opt_warn_deleted, $opt_warn_encoding)=(1,1,1);
            },
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
@@ -350,6 +353,7 @@ sub by_contentkey($set) {
 
 
 my $fileset = $fileset_with_links;
+my $num_encoding = 0;
 
 for my $regex_raw (@ARGV) {
     my $regex = utf8decode "regex argument '$regex_raw'", $regex_raw;
@@ -386,7 +390,9 @@ for my $regex_raw (@ARGV) {
                     1
                 } ? $res : do {
                     if ($@ =~ /ill-formed UTF-8/) {
-                        warn "$myname: ignoring file in non-utf8 encoding: '$path'\n";
+                        warn "$myname: ignoring file in non-utf8 encoding: '$path'\n"
+                            if $opt_warn_encoding;
+                        $num_encoding++;
                     } else {
                         warn "$myname: ignoring file with error: '$path': $@";
                     }
@@ -406,6 +412,11 @@ for my $regex_raw (@ARGV) {
         \%h
     };
     $fileset = hashset_union $fileset2, $morefiles;
+}
+
+if ($num_encoding) {
+    warn "$myname: ignored $num_encoding files that did not decode as UTF-8\n".
+        "$myname: (use --warn-encoding to see which)\n";
 }
 
 # For the same content, only take one path; take the first
