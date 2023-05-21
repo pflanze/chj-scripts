@@ -501,6 +501,8 @@ if ($opt_repl) {
             "Friday evening" : 
             ($wday == 6) ?
             "Saturday" :
+            ($wday == 0 and $hour < 18) ?
+            "Sunday before 6 PM" :
             ($wday == 2) ?
             "Tuesday" :
             0;
