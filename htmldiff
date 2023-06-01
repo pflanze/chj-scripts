@@ -24,6 +24,8 @@ sub usage {
   -t|--text   remove all html tags (by regex, hack?)
   --diff      run diff -u instead of tkdiff
   --worddiff  wrap on whitespace
+  --html      use html mode even if the files do not have a suffix that
+              contains the strings 'htm' or 'xml'
 ";
 exit @_ ? 1 : 0;
 }
@@ -35,6 +37,7 @@ my (
     $opt_text,
     $opt_diff,
     $opt_worddiff,
+    $opt_html_mode,
     );
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
@@ -53,6 +56,8 @@ for (my $i=0; $i<=$#ARGV; $i++) {
 	$opt_diff=1;
     } elsif (/^--worddiff$/) {
 	$opt_worddiff=1;
+    } elsif (/^--html/) {
+        $opt_html_mode = 1
     } elsif (/^-/) {
     	warn "Unknown option '$_'\n";
     	usage(1)
@@ -102,17 +107,21 @@ sub diffprepare {
     # web pages) generic:
     my $filename = $path;
     $filename =~ s|.*/||s;
-    $filename =~ s|\.\w+\z||;
+    my $maybe_suffix = $filename =~ s|\.(\w+)\z|| ? $1 : undef;
+    my $is_htmlmode = $opt_html_mode || (defined $maybe_suffix and $maybe_suffix =~ /htm|xml/i);
     my $quotedfilename = url_encode($filename);
     # Firefox does not escape ' nor |, so:
     $quotedfilename =~ s|%27|'|sg;
     $quotedfilename =~ s|%7C|\||sg;
-    my $n = $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg || 0;
-    warn "$myname: $n replacements for '$quotedfilename'\n";
-    # (^ any good way to have more precision?)
-
+    if ($is_htmlmode) {
+        my $n = $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg || 0;
+        warn "$myname: $n replacements for '$quotedfilename'\n";
+        # (^ any good way to have more precision?)
+    }
     $str=~ s/\s+/ /sg;
-    $str=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
+    if ($is_htmlmode) {
+        $str=~ s/\s*(<[^>]+>)\s*/"\n".($opt_text ? "" : tagcleanup($1)."\n")/sge;
+    }
     $str=~ s/\. /.\n/sg;
     $str=~ s/\n\n/\n/sg; # why is this necessary?
     $str=~ s/^\n//s; # and why that?
