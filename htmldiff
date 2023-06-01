@@ -107,8 +107,8 @@ sub diffprepare {
     # Firefox does not escape ' nor |, so:
     $quotedfilename =~ s|%27|'|sg;
     $quotedfilename =~ s|%7C|\||sg;
-    $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg
-        or warn "note: not found: '$quotedfilename'";
+    my $n = $str =~ s|\Q$quotedfilename\E_files\b|\$self_files|sg || 0;
+    warn "$myname: $n replacements for '$quotedfilename'\n";
     # (^ any good way to have more precision?)
 
     $str=~ s/\s+/ /sg;
