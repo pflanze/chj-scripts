@@ -315,6 +315,8 @@ sub _pr {
         }
     };
 
+    $str=~ s/[()\[\]]/ /sg; # evil? but "... (PDT)" ignores the PDT!
+    
     my @p= split /(?:-|—|\b(?:to|bis|à)\b) (?!\d{4}\b)/x, $str;
     if (@p==1) {
         pt $tz_offsetter, $p[0]
