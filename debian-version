@@ -234,26 +234,42 @@ our $releases=
    ["buster", "10.9", "2021-03-27"],
    ["buster", "10.10", "2021-06-19"],
    ["buster", "10.11", "2021-10-09"],
-   ["buster", "10.12", ],
-   ["buster", "10.13", ],
+   ["buster", "10.12", "2022-03-26"],
+   ["buster", "10.13", "2022-09-10"],
    ["buster", "10.14", ],
    ["buster", "10.15", ],
    ["buster", "10.16", ],
 
    ["bullseye", "11.0", "2021-08-14", "59551", "30000+", undef, "2026-08-14~" ],
    ["bullseye", "11.1", "2021-10-09"],
-   ["bullseye", "11.2", ],
-   ["bullseye", "11.3", ],
-   ["bullseye", "11.4", ],
-   ["bullseye", "11.5", ],
-   ["bullseye", "11.6", ],
-   ["bullseye", "11.7", ],
+   ["bullseye", "11.2", "2021-12-18"],
+   ["bullseye", "11.3", "2022-03-26"],
+   ["bullseye", "11.4", "2022-07-09"],
+   ["bullseye", "11.5", "2022-09-10"],
+   ["bullseye", "11.6", "2022-12-17"],
+   ["bullseye", "11.7", "2023-04-29"],
    ["bullseye", "11.8", ],
    ["bullseye", "11.9", ],
+
+   ["bookworm", "12.0", "2023-06-10",
+    "64419",
+    undef, # num_packages_source
+    undef, # num_developers
+    "2028-06-10~" # securitysupport_termination_date
+   ],
+   ["bookworm", "12.1", ],
+   ["bookworm", "12.2", ],
+   ["bookworm", "12.3", ],
+   ["bookworm", "12.4", ],
+   ["bookworm", "12.5", ],
+   ["bookworm", "12.6", ],
+   ["bookworm", "12.7", ],
+   ["bookworm", "12.8", ],
+   ["bookworm", "12.9", ],
    
    # The last entry must/should always be the sid distribution (check
    # how it is being added as 'sid' to $release_by_name below) :
-   ["bookworm", "12.0", undef, undef, undef, undef, undef ]
+   ["trixie", "13.0", undef, undef, undef, undef, undef ]
   ];
 
 sub index_of_by {
