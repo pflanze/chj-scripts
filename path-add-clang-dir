@@ -21,17 +21,29 @@ BEGIN {
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname
+    print "$myname [cmd [args]]
 
   Add the path to the bin directory of the (currently simply) newest
   clang version on the local (currently just Debian like) system to
-  the value of the PATH env var and print it.
+  the value of the PATH env var and either print it (when no cmd was
+  given) or set PATH and run cmd with args.
 
   ($email_full)
 ";
 exit (@_ ? 1 : 0);
 }
-usage if @ARGV;
+my @cmd;
+if (@ARGV) {
+    my $a0 = $ARGV[0];
+    if ($a0 eq "-h" or $a0 eq "--help") {
+        usage
+    }
+    if ($a0 eq "--") {
+        @cmd = @ARGV[1 .. $#ARGV];
+    } else {
+        @cmd = @ARGV;
+    }
+}
 
 my @versions = map {
     if (my ($v) = m{/llvm-([^/]+)/}) {
@@ -55,7 +67,12 @@ my $newpath = do {
     }
 };
 
-print $newpath, "\n"
-    or die "stdout: $!";
+if (@cmd) {
+    $ENV{PATH} = $newpath;
+    exec { $cmd[0] } @cmd or exit 127;
+} else {
+    print $newpath, "\n"
+        or die "stdout: $!";
+}
 
 #use FP::Show; use FP::Repl; use FP::Repl::Trap; repl;
