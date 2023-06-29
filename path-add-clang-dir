@@ -1,0 +1,61 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname
+
+  Add the path to the bin directory of the (currently simply) newest
+  clang version on the local (currently just Debian like) system to
+  the value of the PATH env var and print it.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+usage if @ARGV;
+
+my @versions = map {
+    if (my ($v) = m{/llvm-([^/]+)/}) {
+        [$v, $_]
+    } else {
+        die "no match for path: '$_'";
+    }
+} glob "/usr/lib/llvm-*/bin/";
+
+my @sorted = sort { $a->[0] <=> $b->[0] } @versions;
+
+my $path = $ENV{PATH} // "";
+
+my $newpath = do {
+    if (@sorted) {
+        my $bindir = $sorted[-1][1];
+        $bindir =~ s{/\z}{};
+        "$bindir:$path"
+    } else {
+        $path
+    }
+};
+
+print $newpath, "\n"
+    or die "stdout: $!";
+
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; repl;
