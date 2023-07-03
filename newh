@@ -12,7 +12,7 @@ newh() {
     else
         tag=$(printf '%s' "${path}" | \
                   perl -wne '
-                      s{.*/}{};
+                      # s{.*/}{};
                       s/\.(h\w*)$/_${1}_/;
                       s{[^\w]}{_}sg;
                       print uc $_ or die')
