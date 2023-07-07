@@ -1,0 +1,52 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Chj::xperlfunc ":all";
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname binary_file [ args .. ] 
+
+  Watch the binary file and run it with the given args whenever it
+  changes. (If the given binary file path does not contain a slash, ./
+  is prepended.)
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV;
+
+usage if $ARGV[0] =~ /^--?h(elp)?$/;
+
+my ($binary, @args) = @ARGV;
+
+my $binary_path =  ($binary=~ m{/}) ? $binary : "./$binary";
+
+xexec("watchfile-run",
+      "-a",
+      "-t",
+      $binary_path,
+      '^'.quotemeta(basename $binary_path).'$',
+      dirname($binary_path));
+
