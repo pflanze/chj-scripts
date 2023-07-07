@@ -20,6 +20,7 @@ BEGIN {
 }
 
 use Chj::xperlfunc ":all";
+use Chj::IO::Command;
 #use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 sub usage {
@@ -43,10 +44,14 @@ my ($binary, @args) = @ARGV;
 
 my $binary_path =  ($binary=~ m{/}) ? $binary : "./$binary";
 
+my $C = Chj::IO::Command->new_sender("C_", $binary_path, @args);
+my $trampoline = $C->xcontent; chomp $trampoline;
+$C->xxfinish;
+
 xexec("watchfile-run",
       "-a",
       "-t",
-      $binary_path,
+      $trampoline,
       '^'.quotemeta(basename $binary_path).'$',
       dirname($binary_path));
 
