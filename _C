@@ -2,7 +2,7 @@
 
 # Tue May  4 07:00:03 EDT 2010
 my $copyright= <<'COPYRIGHT';
-# Copyright 2010-2022 by Christian Jaeger <ch@christianjaeger.ch>
+# Copyright 2010-2023 by Christian Jaeger <ch@christianjaeger.ch>
 # Published under the same terms as perl itself
 COPYRIGHT
 my ($email_full)= $copyright=~ / by ([^\n]*)/s;
@@ -17,6 +17,7 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 
 my $is_CC = $myname eq "CC";
+my $is_C_ = $myname eq "C_";
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
@@ -28,7 +29,8 @@ sub usage {
 
   When called as 'C', the generated script will not accept further
   arguments. When called as 'CC', the script passes further arguments
-  as additional arguments to cmd.
+  as additional arguments to cmd. When called as 'C_', the script
+  ignores further arguments.
 
   ($email_full)
 ";
@@ -56,7 +58,7 @@ my $n = do {
 # replaced by positional argument references
 my $origcode= join(" ", map{possibly_singlequote_sh $_} @ARGV);
 
-if ($is_CC) {
+if ($is_CC or $is_C_) {
     $t->xprint('#!/bin/bash
 set -eu
 if [ $# -lt '.$n.' ]; then
