@@ -6,7 +6,13 @@ default_outpath=../$(basename "$(pwd)").tar.xz
 
 help () {
     echo "$0 [id outpath]"
-    echo "  outpath should end in .tar, .tgz, .tar.gz, .tar.bz2, .tar.xz"
+    echo "  outpath should end in"
+    echo "    .tar"
+    echo "    .tar.gz / .tgz"
+    echo "    .tar.bz2"
+    echo "    .tar.xz"
+    echo "    .tar.rz"
+    echo "    .zip"
     echo "  If no argument is given, uses: HEAD $default_outpath"
     exit 1
 }
@@ -22,7 +28,7 @@ else
 fi
 
 
-base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tgz|tar.gz|zip)[^/]*$}{}s; print'`
+base=`echo "$outpath"| perl -wne 'chomp; s{\.(tar|tar\.gz|tgz|tar\.bz2|tar\.xz|tar\.rz|zip)$}{}s; print'`
 
 produce () {
     local format
