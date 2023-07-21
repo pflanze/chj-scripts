@@ -93,20 +93,20 @@ sub perhaps_parse($str, $unit_re) {
     }
 }
 
-sub parse_hms {
+sub parse_duration_hms {
     my ($orig)= @_;
     my $str0= $orig;
     my $ms= sub ($hours, $str1, $seen_hours) {
         if (my ($min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
             my $sec;
             if (my ($_sec, $str3)= perhaps_parse $str2, qr/s(?:ec(?:onds?)?)?/) {
-                length($str3) and return Error "parse_hms($orig): unknown rest '$str3'";
+                length($str3) and return Error "parse_duration_hms($orig): unknown rest '$str3'";
                 $sec = $_sec;
             } else {
                 if (($_sec)= $str2=~ /^(\d+)\s*\z/) {
                     $sec = $_sec;
                 } else {
-                    length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
+                    length($str2) and return Error "parse_duration_hms($orig): unknown rest '$str2'";
                     $sec = 0;
                 }
             }
@@ -115,19 +115,19 @@ sub parse_hms {
             if ($seen_hours) {
                 my $min;
                 if (my ($_min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
-                    length($str2) and return Error "parse_hms($orig): unknown rest '$str2'";
+                    length($str2) and return Error "parse_duration_hms($orig): unknown rest '$str2'";
                     $min = $_min;
                 } else {
                     if (($_min)= $str1=~ /^(\d+)\s*\z/) {
                         $min = $_min;
                     } else {
-                        length($str1) and return Error "parse_hms($orig): unknown rest '$str1'";
+                        length($str1) and return Error "parse_duration_hms($orig): unknown rest '$str1'";
                         $min = 0;
                     }
                 }
                 (($hours * 60) + $min) * 60
             } else {
-                Error "parse_hms($orig): no match";
+                Error "parse_duration_hms($orig): no match";
             }
         }
     };
@@ -139,21 +139,21 @@ sub parse_hms {
 }
 
 require FP::Repl::Trap if $debug;
-is_Error parse_hms "1" or die;
-parse_hms("1h") == 3600 or die;
-parse_hms("2h") == 2*3600 or die;
-parse_hms("1h10m") == 70*60 or die;
-parse_hms("1h10") == 70*60 or die;
-is_Error parse_hms "1h10s" or die;
-parse_hms("1h10m5") == 70*60+5 or die;
-parse_hms("1h10m5seconds") == 70*60+5 or die;
-parse_hms("10m5") == 10*60+5 or die;
-parse_hms("10m") == 10*60 or die;
-is_Error parse_hms("10s") or die; # OK since parsedate will handle that one
+is_Error parse_duration_hms "1" or die;
+parse_duration_hms("1h") == 3600 or die;
+parse_duration_hms("2h") == 2*3600 or die;
+parse_duration_hms("1h10m") == 70*60 or die;
+parse_duration_hms("1h10") == 70*60 or die;
+is_Error parse_duration_hms "1h10s" or die;
+parse_duration_hms("1h10m5") == 70*60+5 or die;
+parse_duration_hms("1h10m5seconds") == 70*60+5 or die;
+parse_duration_hms("10m5") == 10*60+5 or die;
+parse_duration_hms("10m") == 10*60 or die;
+is_Error parse_duration_hms("10s") or die; # OK since parsedate will handle that one
 #use FP::Repl;repl;
 
 sub parseFuture ($orig, $now, $accept_past = 0) {
-    my $hms= parse_hms $orig;
+    my $hms= parse_duration_hms $orig;
     if (! is_Error $hms) {
         $now + $hms
     } else {
