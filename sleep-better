@@ -193,7 +193,7 @@ sub parseFuture ($orig, $now, $accept_past = 0){
         };
         if (!$accept_past and $t < $now) {
             die join("\n  and ", @$hms,
-                     "parseFuture('$orig'): time (".localtime($t)
+                     "parseFuture('$orig'): time ".localtime($t)
                      ." is past now (".localtime ($now).")");
         }
         $t
