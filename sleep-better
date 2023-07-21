@@ -152,7 +152,7 @@ parse_hms("10m") == 10*60 or die;
 is_Error parse_hms("10s") or die; # OK since parsedate will handle that one
 #use FP::Repl;repl;
 
-sub parseFuture ($orig, $now, $accept_past = 0){
+sub parseFuture ($orig, $now, $accept_past = 0) {
     my $hms= parse_hms $orig;
     if (! is_Error $hms) {
         $now + $hms
