@@ -189,7 +189,15 @@ sub parseFuture ($orig, $now, $accept_past = 0) {
                             NOW=> $now);
                 defined $maybe_t
                   or die join("\n  and ", @$hms, "parseFuture('$orig'): $err");
-                $maybe_t
+
+                my $t = $maybe_t;
+                # `PREFER_FUTURE=> 1` above does not help the case of
+                # "02:30" (but only year or day of week), so:
+                if (!$accept_past and $t < $now and $s=~ /^\s*\d+:\d+(?::\d+)?\s*\z/) {
+                    parseFuture($s . " tomorrow", $now, $accept_past)
+                } else {
+                    $t
+                }
             }
         };
         if (!$accept_past and $t < $now) {
