@@ -151,7 +151,7 @@ parse_duration_hms("1h10m5seconds") == 70*60+5 or die;
 parse_duration_hms("10m5") == 10*60+5 or die;
 parse_duration_hms("10m") == 10*60 or die;
 is_Error parse_duration_hms("10s") or die; # OK since parsedate will handle that one
-#use FP::Repl;repl;
+
 
 sub parseFuture ($orig, $now, $accept_past = 0) {
     my $hms= parse_duration_hms $orig;
