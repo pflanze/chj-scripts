@@ -25,7 +25,8 @@ sub usage {
             print the end time to stderr (default)
   --quiet
             do not print anything
-
+  --test
+            run tests
 
   Also see dateparse.
 
