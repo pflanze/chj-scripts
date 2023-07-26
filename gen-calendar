@@ -54,17 +54,18 @@ use Chj::Parse::Date::months '%shortmonth_list_by_locale';
 
 our $t= xlocaltime ($start) ->set_hour(12)->unixtime;
 
-our $wdays= $shortday_list_by_locale{en};
-our $months= $shortmonth_list_by_locale{en};
+our $wdays= $shortday_list_by_locale{de};
 
 for (1..$days) {
     my $l= xlocaltime ($t);
     my $wday= $l->wDay;
-    xprintln( ($wday == 0 ? "=" : "-")x72);
-    xprintln sprintf('%s %2d %s %s',
+    if ($wday == 0) {
+        xprintln("="x72);
+    }
+    xprintln sprintf('%s %2d.%s.%s',
                      $$wdays[$wday],
                      $l->mday,
-                     $$months[$l->mon],
+                     $l->mon + 1,
                      $l->Year_and_iso_week_number);
     #use FP::Repl::Trap; use FP::Repl;repl;
     xprintln;
