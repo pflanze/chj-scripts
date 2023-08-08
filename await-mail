@@ -1,0 +1,80 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+#use Getopt::Long;
+use Chj::xopendir;
+use Chj::xperlfunc 'xstat';
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+
+my $maxdiff_seconds = 10;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname dirpath
+
+  Watches dirpath, which should be the 'new' folder of the inbox in a
+  Maildir, for a change, then scans it for a file whose digits at the
+  beginning of the filename indicate a time less than $maxdiff_seconds
+  seconds ago; if found, returns, otherwise it continues to wait.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+usage unless @ARGV == 1;
+
+my ($dirpath)= @ARGV;
+
+
+# Not using Linux::Inotify2 because it's more complicated and may not
+# be around; sleep is fine, don't need high time precision.
+
+
+sub perhaps_max_maildir_file_time($dirpath) {
+    my $maxt = 0;
+    my $d = xopendir($dirpath);
+    while (defined (my $item = $d->xnread)) {
+        if (my ($t) = $item=~ /^(\d{9,})\b/) {
+            if ($t > $maxt) {
+                $maxt = $t;
+            }
+        }
+    }
+    $d->xclose;
+    $maxt ? $maxt : ()
+}
+
+my $start_dirt = xstat($dirpath)->mtime;
+
+while (1) {
+    sleep 2;
+    my $dirt = xstat($dirpath)->mtime;
+    if (($dirt - $start_dirt) >= 1) {
+        if (my ($maxt) = perhaps_max_maildir_file_time($dirpath)) {
+            if ((time - $maxt) <= $maxdiff_seconds) {
+                exit 0;
+            }
+        }
+    }
+}
