@@ -1,0 +1,91 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+#use Getopt::Long;
+
+use Chj::IO::Command;
+use Chj::xtmpfile;
+use Chj::xperlfunc;
+
+
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname compiler compilerarguments..
+
+  Runs compiler with the '-E' option, then inactivates source
+  locations except for system locations, and passes the non-system
+  part through clang-format.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+#our $verbose=0;
+#our $opt_dry;
+
+usage unless @ARGV;
+
+my ($compiler, @orig_args) = @ARGV;
+
+# remove "-o ...", "-c", "-S"
+
+# Args to be ignored are in here, with the number of follow-up values
+# to be ignored
+my %ignored_arg = (
+    "-o"=> 1,
+    "-c"=> 0,
+    "-S"=> 0,
+    );
+
+my @args;
+while (@orig_args) {
+    my $arg = shift @orig_args;
+    if (defined (my $optargs = $ignored_arg{$arg})) {
+        for (1..$optargs) {
+            shift @orig_args;
+        }
+    } else {
+        push @args, $arg;
+    }
+}
+
+my @cmd = ($compiler, "-E", @args);
+
+my $in_expanded = Chj::IO::Command->new_sender(@cmd);
+
+my $tmp = xtmpfile;
+
+while (defined (my $line = $in_expanded->xreadline)) {
+    chomp $line;
+    $line =~ s{^# (\d+) (".*?")(.*)}{/* $2\@$1$3 */};
+    $tmp->xprintln($line);
+}
+
+$tmp->xflush;
+
+xxsystem "clang-format", $tmp->path;
+
+#use FP::Repl;repl;
