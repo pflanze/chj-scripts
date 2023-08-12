@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+usage () {
+    echo "usage: $0 commitref"
+    echo "  Adds a tag done_ with current time stamp to commitref,"
+    echo "  without changing HEAD. Used for wip_* and similar tags"
+    echo "  to mark them done."
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+commitref="$1"
+
+exec gdrop --no-move --no-prefix done "$commitref"
+
