@@ -1,0 +1,89 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2023 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+use Chj::xperlfunc ':all';
+use Date::Parse 'str2time';
+use Chj::IO::Command;
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname file...
+
+  Rename the files at the given paths, if they start with a 'date_'
+  style time stamp, to the 'dat' style date.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+
+# Should make that script's meat into library
+sub _date($t) {
+    my $in = Chj::IO::Command->new_sender("_date", $t);
+    my $cnt = $in->xcontent;
+    $in->xxfinish;
+    $cnt=~ s/\n\z//;
+    my @l = split /\n/, $cnt;
+    @l == 1 or die "bug";
+    $l[0]
+}
+
+sub newpath($path) {
+    my $dirname = dirname $path;
+    my $filename = basename $path;
+    my $str = $filename;
+    $str=~ s/([- ].*)//s;
+    my $remainder = $1;
+    $str =~ s/_/ /sg;
+    $str =~ s/\b(\d{2})(\d{2})(\d{2})\b/$1:$2:$3/;
+    if (defined (my $t = str2time $str)) {
+        _date($t) . ($remainder // "")
+    } else {
+        undef
+    }
+}
+
+my $errors = 0;
+sub rendat($path) {
+    if (defined (my $np = newpath $path)) {
+        xlinkunlink $path, $np
+    } else {
+        warn "$myname: could not parse date in '$path'\n";
+        $errors++;
+    }
+}
+
+rendat $_ for @ARGV;
+
+exit $errors ? 1 : 0;
