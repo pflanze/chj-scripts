@@ -455,14 +455,16 @@ sub gen_hosts($is_start) {
      )
 }
 
+sub log_action($actionstr) {
+    my $log = Chj::Logtimed->open_priv(xhome."/log/concentrate.log");
+    my $msg = $maybe_msg // "";
+    $log->x("$actionstr\t$msg");
+    $log->xclose;
+}
+
+
 sub writeit($is_start) {
-    {
-        my $log = Chj::Logtimed->open_priv(xhome."/log/concentrate.log");
-        my $msg = $maybe_msg // "";
-        my $onoff = $is_start ? "on" : "off";
-        $log->x("$onoff\t$msg");
-        $log->xclose;
-    }
+    log_action $is_start ? "on" : "off";
     my $t = xtmpfile $hosts;
     $t->xprint(gen_hosts $is_start);
     $t->xclose;
@@ -510,6 +512,7 @@ if ($opt_repl) {
             warn "It's $is_ok, so you're allowed\n";
             writeit 0
         } else {
+            log_action "not today";
             die "not today";
         }
     };
