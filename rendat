@@ -40,10 +40,10 @@ exit (@_ ? 1 : 0);
 }
 
 our $verbose=0;
-#our $opt_dry;
+our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
+	   "dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
 
@@ -62,13 +62,21 @@ sub _date($t) {
 sub newpath($path) {
     my $dirname = dirname $path;
     my $filename = basename $path;
-    my $str = $filename;
-    $str=~ s/([- ].*)//s;
-    my $remainder = $1;
-    $str =~ s/_/ /sg;
-    $str =~ s/\b(\d{2})(\d{2})(\d{2})\b/$1:$2:$3/;
-    if (defined (my $t = str2time $str)) {
-        _date($t) . ($remainder // "")
+    # Fri_22_Sep_122748_CEST_2023
+    if (my ($wday, $mday, $month, $h,$m,$s, $tz, $year, $remainder) = $filename =~ /
+         ^ ([A-Za-z]{2,4}) _ (\d+) _ ([A-Za-z]{3,6}) _ (\d{2})(\d{2})(\d{2})
+           (?: _ ([A-Z]{3,6}))? # time zone
+           _ (\d{4}) # year
+           (.*) # remainder
+       /x) {
+        $tz //= "";
+        my $str= "$wday $mday $month $h:$m:$s $tz $year";
+        if (defined (my $t = str2time $str)) {
+            _date($t) . $remainder
+        } else {
+            warn "could not parse '$str'";
+            undef
+        }
     } else {
         undef
     }
@@ -77,7 +85,11 @@ sub newpath($path) {
 my $errors = 0;
 sub rendat($path) {
     if (defined (my $np = newpath $path)) {
-        xlinkunlink $path, $np
+        if ($opt_dry) {
+            warn "would rename '$path' to '$np'\n";
+        } else {
+            xlinkunlink $path, $np
+        }
     } else {
         warn "$myname: could not parse date in '$path'\n";
         $errors++;
