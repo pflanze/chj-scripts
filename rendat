@@ -50,7 +50,7 @@ usage unless @ARGV;
 
 # Should make that script's meat into library
 sub _date($t) {
-    my $in = Chj::IO::Command->new_sender("_date", $t);
+    my $in = Chj::IO::Command->new_sender("_date", "--wday", $t);
     my $cnt = $in->xcontent;
     $in->xxfinish;
     $cnt=~ s/\n\z//;
