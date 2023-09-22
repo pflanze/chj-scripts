@@ -37,7 +37,7 @@ sub usage {
     --time|--min  append _HHMM
     --sec         append _HHMMSS (implies --time)
 
-  Also see: _date, date_
+  Also see: dat, date_
 
   ($email_full)
 ";

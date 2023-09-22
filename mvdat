@@ -12,7 +12,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname file(s) dirpath
 
-  Prefix the filename in dirpath with \`_date\` and move the files there.
+  Prefix the filename in dirpath with \`dat\` and move the files there.
 ";
 exit @_ ? 1 : 0;
 }
@@ -38,7 +38,7 @@ usage unless @files;
 
 my $dir= pop @files;
 
-my $date=`_date`; chomp $date;
+my $date=`dat`; chomp $date;
 
 my $dn = dirname $dir;
 my $bn = basename $dir;

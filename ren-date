@@ -3,5 +3,7 @@
 set -euo pipefail
 IFS=
 
-d=$(_date --day)
+d=$(dat --day)
 ren-prefix "$d " "$@"
+
+# huh now I made 'rendat', too

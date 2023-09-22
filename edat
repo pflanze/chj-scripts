@@ -5,7 +5,7 @@ IFS=
 
 # hard coded to current dir for now
 
-path="$(_date "$@")"
+path="$(dat "$@")"
 
 exec e "$path"
 

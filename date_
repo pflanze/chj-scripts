@@ -8,7 +8,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [date]
 
-  Also see: _date, dat
+  Also see: dat
 
 ";
 exit (@_ ? 1 : 0);
