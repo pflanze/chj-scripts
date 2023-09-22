@@ -36,6 +36,7 @@ sub usage {
      --day              show day only
      --sec | --seconds  show seconds as well (-s currently works as well)
      --tz               show time zone
+     --wday             show weekday
 
   Also see: dat, date_
 
@@ -47,6 +48,7 @@ exit (@_ ? 1 : 0);
 my $opt_sec = 0;
 my $opt_day = 0;
 my $opt_tz;
+my $opt_wday;
 
 my $t;
 
@@ -59,6 +61,9 @@ while (@ARGV) {
     elsif ($v eq "--day") {
         $opt_sec = 0;
         $opt_day = 1;
+    }
+    elsif ($v eq "--wday") {
+        $opt_wday = 1;
     }
     elsif ($v eq "--tz") {
         $opt_tz = 1;
@@ -85,8 +90,14 @@ $t //= time;
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t)
     or die "invalid time";
 
+sub weekday {
+    my ($num) = @_;
+    (qw(Sun Mon Tue Wed Thu Fri Sat))[$num] // die "invalid wday '$num'"
+}
+
 my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
+my $WDAY = $opt_wday ? '_'.weekday($wday) : '';
 my $TZ = $opt_tz ? do {
     require DateTime;
     require DateTime::TimeZone;
@@ -95,7 +106,7 @@ my $TZ = $opt_tz ? do {
     "_" . $tz->short_name_for_datetime( $dt )
 } : '';
 
-printf("%04d-%02d-%02d$MIN$SEC$TZ\n",
+printf("%04d-%02d-%02d$MIN$SEC$WDAY$TZ\n",
        $year+1900, $mon+1, $mday,
        ($opt_day ? () :
         ($hour, $min, ($opt_sec ? $sec : ()))))
