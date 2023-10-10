@@ -5,7 +5,13 @@ IFS=
 
 # hard coded to current dir for now
 
-path="$(dat "$@")"
+d="$(dat)"
+
+if [ $# -eq 0 ]; then
+    path="$d"
+else
+    path="$d"-"$@"
+fi
 
 exec e "$path"
 
