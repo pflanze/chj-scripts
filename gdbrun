@@ -8,14 +8,17 @@ use Chj::xtmpfile;
 use Chj::xperlfunc;
 use Chj::singlequote 'singlequote';#not singlequote_sh ?
 
-
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
+
+my $gdb = $myname;
+$gdb=~ s/run$//;
+
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [gdbopts] -- cmd [args]
 
-  Run gdb with gdbopts on cmd and args.
+  Run $gdb with gdbopts on cmd and args.
 
   (Note: there remains a parent waiting for the child for removing the
   tmp file; if killed, the tmp file will remain.)
@@ -105,6 +108,6 @@ if (xfork) {
 } else {
     $ENV{UBSAN_OPTIONS} = "abort_on_error=1";
     $ENV{ASAN_OPTIONS} = "abort_on_error=1";
-    xexec "gdb", @gdbopts, "-x", $t->path, $program
+    xexec $gdb, @gdbopts, "-x", $t->path, $program
 }
 
