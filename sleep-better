@@ -54,8 +54,7 @@ if ($opt_random) {
     require Chj::Random::Formatted; Chj::Random::Formatted->import("random_u64");
 }
 
-sub gaussianrandom {
-    my ($ntries)= @_;
+sub gaussianrandom($ntries) {
     my $tot= 0;
     $tot += random_u64() for 1..$ntries;
     $tot / ($ntries * 2**63)
@@ -94,8 +93,7 @@ sub perhaps_parse($str, $unit_re) {
     }
 }
 
-sub parse_duration_hms {
-    my ($orig)= @_;
+sub parse_duration_hms($orig) {
     my $str0= $orig;
     my $ms= sub ($hours, $str1, $seen_hours) {
         if (my ($min, $str2)= perhaps_parse $str1, qr/m(?:in(?:utes?)?)?/) {
@@ -209,11 +207,10 @@ sub parseFuture ($orig, $now, $accept_past = 0) {
     }
 }
 
-sub sleepUntil ($) {
-    my ($t)=@_;
+sub sleepUntil ($t) {
     while (1) {
         my $now= time;
-        my $d= $t-$now;
+        my $d= $t - $now;
         if ($d <= 0) {
             return
         }
