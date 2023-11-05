@@ -60,8 +60,8 @@ my ($filepath, $filename) = @ARGV;
 
 if ($do_check) {
     my $s = xlstat $filepath;
-    unless ($s->is_file) {
-        die "$myname: not a regular file: ".singlequote_sh($filepath)."\n"
+    unless ($s->is_file or $s->is_dir) {
+        die "$myname: not a regular file or dir: ".singlequote_sh($filepath)."\n"
     }
 }
 
