@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+echo -n – | xsel -i
