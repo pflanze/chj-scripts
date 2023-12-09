@@ -34,7 +34,7 @@ if [ $# -eq 1 ]; then
     fi
     if [ "$1" = "-z" ]; then
 	zz="$1"
-	z="-z "
+	z="-z"
 	shift
     elif [ "$1" = "-Z" ]; then
 	zz="$1"
@@ -70,10 +70,18 @@ pass=`passwdgen 32`
 } >&2
 
 
+tar_with_options() {
+    if [ "$z" = "" ]; then
+        tar -x --sparse -f -
+    else
+        tar -x "$z" --sparse -f -
+    fi
+}
+
 echo "$pass" | {
     {
 	netcat-receive-on-port "$PORT" \
 	    | gpg -q -d --batch --force-mdc --passphrase-fd 9 \
-	    | tar -x ${z} --sparse -f -
+	    | tar_with_options
     } 9<&0
 }
