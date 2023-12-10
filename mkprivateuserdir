@@ -33,4 +33,4 @@ fi
 
 
 private mkdir "$path"
-chown "$username"."$username" "$path"
+chown "$username":"$username" "$path"
