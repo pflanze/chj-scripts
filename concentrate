@@ -488,6 +488,100 @@ sub startstop_to_boolean($startstop) {
     }
 }
 
+sub is_ok_old($wday, $hour) {
+    ($wday == 5 and $hour >= 18) ?
+    "Friday from 6 PM" : 
+    ($wday == 6) ?
+    "Saturday" :
+    ($wday == 0 and $hour < 19) ?
+    "Sunday before 7 PM" :
+    ($wday == 2) ?
+    "Tuesday" :
+    0
+}
+
+my %is_ok = (
+    # [day, h_from, h_to_excl ]
+    "Friday from 6 PM"=> [ 5, 18, undef ],
+    "Saturday" => [ 6, undef, undef ],
+    "Sunday before 7 PM" => [ 0, undef, 19 ],
+    "Tuesday"  => [ 2, undef, undef ]
+    );
+sub is_ok($wday, $hour) {
+    for my $key (keys %is_ok) {
+        my ($_wday, $h_from, $h_to_excl) = @{$is_ok{$key}};
+        if ($wday == $_wday) {
+            if (defined $h_from) {
+                if ($hour < $h_from) {
+                    next
+                }
+            }
+            if (defined $h_to_excl) {
+                if ($hour >= $h_to_excl) {
+                    next
+                }
+            }
+            return $key
+        }
+    }
+    0
+}
+
+TEST {
+    for my $wday (0..6) {
+        for my $h (0..23) {
+            is_ok($wday, $h) eq is_ok_old($wday, $h)
+                or die "test failure at $wday $h";
+        }
+    }
+    undef
+} undef;
+
+sub next_ok($wday, $hour) {
+    my @entries = sort { $a->[0] <=> $b->[0] } map {
+        [ $is_ok{$_}[0], $_, $is_ok{$_} ]
+    } keys %is_ok;
+    # use FP::Repl; repl;
+    use FP::Show; warn "entries = ".show(\@entries);
+    my $last_matching = $entries[0];
+    for (@entries) {
+        my ($_wday, $key, $val) = @$_;
+        warn "wday $wday, _wday $_wday";
+        if ($wday <= $_wday) {
+            $last_matching = $_;
+            warn "set lm = ".$last_matching->[1];##
+        } else {
+            my ($_wday, $h_from, $h_to_excl) = @$val;
+            # COPY PASTE, that we get now because of using non-local exits ! _
+            if ($wday == $_wday) {
+              INNER: {
+                  if (defined $h_from) {
+                      if ($hour < $h_from) {
+                          # difference from COPY PASTE:
+                          last INNER;
+                      }
+                  }
+                  if (defined $h_to_excl) {
+                      if ($hour >= $h_to_excl) {
+                          # difference from COPY PASTE:
+                          last INNER;
+                      }
+                  }
+                  # difference from COPY PASTE:
+                  $last_matching = $_;
+                  warn "set lm = ".$last_matching->[1];##
+                }
+            } else {
+                last
+            }
+        }
+    }
+    $last_matching->[1]
+}
+
+
+
+
 if ($opt_repl) {
     require FP::Repl::Trap;
     require FP::Repl;
@@ -498,22 +592,13 @@ if ($opt_repl) {
         my $t = xlocaltime(time);
         my $wday = $t->wday;
         my $hour = $t->hour;
-        my $is_ok = 
-            ($wday == 5 and $hour >= 18) ?
-            "Friday evening" : 
-            ($wday == 6) ?
-            "Saturday" :
-            ($wday == 0 and $hour < 19) ?
-            "Sunday before 6 PM" :
-            ($wday == 2) ?
-            "Tuesday" :
-            0;
+        my $is_ok = is_ok($wday, $hour);
         if ($is_ok) {
             warn "It's $is_ok, so you're allowed\n";
             writeit 0
         } else {
-            log_action "not today";
-            die "not today";
+            log_action "not now";
+            die "not now";
         }
     };
     my $action = +{
