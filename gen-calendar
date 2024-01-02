@@ -4,14 +4,29 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 our $days= 61;
+
+our @holidays_paths = (
+    # filename, conversion
+    ["$ENV{HOME}/.holidays.tsv", sub($s){$s}],
+    ["$ENV{HOME}/.festivaldays.tsv", sub($s){"($s)"}],
+    );
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
+    my $holiday_paths = join(", ", map { quotemeta $_->[0] } @holidays_paths);
     print "$myname [days]
+
+  Reads the files $holiday_paths, expecting tab separated values with
+  name of the day, date, and week number (e.g. copy paste from
+  https://feiertage-ch.ch/feiertage-2024/).
 
   Options:
     --start 'datestr'  instead of current time
@@ -39,20 +54,100 @@ sub xprintln {
     print @_, "\n" or die $!
 }
 
+sub trim_both($s) {
+    $s=~ s/^\s+//s;
+    $s=~ s/\s\z//s;
+    $s
+}
+
+my @days = (
+    ["Montag", "Monday"],
+    ["Dienstag", "Tuesday"],
+    ["Mittwoch", "Wednesday"],
+    ["Donnerstag", "Thursday"],
+    ["Freitag", "Friday"],
+    ["Samstag", "Saturday"],
+    ["Sonntag", "Sunday"],
+    );
+my @months = (
+    ["Januar", "January"],
+    ["Februar", "February"],
+    ["März", "March"],
+    ["April", "April"],
+    ["Mai", "May"],
+    ["Juni", "June"],
+    ["Juli", "July"],
+    ["August", "August"],
+    ["September", "September"],
+    ["Oktober", "October"],
+    ["November", "November"],
+    ["Dezember", "December"],
+    );
+sub translate_date($s) {
+    for (@days) {
+        $s=~ s/$$_[0]/$$_[1]/;
+    }
+    for (@months) {
+        $s=~ s/$$_[0]/$$_[1]/;
+    }
+    $s
+}
+
+sub local_date($t) {
+    my $lt = xlocaltime($t);
+    $lt->Year."-".$lt->Mon."-".$lt->mday
+}
+
 use Date::Parse 'str2time';
+#use Time::localtime;
+use Chj::xperlfunc 'xlocaltime';
+use Time::Local;
+use Chj::xopen "xopen_read";
+use Chj::Parse::Date::days '%shortday_list_by_locale';
+use Chj::Parse::Date::months '%shortmonth_list_by_locale';
+#use FP::Repl::AutoTrap; use FP::Repl;
+
+binmode STDOUT, ":utf8" or die $!;
 
 our $start= $opt_start ? (str2time($opt_start)
 			  or die "unparseable start '$opt_start'")
   : time;
 
-#use Time::localtime;
-use Chj::xperlfunc 'xlocaltime';
-use Time::Local;
+my $holidays = do {
+    my %h;
+    for (@holidays_paths) {
+        my ($holidays_path, $convert) = @$_;
+        eval {
+            my $f = xopen_read $holidays_path;
+            $f->xbinmode(":utf8");
+            while (defined (my $line = $f->xreadline)) {
+                next if $line=~ /^\s*#/;
+                next if $line=~ /^\s*\z/s;
+                #warn "looking at '$line'";
+                my @v = map { trim_both($_) } split /\t/, $line;
+                @v == 3 or die "expected 3 fields, got ".@v;
+                my ($holiday_name, $date, $week) = @v;
+                $week=~ /^\d+\z/ or die "invalid format for week '$week'";
+                my $date_en = translate_date($date);
+                my $date_t = str2time($date_en)
+                    or die "can't parse date '$date_en'";
+                my $tstr = local_date($date_t);
 
-use Chj::Parse::Date::days '%shortday_list_by_locale';
-use Chj::Parse::Date::months '%shortmonth_list_by_locale';
+                # Strip stupid year from holiday name:
+                my $year = $tstr; $year =~ s/-.*//;
+                $holiday_name =~ s/ *\b$year\b//;
 
-our $t= xlocaltime ($start) ->set_hour(12)->unixtime;
+                $h{$tstr} = [$convert->($holiday_name), $week];
+            }
+            1
+        } || do {
+            warn "$myname: warning: can't read or parse '$holidays_path': $@";
+        }
+    }
+    \%h
+};
+
+our $t= xlocaltime($start)->set_hour(12)->unixtime;
 
 our $wdays= $shortday_list_by_locale{de};
 
@@ -62,15 +157,32 @@ for (1..$days) {
     if ($wday == 0) {
         xprintln("="x72);
     }
-    xprintln sprintf('%s %2d.%s.%s',
+    my $year_and_week = $l->Year_and_iso_week_number;
+    my $holiday_str = do {
+        if (defined (my $holiday = $holidays->{local_date $t})) {
+            my ($hname, $hweek)= @$holiday;
+            # ah now can fix year_and_week ? try:
+            $year_and_week =~ s/LASTYEAR/1/; # super hack.
+            # oh, and more super hack:
+            $year_and_week =~ s/W53/W1/; # super hack.
+
+            my ($week) = $year_and_week =~ /-W(\d+)/ or die "no match";
+            if ($hweek != $week) {
+                die "holiday with invalid week given?: $hweek instead of $week";
+            }
+            "  $hname"
+        } else {
+            ""
+        }
+    };
+    xprintln sprintf('%s %2d.%s.%s%s',
                      $$wdays[$wday],
                      $l->mday,
                      $l->mon + 1,
-                     $l->Year_and_iso_week_number);
+                     $year_and_week,
+                     $holiday_str);
     #use FP::Repl::Trap; use FP::Repl;repl;
     xprintln;
     $t+= 24*60*60;
 }
 
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
