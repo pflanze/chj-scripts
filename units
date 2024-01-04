@@ -37,10 +37,10 @@ my %currency =
    # 1 X in CHF
    # e.g. for c in usd eur gbp cad; do $BROWSER https://www.investing.com/currencies/"$c"-chf; read; done
    CHF=> 1,
-   USD=> 0.8977,
-   EUR=> 0.9817,
-   GBP=> 1.1119,
-   CAD=> 0.6705,
+   USD=> 0.8501,
+   EUR=> 0.9310,
+   GBP=> 1.0791,
+   CAD=> 0.6375,
   );
 
 our $conv=
