@@ -502,7 +502,7 @@ sub is_ok_old($wday, $hour) {
 
 my %is_ok = (
     # [day, h_from, h_to_excl ]
-    "Friday from 6 PM"=> [ 5, 18, undef ],
+    "Friday from 4 PM"=> [ 5, 16, undef ],
     "Saturday" => [ 6, undef, undef ],
     "Sunday before 7 PM" => [ 0, undef, 19 ],
     "Tuesday"  => [ 2, undef, undef ]
