@@ -15,6 +15,8 @@ sub usage {
   (especially my fine laptop with the broken new setup that doesn't go
   to sleep w/o crashing)
 
+  Also see: molly-guard
+
   (Christian Jaeger <$email>)
 ";
 exit (@_ ? 1 : 0);
