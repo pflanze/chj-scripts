@@ -3,7 +3,8 @@
 set -euo pipefail
 IFS=
 
-compression=zstd
+# Probably zstd or lzo
+COMPRESSION="${COMPRESSION-lzo}"
 
 recompress() {
     d="$1"
@@ -13,7 +14,7 @@ recompress() {
         set -x
 
         df "$d"
-        time btrfs filesystem defragment -r -c"$compression" "$d"
+        time btrfs filesystem defragment -r -c"$COMPRESSION" "$d"
         df "$d"
     )
 }
