@@ -45,10 +45,12 @@ usage "only 1 argument accepted" if @ARGV > 1;
 
 my $parentdir = @ARGV ? $ARGV[0] : ".";
 
+chdir $parentdir or die "$myname: '$parentdir': $!\n";
+
 my @dirs;
 my @symlinks;
 
-for (glob "$parentdir/*/") {
+for (glob "./*/") {
     s{^\./+}{};
     my $p = $_;
     $p=~ s{/\z}{};
