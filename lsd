@@ -27,7 +27,7 @@ sub usage {
     print "$myname [parentdir]
 
   List directories in parentdir or ., via default 'ls' formatting (but
-  with color on), i.e. name-sorted and
+  with color on), i.e. name-sorted and multi-column.
 
   ($email_full)
 ";
