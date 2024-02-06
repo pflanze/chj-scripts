@@ -15,6 +15,7 @@ recompress() {
 
         df "$d"
         time btrfs filesystem defragment -r -c"$COMPRESSION" "$d"
+        sync
         df "$d"
     )
 }
