@@ -74,7 +74,7 @@ sub newpath($path) {
         $tz //= "";
         my $str= "$wday $mday $month $h:$m:$s $tz $year";
         if (defined (my $t = str2time $str)) {
-            dat($t) . $remainder
+            $dirname . "/" . dat($t) . $remainder
         } else {
             warn "could not parse '$str'";
             undef
