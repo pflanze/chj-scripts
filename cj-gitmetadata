@@ -11,7 +11,7 @@ use strict; use warnings FATAL => 'uninitialized';
 use Getopt::Long;
 use Chj::xperlfunc ':all';
 use Chj::xopen qw(perhaps_open_read xopen_read xopen_write);
-use POSIX qw(ENOENT);
+use POSIX qw(ENOENT EISDIR);
 use Chj::Path;
 use Chj::xtmpdir;
 use Chj::IO::Command;
@@ -140,9 +140,18 @@ sub xsymlink_set_mtime ($$) {
 sub xContent ( $ ; $) {
     my ($path, $maybe)= @_;
     if (my $f= perhaps_open_read $path) {
-	my $cntrf= $f->xcontentref;
-	$f->xclose;
-	$$cntrf
+        # my $s = xstat($f);  or:
+        eval {
+            my $cntrf= $f->xcontentref;
+            $f->xclose;
+            $$cntrf
+        } // do {
+            if ($! == EISDIR) {
+                undef
+            } else {
+                die $@
+            }
+        }
     } else {
 	if ($maybe and $! == ENOENT) {
 	    undef
