@@ -5,10 +5,17 @@
 
 use strict;
 
+my %ignore_dir = (
+    ".git" => 1,
+    );
+
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
+    my $ignored_dirs = join(", ", map {
+        $ignore_dir{$_} ? "'$_'" : ()
+                            } keys %ignore_dir);
     print "$myname dir(s)
 
   Set mtime of dir, and, recursively, all of its child directories to
@@ -23,6 +30,8 @@ sub usage {
   Meant to be used after cj-gitmetadata restore (i.e. spull) to change
   directory mtimes back to something close to what they would be where
   the files were created and stored with cj-gitmetadata save (scoma).
+
+  Some directories are ignored: $ignored_dirs
 
   (Christian Jaeger <$email>)
 ";
@@ -73,6 +82,7 @@ usage unless @ARGV;
 
 {
     package CHJdirmtimepull::dir;
+    use Chj::xperlfunc 'basename';
     use Class::Array -class=>"CHJdirmtimepull::item", -extend=> -publica=>
       (
        '_items', # array of CHJdirmtimepull::item
@@ -80,8 +90,21 @@ usage unless @ARGV;
     use Chj::Env 'min','max';
     sub is_dir { 1 }
     use Chj::xopendir;
+
+    sub filename {
+        my $s = shift;
+        basename($s->path)
+    }
+    sub ignored {
+        my $s = shift;
+        $ignore_dir{$s->filename}
+    }
+
     sub items {
 	my $s=shift;
+        if ($s->ignored) {
+            return []
+        }
 	$$s[_Items]||= do {
 	    my @it;
 	    my $path=$$s[Path];
@@ -120,7 +143,8 @@ usage unless @ARGV;
 	if (defined (my $mtime= $s->maybe_mtime)) {
 	    xutime ($s->stat->atime, $mtime,  $path)
 	} else {
-	    warn "directory is empty, not setting mtime: '$path'\n";
+	    warn "directory is empty, not setting mtime: '$path'\n"
+                unless $s->ignored;
 	}
     }
     sub possibly_write_mtime_recursively {
