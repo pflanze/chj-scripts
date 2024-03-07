@@ -60,6 +60,8 @@ if git status |grep '^nothing to commit' -q; then
 	cj-gitmetadata restore
     fi
 
+    dir-mtime-pull .
+
     # after cj-gitmetadata restore, gitk will report local changes
     # unless git status is run
     git status > /dev/null 2>&1
