@@ -37,6 +37,12 @@ if [ "$a" != "$b" ]; then
     fi
 fi
 
+if [ ! -d .METADATA-v2 ]; then
+    echo "Working directory has no .METADATA-v2 subdirectory, aborting"
+    exit 1
+fi
+
+
 set -x
 
 if git status |grep '^nothing to commit' -q; then
