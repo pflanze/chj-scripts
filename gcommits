@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+export PAGER=
+g-log --pretty=format:'%H' "$@"
+echo  # huh
+
