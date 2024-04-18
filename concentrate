@@ -58,9 +58,11 @@ exit (@_ ? 1 : 0);
 
 our $verbose=0;
 our $opt_repl;
+our $opt_test;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "repl"=> \$opt_repl,
+	   "test"=> \$opt_test,
 	   ) or exit 1;
 
 my ($actionstr, $maybe_msg) = do {
@@ -586,6 +588,8 @@ if ($opt_repl) {
     require FP::Repl::Trap;
     require FP::Repl;
     FP::Repl::repl();
+} elsif ($opt_test) {
+    run_tests()
 } else {
     my $start = sub { writeit 1 };
     my $stop = sub {
