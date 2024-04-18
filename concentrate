@@ -490,20 +490,6 @@ sub startstop_to_boolean($startstop) {
     }
 }
 
-sub is_ok_old($wday, $hour) {
-    ($wday == 4 and $hour >= 18) ?
-    "Thursday from 6 PM" : 
-    ($wday == 5 and $hour >= 16) ?
-    "Friday from 4 PM" : 
-    ($wday == 6) ?
-    "Saturday" :
-    ($wday == 0 and $hour < 19) ?
-    "Sunday before 7 PM" :
-    ($wday == 2) ?
-    "Tuesday" :
-    0
-}
-
 my %is_ok = (
     # [day, h_from, h_to_excl ]
     "Thursday from 6 PM"=> [ 4, 18, undef ],
@@ -531,16 +517,6 @@ sub is_ok($wday, $hour) {
     }
     0
 }
-
-TEST {
-    for my $wday (0..6) {
-        for my $h (0..23) {
-            is_ok($wday, $h) eq is_ok_old($wday, $h)
-                or die "test failure at $wday $h";
-        }
-    }
-    undef
-} undef;
 
 sub next_ok($wday, $hour) {
     my @entries = sort { $a->[0] <=> $b->[0] } map {
