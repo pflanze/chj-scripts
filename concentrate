@@ -491,8 +491,10 @@ sub startstop_to_boolean($startstop) {
 }
 
 sub is_ok_old($wday, $hour) {
-    ($wday == 5 and $hour >= 18) ?
-    "Friday from 6 PM" : 
+    ($wday == 4 and $hour >= 18) ?
+    "Thursday from 6 PM" : 
+    ($wday == 5 and $hour >= 16) ?
+    "Friday from 4 PM" : 
     ($wday == 6) ?
     "Saturday" :
     ($wday == 0 and $hour < 19) ?
@@ -504,6 +506,7 @@ sub is_ok_old($wday, $hour) {
 
 my %is_ok = (
     # [day, h_from, h_to_excl ]
+    "Thursday from 6 PM"=> [ 4, 18, undef ],
     "Friday from 4 PM"=> [ 5, 16, undef ],
     "Saturday" => [ 6, undef, undef ],
     "Sunday before 7 PM" => [ 0, undef, 19 ],
