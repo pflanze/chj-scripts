@@ -5,9 +5,7 @@ if [ $# -eq 1 ]; then
 	echo "File $1 existiert bereits!" >&2
     else
 	echo -n '#!/bin/bash
-set -euo pipefail
-# enable job control consistently, not just when there is a tty:
-set -m
+set -meuo pipefail
 IFS=
 
 '> "$1"
