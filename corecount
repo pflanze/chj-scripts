@@ -1,0 +1,17 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+
+# Linux: /proc/cpuinfo
+
+# Mac OS: sysctl -n hw.ncpu
+
+{
+    grep -c ^processor /proc/cpuinfo || sysctl -n hw.ncpu
+} 2>/dev/null \
+    || {
+    echo "$0: failed to get core count" >&2
+    false
+}
+
