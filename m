@@ -3,7 +3,8 @@ set -meuo pipefail
 IFS=
 
 if [ -e Makefile ]; then
-    exec make -j16 "$@"
+    CORECOUNT=${CORECOUNT-$(corecount)}
+    exec make -j"$CORECOUNT" "$@"
 else
     exec cargo build "$@"
 fi
