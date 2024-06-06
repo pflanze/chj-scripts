@@ -3,8 +3,10 @@
 set -euo pipefail
 IFS=
 
-if [ $# -eq 1 ]; then
-    exec htmlparse --links -- "$@"
+if [ $# -ge 1 ]; then
+    for f in "$@"; do
+        htmlparse --links -- "$f"
+    done
 else
     echo "usage: $0 file"
     echo "  run htmlparse --links and the given file"
