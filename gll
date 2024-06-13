@@ -1,3 +1,3 @@
 #!/bin/bash
 
-git ls-files -z "$@"| xargs -0 ll -d
+git ls-files -z "$@" | gr -z -v '(^|/)\.METADATA-v2/' | xargs -0 ll -d
