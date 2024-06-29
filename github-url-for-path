@@ -28,6 +28,7 @@ sub usage {
 
     --base url   base Github url to use instead of auto-detection
     --no-assert  do not verify we're in the root of a Git checkout
+    --commit     use the current commit instead of the branch name
 
   ($email_full)
 ";
@@ -39,11 +40,13 @@ use Getopt::Long;
 our $verbose=0;
 my $opt_base;
 my $opt_noassert;
+my $opt_commit;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "base=s"=> \$opt_base,
            "no-assert"=> \$opt_noassert,
+           "commit" => \$opt_commit,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -103,14 +106,14 @@ sub auto_detect_remote () {
 
 my $base= $opt_base // auto_detect_remote;
 
-sub github_url_for_path ($path) {
+sub github_url_for_path ($path, $revision) {
     # -> https://github.com/pflanze/chj-bin/blob/master/0or1
     if ($path=~ m{^/}) {
         die "path is absolute, expecting relative from Git root: '$path'"
     }
     $path=~ s{^\./+}{}s;
     $path=~ s{/+}{/}sg;
-    "$base/blob/master/$path"
+    "$base/blob/$revision/$path"
 }
 
 sub whichgit() {
@@ -125,8 +128,25 @@ unless ($opt_noassert) {
     $whichgit eq ".git" or die "$myname: you don't appear to be in the root of a Git checkout, as we're expecting whichgit to be at .git but it's at: '$whichgit'\n";
 }
 
+sub git($dangerous_shell_code) {
+    my $s = `git $dangerous_shell_code`;
+    $? == 0 or die "error running git $dangerous_shell_code";
+    chomp $s;
+    $s
+}
+
+sub current_commitid() {
+    git "rev-parse HEAD"
+}
+
+sub current_branch() {
+    git "rev-parse --abbrev-ref HEAD"
+}
+
+my $revision = $opt_commit ? current_commitid : current_branch;
+
 for (@ARGV) {
-    my $url= github_url_for_path $_;
+    my $url= github_url_for_path $_, $revision;
     print "$url\n" or die;
 }
 
