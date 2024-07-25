@@ -38,6 +38,7 @@ sub usage {
      --tz               show time zone
      --wday             show weekday (default)
      --no-wday          do not show weekday
+     --week             show week number
 
   Also see: dat, date_
 
@@ -50,6 +51,7 @@ my $opt_sec = 0;
 my $opt_day = 0;
 my $opt_tz;
 my $opt_wday = 1;
+my $opt_week;
 
 my $t;
 
@@ -71,6 +73,9 @@ while (@ARGV) {
     }
     elsif ($v eq "--tz") {
         $opt_tz = 1;
+    }
+    elsif ($v eq "--week") {
+        $opt_week = 1;
     }
     elsif ($v eq "-h" or $v eq "--help") {
         usage
@@ -99,18 +104,25 @@ sub weekday {
     (qw(Sun Mon Tue Wed Thu Fri Sat))[$num] // die "invalid wday '$num'"
 }
 
+use feature 'state';
+sub dt {
+    require DateTime;
+    state $dt = DateTime->from_epoch(epoch=> $t)
+}
+sub tz {
+    require DateTime::TimeZone;
+    state $tz = DateTime::TimeZone->new(name=> "local")
+}
+
 my $MIN = $opt_day ? '' : '_%02d%02d';
 my $SEC = $opt_sec ? '%02d' : '';
 my $WDAY = $opt_wday ? '_'.weekday($wday) : '';
 my $TZ = $opt_tz ? do {
-    require DateTime;
-    require DateTime::TimeZone;
-    my $tz = DateTime::TimeZone->new(name=> "local");
-    my $dt = DateTime->from_epoch(epoch=> $t);
-    "_" . $tz->short_name_for_datetime( $dt )
+    "_" . tz->short_name_for_datetime( dt )
 } : '';
+my $WEEK = $opt_week ? "-W".(dt->week)[1] : '';
 
-printf("%04d-%02d-%02d$MIN$SEC$WDAY$TZ\n",
+printf("%04d-%02d-%02d$MIN$SEC$WDAY$WEEK$TZ\n",
        $year+1900, $mon+1, $mday,
        ($opt_day ? () :
         ($hour, $min, ($opt_sec ? $sec : ()))))
