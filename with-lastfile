@@ -8,8 +8,7 @@ myname=$(basename "$0")
 lastfile_or_lastdir=${myname//with-/}
 
 usage () {
-    echo "with-lastfile proc [args]"
-    echo "with-lastdir proc [args]"
+    echo "with-${lastfile_or_lastdir} proc [args]"
     echo "  call \`with-${lastfile_or_lastdir}-in . proc [ args ]\`."
     exit 1
 }
