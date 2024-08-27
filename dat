@@ -9,7 +9,7 @@ use strict;
 use utf8;
 use warnings;
 use warnings FATAL => 'uninitialized';
-#use experimental 'signatures';
+use experimental 'signatures';
 
 # use FP::Repl::Trap; #
 
@@ -21,14 +21,67 @@ BEGIN {
     ($mydir, $myname)=($1,$2);
 }
 
+package dat::AbsoluteTime {
+    sub unixtime($self) {
+        $self->{unixtime}
+    }
+    #sub is_absolute($self) { 1 }
+    sub add_onto($self, $other) {
+        die "can't add an absolute time on top of relative ones: $self->{unixtime}"
+    }
+    sub add_offset_seconds($self, $offset_seconds) {
+        bless { unixtime => $self->{unixtime} + $offset_seconds }, ref($self)
+    }
+}
+
+sub AbsoluteTime($unixtime) {
+    bless { unixtime => $unixtime }, "dat::AbsoluteTime"
+}
+
+package dat::TimeOffset {
+    sub unixtime($self) {
+        time + $self->{offset_seconds}
+    }
+    #sub is_absolute($self) { 0 }
+    sub add_onto($self, $other) {
+        $other->add_offset_seconds($self->{offset_seconds})
+    }
+    sub add_offset_seconds($self, $offset_seconds) {
+        bless { offset_seconds => $self->{offset_seconds} + $offset_seconds }, ref($self)
+    }
+}
+
+sub TimeOffset($offset_seconds) {
+    bless { offset_seconds => $offset_seconds }, "dat::TimeOffset"
+}
+
+
+sub parse_timespec($str) {
+    if ($str=~ /^(\d{10,11})$/s) {
+        AbsoluteTime($1)
+    } elsif (my ($sign, $digits, $unit) = $str=~ /^([+-])(\d+)([wdhms]|days?|hours?|minutes?|seconds?|mins?|secs?|weeks?)$/s) {
+        my $multiplier = +{
+            # can't handle months? that way
+            s=> 1, m=> 60, h=> 60 * 60, d=> 24 * 60 * 60, w=> 7 * 24 * 60 * 60
+        }->{substr $unit, 0, 1} or die "bug";
+        my $signage = +{ "-"=> -1, "+"=> 1 }->{$sign} or die "bug";
+        TimeOffset($signage * $digits * $multiplier)
+    } else {
+        usage("invalid time argument '$str', must be unixtime or +/- n days|hours|minutes|seconds|weeks ".
+              "or shorter forms of the latter")
+    }
+}
+
+
 sub usage {
     my $out = @_ ? *STDERR{IO} : *STDOUT{IO};
     print $out map{"$_\n"} @_ if @_;
-    print $out "$myname [options] [unixtime]
+    print $out "$myname [options] [timespec...]
 
-  Print the current time, or unixtime if given, as YYYY-MM-DD_HHMM in
-  the current time zone (lexical sorting == time sorting, except when
-  ambiguous...).
+  Print the current time, or an absolute time (in unixtime) or/and any
+  number of time offsets (+/- n secs/mins/hours/days/weeks) if given,
+  as YYYY-MM-DD_HHMM in the current time zone (lexical sorting == time
+  sorting, except when ambiguous...).
 
   Set TZ=UTC to get unambiguous output.
 
@@ -53,7 +106,7 @@ my $opt_tz;
 my $opt_wday = 1;
 my $opt_week;
 
-my $t;
+my @timespecs;
 
 while (@ARGV) {
     my $v = shift @ARGV;
@@ -81,22 +134,18 @@ while (@ARGV) {
         usage
     }
     else {
-        if (defined $t) {
-            usage "unknown argument '$v'";
-        } else {
-            $v=~ /^\d+\z/
-                or usage("invalid time argument '$v', must be unixtime ".
-                         "(seconds since epoch)");
-            $t = $v;
-        }
+        push @timespecs, parse_timespec($v);
     }
 }
 
 usage if @ARGV; # needed? see algo above
 
-$t //= time;
+my $t = (shift @timespecs) // AbsoluteTime(time);
+for my $timespec (@timespecs) {
+    $t = $timespec->add_onto($t);
+}
 
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t)
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t->unixtime)
     or die "invalid time";
 
 sub weekday {
@@ -107,7 +156,7 @@ sub weekday {
 use feature 'state';
 sub dt {
     require DateTime;
-    state $dt = DateTime->from_epoch(epoch=> $t)
+    state $dt = DateTime->from_epoch(epoch=> $t->unixtime)
 }
 sub tz {
     require DateTime::TimeZone;
