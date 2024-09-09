@@ -38,7 +38,7 @@ sub _shellquote_no_singlequote($s) {
     }
 }
 
-# And then there is IFS. So, evil. DANGER.
+# And then there is $IFS. So, evil. DANGER.
 sub shellquote($s) {
     # splitting the empty string gives (), interesting, so:
     if (! length $s) {
@@ -76,19 +76,39 @@ TEST { shellquote_many "foo", "bar baz", "3*2", "4'5" } 'foo \'bar baz\' \'3*2\'
 # __END__
 
 
-my $local_bin= "$ENV{HOME}/local/bin";
+my ($local_bin, $make_dirs) = do {
+    if ($ENV{USER} eq "root") {
+        (
+         "/usr/local/bin",
+         sub () { }
+        )
+    } else {
+        my $local_bin = "$ENV{HOME}/local/bin";
+        (
+         $local_bin,
+         sub () {
+             mkdir "$ENV{HOME}/local";
+             mkdir $local_bin;
+         }
+        )
+    }
+};
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [file..]
 
-  Copy the listed files (ignoring backup (~) and non-executable files) in
-  $local_bin
+  Copy the listed files (ignoring backup (~) and non-executable files) to
+
+    $local_bin
+
+  (depends on whether script is run as root or non-root user)
 
   Silently removes files previously already there via 'trash' command
   (e.g. from chj-scripts).
 
   --dry-run  don't act
+  --quiet    don't tell
 
   ($email_full)
 ";
@@ -131,8 +151,7 @@ for my $path (@ARGV) {
 }
 
 if (@cmds) {
-    mkdir "$ENV{HOME}/local";
-    mkdir $local_bin;
+    $make_dirs->();
     for my $cmd (@cmds) {
         Do @$cmd
     }
