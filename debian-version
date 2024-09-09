@@ -434,9 +434,17 @@ sub parseversion {
 	}
     } else {
 	if ($r1) {
-	    make_release_with_key ($parts[0],$r1)
+	    make_release_with_key ($parts[0], $r1)
 	} else {
-	    die "couldn't find release for key '$parts[0]'";
+            my $v = $parts[0];
+            my ($major, $minor) = split /\./, $v;
+            if ($minor == 0) {
+                die "couldn't find release for key '$parts[0]"
+            }
+            my $older= "$major.0";
+	    warn "$myname: couldn't find release for key '$parts[0]', "
+                ."trying '$older' instead\n";
+            parseversion($older, $maybe_file)
 	}
     }
 }
