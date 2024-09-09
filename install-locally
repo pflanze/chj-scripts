@@ -1,0 +1,136 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2024 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+use Chj::xperlfunc ":all";
+#use Chj::singlequote 'singlequote_many';
+# *no*, only quote if needed and join with space not ,
+use Chj::TEST;
+
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+# helper: $s must not contain a "'" character
+sub _shellquote_no_singlequote($s) {
+    if ($s=~ m{^[\w=/,.:+-]+\z}) {
+        $s
+    } else {
+        "'$s'"
+    }
+}
+
+# And then there is IFS. So, evil. DANGER.
+sub shellquote($s) {
+    # splitting the empty string gives (), interesting, so:
+    if (! length $s) {
+        "''"
+    } else {
+        join("\\'",
+             map {
+                 _shellquote_no_singlequote($_)
+             }
+             split /'/, $s)
+    }
+}
+
+TEST { shellquote "1" } '1';
+TEST { shellquote "1,2" } '1,2';
+TEST { shellquote "_" } '_';
+TEST { shellquote "foo.txt" } 'foo.txt';
+TEST { shellquote "foo=10+2/3-3:4" } 'foo=10+2/3-3:4';
+TEST { shellquote "foo=10*2" } '\'foo=10*2\'';
+TEST { shellquote "ä" } 'ä'; # hmm interesting, \w is including unicode nowadays!!!
+TEST { shellquote "" } '\'\'';
+TEST { shellquote "ab'foo*2" } 'ab\\\'\'foo*2\''; # wow, what led me to realize the recursive approach
+
+sub shellquote_many {
+    join(" ",
+         map {
+             shellquote $_
+         }
+         @_)
+}
+
+TEST { shellquote_many "foo", "bar baz", "3*2", "4'5" } 'foo \'bar baz\' \'3*2\' 4\\\'5';
+
+# use FP::Repl;repl;
+# __END__
+
+
+my $local_bin= "$ENV{HOME}/local/bin";
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [file..]
+
+  Copy the listed files (ignoring backup (~) and non-executable files) in
+  $local_bin
+
+  Silently removes files previously already there via 'trash' command
+  (e.g. from chj-scripts).
+
+  --dry-run  don't act
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=1;
+our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+           "no-verbose"=> sub { $verbose = 0 },
+           "quiet"=> sub { $verbose = 0 },
+	   "help"=> sub{usage},
+	   "dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+sub Do {
+    if ($verbose or $opt_dry) {
+        xprintln "+ ".shellquote_many(@_);
+    }
+    unless ($opt_dry) {
+        xxsystem @_;
+    }
+}
+
+my @cmds;
+
+for my $path (@ARGV) {
+    next if $path=~ /~\z/;
+    if (-x $path and ! -d _) {
+        my $bn = basename $path;
+        my $target = "$local_bin/$bn";
+        if (lstat $target) {
+            push @cmds, ["trash", $target];
+        }
+        push @cmds, ["cp", "--", $path, $target];
+    } else {
+        die "non-executable file: ".shellquote($path);
+    }
+}
+
+for my $cmd (@cmds) {
+    Do @$cmd
+}
+
