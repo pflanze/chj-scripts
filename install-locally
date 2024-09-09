@@ -130,7 +130,12 @@ for my $path (@ARGV) {
     }
 }
 
-for my $cmd (@cmds) {
-    Do @$cmd
+if (@cmds) {
+    mkdir "$ENV{HOME}/local";
+    mkdir $local_bin;
+    for my $cmd (@cmds) {
+        Do @$cmd
+    }
 }
+
 
