@@ -87,7 +87,8 @@ sub usage {
 
   Options:
      --day              show day only
-     --sec | --seconds  show seconds as well (-s currently works as well)
+     --sec | --seconds  show seconds as well (-s currently works as well) (now default)
+     --no-sec           do not show seconds
      --tz               show time zone
      --wday             show weekday (default)
      --no-wday          do not show weekday
@@ -100,7 +101,7 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-my $opt_sec = 0;
+my $opt_sec = 1;
 my $opt_day = 0;
 my $opt_tz;
 my $opt_wday = 1;
@@ -113,6 +114,9 @@ while (@ARGV) {
     if ($v eq "-s" or $v eq "--sec" or $v eq "--seconds") {
         $opt_sec = 1;
         $opt_day = 0;
+    }
+    elsif ($v eq "--no-sec") {
+        $opt_sec = 0;
     }
     elsif ($v eq "--day") {
         $opt_sec = 0;
