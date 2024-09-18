@@ -4,6 +4,9 @@
 (my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
 
 use strict; use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+use Chj::xperlfunc qw(dirname basename);
 
 my $extensions_path = ".nonrenamed-extensions";
 
@@ -21,7 +24,9 @@ sub usage {
   Optionally reads entries from the file '$extensions_path' (max. one
   entry per line, shell style comments starting with '#' and
   whitespace removed), that if added after a generic date, still makes
-  '$myname' consider the file to need renaming.
+  '$myname' consider the file to need renaming. If '$extensions_path' 
+  doesn't contain a slash, it is also searched in parent directories,
+  up to the next directory that contains a .git subdirectory.
 
   (Christian Jaeger <$email>)
 ";
@@ -37,7 +42,10 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 usage if @ARGV;
 
-my @extensions = do {
+my $max_depth = 20;
+
+# If $maybe_depth is undef, don't go upwards; if it is, stops at $max_depth.
+sub extensions($maybe_depth, $extensions_path) {
     if (-f $extensions_path) {
         require Chj::xopen;
         my $in = Chj::xopen::xopen_read($extensions_path);
@@ -50,9 +58,21 @@ my @extensions = do {
         }
         grep { length $_ } @lines
     } else {
-        ()
+        if (defined($maybe_depth) and $maybe_depth <= $max_depth) {
+            my $dir = dirname $extensions_path;
+            if (-d "$dir/.git") {
+                ()
+            } else {
+                extensions($maybe_depth + 1,
+                           "$dir/../".basename($extensions_path))
+            }
+        } else {
+            ()
+        }
     }
-};
+}
+
+my @extensions = extensions(($extensions_path=~ m{/} ? undef : 0), $extensions_path);
 
 our @files = grep {
     not /~$/
