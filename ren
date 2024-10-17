@@ -113,6 +113,7 @@ sub ren {
     my $newname= $filename;
   REDO: {
 	if (defined($newname= $rl->readline("rename: ",$newname))){
+            chomp $newname;
 	    if (length($newname)) {
 		if ($newname ne $filename) {
 		    my $newpath= "$folder$newname";
