@@ -44,7 +44,10 @@ usage if @ARGV;
 
 my $max_depth = 20;
 
-# If $maybe_depth is undef, don't go upwards; if it is, stops at $max_depth.
+# Looks for a file at $extensions_path, walking along ".." until it
+# finds it or a dir with ".git" in it is encountered. Except if
+# $maybe_depth is undef, don't go upwards; if it is, stops at
+# $max_depth.
 sub extensions($maybe_depth, $extensions_path) {
     if (-f $extensions_path) {
         require Chj::xopen;
