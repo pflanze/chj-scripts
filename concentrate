@@ -492,7 +492,7 @@ sub startstop_to_boolean($startstop) {
 
 my %is_ok = (
     # [day, h_from, h_to_excl ]
-    "Thursday from 6 PM"=> [ 4, 18, undef ],
+    "Thursday from 5 PM"=> [ 4, 17, undef ],
     "Friday from 4 PM"=> [ 5, 16, undef ],
     "Saturday" => [ 6, undef, undef ],
     "Sunday before 7 PM" => [ 0, undef, 19 ],
