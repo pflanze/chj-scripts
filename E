@@ -7,4 +7,4 @@ HASH=$(perl -we 'print join("\0",@ARGV) or die $!' "$(pwd)" "$$" E "$@" | sha1su
 # have to use separate logdir for every instance or there will be lock failures. Meh.
 LOGDIR=~/log/E-"$HASH"
 private mkdir -p "$LOGDIR"
-exec r daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" emacs "$@"
+exec daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" emacs "$@"
