@@ -84,7 +84,8 @@ sub hardware_by_prefixes {
 	  "$power_base/$item"; #spend some space..
     }
     for (keys %$by_prefix) {
-	$_ eq "AC" or $_ eq "BAT" or die "unknown type '$_'";
+	$_ eq "AC" or $_ eq "BAT" or /USBC/
+            or die "unknown type '$_'";
     }
     $by_prefix
 }
@@ -121,11 +122,13 @@ sub show {
     my ($kind,$num)=@_;
     print "$kind$num:\n";
     my $field= kindnum2field ($kind,$num);
-    print " type: ", &$field("type"), "\n";
+    print " type: ", $field->("type"), "\n";
     if ($kind eq "AC") {
-	print " online: ", &$field("online"), "\n";
+	print " online: ", $field->("online"), "\n";
     } elsif ($kind eq "BAT") {
 	show_bat_percentage(" charge: ",$field);
+    } elsif ($kind =~ /USBC/) {
+	print " online: ", $field->("online"), "\n";
     } else {
 	die "bug"
     }
