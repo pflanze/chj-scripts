@@ -1,0 +1,78 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2025 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+use Chj::xopen 'xopen_read';
+use Chj::xperlfunc qw(xstat xexec);
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [dir..]
+
+  Like 'ela' but takes the last file in 'll' sorting.
+
+  Well, dir is actually treated as a glob pattern!
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+my @dirs = @ARGV ? @ARGV : (".");
+
+my @paths;
+
+for my $dir (@dirs) {
+    # Pattern is a partial copy from `nonrenamed`
+    my @files = grep {
+        not /~\z/
+    }
+    glob("$dir/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_".
+         "[0-9][0-9][0-9][0-9][0-9][0-9]_???{,?}*");
+    push @paths, @files;
+}
+
+my @paths_with_mtime = sort {
+    $a->[1] <=> $b->[1]
+}
+map {
+    [$_, xstat($_)->mtime]
+}
+@paths;
+
+if (@paths_with_mtime) {
+    my ($path, $_mtime) = @{$paths_with_mtime[-1]};
+    # hmm and now should this be a `lla` tool to use with `e $(lla
+    # ...)`? Or a lib? That's why rust?
+    xexec $ENV{EDITOR}, $path
+} else {
+    die "$myname: no paths found for the given dirs\n"
+}
