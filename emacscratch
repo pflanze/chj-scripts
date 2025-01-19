@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+# enable job control consistently, not just when there is a tty:
+set -m
+IFS=
+
+cd ~/scratch
+exec edat
