@@ -1,0 +1,111 @@
+#!/usr/bin/perl -w
+
+# Thu  4 Jun 18:02:04 BST 2020
+(my $email='ch%christianjaeger,ch')=~ tr/%,/@./;
+
+use strict; use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my @workflows= qw(
+    READY
+    applied
+    done
+    dupe
+    future
+    notforme
+    obsolete
+    active
+    rejected
+    );
+
+$0=~ /(.*?)([^\/]+)\z/s or die "?";
+my ($mydir, $myname)=($1,$2);
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname foldername file...
+
+  Move file(s) to subfolder with given foldername in its parent
+  folder, creating it if needed.
+
+  Options:
+
+   --commit|-c  git commit the old and new path
+
+  (Christian Jaeger <$email>)
+";
+exit (@_ ? 1 : 0);
+}
+
+use Getopt::Long;
+our $verbose=0;
+#our $opt_dry;
+my $opt_commit;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+           "commit" => \$opt_commit,
+	   ) or exit 1;
+usage unless @ARGV >= 2;
+
+use Chj::xperlfunc ":all";
+use Chj::xrealpath;
+
+sub mv ($from, $to) {
+    if (-d $from) {
+        # This will only kill $to if it's an empty dir, not otherwise
+        # (on Linux, anyway), so we don't have to do a race-exposed
+        # check:
+        xrename($from, $to);
+    } else {
+	xlinkunlink($from, $to);
+    }
+}
+
+my $workflowto= shift @ARGV;
+$workflowto=~ /^\w+$/ or die "workflowto does not match \\w+: '$workflowto'";
+
+my @paths; # a record of all changed paths (that need to be committed)
+my @olddirs; # a record of all old dirs (to rmdir them after running Git)
+
+my $workflows_re= join("|", @workflows);
+
+sub workflowto {
+    my ($path)=@_;
+    my $filename= basename $path;
+    my $olddir= dirname $path;
+    my $basedir= $olddir;
+    if ($filename =~ m{^(?:$workflows_re)$}) {
+        #use FP::Repl;repl;
+        die "$myname: you gave path to workflows dir instead of an entry therein\n";
+    }
+    if (not $basedir =~ s{(?:^|^\./+|/+)$workflows_re/*\z}{}) {
+        # We might be inside a workflows dir. Work with absolute paths
+        # to find out.
+        my $olddir2 = xrealpath $olddir;
+        my $basedir2 = $olddir2;
+        if ($basedir2 =~ s{(?:^|^\./+|/+)$workflows_re/*\z}{}) {
+            # Yes; continue working with absolute paths.
+            $olddir = $olddir2;
+            $basedir = $basedir2;
+        }
+    }
+    $basedir = "." unless length $basedir;
+    my $newdir= "$basedir/$workflowto";
+    mkdir $newdir;
+    my @fromto= ($path, "$newdir/$filename");
+    push @paths, @fromto;
+    mv(@fromto);
+    push @olddirs, $olddir; # don't rmdir right away since Git will not work if inside
+}
+
+workflowto $_ for @ARGV;
+
+if ($opt_commit) {
+    xxsystem "git", "add", @paths;
+    xxsystem "git", "commit", "-m", $workflowto, @paths;
+}
+
+rmdir $_ for @olddirs;
+
+#use Chj::ruse;
+#use Chj::Backtrace; use Chj::repl; repl;
