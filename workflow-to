@@ -68,7 +68,7 @@ $workflowto=~ /^\w+$/ or die "workflowto does not match \\w+: '$workflowto'";
 my @paths; # a record of all changed paths (that need to be committed)
 my @olddirs; # a record of all old dirs (to rmdir them after running Git)
 
-my $workflows_re= join("|", @workflows);
+my $workflows_re= '\b(:?' . join("|", @workflows) . ')\b';
 
 sub workflowto {
     my ($path)=@_;
