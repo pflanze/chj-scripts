@@ -3,4 +3,4 @@
 set -euo pipefail
 IFS=
 
-exec workflow-to READY "$@"
+exec workflow-to ready "$@"

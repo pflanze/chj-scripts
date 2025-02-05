@@ -7,7 +7,8 @@ use strict; use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
 
 my @workflows= qw(
-    READY
+    ready
+    no
     applied
     done
     dupe
