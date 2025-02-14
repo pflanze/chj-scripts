@@ -1,0 +1,5 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+exec ele priorities --age-min 30 --no-show-archived "$@"
