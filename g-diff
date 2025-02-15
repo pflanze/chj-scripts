@@ -5,20 +5,10 @@
 
 use strict;
 
-# git 1.6 does not ship with git-* binaries anymore in the normal PATH
-# location. I don't like having to use shell automatisms (they cost
-# memory, and well, for now I don't like them), and adding the path is
-# a slight disturbance (for now, until I clean shell init script
-# handling centrally). So, what's left? Symlinking all of the
-# /usr/libexec/git-core/* programs to here would be a no-no, since on
-# some of my systems those don't exist yet. So an additional exec is
-# due anyway, and once I do that, why not just call "git" and rely on
-# PATH again? heh.
-
-# We also name these g-* so that's easier for me to type (maybe that
-# makes those shell completions look lame in comparison?)
-
-# Using g-* and not just g* to avoid some conflicts.
+# I don't like shell auto completion (it costs memory, and I don't
+# like the unpredictability).  Could add /usr/lib/git-core/ to PATH,
+# but using g-* symlinks there's less to type.  Using g-* and not just
+# g* to avoid some conflicts.
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
