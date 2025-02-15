@@ -11,6 +11,7 @@ my @workflows= qw(
     no
     applied
     done
+    wontfix
     dupe
     future
     notforme
