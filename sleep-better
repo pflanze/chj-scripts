@@ -207,6 +207,15 @@ sub parseFuture ($orig, $now, $accept_past = 0) {
     }
 }
 
+# copy from functional-perl!
+sub min {
+    my $x = shift;
+    for (@_) {
+        $x = $_ if $_ < $x
+    }
+    $x
+}
+
 sub sleepUntil ($t) {
     while (1) {
         my $now= time;
@@ -216,7 +225,12 @@ sub sleepUntil ($t) {
         }
         #warn "sleep $d"; ah, perl already handles interrupted sleep calls?
         # well, would have to try with a signal handler.
-        sleep $d
+
+        # Don't sleep longer than 10 seconds, because of computer
+        # sleep/hibernate times: sleep times are not oriented around
+        # real time! They continue to resume only once the computer is
+        # woken up again.
+        sleep min($d, 10)
     }
 }
 
