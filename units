@@ -35,12 +35,13 @@ sub m2feet($) { # lol
 my %currency =
   (
    # 1 X in CHF
-   # e.g. for c in usd eur gbp cad; do $BROWSER https://www.investing.com/currencies/"$c"-chf; read; done
+   # e.g.
+   # for c in usd eur gbp cad; do $BROWSER https://www.exchange-rates.org/converter/$c-chf; read; done
    CHF=> 1,
-   USD=> 0.8829,
-   EUR=> 0.9284,
-   GBP=> 1.1255,
-   CAD=> 0.6231,
+   USD=> 0.8178,
+   EUR=> 0.9425,
+   GBP=> 1.1004,
+   CAD=> 0.5955,
   );
 
 our $conv=
