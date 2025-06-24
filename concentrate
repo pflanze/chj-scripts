@@ -496,7 +496,7 @@ my %is_ok = (
     "Friday from 4 PM"=> [ 5, 16, undef ],
     "Saturday" => [ 6, undef, undef ],
     "Sunday before 7 PM" => [ 0, undef, 19 ],
-    "Tuesday"  => [ 2, undef, undef ]
+    "Tuesday"  => [ 2, 16, undef ]
     );
 sub is_ok($wday, $hour) {
     for my $key (keys %is_ok) {
