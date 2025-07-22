@@ -38,10 +38,10 @@ my %currency =
    # e.g.
    # for c in usd eur gbp cad; do $BROWSER https://www.exchange-rates.org/converter/$c-chf; read; done
    CHF=> 1,
-   USD=> 0.8178,
-   EUR=> 0.9425,
-   GBP=> 1.1004,
-   CAD=> 0.5955,
+   USD=> 0.7967,
+   EUR=> 0.9323,
+   GBP=> 1.0744,
+   CAD=> 0.5834,
   );
 
 our $conv=
