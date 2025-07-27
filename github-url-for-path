@@ -19,14 +19,15 @@ BEGIN {
 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname path-from-git-root...
+    print "$myname [ path-from-git-root... ]
 
-  Print Git web UI urls to see the given files. By default, looks in
-  'origin' and 'github' for github base urls.
+  Print Git web UI URLs to see the given files. By default, looks in
+  'origin' and 'github' for github base URLs. If no path is given,
+  show the repository home URL.
 
   Options:
 
-    --base url   base Github url to use instead of auto-detection
+    --base url   base Github URL to use instead of auto-detection
     --no-assert  do not verify we're in the root of a Git checkout
     --commit     use the current commit instead of the branch name
 
@@ -49,7 +50,6 @@ GetOptions("verbose"=> \$verbose,
            "commit" => \$opt_commit,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
-usage unless @ARGV;
 
 sub _auto_detect_remote {
     my $remotes= `git remote -v`; $? == 0 or die "git remote exited $?";
@@ -145,9 +145,13 @@ sub current_branch() {
 
 my $revision = $opt_commit ? current_commitid : current_branch;
 
-for (@ARGV) {
-    my $url= github_url_for_path $_, $revision;
-    print "$url\n" or die;
+if (@ARGV) {
+    for (@ARGV) {
+        my $url= github_url_for_path $_, $revision;
+        print "$url\n" or die $!;
+    }
+} else {
+    print "$base\n" or die $!;
 }
 
 #use FP::Repl; repl;
