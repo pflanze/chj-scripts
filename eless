@@ -20,7 +20,7 @@ fi
 
 pager() {
     local IFS=' '
-    ${PAGER-less}
+    ${PAGER-less} ${PAGER_OPTS-}
 }
 
 "$@" 2>&1 | pager

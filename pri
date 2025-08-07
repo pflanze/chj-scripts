@@ -2,4 +2,4 @@
 set -meuo pipefail
 IFS=
 
-exec ele priorities "$@"
+PAGER_OPTS=-S exec ele priorities "$@"
