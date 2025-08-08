@@ -7,15 +7,12 @@ usage () {
     echo "  git pull, and run cj-gitmetadata restore."
     echo
     echo "  Options:"
-    echo "    -a      cd to root of working directory when not there"
+    echo "    -a      cd to root of working directory when not there (now default)"
     exit 1
 }
 
-opt_all=0
-
 while [ $# -ne 0 ]; do
     if [[ $1 = "-a" ]]; then
-        opt_all=1
         shift
     else
 	usage
@@ -25,16 +22,7 @@ done
 a=`git rev-parse --show-toplevel`
 b=`pwd -P`
 if [ "$a" != "$b" ]; then
-    if [[ $opt_all = 1 ]]; then
-        cd "$a"
-    else
-        a=$(chase "$a")
-        b=$(chase "$b")
-        if [ "$a" != "$b" ]; then
-	    echo "not in root of git working directory and -a not given, aborting"
-	    exit 1
-        fi
-    fi
+    cd "$a"
 fi
 
 if [ ! -d .METADATA-v2 ]; then
