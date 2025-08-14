@@ -1,0 +1,9 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+for f in "$@"; do
+    if ! printf '%s' "$f" | egrep -q '\bARCHIVED\b'; then
+       mv -i "$f" "$f ARCHIVED"
+    fi
+done
