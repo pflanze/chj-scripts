@@ -3,4 +3,4 @@
 set -euo pipefail
 IFS=
 
-exec lnto -s "$@"
+exec lnto -s -r "$@"
