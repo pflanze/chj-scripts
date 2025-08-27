@@ -74,10 +74,9 @@ usage unless (@ARGV>=1 and @ARGV<=2);
 
 $opt_force ||= $ENV{GDROP_FORCE};
 
-our ($maybe_subname, $maybe_reset_to_commit)=@ARGV;
+our ($tagsubname, $maybe_reset_to_commit)=@ARGV;
 
-our $subname_= ((defined ($maybe_subname))# and length ($maybe_subname))
-		? $maybe_subname."_" : "");
+our $subname_= length($tagsubname) ? $tagsubname."_" : "";
 
 defined (our $date_= `dat --sec --tz --no-wday`) or exit 127;
 chomp $date_; #hum.
