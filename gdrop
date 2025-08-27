@@ -76,6 +76,12 @@ $opt_force ||= $ENV{GDROP_FORCE};
 
 our ($tagsubname, $maybe_reset_to_commit)=@ARGV;
 
+my $commit_re = qr/[a-f0-9]{7,40}/;
+
+if ($tagsubname =~ /^(?:$commit_re)$/) {
+    usage "given tagsubname looks like a commit id, missing argument?: '$tagsubname'"
+}
+
 our $subname_= length($tagsubname) ? $tagsubname."_" : "";
 
 defined (our $date_= `dat --sec --tz --no-wday`) or exit 127;
