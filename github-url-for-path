@@ -27,9 +27,11 @@ sub usage {
 
   Options:
 
-    --base url   base Github URL to use instead of auto-detection
-    --no-assert  do not verify we're in the root of a Git checkout
-    --commit     use the current commit instead of the branch name
+    --base url        base Github URL to use instead of auto-detection
+    --no-assert       do not verify we're in the root of a Git checkout
+    --current-commit  use the current commit instead of the branch name
+    --commit commit   give URL to show the diff for the given change
+    --commits c1 c2   give URL to show the changeset for the given commits
 
   ($email_full)
 ";
@@ -41,13 +43,17 @@ use Getopt::Long;
 our $verbose=0;
 my $opt_base;
 my $opt_noassert;
+my $opt_current_commit;
 my $opt_commit;
+my $opt_commits;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "base=s"=> \$opt_base,
            "no-assert"=> \$opt_noassert,
+           "current-commit" => \$opt_current_commit,
            "commit" => \$opt_commit,
+           "commits" => \$opt_commits,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 
@@ -143,15 +149,30 @@ sub current_branch() {
     git "rev-parse --abbrev-ref HEAD"
 }
 
-my $revision = $opt_commit ? current_commitid : current_branch;
+if (!@ARGV) {
+    print "$base\n" or die $!;
 
-if (@ARGV) {
+} elsif ($opt_commits) {
+    if (@ARGV != 2) {
+        usage "need 2 arguments for --commits"
+    }
+    my ($start, $end) = @ARGV;
+    print "$base/compare/$start...$end\n";
+
+} elsif ($opt_commit) {
+    if (@ARGV != 1) {
+        usage "need 1 argument for --commit"
+    }
+    my ($commit) = @ARGV;
+    print "$base/commit/$commit\n";
+
+} else {
+    my $revision = $opt_current_commit ? current_commitid : current_branch;
+
     for (@ARGV) {
         my $url= github_url_for_path $_, $revision;
         print "$url\n" or die $!;
     }
-} else {
-    print "$base\n" or die $!;
 }
 
 #use FP::Repl; repl;
