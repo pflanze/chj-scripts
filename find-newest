@@ -16,7 +16,7 @@ sub usage {
   BUGS/todo:
   - does not include the very first top level items into the list.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @dirs;

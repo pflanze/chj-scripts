@@ -23,7 +23,7 @@ sub usage {
    -s|--star|--starred  remove * characters at the end of the line
                         (as present in some ls output formats)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

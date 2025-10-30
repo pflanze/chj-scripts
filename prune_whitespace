@@ -15,7 +15,7 @@ sub usage {
   Can act as filter.
   Expects unix lineendings.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

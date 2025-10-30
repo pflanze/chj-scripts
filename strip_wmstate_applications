@@ -16,7 +16,7 @@ sub usage {
   Call from .Xsession file or similar, before wmaker startup.
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 usage if @ARGV;

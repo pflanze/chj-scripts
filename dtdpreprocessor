@@ -16,7 +16,7 @@ sub usage {
   Expand entities used in the .pdtd file, so that it becomes
   a valid dtd. (sigh)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

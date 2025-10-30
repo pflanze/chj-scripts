@@ -27,7 +27,7 @@ sub usage {
                  Which means this option is dangerous!..
   --random       fill the file with random bytes from @fastrandom
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

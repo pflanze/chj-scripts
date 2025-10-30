@@ -11,7 +11,7 @@ sub usage {
     print "$myname pid(s)
   Shows the parent pids of the given processes.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

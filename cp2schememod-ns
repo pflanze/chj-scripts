@@ -24,7 +24,7 @@ options:
 
   (Christian J. <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

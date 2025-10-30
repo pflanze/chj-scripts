@@ -15,7 +15,7 @@ sub usage {
    /etc/shadow
   and renames the /home/\$user folder.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

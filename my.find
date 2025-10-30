@@ -19,7 +19,7 @@ sub usage {
   it will directly call find if the first argument is not a known option.
   or even: if the first argument does not start with a dash.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 #usage if $myname ne 'find' and grep { $_ eq '-h' or $_ eq '--help' } @ARGV;

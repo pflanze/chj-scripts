@@ -27,7 +27,7 @@ sub usage {
   --html      use html mode even if the files do not have a suffix that
               contains the strings 'htm' or 'xml'
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

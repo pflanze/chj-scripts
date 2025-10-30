@@ -31,7 +31,7 @@ $myname [user\@]host:sourcefile targetfile
 
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

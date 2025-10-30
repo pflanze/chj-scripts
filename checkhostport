@@ -22,7 +22,7 @@ sub usage {
              >0: number of non-successful adresses
   -t|--timeout  Timeout in seconds (default 10)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

@@ -18,7 +18,7 @@ sub usage {
   -s  --short(name)   Only print command name, no arguments.
   -w  wide output, do not truncate last column
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

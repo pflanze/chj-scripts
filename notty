@@ -17,7 +17,7 @@ sub usage {
   -d      give debug info
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my $DEBUG;

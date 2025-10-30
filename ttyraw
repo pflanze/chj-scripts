@@ -16,7 +16,7 @@ sub usage {
   With option -e, an exec is done, without it, it waits for the
   command to return and then sets the terminal back to cooked mode.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

@@ -42,7 +42,7 @@ sub usage {
 
   (Christian Jaeger <$authormail>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

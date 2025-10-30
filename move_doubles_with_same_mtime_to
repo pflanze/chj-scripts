@@ -14,7 +14,7 @@ hmm, files isch ja begrenzt
 und well trash: wenn mehrfach derselbe name gibts bei xlinkunlink n abbruch
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

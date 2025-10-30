@@ -13,7 +13,7 @@ sub usage {
   Put '> ' at the beginning of each line,
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 usage if @ARGV;

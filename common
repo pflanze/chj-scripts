@@ -18,7 +18,7 @@ sub usage {
   -s | --sort   sort output
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

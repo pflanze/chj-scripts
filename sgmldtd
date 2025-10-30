@@ -17,7 +17,7 @@ sub usage {
       print_tree, from given element and depth
 
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

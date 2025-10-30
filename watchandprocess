@@ -50,7 +50,7 @@ sub usage {
     TODO: this is only correct if both stderr and stdout are piped? ?!
 ps.todo sollt ich nicht EH mergen  wenn nicht explizit err file angegeben ist?
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 usage unless @ARGV;

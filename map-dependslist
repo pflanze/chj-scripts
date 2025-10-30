@@ -12,7 +12,7 @@ sub usage {
   Filter text cut from a 'Depends:' line or the like of a deb
   package from stdin to stdout.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

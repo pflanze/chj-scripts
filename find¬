@@ -19,7 +19,7 @@ sub usage {
   -s|--strip  remove ¬ char from dirnames before printing.
   -v|--verbose  print paths of ignored items to stderr
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @dirs;

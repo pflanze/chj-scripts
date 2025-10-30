@@ -21,7 +21,7 @@ sub usage {
   -f|--folder ..     output folder
   -h|--html          parse input in html mode
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

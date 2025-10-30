@@ -19,7 +19,7 @@ sub usage {
   You can list the same .o object file multiple times.
   (Christian Jaeger <$email>)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

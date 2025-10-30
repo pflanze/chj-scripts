@@ -19,7 +19,7 @@ sub usage {
   --no-use     don't print 'use ' before each line and ';' afterwards.
   --load   print 'load my \$Bar= \"Foo::Bar\";' instead (use Chj::load first!).
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 use Getopt::Long;

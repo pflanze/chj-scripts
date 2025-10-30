@@ -14,7 +14,7 @@ sub usage {
 
   Prefix the filename in dirpath with \`dat\` and move the files there.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

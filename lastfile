@@ -50,7 +50,7 @@ sub usage {
 
   ($email_full)
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @args;

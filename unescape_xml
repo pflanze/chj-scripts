@@ -13,7 +13,7 @@ sub usage {
   filtering by appending .out to filepaths, or stdin to stdout
   # ps. wieder mal wär ein standardisierter inputtooutputfilenamefiltermechanismus gut.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

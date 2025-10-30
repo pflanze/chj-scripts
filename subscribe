@@ -27,7 +27,7 @@ sub usage {
                will be sent as message body 'subscribe name'.
 
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

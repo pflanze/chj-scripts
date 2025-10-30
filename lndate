@@ -10,7 +10,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname ..
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

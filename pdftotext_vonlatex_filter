@@ -12,7 +12,7 @@ sub usage {
     print "$myname ..
   Korrigiert komische outputs von pdftotext auf some latex dokumenten
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

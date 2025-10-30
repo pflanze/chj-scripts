@@ -32,7 +32,7 @@ sub usage {
   value. So better check that.
 ";
 
-    exit @_ ? 1 : 0;
+    exit(@_ ? 1 : 0);
 }
 
 my @args;

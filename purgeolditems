@@ -22,7 +22,7 @@ sub usage {
   -a|--always    always delete empty directories, even if their
                  timestamp is not older than age.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

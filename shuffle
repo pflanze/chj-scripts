@@ -11,7 +11,7 @@ sub usage {
     print "$myname < in > out
   output lines randomly changed in order
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;

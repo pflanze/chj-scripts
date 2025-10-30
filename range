@@ -14,7 +14,7 @@ sub usage {
   It exits as soon as the 'to' position has been reached.
   The first byte in the input stream is numbered 0.
 ";
-exit @_ ? 1 : 0;
+exit(@_ ? 1 : 0);
 }
 
 my @files;
