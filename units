@@ -36,12 +36,13 @@ my %currency =
   (
    # 1 X in CHF
    # e.g.
-   # for c in usd eur gbp cad; do $BROWSER https://www.exchange-rates.org/converter/$c-chf; read; done
+   # for c in usd eur gbp cad pln; do $BROWSER https://www.exchange-rates.org/converter/$c-chf; read; done
    CHF=> 1,
-   USD=> 0.7979,
-   EUR=> 0.9339,
-   GBP=> 1.0693,
-   CAD=> 0.5722,
+   USD=> 0.8052,
+   EUR=> 0.9335,
+   GBP=> 1.0592,
+   CAD=> 0.5729,
+   PLN=> 0.2184,
   );
 
 our $conv=
