@@ -64,14 +64,35 @@ sub dat($t) {
 sub newpath($path) {
     my $dirname = dirname $path;
     my $filename = basename $path;
-    # Fri_22_Sep_122748_CEST_2023
-    if (my ($wday, $mday, $month, $h,$m,$s, $tz, $year, $remainder) = $filename =~ /
-         ^ ([A-Za-z]{2,4}) _{1,2} (\d+) _{1,2} ([A-Za-z]{3,6}) _{1,2} (\d{2})(\d{2})(\d{2})
+    # Fri_22_Sep_122748_CEST_2023 or
+    # Fri_Sep_22_122748_CEST_2023
+    #omg effen umlaute und utf8  jst effen tiring
+    if (my ($wday, $mday_or_month, $month_or_mday, $h,$m,$s, $tz, $year, $remainder) = $filename =~ /
+         ^ ([A-Za-z]{2,4}) _{1,2} ((?:\d+)|(?:[A-Za-z.]{3,6})) _{1,2} ((?:\d+)|(?:[A-Za-z.]{3,6})) _{1,2} (\d{2})(\d{2})(\d{2})
            (?: _{1,2} ([A-Z]{3,6}))? # time zone
            _{1,2} (\d{4}) # year
            (.*) # remainder
        /x) {
         $tz //= "";
+        my ($mday, $month) = do {
+            if ($mday_or_month =~ /^\d+$/) {
+                ($mday_or_month, $month_or_mday)
+            } else {
+                ($month_or_mday, $mday_or_month)
+            }
+        };
+        $mday=~ /^\d+/ or die "??: '$mday'";
+        $month=~ /^\d+/ and die "??: '$month'";
+        $wday=~ s/Die/Tue/;
+        $wday=~ s/Mit/Wed/;
+        $wday=~ s/Don/Thu/;
+        $wday=~ s/Fre/Fri/;
+        $wday=~ s/Sam/Sat/;
+        $wday=~ s/Son/Sun/;
+        $month=~ s/Dez/Dec/;
+        $month=~ s/M.{1,3}r/Mar/;
+        $month=~ s/Mai/May/;
+        $month=~ s/Okt/Oct/;
         my $str= "$wday $mday $month $h:$m:$s $tz $year";
         if (defined (my $t = str2time $str)) {
             $dirname . "/" . dat($t) . $remainder
