@@ -11,15 +11,19 @@ $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname seconds-since-epoch|-
+    print "$myname [seconds-since-epoch]
 
   Print localtime
 
   seconds-since-epoch may be an arithmetic expression matching
    $arithmatch
 
-  When given -, filters stdin to stdout, replacing the number in the
+  When given no argument, filters stdin to stdout, replacing the number in the
   first column with the localtime string.
+
+  Options:
+
+   --keep   print the unixtime column, too
 
 ";
 exit (@_ ? 1 : 0);
@@ -27,10 +31,11 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_keep;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "keep"=> \$opt_keep,
 	   ) or exit 1;
-usage unless @ARGV==1;
 
 sub one {
     my ($seconds_since_epoch)=@_;
@@ -53,10 +58,26 @@ sub many {
     }
 }
 
-our ($arg)=@ARGV;
-if ($arg eq "-") {
-    many *STDIN{IO}
-} else {
-    one $arg
+sub many_keep {
+    my ($in)=@_;
+    while (<$in>) {
+	if (my ($t, $subt) = m/^(\d{9,10})(\.\d+|)\b/) {
+            print localtime($t)."$subt\t", $_ or die $!;
+        } else {
+            print or die $!;
+        }
+    }
 }
 
+if (@ARGV == 1) {
+    my ($arg) = @ARGV;
+    one $arg
+} elsif (@ARGV) {
+    usage "too many arguments" # well is ignored
+} else {
+    if ($opt_keep) {
+        many_keep *STDIN{IO}
+    } else {
+        many *STDIN{IO}
+    }
+}
