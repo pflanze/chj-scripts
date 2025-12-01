@@ -82,10 +82,6 @@ $fontsize=~ /^\d+$/s
 sub runterminal {
     my ($do_setsid)= @_;
 
-    # setting to xterm seems to work? whereas without it
-    #  (older) debian (without urxvt installed) usually gives
-    # "Cannot find terminfo entry for 'rxvt-unicode'"
-
     # Instead of just calling chdir, we use the shell's (bash's) cd
     # functionality to save as much of the PWD variable as possible.
 
@@ -104,7 +100,12 @@ sub runterminal {
                        (@perhaps_agent,
                         "urxvt",
                         "-fn", "xft:$font:pixelsize=$fontsize",
-                        "-tn", "xterm",
+                        # Setting to xterm seems to work? whereas without it
+                        # (older) debian (without urxvt installed) usually gives
+                        # "Cannot find terminfo entry for 'rxvt-unicode'".
+                        # But use "xterm-256color" to get gray scale
+                        # colors from apps.
+                        "-tn", "xterm-256color",
                         ($> == 0 ? ("-bg", "#ffd8d8") : ()),
                         @args));
         my $script= join("\n",@scriptlines);
