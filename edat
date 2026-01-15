@@ -13,5 +13,5 @@ else
     path="$d"-"$@"
 fi
 
-exec e "$path"
+exec g "$path"
 
