@@ -1,0 +1,69 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2026 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace; 
+#use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname [..]
+
+  Options:
+
+   --minus  instead of '_', insert '-' characters
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+my $underscore = "_";
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+           "minus" => sub {
+               $underscore = "-";
+           },
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+
+
+sub convert($s) {
+    $s=~ s/\b([A-Z])/lc($1)/sgex;
+    $s=~ s/([A-Z])/$underscore.lc($1)/sgex;
+    $s
+}
+
+if (@ARGV) {
+    for my $s (@ARGV) {
+        print convert($s),"\n" or die $!;
+    }
+} else {
+    while (defined(my $s= <STDIN>)) {
+        chomp $s;
+        print convert($s),"\n" or die $!;
+    }
+}
+
