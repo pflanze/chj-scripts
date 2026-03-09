@@ -2,15 +2,16 @@
 
 set -euo pipefail
 
-# How to find out if *output* is going to a tty or not (--color=auto
-# can't work as I need to pass it to a pipe for tail'ing)? `tty` is
-# looking at input only. Forever. Don't remember if/where I ever
-# solved it. Here's one attempt (well, taken from Chj::Unix::User):
-pid="$$"
-if readlink /proc/"$pid"/fd/1 | grep -q pipe; then
-    color=no
+tail=20
+
+if [ $# == 0 ]; then
+    dir=.
+elif [ $# == 1 ]; then
+    dir=$1
 else
-    color=always
+    echo "usage: $0 [dir]"
+    echo "   list the last $tail files in the given dir"
+    exit 1
 fi
 
-l --color="$color" "$@" | tail -20
+exec lst --ls-dir "$dir" --ignore '^\.' --ignore '~$' -lrt tail $tail
