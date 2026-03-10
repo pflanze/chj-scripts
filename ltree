@@ -2,13 +2,18 @@
 set -meuo pipefail
 IFS=
 
-if [ $# = 0 ]; then
-    dir=.
-elif [ $# = 1 ]; then
-    dir="$1"
-else
-    echo "usage: $0 [dir]"
-    exit 1
+if [ $# = 1 ]; then
+    if [ "$1" = -h -o "$1" = --help ]; then
+        echo "usage: $0 [dir lst_options..]"
+        exit 1
+    fi
 fi
 
-lst -lrt --ignore '/\.(METADATA-v2|git)(/|$)' --ignore '~$' --find-dir "$dir"
+if [ $# = 0 ]; then
+    dir=.
+else
+    dir="$1"
+    shift
+fi
+
+exec lst -lrt --ignore '/\.(METADATA-v2|git)(/|$)' --ignore '~$' --find-dir "$dir" "$@"
