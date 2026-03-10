@@ -1,17 +1,33 @@
-#!/bin/bash
+#!/usr/bin/perl -w
 
-if [ $# == 0 ]; then
-    dir=.
-elif [ $# == 1 ]; then
-    if ! [[ "$1" =~ ^- ]]; then
-        if [ -d "$1" ]; then
-            dir=$1
-        fi
-    fi
-fi
+use strict;
 
-if [ -n "$dir" ]; then
-    exec lst --ls-dir "$dir" --ignore '^\.' --ignore '~$' -l
-else
-    exec /opt/chj/bin/ls -l --time-style=long-iso "$@"
-fi
+my $dir = do {
+    if (@ARGV == 0) {
+        "."
+    } elsif (@ARGV == 1) {
+        my $path = $ARGV[0];
+        if (not($path =~ /^-/)
+            and
+            ! -l $path
+            and
+            -d _
+            ) {
+            $path
+        } else {
+            undef
+        }
+    } else {
+        undef
+    }
+};
+
+my @cmd = do {
+    if (defined $dir) {
+        ('lst', '--ls-dir', $dir, '--ignore', '^\.', '--ignore', '~$', '-l')
+    } else {
+        ('/opt/chj/bin/ls', '-l', '--time-style=long-iso', @ARGV)
+    }
+};
+
+exec(@cmd) || exit(127);
