@@ -173,8 +173,8 @@ sub write_diff {
                             $hunk);
             my $i000 = sprintf('%03d', $i);
             my $path2= $path;
-            $path2=~ s/\.patch$/-$i000.patch/
-                or die "suffix wrong?";
+            $path2=~ s/\.(\w+)$/-$i000.$1/
+                or die "missing suffix?";
             my $t= xtmpfile $path2;
             $t->xprint(rewrite_head($origpath, $head, "$prefix $i000: "),
                        $diff);
