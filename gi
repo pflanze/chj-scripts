@@ -24,10 +24,12 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 my $opt_i;
+my $opt_alpha;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
            "i"=> \$opt_i,
+           "alpha" => \$opt_alpha,
 	   #"dry-run"=> \$opt_dry,
 	   ) or exit 1;
 usage unless @ARGV;
@@ -35,5 +37,6 @@ usage unless @ARGV;
 exec "gfind",
     "--path", "^(?!\.METADATA-v2)",
     ($opt_i ? "-i" : ()),
+    ($opt_alpha ? "--alpha" : ()),
     map { ("--name", $_) } @ARGV;
 
