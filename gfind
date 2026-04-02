@@ -30,6 +30,7 @@ sub usage {
     -i | --insensitive  change regexen to be case insensitive
     -z             terminate printed items with '\0' instead of '\n'
     --no-dot       do not print the \".\" entry
+    --alpha        sort alphabetically (default: by mtime)
 
   (Christian Jaeger <$email>)
 ";
@@ -52,6 +53,7 @@ my @opt_path;
 my @opt_name;
 my $opt_i;
 my $opt_no_dot;
+my $opt_alpha;
 GetOptions(
     "help"=> sub{usage},
     "z"=> \$opt_z,
@@ -61,11 +63,12 @@ GetOptions(
     "name=s"=> adding_to(\@opt_name),
     "insensitive"=> \$opt_i,
     "no-dot"=> \$opt_no_dot,
+    "alpha" => \$opt_alpha,
     ) or exit 1;
 
 
 use Chj::Git::Functions qw(git_ls_files);
-use Chj::xperlfunc qw(xprint);
+use Chj::xperlfunc qw(xprint xlstat);
 
 my %items=
     (
@@ -126,11 +129,19 @@ if ($opt_dirs) {
     };
 }
 
-
+my @show_items;
 for (sort keys %items) {
     if ($match->($_)) {
-        xprint $_, $sep
+        if ($opt_alpha) {
+            xprint $_, $sep
+        } else {
+            push @show_items, [$_, scalar xlstat $_];
+        }
     }
 }
 
-
+if (!$opt_alpha) {
+    for my $item (sort { $a->[1]->mtime <=> $b->[1]->mtime } @show_items) {
+        xprint $item->[0], $sep
+    }
+}
