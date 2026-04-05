@@ -1,0 +1,12 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+echo "I never  ever  remember how this works.  The 2 commands are:
+
+- Get the submodule checked out:
+  *NOT* 'init', but 'update'
+
+- Yet, before that *also* have to call 'init' ?
+
+"
