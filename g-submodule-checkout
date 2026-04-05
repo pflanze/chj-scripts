@@ -2,11 +2,8 @@
 set -meuo pipefail
 IFS=
 
-echo "I never  ever  remember how this works.  The 2 commands are:
+# It's sick.
 
-- Get the submodule checked out:
-  *NOT* 'init', but 'update'
+set -x
 
-- Yet, before that *also* have to call 'init' ?
-
-"
+g-submodule update --init "$@"
