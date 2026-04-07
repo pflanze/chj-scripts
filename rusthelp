@@ -1,0 +1,17 @@
+#!/bin/bash
+cat <<'EOF' | less
+
+# Select test cases for `cargo test`
+
+- https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#running-specific-tests
+
+   i.e. pass module name directly without an option; but that's not
+   working well, still runs all the binaries
+
+- Instead:
+    1. run `cargo test --no-run --message-format=json | jq -r 'select(.profile.test == true) | .executable'` and grep for the crate name
+    2. run that binary and pass it the module name
+
+
+
+EOF
