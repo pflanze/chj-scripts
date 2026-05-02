@@ -16,4 +16,4 @@ else
     shift
 fi
 
-exec lst -lrt --ignore '(^|/)\.(METADATA-v2|git)(/|$)' --ignore '~$' --find-dir "$dir" "$@"
+exec lst -lrt --ignore '(^|/)\.(METADATA-v2|git)(/|$)' --ignore '~$' --find "$dir" "$@"
