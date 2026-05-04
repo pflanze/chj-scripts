@@ -14,4 +14,4 @@ else
     exit 1
 fi
 
-exec lst --ls "$dir" --ignore '(^|/)\.' --ignore '~$' -lrt tail $tail
+exec lst --ls "$dir" --ignore-item-regex '^\.' --ignore-item-regex '~$' -lrt tail $tail

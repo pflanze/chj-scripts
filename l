@@ -24,7 +24,7 @@ my $dir = do {
 
 my @cmd = do {
     if (defined $dir) {
-        ('lst', '--ls', $dir, '--ignore', '(^|/)\.', '--ignore', '~$', '-lrt')
+        ('lst', '--ls', $dir, '--ignore-item-regex', '^\.', '--ignore-item-regex', '~$', '-lrt')
     } else {
         ('/opt/chj/bin/ls', '-lrt', '--time-style=long-iso', @ARGV)
     }
