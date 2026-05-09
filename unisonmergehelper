@@ -8,7 +8,7 @@ use Compress::Zlib;
 
 # Weil unison 3 parameter gibt aber tkdiff nur 2 handhaben kann.
 # Der einzige grosse Scheiss ist wohl nur dass unison wohl filenames nicht \' escaped resp.
-#   halt das wär nich mal korrekt. Sondern wohl eher \  whitespace escaped? Fuckthe hell mit the shell
+#   halt das wär nich mal korrekt. Sondern wohl eher \  whitespace escaped?
 
 die "Dies iss bloss n helper skript, für unison" unless @ARGV==3;
 

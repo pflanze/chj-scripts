@@ -255,7 +255,7 @@ while (defined (my $line=<STDIN>)) {
     }
 }
 
-#fuck cleanprintlist();
+# cleanprintlist();
 while ($numchilds>0){
     waitchildevaluate;
 }

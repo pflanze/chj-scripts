@@ -104,7 +104,7 @@ icy-aim: N/A
 		#xxsystem qw(/usr/bin/mpg123 -s -),@ARGV;  besser, aber "ahaaa" es tut - als erstes als stdin mann übersehen
 		# xxsystem qw(/usr/bin/mpg123 -s),@ARGV;
 		# #och  nun noch  jung at the beginning.
-		xxsystem qw(/usr/bin/ogg123 -d raw -f - ),@ARGV;#ps muss -d raw VOR -f angeben  fuck isch das mühsam.
+		xxsystem qw(/usr/bin/ogg123 -d raw -f - ),@ARGV;#ps muss -d raw VOR -f angeben  isch das mühsam.
 	    };
 	    if ($@) {
 		print STDERR $@;
@@ -149,7 +149,7 @@ icy-aim: N/A
     #close STDOUT or warn $!;
     #$w->xclose; oder schon in parent nach fork. ah dort stehts eh scho
     warn "waiting 2";
-    wait;# nun ist leider /usr/bin/mpg123 so ein geiles kommando dass es mit 0 exitet obwohl input file not found. hm, immerhin  mit  close STDOUT unten netcat abschliessen? nein, nix isch. ach.
+    wait;#  /usr/bin/mpg123 exits with 0 in spite of input file not found. hm, immerhin  mit  close STDOUT unten netcat abschliessen? nein, nix isch. ach.
 
 } else {
     $r->xdup2(0);

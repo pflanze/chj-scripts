@@ -99,7 +99,6 @@ sub waituntil {
 			# make that the target time of this waituntil call is reached just now. future waituntil calculations must base xyz
 			#a) diff von anfangs aufbehalten.  kommt echte zeit rein?
 			#mann sinds eh wirklich zwei verschiedene faelle?
-			#habe ich kein praktisches verständnis der mathematik oder was is los? (f*ckich war eh immer schleccht im )
 			# kann ich nicht ein flag setzen das beim nächsten mal ausgewertet wird wenn waituntil kommen soll? time-starttime+realstarttime=time().
 			$$virtualstarttimeref += $realtargettime - time;
 			return;

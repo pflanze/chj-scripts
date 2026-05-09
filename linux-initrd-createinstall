@@ -3,8 +3,6 @@
 # Wed Jun 11 07:01:16 CEST 2008
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
-# really f*cking fricking how I EVER so now never. this here to solve me.
-
 use strict;
 
 our $boot= "/boot";
