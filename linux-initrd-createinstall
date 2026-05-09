@@ -55,13 +55,11 @@ sub Do {
 }
 
 
-our @cmd=("update-initramfs",
-	  ($opt_create ? "-c" : "-u"),
-	  ($verbose ? "-v" : ()),
-	  "-k",
-	  $kernel_version);
-
-Do xxsystem=> @cmd;
+Do xxsystem=> ("update-initramfs",
+               ($opt_create ? "-c" : "-u"),
+               ($verbose ? "-v" : ()),
+               "-k",
+               $kernel_version);
 
 if (-e "$boot/initrd.img") {
     Do xsystem=> "mvnumber", "$boot/initrd.img.old";#well.
