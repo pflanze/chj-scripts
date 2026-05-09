@@ -7,7 +7,7 @@ use strict;
 
 use Chj::xperlfunc;
 
-our $baseurl= 'https://www.security-database.com/detail.php?alert=';
+our $baseurl= 'https://www.cve.org/CVERecord?id=';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
