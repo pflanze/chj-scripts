@@ -61,6 +61,7 @@ Do xxsystem=> ("update-initramfs",
                "-k",
                $kernel_version);
 
+# Update symlink only if it exists
 if (-e "$boot/initrd.img") {
     Do xsystem=> "mvnumber", "$boot/initrd.img.old";#well.
     Do xrename=> "$boot/initrd.img", "$boot/initrd.img.old";
