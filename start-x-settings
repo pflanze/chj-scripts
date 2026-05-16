@@ -1,0 +1,13 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+setxkbmap -option "ctrl:swapcaps"
+xmodmap ~/.xmodmaprc
+xset -b
+
+# On `aimplain`:
+touchpad="SYNA3133:00 06CB:CFE2 Touchpad"
+if xinput --list | grep -F -q "$touchpad"; then
+    xinput set-prop  "libinput Tapping Enabled" 1
+fi
