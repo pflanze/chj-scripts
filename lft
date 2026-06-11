@@ -1,0 +1,18 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+tail=20
+
+if [ $# -eq 1 ]; then
+    dir=$1
+elif [ $# -eq 0 ]; then
+    dir=.
+else
+    echo "Usage: $0 [dir]"
+    echo "   show the last $tail items of the mtime-sorted tree of all"
+    echo "   non-dir items in . or the given dir"
+    exit 1
+fi
+
+ltree "$dir" filter '!d' tail "$tail"
