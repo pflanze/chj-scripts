@@ -1,0 +1,15 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+if [ $# -eq 1 ]; then
+    dir=$1
+elif [ $# -eq 0 ]; then
+    dir=.
+else
+    echo "Usage: $0 [dir]"
+    echo "   show mtime-sorted tree of all non-dir items in . or the given dir"
+    exit 1
+fi
+
+exec ltree "$dir" filter '!d'

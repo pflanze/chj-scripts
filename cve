@@ -4,19 +4,24 @@
 (my $email='christian%jaeger,mine,nu')=~ tr/%,/@./;
 
 use strict;
+use experimental 'signatures';
 
 use Chj::xperlfunc;
 
-our $baseurl= 'https://www.security-database.com/detail.php?alert=';
+our $baseurl= 'https://www.cve.org/CVERecord?id=';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?"; 
 my ($mydir, $myname)=($1,$2); 
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
-    print "$myname cvecode(s)
+    print "$myname [options] cvecode(s)
 
   Show the page(s) at $baseurl . cvecode, the latter being something
   similiar to CVE-200X-XXXX
+
+  Options:
+    --dry-run   show the URLs instead
+    --markdown  show the URLs as markdown
 
   (Christian Jaeger <$email>)
 ";
@@ -25,6 +30,8 @@ exit(@_ ? 1 : 0);
 
 my @args;
 my $DEBUG=0;
+my $dry_run;
+my $opt_markdown;
 for (my $i=0; $i<=$#ARGV; $i++) {
     local $_=$ARGV[$i];
     if (/^--?h(elp)?$/) {
@@ -34,6 +41,10 @@ for (my $i=0; $i<=$#ARGV; $i++) {
     	last;
     } elsif (/^--?d(ebug)?$/) {
 	$DEBUG=1;
+    } elsif (/^--dry(-run)?$/) {
+        $dry_run=1;
+    } elsif (/^--?m(arkdown)?$/) {
+        $opt_markdown=1;
 #     } elsif (/^--?X(?:XXX(?:=(.*))?)?$/) {
 #         if (defined $1) {
 #             $XXX=$1
@@ -50,12 +61,28 @@ usage unless @args;
 
 use URI::Escape 'uri_escape';
 
-my @urls= map {
-    my $cvecode= $_;
+sub url($cvecode) {
     uc($cvecode)=~ /^CVE-(\d+)-\d+\z/
       or usage "'$cvecode' doesn't seem to match the usual format of cve codes";
     $baseurl . uri_escape($cvecode)
-} @args;
+}
 
 use Chj::Browser;
-Browser_exec @urls;
+
+if ($opt_markdown) {
+    print map {
+        my $cve = $_;
+        my $url = url($cve);
+        "* [$cve]($url)\n"
+    } @args
+        or die "stdout: $!";
+} elsif ($dry_run) {
+    print map {
+        my $cve = $_;
+        my $url = url($cve);
+        "$url\n"
+    } @args
+        or die "stdout: $!";
+} else {
+    Browser_exec map { url $_ } @args;
+}

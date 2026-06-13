@@ -1,0 +1,21 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+tail=20
+
+if [ $# = 1 ]; then
+    if [ "$1" = -h -o "$1" = --help ]; then
+        echo "usage: $0 [dir lst_options..]"
+        exit 1
+    fi
+fi
+
+if [ $# = 0 ]; then
+    dir=.
+else
+    dir="$1"
+    shift
+fi
+
+exec lst -lrt --ignore-item-name .METADATA-v2 --ignore-item-name .git --ignore-item-regex '~$' --find "$dir" "$@" tail "$tail"

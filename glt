@@ -1,3 +1,5 @@
 #!/bin/bash
 
-git ls-files -z "$@" | gr -z -v '(^|/)\.METADATA-v2/' | lst -zlt --time-reversed tail 14
+tail=20
+
+git ls-files -z "$@" | gr -z -v '(^|/)\.METADATA-v2/' | lst -zlt --time-reversed tail "$tail"
