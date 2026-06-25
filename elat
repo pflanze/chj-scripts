@@ -1,0 +1,32 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [ dir [ lst options/filters ] ]"
+    echo "  Like 'ela' but goes deep, into the tree, i.e. open"
+    echo "  the newest file in 'dir' or '.'."
+    exit 1
+}
+
+if [ $# = 1 ]; then
+    if [ "$1" = -h -o "$1" = --help ]; then
+        usage
+    fi
+fi
+
+if [ $# = 0 ]; then
+    dir=.
+else
+    dir="$1"
+    shift
+fi
+
+# exec ltree "$dir" "$@"
+# Ah, ^ that includes -lrt, which we don't want
+# Thus copy paste, then add more options:
+
+lst -rt --ignore-item-name .METADATA-v2 --ignore-item-name .git --ignore-item-regex '~$' --find "$dir" \
+    --zo --ignore-item-name target filter f tail 1 \
+    "$@" | xargs -0 e
+
