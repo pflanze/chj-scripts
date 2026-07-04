@@ -2,13 +2,36 @@
 
 set -eu
 
-if [ $# != 1 ]; then
-	echo "usage: $0 dirname"
-	exit 1
+usage() {
+    echo "usage: $0 dirname [-f]"
+    echo "  Options:"
+    echo "  -f  force, i.e. create target directory"
+    exit 1
+}
+
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+if [ "$1" == -h -o "$1" == --help ]; then
+    usage
 fi
 
 dir="$1"
+shift
 
-mkdir -p "$dir"
+if [ $# == 1 ]; then
+    if [ "$1" == -f ]; then
+        mkdir -p "$dir"
+    else
+        usage
+    fi
+fi
+
+if [ ! -d "$dir" ]; then
+    echo "$0: '$dir' does not exist or is not a directory" >&2
+    exit 1
+fi
 
 ls2list | myxargs stdin-to-tty mvto "$dir" --
