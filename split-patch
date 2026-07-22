@@ -158,7 +158,7 @@ sub write_diff {
             $minus, $plus, $rest)=
             $diff=~ m{^
                       (diff\ [^\n]*)\n
-                      (?:(new\ file\ mode\ \d+)\n)?
+                      (?:((?:new|deleted)\ file\ mode\ \d+)\n)?
                       (?:(index\ [^\n]*)\n)?
                       (---\ [^\n]*)\n
                       (\+\+\+\ [^\n]*)\n
