@@ -21,9 +21,10 @@ sub usage {
 
   Options:
 
-    --hunks    Split on hunk boundaries, too.
-    --changes  Split on individual change groups, too (implies --hunks)
-    --quiet    Do not print the generated files.
+    --hunks           Split on hunk boundaries, too.
+    --changes         Split on individual change groups, too (implies --hunks)
+    --quiet           Do not print the generated files.
+    --output-dir dir  Write to 'dir' instead of the same directory as the input file
 
   (Christian Jaeger <$email>)
 ";
@@ -35,21 +36,27 @@ my $verbose=0;
 my $opt_hunks;
 my $opt_changes;
 my $opt_quiet;
+my $opt_output_dir;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
            "quiet"=> \$opt_quiet,
            "help"=> sub{usage},
            "hunks"=> \$opt_hunks,
            "changes"=> \$opt_changes,
+           "output-dir=s"=> \$opt_output_dir,
            #"dry-run"=> \$opt_dry,
            ) or exit 1;
 usage unless @ARGV;
 
 $opt_hunks = 1 if $opt_changes;
 
+if (defined $opt_output_dir) {
+    length $opt_output_dir or die "if given, --output-dir must not be empty"
+}
+
 use Chj::xtmpfile;
-use Chj::xopen 'xopen_read';
-use Chj::xperlfunc 'xprintln';
+use Chj::xopen qw(xopen_read);
+use Chj::xperlfunc qw(xprintln basename);
 use FP::List qw(list list_append);
 
 sub rewrite_head {
@@ -138,8 +145,12 @@ sub write_diff {
     $addon=~ s|/|_|sg;
     my $path= $origpath;
     $path=~ s{(^|/)([^/]+?)(\.[^.]+)?\z}{"$1$2-$addon".($3//"")}se;
+    if (defined $opt_output_dir) {
+        $path = $opt_output_dir . "/" . basename($path)
+    }
     $path ne $origpath
         or die "path is the same as origpath, '$path'";
+
     if ($opt_hunks) {
 
         # Should really do some class(es), parse once, represent.
