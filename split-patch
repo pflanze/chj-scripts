@@ -81,7 +81,7 @@ sub split_hunk($hunk) { # hunk -> hunks
     my $hunk_ends_with_newline = $hunk =~ /\n\z/s;
     my ($head, @lines) = split /\n/, $hunk;
     my ($orig_start, $orig_len, $patched_start, $patched_len, $head_post) =
-        $head =~ /^\@\@ -(\d+),(\d+) \+(\d+),(\d+) (.*)/s
+        $head =~ /^\@\@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? (.*)/s
         or die "invalid hunk head: '$head'";
     
     my $current_orig_start = $orig_start;
