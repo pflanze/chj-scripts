@@ -70,8 +70,9 @@ sub rewrite_head {
 }
 
 
-sub starts_with_space($line) {
-    $line=~ /^ /
+# The backslash is to handle '\\ No newline at end of file'
+sub starts_with_space_or_backslash($line) {
+    $line=~ /^[\\ ]/
 }
 sub starts_with_minusplus($line) {
     $line=~ /^[+-]/
@@ -92,9 +93,9 @@ sub split_hunk($hunk) { # hunk -> hunks
     my $lines = list @lines;
     my @hunks;
     while (1) {
-        my ($pre, $rest)= $lines->take_while_and_rest(\&starts_with_space);
+        my ($pre, $rest)= $lines->take_while_and_rest(\&starts_with_space_or_backslash);
         my ($group, $rest2)= $rest->take_while_and_rest(\&starts_with_minusplus);
-        my ($post, $rest3)= $rest2->take_while_and_rest(\&starts_with_space);
+        my ($post, $rest3)= $rest2->take_while_and_rest(\&starts_with_space_or_backslash);
 
         my $newpre= $pre->reverse->take(3)->reverse;
         my $newpost= $post->take(3);
