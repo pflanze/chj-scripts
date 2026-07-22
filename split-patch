@@ -155,7 +155,7 @@ sub write_diff {
 
         # Should really do some class(es), parse once, represent.
         my ($diffline, $maybe_newfileline, $maybe_indexline,
-            $minus, $plus, $rest)=
+            $minus_opt, $plus_opt, $rest_opt)=
             $diff=~ m{^
                       (diff\ [^\n]*)\n
                       (
@@ -163,12 +163,14 @@ sub write_diff {
                          | (?:similarity\ index\ [^\n]+\nrename\ from\ [^\n]+\nrename\ to\ [^\n]+\n)
                       )?
                       (?:(index\ [^\n]*)\n)?
-                      (---\ [^\n]*)\n
-                      (\+\+\+\ [^\n]*)\n
-                      (.*)
+                      (?:
+                         (---\ [^\n]*)\n
+                         (\+\+\+\ [^\n]*)\n
+                         (.*)
+                      )?
                  }sx
                    or die "invalid patch file format: '$diff'";
-        my @hunks= split /(?<=\n)(?=\@\@ )/, $rest;
+        my @hunks= split /(?<=\n)(?=\@\@ )/, $rest_opt // "";
 
         if ($opt_changes) {
             @hunks = map { split_hunk $_ } @hunks;
@@ -189,8 +191,8 @@ sub write_diff {
                             $diffline,
                             @newfileline,
                             # $indexline, needed for perms? fix it?
-                            $minus,
-                            $plus,
+                            $minus_opt,
+                            $plus_opt,
                             $hunk);
             my $i000 = sprintf('%03d', $i);
             my $path2= $path;
