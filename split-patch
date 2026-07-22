@@ -158,7 +158,10 @@ sub write_diff {
             $minus, $plus, $rest)=
             $diff=~ m{^
                       (diff\ [^\n]*)\n
-                      (?:((?:new|deleted)\ file\ mode\ \d+)\n)?
+                      (
+                           (?:(?:new|deleted)\ file\ mode\ \d+\n)
+                         | (?:similarity\ index\ [^\n]+\nrename\ from\ [^\n]+\nrename\ to\ [^\n]+\n)
+                      )?
                       (?:(index\ [^\n]*)\n)?
                       (---\ [^\n]*)\n
                       (\+\+\+\ [^\n]*)\n
@@ -174,10 +177,17 @@ sub write_diff {
 
         my $i= 0;
         for my $hunk (@hunks) {
+            my @newfileline = do {
+                if (defined $maybe_newfileline) {
+                    chomp $maybe_newfileline;
+                    $maybe_newfileline
+                } else {
+                    ()
+                }
+            };
             my $diff = join("\n",
                             $diffline,
-                            (defined($maybe_newfileline) ?
-                             $maybe_newfileline : ()),
+                            @newfileline,
                             # $indexline, needed for perms? fix it?
                             $minus,
                             $plus,
