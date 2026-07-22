@@ -24,10 +24,11 @@ sub usage {
 
   Options:
 
-    --hunks           Split on hunk boundaries, too.
-    --changes         Split on individual change groups, too (implies --hunks)
-    --quiet           Do not print the generated files.
-    --output-dir dir  Write to 'dir' instead of the same directory as the input file
+    --hunks               Split on hunk boundaries, too.
+    --changes             Split on individual change groups, too (implies --hunks)
+    --quiet               Do not print the generated files.
+    --output-dir dir      Write to 'dir' instead of the same directory as the input file
+    --monotonous-numbers  No-op for compatibility with the Rust reimplementation
 
   (Christian Jaeger <$email>)
 ";
@@ -47,6 +48,7 @@ GetOptions("verbose"=> \$verbose,
            "hunks"=> \$opt_hunks,
            "changes"=> \$opt_changes,
            "output-dir=s"=> \$opt_output_dir,
+           "monotonous-numbers" => sub {},
            #"dry-run"=> \$opt_dry,
            ) or exit 1;
 usage unless @ARGV;
