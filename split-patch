@@ -8,7 +8,10 @@ use utf8;
 use warnings;
 use warnings FATAL => 'uninitialized';
 use experimental 'signatures';
-#use FP::Repl::Trap; ##
+use FP::Repl::Trap; ##
+$SIG{INT}= sub {
+    die "trap"
+};
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
