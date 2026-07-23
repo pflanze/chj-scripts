@@ -4,9 +4,12 @@ set -euo pipefail
 IFS=
 
 usage () {
-    echo "Usage: $0 command [ arguments ]"
+    echo "Usage: $0 command [ arguments.. ]"
+    echo
     echo "  Runs command with given arguments, piping its stdout and stderr"
     echo "  to less."
+    echo
+    echo "  Also see: 'elec'"
     exit 1
 }
 

@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+usage () {
+    echo "Usage: $0 command [ arguments.. ]"
+    echo
+    echo "  Runs command with given arguments as well as '--color=always',"
+    echo "  piping its stdout and stderr to less. The color argument is"
+    echo "  inserted left of the first option argument if any, otherwise"
+    echo "  at the end. Note: make sure your pager supports colors,"
+    echo "  e.g. set env var 'LESS=-i -M -R' for less."
+    echo
+    echo "  Also see: 'ele' (= 'eless')"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+pager() {
+    local IFS=' '
+    ${PAGER-less} ${PAGER_OPTS-}
+}
+
+cmd=("$1")
+shift
+
+Done() {
+    #exec perl -we 'print "<$_>\n" for(@ARGV)' "${cmd[@]}"
+    exec "${cmd[@]}" 2>&1 | pager
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -*)
+            cmd+=(--color=always)
+            cmd+=("$@")
+            Done
+            ;;
+        *)
+            cmd+=("$1")
+            shift
+            ;;
+    esac
+done
+
+cmd+=(--color=always)
+
+Done
+
