@@ -115,7 +115,7 @@ sub ren {
 	if (defined($newname= $rl->readline("rename: ",$newname))){
             chomp $newname;
             $newname=~ s/^\s+//s;
-            $newname=~ s/[ \t]*\n[ \t]*/ /sg;
+            $newname=~ s/(?:[ \t]*\n[ \t]*)+/ /sg;
 	    if (length($newname)) {
 		if ($newname ne $filename) {
 		    my $newpath= "$folder$newname";
