@@ -11,8 +11,11 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [files]
 
-  filter stdin (or the given files) to stdout, remove whitespace at
+  Filter stdin (or the given files) to stdout, remove whitespace at
   the end of every line and then add a new newline.
+
+  Options:
+    --both  trim both ends, not just the right end
 
   (Christian Jaeger <$email>)
 ";
@@ -21,13 +24,18 @@ exit (@_ ? 1 : 0);
 
 use Getopt::Long;
 our $verbose=0;
+our $opt_both;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
+           "both"=> \$opt_both,
 	   ) or exit 1;
 usage if @ARGV;
 
 while (<>) {
     s/\s*\z//s;
+    if ($opt_both) {
+        s/^\s+//;
+    }
     print $_,"\n" or die "printing to stdout: $!";
 }
 
