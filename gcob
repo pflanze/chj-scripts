@@ -36,7 +36,7 @@ gcob () {
 if printf '%s' "$branchname" | grep -q /; then
     gcob "$branchname" "$branchname"
 elif printf '%s' "$branchname" | grep -q _; then
-    pathified_branchname=$(printf '%s' "$branchname" | tr _ /)
+    pathified_branchname=$(printf '%s' "$branchname" | perl -wne 's{_}{/}; print')
     gcob "$branchname" "$pathified_branchname"
 else
     set -x
