@@ -1,0 +1,32 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 commitrange1 commitrange2"
+    echo "  Compare the commits from two commit ranges, as git patch"
+    echo "  files compared via 'diff'."
+    echo "  Currently only works well if the commit counts and oder are the same,"
+    echo "  as otherwise the patch files will have different names."
+    exit 1
+}
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+range1=$1
+range2=$2
+
+dir=$(mktemp -d)
+
+mkdir "$dir"/{A,B}
+
+trap 'rm -rf -- "$dir"' EXIT
+
+# set -x
+
+git format-patch --quiet -o "$dir/A" "$range1"
+git format-patch --quiet -o "$dir/B" "$range2"
+
+diff -rubBN "$dir/A" "$dir/B" | less -p '^[-+][^-+].*'
