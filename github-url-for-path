@@ -22,8 +22,10 @@ sub usage {
     print "$myname [ path-from-git-root... ]
 
   Print Git web UI URLs to see the given files. By default, looks in
-  'origin' and 'github' for github base URLs. If no path is given,
-  show the repository home URL.
+  'origin' and 'github' (and if missing both, a remote that contains
+  the string github, and if none, any remote that has a github url)
+  for github base URLs. If no path is given, show the repository home
+  URL.
 
   Options:
 
@@ -76,6 +78,21 @@ sub _auto_detect_remote {
             and $url=~ /github\.com/
     } @remotes;
 
+    if (!@r) {
+        @r = grep {
+            my ($name, $url, $mode)= @$_;
+            ($name =~ /github/)
+                and $url=~ /github\.com/
+        } @remotes;
+    }
+
+    if (!@r) {
+        @r = grep {
+            my ($name, $url, $mode)= @$_;
+            $url=~ /github\.com/
+        } @remotes;
+    }
+
     my @r_https= grep  {
         my ($name, $url, $mode)= @$_;
         $url=~ /^https:/;
@@ -99,7 +116,7 @@ sub _auto_detect_remote {
             die "missing https or ssh location";
         }
     } else {
-        die "$myname: none of the remotes in the current repository is named origin or github and refers to a github url\n";
+        die "$myname: could not find any remote that refers to a github url\n";
     }
 }
 
