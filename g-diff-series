@@ -36,4 +36,4 @@ trap 'rm -rf -- "$dir"' EXIT
 git format-patch --quiet -o "$dir/A" "$range1"
 git format-patch --quiet -o "$dir/B" "$range2"
 
-diff -rubBN "$dir/A" "$dir/B" | less -p '^[-+][^-+].*'
+diff -rubBN "$dir/A" "$dir/B" | less -p '^([-+]$|[-+].$|[-+].[^-+].*)'
