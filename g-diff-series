@@ -4,19 +4,26 @@ IFS=
 
 usage() {
     echo "Usage: $0 commitrange1 commitrange2"
-    echo "  Compare the commits from two commit ranges, as git patch"
-    echo "  files compared via 'diff'."
+    echo "Usage: $0 base commit1 commit2"
+    echo
+    echo "  Compare the commits from two commit ranges, as git patch files "
+    echo "  compared via 'diff'. If 3 arguments are given, constructs the ranges "
+    echo "  as 'base..commit1' and 'base..commit2'."
+    echo
     echo "  Currently only works well if the commit counts and oder are the same,"
     echo "  as otherwise the patch files will have different names."
     exit 1
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -eq 2 ]; then
+    range1=$1
+    range2=$2
+elif [ $# -eq 3 ]; then
+    range1="$1..$2"
+    range2="$1..$3"
+else
     usage
 fi
-
-range1=$1
-range2=$2
 
 dir=$(mktemp -d)
 
