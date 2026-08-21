@@ -29,7 +29,7 @@ gcob () {
     set -x
     git checkout -b "$bn" "$branchname" || {
 	git checkout "$bn"
-	git merge "$branchname"
+	git reset --keep "$branchname"
     }
 }
 
