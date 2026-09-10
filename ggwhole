@@ -1,0 +1,25 @@
+#!/bin/bash
+set -meuo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [lst-options] regex"
+    echo "  lst options are passed to lst's file-grep filter command."
+    echo "  If only regex is given, the defaults are used."
+    exit 1
+}
+
+if [ $# = 1 ]; then
+    #if [ "$1" = -h ] || [ "$1" = --help ]; then
+    #    usage
+    #fi
+    options=""
+    regex="$1"
+elif [ $# = 2 ]; then
+    options="$1"
+    regex="$2"
+else
+    usage
+fi
+
+git ls-files -z | lst -z filter f file-grep "$options" "$regex"
