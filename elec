@@ -34,7 +34,8 @@ shift
 
 Done() {
     #exec perl -we 'print "<$_>\n" for(@ARGV)' "${cmd[@]}"
-    exec "${cmd[@]}" 2>&1 | pager
+    "${cmd[@]}" 2>&1 | pager
+    exit 0
 }
 
 while [ $# -gt 0 ]; do
