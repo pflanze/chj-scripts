@@ -5,7 +5,7 @@ if [ $# -eq 1 ]; then
 	echo "File $1 existiert bereits!" >&2
     else
 	echo -n '#!/bin/bash
-set -meuo pipefail
+set -euo pipefail
 IFS=
 
 '> "$1"
