@@ -28,6 +28,7 @@ our $options0=
 	-h -H
 	--full-name
 	-E --extended-regexp
+        -P --perl-regexp
 	-G --basic-regexp
 	-F --fixed-strings -n
 	-l --files-with-matches
@@ -69,6 +70,7 @@ our %is_preoption= @{l2ha 1,
 	-h -H
 	--full-name
 	-E --extended-regexp
+        -P --perl-regexp
 	-G --basic-regexp
 	-F --fixed-strings -n
 	-l --files-with-matches
