@@ -36,15 +36,15 @@ my $myname=$1;
 sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [ options ] file1 file2
-  Reformat the two given html/xml files so that only 'real'
+  Reformat the two given HTML/XML files so that only 'real'
   differences show up in diff, and call tkdiff on them.
   Options:
   -c | --clean  not only make new linebreaks but also make
                 tags lowercase and reorder attributes alphabetically.
-  -t|--text   remove all html tags (by regex, hack?)
+  -t|--text   remove all HTML tags (by regex, hack?)
   --diff      run diff -u instead of tkdiff
-  --worddiff  wrap on whitespace
-  --html      use html mode even if the files do not have a suffix that
+  --worddiff  wrap on whitespace instead of HTML element parts
+  --html      use HTML mode even if the files do not have a suffix that
               contains the strings 'htm' or 'xml'
 ";
 exit(@_ ? 1 : 0);
