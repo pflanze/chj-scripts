@@ -1,0 +1,126 @@
+#!/usr/bin/env perl
+
+my $copyright= <<'COPYRIGHT';
+# Copyright 2026 by Christian Jaeger <ch@christianjaeger.ch>
+# Published under the same terms as perl itself
+COPYRIGHT
+
+use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
+
+my ($email_full)= $copyright=~ / by ([^\n]*)/s;
+
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+use Getopt::Long;
+#use Chj::ruse;
+#use Chj::Backtrace;
+use Chj::xperlfunc ':all';
+use FP::Show; use FP::Repl; use FP::Repl::Trap; #
+
+sub usage {
+    print STDERR map{"$_\n"} @_ if @_;
+    print "$myname cmd [ args ]
+
+  Run cmd with args after first changing into the directory of the
+  shell running as another child of the parent process (which should
+  be an rxvt instance or similar).
+
+  Hack needed because rxvt runs matcher commands from the dir of the
+  rxvt instance, not the shell that is running inside.
+
+  ($email_full)
+";
+exit (@_ ? 1 : 0);
+}
+
+our $verbose=0;
+#our $opt_dry;
+GetOptions("verbose"=> \$verbose,
+	   "help"=> sub{usage},
+	   #"dry-run"=> \$opt_dry,
+	   ) or exit 1;
+usage unless @ARGV;
+
+package PidStat {
+    use FP::Struct [
+        'pid',
+        'stat_path',
+        'contents',
+        ];
+
+    sub get_map($self) {
+        my @lines = split /\n/, $self->contents;
+        +{
+            map {
+                my @key_val = split /:/, $_, 2;
+                if (@key_val) {
+                    my ($k, $v) = @key_val;
+                    $v =~ s/^\s+//s;
+                    $v =~ s/\s+\z//s;
+                    ($k, $v)
+                } else {
+                    ()
+                }
+            } @lines
+        }
+    }
+    
+    _END_
+}
+
+my @pidstat =
+    map {
+        if (m{^/proc/(\d+)/$}) {
+            my $stat_path = "${_}status";
+            my $contents = eval {
+                xgetfile_utf8($stat_path)
+            };
+            PidStat->new( $1, $stat_path, $contents )
+        } else {
+            ()
+        }
+    } glob "/proc/*/";
+
+my %pidstat_by_pid;
+my %pidstat_by_ppid;
+for my $ps (@pidstat) {
+    $pidstat_by_pid{$ps->pid} = $ps;
+    my $m = $ps->get_map;
+    push @{$pidstat_by_ppid{$m->{PPid}}}, $ps;
+}
+
+my $ppid = getppid;
+my $parent = $pidstat_by_pid{$ppid}->get_map;
+
+if (not $parent->{Name} =~ /rxvt/) {
+    $parent = $pidstat_by_pid{$parent->{PPid}}->get_map;
+}
+
+my $children = $pidstat_by_ppid{$parent->{Pid}};
+
+my @bash_children = grep {
+    $_->get_map->{Name} =~ /bash/
+} @$children;
+
+my @cwd = map {
+    my $pid = $_->pid;
+    xreadlink("/proc/$pid/cwd")
+} @bash_children;
+
+#repl
+
+if (my ($cwd) = @cwd) {
+    xchdir $cwd;
+    xexec(@ARGV)
+} else {
+    die "could not find bash child of rxvt parent(-parent)"
+}
+
