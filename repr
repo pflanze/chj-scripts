@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [options] name-regex"
+    echo "  Search for 'repr' (as in Rust '#[repr(u8)]' etc.) with one of the"
+    echo "  identifiers within the parens matching name-regex, in any of the"
+    echo "  'git ls-files' paths."
+    echo "  Implicitly sets a word boundary on either side of the regex."
+    echo "  Thus add \w* on either side to weaken it up."
+    echo
+    echo "  Options (can be put before or after the regex):"
+    echo "   -i      case-insensitive"
+    echo
+    echo "  Also see: search, ci, _keyword_identifier_search"
+    exit 1
+}
+
+
+opts=()
+args=()
+
+for arg in "$@"; do
+    case "$arg" in
+        -i)
+            opts+=(-i)
+            ;;
+        *)
+            args+=("$arg")
+            ;;
+    esac
+done
+
+if [ ${#args[@]} -ne 1 ]; then
+    usage
+fi
+
+search "${opts[@]}" '\brepr\s*\([^()]*\b'"${args[@]}"'\b[^()]*\)'
+

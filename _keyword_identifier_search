@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [options] name-regex"
+    echo "  Search for name-regex in all 'git ls-files' paths."
+    echo "  Implicitly sets a word boundary on either side of the regex."
+    echo "  Thus add \w* on either side to weaken it up."
+    echo
+    echo "  Options (can be put before or after the regex):"
+    echo "   -i    case-insensitive."
+    echo "   -m    show matched strings."
+    echo "   -C n  show lines containing matches, n being how many more surrounding lines."
+    echo
+    echo "  Also see: search, ci"
+    exit 1
+}
+
+opt_i=''
+opts=()
+
+args=()
+
+while [ "$#" -ne 0 ]; do
+    case "$1" in
+        -i)
+            opt_i=i
+            ;;
+        -m)
+            opts+=(-m)
+            ;;
+        -C)
+            opts+=(-C)
+            shift
+            if [ "$#" -eq 0 ]; then
+                echo "missing n after -C"
+                usage
+            fi
+            opts+=("$1")
+            ;;
+        *)
+            args+=("$1")
+            ;;
+    esac
+    shift
+done
+
+
+if [ ${#args[@]} -ne 1 ]; then
+    usage
+fi
+
+keyword=$(basename "$0")
+
+g-ls-files -z | lst -z: --show-function "${opts[@]}" filter f file-grep g"$opt_i" '\b'"$keyword"'\s+'"${args[@]}"'\b'

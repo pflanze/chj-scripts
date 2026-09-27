@@ -1,0 +1,90 @@
+#!/bin/bash
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [options] regex..."
+    echo "  Search for regexes, which must all match, in all 'git ls-files' paths."
+    echo
+    echo "  For the last regex, all locations in the file are reported unless -l is given."
+    echo
+    echo "  Options (can be put before or after the regex):"
+    echo "   -i    case-insensitive"
+    echo "   -C n  show n lines of context around the matching lines (default: 0)"
+    echo "   -l    list files only, but with all positions (turn off contents display)"
+    echo "   -ll   show file paths only"
+    echo
+    echo "  Also see: _keyword_identifier_search (well, its symlinks)"
+    exit 1
+}
+
+option_C=(-C 0)
+other_opts=()
+opt_i=''
+option_pos=':'
+global=g
+
+regexes=()
+
+while [ "$#" -ne 0 ]; do
+    case "$1" in
+        -i)
+            opt_i=i
+            ;;
+        -l)
+            option_C=()
+            ;;
+        -ll)
+            option_pos=''
+            global=''
+            ;;
+        -C)
+            shift
+            if [ "$#" -eq 0 ]; then
+                echo "missing n after -C"
+                usage
+            fi
+            option_C=(-C "$1")
+            ;;
+        -p)
+            other_opts+=(-p)
+            ;;
+        --show-function)
+            other_opts+=(--show-function)
+            ;;
+        *)
+            regexes+=("$1")
+            ;;
+    esac
+    shift
+done
+
+
+if [ ${#regexes[@]} -eq 0 ]; then
+    usage
+fi
+
+lst_commands=()
+i=0
+for regex in "${regexes[@]}"; do
+    lst_commands+=(file-grep)
+    
+    i=$(( i + 1 ))
+    if [ "$i" -eq "${#regexes[@]}" ]; then
+        lst_commands+=("$global$opt_i")
+    else
+        lst_commands+=("$opt_i")
+    fi
+    
+    lst_commands+=("$regex")
+done
+
+cmd=(lst -zrt"$option_pos" "${option_C[@]}" "${other_opts[@]}" filter f "${lst_commands[@]}")
+
+if false; then
+    for a in "${cmd[@]}"; do
+        echo "<$a>"
+    done
+else 
+    g-ls-files -z | "${cmd[@]}"
+fi
