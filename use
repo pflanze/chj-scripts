@@ -34,5 +34,5 @@ if [ ${#args[@]} -ne 1 ]; then
     usage
 fi
 
-search "${opts[@]}" '\buse\b\s+[^;]*\b'"${args[@]}"'\b'
+search "${opts[@]}" '(?:^|\n)([ \t]*use\b\s+[^;]*?\b'"${args[@]}"'\b)'
 
