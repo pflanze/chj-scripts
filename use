@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [options] name-regex"
+    echo "  Search for 'use' for an item named name-regex in all 'git ls-files' paths."
+    echo "  Implicitly sets a word boundary on either side of the regex."
+    echo "  Thus add \w* on either side to weaken it up."
+    echo
+    echo "  Options (can be put before or after the regex):"
+    echo "   -i      case-insensitive"
+    echo
+    echo "  Also see: search, ci, _keyword_identifier_search"
+    exit 1
+}
+
+
+opts=(--show-function)
+args=()
+
+for arg in "$@"; do
+    case "$arg" in
+        -i)
+            opts+=(-i)
+            ;;
+        *)
+            args+=("$arg")
+            ;;
+    esac
+done
+
+if [ ${#args[@]} -ne 1 ]; then
+    usage
+fi
+
+search "${opts[@]}" '\buse\b\s+[^;]*\b'"${args[@]}"'\b'
+
