@@ -21,7 +21,7 @@ BEGIN {
 
 #use Chj::ruse;
 #use Chj::Backtrace;
-use Chj::xperlfunc ':all';
+#use Chj::xperlfunc ':all';
 #use FP::Show; use FP::Repl; use FP::Repl::Trap; #
 
 sub usage {
@@ -73,8 +73,14 @@ my @pidstat =
     map {
         if (m{^/proc/(\d+)/$}) {
             my $stat_path = "${_}status";
-            my $contents = eval {
-                xgetfile_utf8($stat_path)
+            my $contents = do {
+                if (open my $in, "<", $stat_path) {
+                    local $/;
+                    <$in>
+                } else {
+                    warn "could not open '$stat_path': $!";
+                    undef
+                }
             };
             bless +{
                 pid=> $1,
@@ -104,19 +110,19 @@ if (not $parent->{Name} =~ /rxvt/) {
 my $children = $pidstat_by_ppid{$parent->{Pid}};
 
 my @bash_children = grep {
-    $_->get_map->{Name} =~ /bash/
+    scalar $_->get_map->{Name} =~ /bash/
 } @$children;
 
 my @cwd = map {
     my $pid = $_->{pid};
-    xreadlink("/proc/$pid/cwd")
+    scalar readlink("/proc/$pid/cwd") or die "readlink: $!"
 } @bash_children;
 
 #repl
 
 if (my ($cwd) = @cwd) {
-    xchdir $cwd;
-    xexec(@ARGV)
+    chdir ($cwd) or die "chdir: $!";
+    exec(@ARGV) or exit 127
 } else {
     die "could not find bash child of rxvt parent(-parent)"
 }
