@@ -43,14 +43,14 @@ exit (@_ ? 1 : 0);
 usage unless @ARGV;
 
 package PidStat {
-    use FP::Struct [
-        'pid',
-        'stat_path',
-        'contents',
-        ];
+    # use FP::Struct [
+    #     'pid',
+    #     'stat_path',
+    #     'contents',
+    #     ];
 
     sub get_map($self) {
-        my @lines = split /\n/, $self->contents;
+        my @lines = split /\n/, $self->{contents};
         +{
             map {
                 my @key_val = split /:/, $_, 2;
@@ -66,7 +66,7 @@ package PidStat {
         }
     }
     
-    _END_
+    # _END_
 }
 
 my @pidstat =
@@ -76,7 +76,11 @@ my @pidstat =
             my $contents = eval {
                 xgetfile_utf8($stat_path)
             };
-            PidStat->new( $1, $stat_path, $contents )
+            bless +{
+                pid=> $1,
+                stat_path=> $stat_path,
+                contents=> $contents
+            }, "PidStat"
         } else {
             ()
         }
@@ -85,7 +89,7 @@ my @pidstat =
 my %pidstat_by_pid;
 my %pidstat_by_ppid;
 for my $ps (@pidstat) {
-    $pidstat_by_pid{$ps->pid} = $ps;
+    $pidstat_by_pid{$ps->{pid}} = $ps;
     my $m = $ps->get_map;
     push @{$pidstat_by_ppid{$m->{PPid}}}, $ps;
 }
@@ -104,7 +108,7 @@ my @bash_children = grep {
 } @$children;
 
 my @cwd = map {
-    my $pid = $_->pid;
+    my $pid = $_->{pid};
     xreadlink("/proc/$pid/cwd")
 } @bash_children;
 
