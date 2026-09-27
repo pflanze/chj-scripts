@@ -19,7 +19,6 @@ BEGIN {
     ($mydir, $myname)=($1,$2);
 }
 
-use Getopt::Long;
 #use Chj::ruse;
 #use Chj::Backtrace;
 use Chj::xperlfunc ':all';
@@ -41,12 +40,6 @@ sub usage {
 exit (@_ ? 1 : 0);
 }
 
-our $verbose=0;
-#our $opt_dry;
-GetOptions("verbose"=> \$verbose,
-	   "help"=> sub{usage},
-	   #"dry-run"=> \$opt_dry,
-	   ) or exit 1;
 usage unless @ARGV;
 
 package PidStat {
