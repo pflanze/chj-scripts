@@ -41,8 +41,8 @@ fi
 
 
 if [ "$opt_for" = 1 ]; then
-    search "${opts[@]}" '\bimpl\b(<[^<>]*>)?\s*\w+\s+for\s+\b'"${args[@]}"'\b'
+    search "${opts[@]}" '\bimpl\b\s*(?:<[^<>]*>)?\s*\w+\s*(?:<[^<>]*>)?\s+for\s+\b'"${args[@]}"'\b'
 else
-    search "${opts[@]}" '\bimpl\b(<[^<>]*>)?\s*\b'"${args[@]}"'\b'
+    search "${opts[@]}" '\bimpl\b\s*(?:<[^<>]*>)?\s*\b'"${args[@]}"'\b'
 fi
 
