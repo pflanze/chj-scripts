@@ -32,8 +32,13 @@ sub usage {
   shell running as another child of the parent process (which should
   be an rxvt instance or similar).
 
-  Hack needed because rxvt runs matcher commands from the dir of the
+  This hack is needed because rxvt runs matcher commands from the dir of the
   rxvt instance, not the shell that is running inside.
+
+  On top of that, removes some parts from the last argument, since I
+  can't manage to make the regex work to prioritize some alternative;
+  thus remove erroneous parts after the fact. You really do have two
+  problems with regexes.
 
   ($email_full)
 ";
@@ -122,7 +127,18 @@ my @cwd = map {
 
 if (my ($cwd) = @cwd) {
     chdir ($cwd) or die "chdir: $!";
-    exec(@ARGV) or exit 127
+
+    my ($cmd, @args) = @ARGV;
+    if (@args) {
+        # Hack up path
+        my $s = pop @args;
+        if ($s=~ /:\d+:?$/) {
+            $s =~ s/^.*? at +//;
+        }
+        push @args, $s;
+    }
+    
+    exec($cmd, @args) or exit 127
 } else {
     die "could not find bash child of rxvt parent(-parent)"
 }
