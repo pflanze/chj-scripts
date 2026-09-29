@@ -133,7 +133,13 @@ if (my ($cwd) = @cwd) {
         # Hack up path
         my $s = pop @args;
         if ($s=~ /:\d+:?$/) {
-            $s =~ s/^.*? at +//;
+            $s =~ s/^.*? at +//
+                or
+            $s =~ s/^\s*-->\s+//
+                or
+            $s =~ s/^\s*:::\s+//
+                or
+            $s =~ s/^\s*\[//
         }
         push @args, $s;
     }
