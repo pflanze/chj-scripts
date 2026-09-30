@@ -3,46 +3,44 @@ set -euo pipefail
 IFS=
 
 usage() {
-    echo "Usage: $0 [options] name-regex"
-    echo "  Search for 'impl' of the trait or type named name-regex in all 'git ls-files' paths."
+    echo "Usage: $0 [options] name-regex [ search-arguments ]"
+    echo "  Search for 'impl' of the trait or type named name-regex via the 'search'"
+    echo "  tool, with all further arguments passed through to the latter."
     echo "  Implicitly sets a word boundary on either side of the regex."
     echo "  Thus add \w* on either side to weaken it up."
     echo
-    echo "  Options (can be put before or after the regex):"
-    echo "   -i      case-insensitive"
+    echo "  Options (put before the regex, as those afterwards are for 'search'):"
     echo "   --for   instead of 'impl Foo', search for 'impl .. for Foo'"
     echo
-    echo "  Also see: search, ci, _keyword_identifier_search"
+    echo "  Also see: search, si, _keyword_identifier_search"
     exit 1
 }
-
 
 opt_for=''
 opts=(--show-function)
 args=()
 
-for arg in "$@"; do
-    case "$arg" in
-        -i)
-            opts+=(-i)
-            ;;
+while [ "$#" -ne 0 ]; do
+    case "$1" in
         --for)
             opt_for=1
+            shift
             ;;
         *)
-            args+=("$arg")
+            args+=("$1")
+            shift
+            break
             ;;
     esac
 done
 
-if [ ${#args[@]} -ne 1 ]; then
+if [ ${#args[@]} -lt 1 ]; then
     usage
 fi
 
-
 if [ "$opt_for" = 1 ]; then
-    search "${opts[@]}" '\bimpl\b(?:\s*<[^<>]*?>)?\s*\w+(?:\s*<[^<>]*?>)?\s+for\s+\b'"${args[@]}"'\b'
+    search "${opts[@]}" '\bimpl\b(?:\s*<[^<>]*?>)?\s*\w+(?:\s*<[^<>]*?>)?\s+for\s+\b'"${args[@]}"'\b' "$@"
 else
-    search "${opts[@]}" '\bimpl\b(?:\s*<[^<>]*?>)?\s*\b'"${args[@]}"'\b'
+    search "${opts[@]}" '\bimpl\b(?:\s*<[^<>]*?>)?\s*\b'"${args[@]}"'\b' "$@"
 fi
 
