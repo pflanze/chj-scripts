@@ -3,8 +3,9 @@ set -euo pipefail
 IFS=
 
 usage() {
-    echo "Usage: $0 [options] regex..."
-    echo "  Search for regexes, which must all match, in all 'git ls-files' paths."
+    echo "Usage: $0 [options] regex... [ '*' file(s) ]"
+    echo "  Search for regexes, which must all match, in all paths given after '*' if '*' was given,"
+    echo "  or otherwise all paths from 'git ls-files'."
     echo
     echo "  For the last regex, all locations in the file are reported unless -l is given."
     echo
@@ -18,6 +19,7 @@ usage() {
     exit 1
 }
 
+take_paths_from_command_line=0
 option_C=(-C 0)
 other_opts=()
 opt_i=''
@@ -52,6 +54,12 @@ while [ "$#" -ne 0 ]; do
         --show-function)
             other_opts+=(--show-function)
             ;;
+        '*')
+            take_paths_from_command_line=1
+            paths_from_command_line=("$@")
+            # @=()
+            break
+            ;;
         *)
             regexes+=("$1")
             ;;
@@ -79,12 +87,18 @@ for regex in "${regexes[@]}"; do
     lst_commands+=("$regex")
 done
 
-cmd=(lst -zrt"$option_pos" "${option_C[@]}" "${other_opts[@]}" filter f "${lst_commands[@]}")
+lst_cmd=(lst -zrt"$option_pos" "${option_C[@]}" "${other_opts[@]}" filter f "${lst_commands[@]}")
 
 if false; then
-    for a in "${cmd[@]}"; do
+    for a in "${lst_cmd[@]}"; do
         echo "<$a>"
     done
-else 
-    g-ls-files -z | "${cmd[@]}"
+else
+    if [ "$take_paths_from_command_line" = 1 ]; then
+        for p in "${paths_from_command_line[@]}"; do
+            printf '%s\0' "$p"
+        done | "${lst_cmd[@]}"
+    else
+        g-ls-files -z | "${lst_cmd[@]}"
+    fi
 fi
