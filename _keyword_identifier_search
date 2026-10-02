@@ -12,12 +12,14 @@ usage() {
     echo "   -i    case-insensitive."
     echo "   -m    show matched strings."
     echo "   -C n  show lines containing matches, n being how many more surrounding lines."
+    echo "   -o    open if exactly one match is found"
     echo
     echo "  Also see: search, ci"
     exit 1
 }
 
 opt_i=''
+opt_o=0
 opts=()
 
 args=()
@@ -26,6 +28,9 @@ while [ "$#" -ne 0 ]; do
     case "$1" in
         -i)
             opt_i=i
+            ;;
+        -o)
+            opt_o=1
             ;;
         -m)
             opts+=(-m)
@@ -53,4 +58,21 @@ fi
 
 keyword=$(basename "$0")
 
-g-ls-files -z | lst -z: --show-function "${opts[@]}" filter f file-grep g"$opt_i" '\b'"$keyword"'\s+'"${args[@]}"'\b'
+run() {
+    g-ls-files -z | lst -z: --show-function "${opts[@]}" filter f file-grep g"$opt_i" '\b'"$keyword"'\s+'"${args[@]}"'\b'
+}
+
+if [ "$opt_o" = 1 ]; then
+    tmp=$(mktemp)
+    run | tee "$tmp"
+    tmp2=$(mktemp)
+    grep -Ev '^(#.*)?$' < "$tmp" > "$tmp2" || true
+    count=$(wc -l < "$tmp2")
+    if [ "$count" -eq 1 ]; then
+        arg=$(head -1 < "$tmp2")
+        # XX $EDITOR is e for me, invent another variable?
+        exec g "$arg"
+    fi
+else
+    run
+fi
