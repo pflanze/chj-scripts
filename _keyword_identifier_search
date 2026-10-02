@@ -12,14 +12,15 @@ usage() {
     echo "   -i    case-insensitive."
     echo "   -m    show matched strings."
     echo "   -C n  show lines containing matches, n being how many more surrounding lines."
-    echo "   -o    open if exactly one match is found"
+    echo "   -o    open if exactly one match is found (default)"
+    echo "   -O    do not open if exactly one match is found"
     echo
     echo "  Also see: search, ci"
     exit 1
 }
 
 opt_i=''
-opt_o=0
+opt_o=1
 opts=()
 
 args=()
@@ -31,6 +32,9 @@ while [ "$#" -ne 0 ]; do
             ;;
         -o)
             opt_o=1
+            ;;
+        -O)
+            opt_o=0
             ;;
         -m)
             opts+=(-m)
