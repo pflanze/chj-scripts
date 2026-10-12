@@ -31,5 +31,5 @@ LOGDIR=~/log/"$name"-"$HASH"
 
 private mkdir -p "$LOGDIR"
 
-exec r daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" "$cmd" "$@"
+exec daemonize --start --hash-input "$HASH" --multilog "$LOGDIR" "$cmd" "$@"
 
