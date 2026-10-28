@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+IFS=
+
+usage() {
+    echo "Usage: $0 [dir]"
+    echo "  Runs eogfiles on the files directly in dir or ., by mtime."
+    exit 1
+}
+
+if [ $# -eq 1 ]; then
+    if [ "$1" = -h ] || [ "$1" = --help ]; then
+        usage
+    fi
+    dir="$1"
+elif [ $# -eq 0 ]; then
+    dir=.
+else
+    usage
+fi
+
+
+lst --ls "$dir" -rt --zo | eogfiles -sz
+
