@@ -20,5 +20,5 @@ else
 fi
 
 
-lst --ls "$dir" -rt --zo | eogfiles -sz
+lst --ls "$dir" -rt --zo | eogfiles --stdin --z --fullscreen --disable-gallery --new-instance
 
