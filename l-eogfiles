@@ -4,7 +4,8 @@ IFS=
 
 usage() {
     echo "Usage: $0 [dir]"
-    echo "  Runs eogfiles on the files directly in dir or ., by mtime."
+    echo "  Runs eogfiles on the files directly (l-eogfiles) or deeply (lf-eogfiles) in dir or .,"
+    echo "  sorted incrementally by mtime."
     exit 1
 }
 
@@ -19,6 +20,20 @@ else
     usage
 fi
 
+bn="$(basename "$0")"
 
-lst --ls "$dir" -rt --zo | eogfiles --stdin --z --fullscreen --disable-gallery --new-instance
+case "$bn" in
+    l-eogfiles)
+        mode=ls
+        ;;
+    lf-eogfiles)
+        mode=find
+        ;;
+    *)
+        echo "$0: unknown program name '$bn'" >&2
+        exit 3
+        ;;
+esac
+
+lst --$mode "$dir" -rt --zo | eogfiles --stdin --z --fullscreen --disable-gallery --new-instance
 
