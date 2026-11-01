@@ -7,6 +7,10 @@
 (my $email='XXX%YYY,ch')=~ tr/%,/@./;
 
 use strict;
+use utf8;
+use warnings;
+use warnings FATAL => 'uninitialized';
+use experimental 'signatures';
 
 $0=~ /(.*?)([^\/]+)\z/s or die "?";
 my ($mydir, $myname)=($1,$2);
@@ -14,7 +18,10 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [file(s)]
 
-  remove hex numbers from the output of 'disassemble-no-addresses'
+  Replace hex numbers from the output of 'disassemble-no-addresses'
+  with 'XXXXXXX'.
+
+  Also, try to demangle Rust legacy style symbols.
 
   Options
    --gambit  also remove differences due to .oX object file endings
@@ -43,7 +50,89 @@ sub substitute {
     "XXXXXXX"
 }
 
+sub _de_sym($s) {
+    if (my ($hex) = $s =~ /^u(.*)/) {
+        # XX ?
+        chr(hex($1))
+    } else {
+        # src/legacy.rs
+        +{
+            "SP" => "@",
+                "BP" => "*",
+                "RF" => "&",
+                "LT" => "<",
+                "GT" => ">",
+                "LP" => "(",
+                "RP" => ")",
+                "C" => ",",
+        }->{$s} or die '_de_sym: invalid "$..$" symbol: "'.$s.'"'
+    }
+}
+
+sub rust_expand_sym($s) {
+    my $out = "";
+    my $rest = $s;
+    while (length($rest)) {
+        $rest =~ s/^_\$/\$/; # wow such a hack, I mean in the original format already
+        if (my ($sym, $rest2) = $rest=~ m{^\$(\w+)\$(.*)}s) {
+            $out .= _de_sym($sym);
+            #warn "out = '$out' after dollar sym '$sym'";
+            $rest = $rest2;
+        } elsif (my ($word, $rest3) = $rest=~ m{^([\w.]+)(.*)}s) {
+            $out .= $word;
+            $rest = $rest3;
+        } else {
+            die "rust_expand_sym: unknown rest '$rest' in '$s'"
+        }
+    }
+    $out
+}
+
+sub rust_demangle($s) {
+    my $out = "";
+    my $rest = $s;
+    while (length($rest)) {
+        #warn "rest = '$rest'";
+        if (my ($rest4) = $rest =~ m/^E(.*)/) {
+            # Remove surplus namespace separator, hack on my part?
+            $out =~ s/::$//;
+            # There may be "garbage" after the symbol, append it back, OK?
+            $out .= $rest4;
+            last
+        }
+        if (my ($len, $rest3) = $rest=~ m{^(\d+)(.*)}s) {
+            my $sym_raw = substr $rest3, 0, $len;
+            my $sym = rust_expand_sym($sym_raw);
+            $sym =~ s/\.\./::/sg; # wow such an other hack in orig format?
+            $rest = substr $rest3, $len;
+            $out .= $sym . "::";
+            #warn "out = '$out' after sym '$sym'";
+        } else {
+            die "rust_demangle: unknown rest '$rest' in '$s'"
+        }
+    }
+    $out
+}
+
+use Chj::TEST ':all';
+
+TEST { rust_demangle('4testE') } 'test';
+
+TEST { rust_demangle('13test$u20$test4foobE') } 'test test::foob';
+
+TEST {rust_demangle('12test$RF$test4foobE') } 'test&test::foob';
+
+TEST {
+    rust_demangle('88_$LT$core..result..Result$LT$$u21$$C$$u20$E$GT$$u20$as$u20$std..process..Termination$GT$6report17hfc41d0da4a40b3e8E')
+}   '<core::result::Result<!, E> as std::process::Termination>::report::hfc41d0da4a40b3e8';
+
+#use Chj::ruse;
+#use Chj::Backtrace;
+#use FP::Repl 'repl'; repl;
+#__END__
+
 while (<>) {
+    s{<_ZN([^<>]+)>}{ "<" . rust_demangle($1) . ">" }sge;
     if ($opt_gambit) {
 	s/\b(___\w+_2e_o)(\d+)\b/$1."YY"/ge;
     }
@@ -52,6 +141,3 @@ while (<>) {
     print;
 }
 
-
-#use Chj::ruse;
-#use Chj::Backtrace; use Chj::repl; repl;
