@@ -1,0 +1,3 @@
+#!/bin/sh
+
+objdump -Mintel --no-addresses --no-show-raw-insn -d "$@" | less
