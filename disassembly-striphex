@@ -40,7 +40,8 @@ our $hex1byte= qr/\b[$hexdigit]{2}\b/;
 our $hexnumber= qr/\b[$hexdigit]+\b/;
 
 sub substitute {
-    "X" x length($_[0])
+    #"X" x length($_[0])
+    "XXXXXXX"
 }
 
 while (<>) {
