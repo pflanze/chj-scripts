@@ -14,7 +14,7 @@ sub usage {
     print STDERR map{"$_\n"} @_ if @_;
     print "$myname [file(s)]
 
-  remove hex numbers from objdump style disassembly
+  remove hex numbers from the output of 'disassemble-no-addresses'
 
   Options
    --gambit  also remove differences due to .oX object file endings
@@ -36,8 +36,7 @@ GetOptions("verbose"=> \$verbose,
 #usage unless @ARGV;
 
 our $hexdigit= qr/0-9a-f/;
-our $hex1byte= qr/\b[$hexdigit]{2}\b/;
-our $hexnumber= qr/\b[$hexdigit]+\b/;
+our $hexnumber= qr/[$hexdigit]+/;
 
 sub substitute {
     #"X" x length($_[0])
@@ -48,22 +47,9 @@ while (<>) {
     if ($opt_gambit) {
 	s/\b(___\w+_2e_o)(\d+)\b/$1."YY"/ge;
     }
-    # for intel only atm...
-    if (my ($pre, $adr, $w1, $bytecode, $w2, $opcode, $rest)=
-	m/^(\s*)($hexnumber):(\s*)($hex1byte(?:\s$hex1byte)*)(?:(\s+)(\w+)(.*))?/
-        ) {
-        if (defined $w2) {
-            $rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute($2)/ge;
-            print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
-                .$opcode.$rest."\n"
-        } else {
-            print " ".$pre.substitute($adr).":".$w1.substitute($bytecode)."\n"
-        }
-    } elsif (my ($num, $rest) = m/^($hexnumber)( <[^<>]*>:.*)/) {
-        print substitute($num).$rest
-    } else {
-	print "# $_"  # or die? but, sigpipe anyway?....  r i less faire
-    }
+    s/\b0x$hexnumber\b/0xXXXXXX/sg;
+    s/\.$hexnumber([.+>])/.XXXXXX$1/sg;
+    print;
 }
 
 
