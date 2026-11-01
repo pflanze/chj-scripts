@@ -49,11 +49,15 @@ while (<>) {
     }
     # for intel only atm...
     if (my ($pre, $adr, $w1, $bytecode, $w2, $opcode, $rest)=
-	m/^(\s*)($hexnumber):(\s*)((?:$hex1byte\s)+)(\s*)(\w+)(.*)/
-       ) {
-	$rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute($2)/ge;
-	print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
-            .$opcode.$rest."\n"
+	m/^(\s*)($hexnumber):(\s*)($hex1byte(?:\s$hex1byte)*)(?:(\s+)(\w+)(.*))?/
+        ) {
+        if (defined $w2) {
+            $rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute($2)/ge;
+            print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
+                .$opcode.$rest."\n"
+        } else {
+            print " ".$pre.substitute($adr).":".$w1.substitute($bytecode)."\n"
+        }
     } elsif (my ($num, $rest) = m/^($hexnumber)( <[^<>]*>:.*)/) {
         print substitute($num).$rest
     } else {
