@@ -35,9 +35,9 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 #usage unless @ARGV;
 
-our $hexdigit= "0-9a-f";
-our $hex1byte= "\\b[$hexdigit]{2}\\b";
-our $hexnumber= "\\b[$hexdigit]+\\b";
+our $hexdigit= qr/0-9a-f/;
+our $hex1byte= qr/\b[$hexdigit]{2}\b/;
+our $hexnumber= qr/\b[$hexdigit]+\b/;
 
 sub substitute {
     "X" x length($_[0])
@@ -51,7 +51,7 @@ while (<>) {
     if (my ($pre, $adr, $w1, $bytecode, $w2, $opcode, $rest)=
 	m/^(\s*)($hexnumber):(\s*)((?:$hex1byte\s)+)(\s*)(\w+)(.*)/
        ) {
-	$rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute $2/ge;
+	$rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute($2)/ge;
 	print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
 	  .$opcode.$rest."\n"
 	  #ordie
