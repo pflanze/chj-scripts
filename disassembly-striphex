@@ -53,8 +53,9 @@ while (<>) {
        ) {
 	$rest=~ s/\b(0x)?([$hexdigit]{3,}\b)/($1 ? $1 : "").substitute($2)/ge;
 	print " ".$pre.substitute($adr).":".$w1.substitute($bytecode).$w2
-	  .$opcode.$rest."\n"
-	  #ordie
+            .$opcode.$rest."\n"
+    } elsif (my ($num, $rest) = m/^($hexnumber)( <[^<>]*>:.*)/) {
+        print substitute($num).$rest
     } else {
 	print "# $_"  # or die? but, sigpipe anyway?....  r i less faire
     }
