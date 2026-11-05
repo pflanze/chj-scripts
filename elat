@@ -33,6 +33,7 @@ lst -rt \
     --ignore-item-name CALENDAR \
     --ignore-item-regex '~$' \
     --find "$dir" \
+    --fullpath \
     --zo --ignore-item-name target filter f tail 1 \
     "$@" | xargs -0 e
 
