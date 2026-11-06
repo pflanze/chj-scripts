@@ -71,12 +71,15 @@ if [ "$opt_o" = 1 ]; then
     run | tee "$tmp"
     tmp2=$(mktemp)
     grep -Ev '^(#.*)?$' < "$tmp" > "$tmp2" || true
+    rm "$tmp"
     count=$(wc -l < "$tmp2")
     if [ "$count" -eq 1 ]; then
         arg=$(head -1 < "$tmp2")
+        rm "$tmp2"
         # XX $EDITOR is e for me, invent another variable?
         exec g "$arg"
     fi
+    rm "$tmp2"
 else
     run
 fi
