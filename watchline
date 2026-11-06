@@ -4,6 +4,8 @@
 
 use strict;
 
+use Time::HiRes 'sleep';
+
 $0=~ /([^\/]+)$/s or die "?";
 my $myname=$1;
 sub usage {

@@ -14,6 +14,8 @@ sub usage {
   Use git blame and count lines by authors.
 
   Options:
+  -w      passed to git blame (Ignore whitespace when comparing the parent’s version and the
+          child’s to find where the lines came from)
   --sort-by authorname
           sort by number of lines that author contributed, as
           percentage in that file
@@ -28,11 +30,13 @@ exit (@_ ? 1 : 0);
 use Getopt::Long;
 our $verbose=0;
 our $opt_sort_by;
+my $opt_w;
 #our $opt_dry;
 GetOptions("verbose"=> \$verbose,
 	   "help"=> sub{usage},
 	   "sort-by=s"=> \$opt_sort_by,
 	   #"dry-run"=> \$opt_dry,
+           "w"=> \$opt_w,
 	   ) or exit 1;
 #usage unless @ARGV;
 
@@ -52,10 +56,10 @@ sub blame_path ( $ ) {
     my $total=0;
     # not sure what -b does. (would it ever convert an id to eg. "master" or so without it?)
     local our $in= Chj::IO::Command->new_sender
-      ("git","blame","-t","-l","-b",
-       # -c is necessary to suppress showing the ~source paths (which it otherwise does *sometimes*)
-       #  u wait, then it doesn't give the author full name. hmmm
-       $path);
+        ("git","blame","-t","-l","-b", ($opt_w ? ("-w") : ()),
+         # -c is necessary to suppress showing the ~source paths (which it otherwise does *sometimes*)
+         #  u wait, then it doesn't give the author full name. hmmm
+         $path);
     while (<$in>) {
 	chomp;
 	/^

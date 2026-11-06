@@ -452,8 +452,7 @@ sub gen_hosts($is_start) {
                "127.0.0.1	".$hosts->join(" ")."\n"
            })->join("")
        :
-       "# Ignoring $blockfile since 'stop' given.")
-     ."\n"
+       "# Ignoring $blockfile since 'stop' given.\n")
      )
 }
 

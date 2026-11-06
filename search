@@ -12,8 +12,8 @@ usage() {
     echo "  Options (can be put before or after the regex):"
     echo "   -i    case-insensitive"
     echo "   -C n  show n lines of context around the matching lines (default: 0)"
-    echo "   -l    list files only, but with all positions (turn off contents display)"
-    echo "   -ll   show file paths only"
+    echo "   -ll   list files only, but with all positions (turn off contents display)"
+    echo "   -l    show file paths only"
     echo
     echo "  Also see: _keyword_identifier_search (well, its symlinks)"
     exit 1
@@ -33,10 +33,10 @@ while [ "$#" -ne 0 ]; do
         -i)
             opt_i=i
             ;;
-        -l)
+        -ll)
             option_C=()
             ;;
-        -ll)
+        -l)
             option_pos=''
             global=''
             ;;

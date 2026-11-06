@@ -26,7 +26,14 @@ fi
 # Ah, ^ that includes -lrt, which we don't want
 # Thus copy paste, then add more options:
 
-lst -rt --ignore-item-name .METADATA-v2 --ignore-item-name .git --ignore-item-regex '~$' --find "$dir" \
+lst -rt \
+    --ignore-item-name .METADATA-v2 \
+    --ignore-item-name .git \
+    --ignore-item-name HEUTE \
+    --ignore-item-name CALENDAR \
+    --ignore-item-regex '~$' \
+    --find "$dir" \
+    --fullpath \
     --zo --ignore-item-name target filter f tail 1 \
     "$@" | xargs -0 e
 
