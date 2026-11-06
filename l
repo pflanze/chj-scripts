@@ -2,6 +2,24 @@
 
 use strict;
 
+my ($mydir, $myname);
+BEGIN {
+    $0=~ /(.*?)([^\/]+)\z/s or die "?";
+    ($mydir, $myname)=($1,$2);
+}
+
+my $list_opts = do {
+    if ($myname eq "l") {
+        '-lrt'
+    } elsif ($myname eq "lt") {
+        '-lrt'
+    } elsif ($myname eq "ll") {
+        '-l'
+    } else {
+        die "unknown symlink name '$myname'"
+    }
+};
+
 my $dir = do {
     if (@ARGV == 0) {
         "."
@@ -22,11 +40,12 @@ my $dir = do {
     }
 };
 
+
 my @cmd = do {
     if (defined $dir) {
-        ('lst', '--ls', $dir, '--ignore-item-regex', '^\.', '--ignore-item-regex', '~$', '-lrt')
+        ('lst', '--ls', $dir, '--ignore-item-regex', '^\.', '--ignore-item-regex', '~$', $list_opts)
     } else {
-        ('/opt/chj/bin/ls', '-lrt', '--time-style=long-iso', @ARGV)
+        ('/opt/chj/bin/ls', $list_opts, '--time-style=long-iso', @ARGV)
     }
 };
 
