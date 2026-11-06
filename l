@@ -8,13 +8,13 @@ BEGIN {
     ($mydir, $myname)=($1,$2);
 }
 
-my $list_opts = do {
+my ($list_opts, $do_tail) = do {
     if ($myname eq "l") {
-        '-lrt'
+        ('-lrt', 0)
     } elsif ($myname eq "lt") {
-        '-lrt'
+        ('-lrt', 1)
     } elsif ($myname eq "ll") {
-        '-l'
+        ('-l', 0)
     } else {
         die "unknown symlink name '$myname'"
     }
@@ -40,12 +40,22 @@ my $dir = do {
     }
 };
 
+my $tail = $ENV{TAIL} // 20;
 
 my @cmd = do {
     if (defined $dir) {
-        ('lst', '--ls', $dir, '--ignore-item-regex', '^\.', '--ignore-item-regex', '~$', $list_opts)
+        my @tail = $do_tail ? ("tail", $tail) : ();
+        ('lst', '--ls', $dir, '--ignore-item-regex', '^\.', '--ignore-item-regex', '~$', $list_opts, @tail)
     } else {
-        ('/opt/chj/bin/ls', $list_opts, '--time-style=long-iso', @ARGV)
+        my @cmd = ('/opt/chj/bin/ls', $list_opts, '--time-style=long-iso', @ARGV);
+        if ($do_tail) {
+            my ($tail_str) = $tail =~ /^(\d+)\z/ or die "invalid TAIL string '$tail'";
+            require Chj::singlequote;
+            my $cmd1 = join " ", map { Chj::singlequote::singlequote_sh($_) } @cmd;
+            ("bash", "-c", "$cmd1 --color=always | tail -$tail_str")
+        } else {
+            @cmd
+        }
     }
 };
 

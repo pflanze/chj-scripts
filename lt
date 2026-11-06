@@ -1,17 +1,1 @@
-#!/bin/bash
-
-set -euo pipefail
-
-tail=20
-
-if [ $# == 0 ]; then
-    dir=.
-elif [ $# == 1 ]; then
-    dir=$1
-else
-    echo "usage: $0 [dir]"
-    echo "   list the last $tail files in the given dir"
-    exit 1
-fi
-
-exec lst --ls "$dir" --ignore-item-regex '^\.' --ignore-item-regex '~$' -lrt tail $tail
+l
