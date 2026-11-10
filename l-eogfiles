@@ -36,5 +36,5 @@ case "$bn" in
 esac
 
 lst --fullpath --$mode "$dir" -rt --zo \
-    | eogfiles --stdin --z --fullscreen --disable-gallery --new-instance
+    | eogfiles --stdin --z --fullscreen --disable-gallery --new-instance --all-paths
 
