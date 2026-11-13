@@ -49,9 +49,13 @@ GetOptions("verbose"=> \$verbose,
 	   ) or exit 1;
 
 use Time::ParseDate;
-use Time::HiRes qw(time sleep);
+use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME TIMER_ABSTIME);
 if ($opt_random) {
     require Chj::Random::Formatted; Chj::Random::Formatted->import("random_u64");
+}
+
+sub sleep_until ($t) {
+    clock_nanosleep(CLOCK_REALTIME, $t * 1e9, TIMER_ABSTIME);
 }
 
 sub gaussianrandom($ntries) {
@@ -216,24 +220,6 @@ sub min {
     $x
 }
 
-sub sleepUntil ($t) {
-    while (1) {
-        my $now= time;
-        my $d= $t - $now;
-        if ($d <= 0) {
-            return
-        }
-        #warn "sleep $d"; ah, perl already handles interrupted sleep calls?
-        # well, would have to try with a signal handler.
-
-        # Don't sleep longer than 10 seconds, because of computer
-        # sleep/hibernate times: sleep times are not oriented around
-        # real time! They continue to resume only once the computer is
-        # woken up again.
-        sleep min($d, 10)
-    }
-}
-
 exit if $opt_test;
 usage unless @ARGV==1;
 
@@ -260,5 +246,5 @@ my $dstr= do {
 warn "$myname: $dstr until $t = ".localtime($t)."\n"
     if $verbose;
 
-sleepUntil $t;
+sleep_until $t;
 
